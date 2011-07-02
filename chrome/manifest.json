@@ -1,0 +1,35 @@
+{
+	"name": "Zotero Connector for Chrome",
+	"version": "0.9.2",
+	"description": "Saves references to Zotero from Chrome",
+	"page_action": {
+		"default_icon": "images/zotero-z-16px.png",
+		"default_title": "Save to Zotero"
+	},
+	"background_page": "global.html",
+	"permissions": ["http://*/*", "https://*/*", "tabs"],
+	"content_scripts": [
+		{
+			"matches": ["http://*/*", "https://*/*"],
+			"js": [
+				"zotero.js",
+				"zotero/cachedTypes.js",
+				"zotero/date.js",
+				"zotero/debug.js",
+				"zotero/inject/http.js",
+				"zotero/inject/translator.js",
+				"zotero/openurl.js",
+				"zotero/translate.js",
+				"zotero/translate_item.js",
+				"zotero/inject/translate_webkit.js",
+				"zotero/utilities.js",
+				"zotero/messages.js",
+				"messaging_inject.js",
+				"zotero/inject/inject.js"
+			],
+			"run_at": "document_idle"
+		}
+	],
+	"options_page": "preferences/preferences.html",
+	"update_url": "https://www.zotero.org/download/everywhere/chrome/update.xml"
+}

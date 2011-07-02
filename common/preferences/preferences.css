@@ -1,0 +1,118 @@
+body {
+	font-family: Lucida Grande, Tahoma, Arial, sans;
+	font-size: 12px;
+	background-color: #b7bfcb;
+}
+
+#panes {
+	margin-top: 32px;
+	position: absolute;
+	left: 16px;
+	top: 16px;
+	bottom: 16px;
+	z-index: 2;
+}
+
+.pane {
+	display: table;
+	border-radius: 5px 0 0 5px;
+	border-width: 1px 0 1px 1px;
+	border-style: solid;
+	border-color: transparent;
+	width: 220px;
+	height: 50px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.pane.selected {
+	background-color: #c8cdd5;
+	border-color: #8c95a4;
+	cursor: default;
+}
+
+.pane-image {
+	display: table-cell;
+	vertical-align: middle;
+	padding-left: 12px;
+}
+
+.pane-label {
+	display: table-cell;
+	vertical-align: middle;
+	text-align: left;
+	padding-left: 7px;
+	font-size: 14px;
+	width: 100%;
+}
+
+.content {
+	display: none;
+	border-radius: 5px;
+	border-width: 1px;
+	border-style: solid;
+	border-color: #8c95a4;
+	background-color: #c8cdd5;
+	position: absolute;
+	left: 235px;
+	right: 16px;
+	top: 16px;
+	bottom: 16px;
+	z-index: 1;
+	padding: 10px 10px 0 10px;
+	overflow: auto;
+}
+
+.content.selected {
+	display: block;
+}
+
+.group {
+	border-radius: 5px;
+	border-width: 1px;
+	border-style: solid;
+	border-color: #8c95a4;
+	padding: 10px 15px 10px 10px;
+	margin-bottom: 10px;
+}
+
+.group-title {
+	font-size: 14px;
+	margin-bottom: 10px;
+}
+
+.group-content {
+	font-size: 11px;
+}
+
+.group-content p:first-child {
+	margin: 0;
+}
+
+.group-content p {
+	margin: 10px 0 0 0;
+}
+
+/** Shamelessly stolen from Firefox **/
+input[type=button] {
+  font-size: 11px;
+  padding: 3px 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(60,73,97,0.5);
+  box-shadow: inset 0 1px rgba(255,255,255,0.25), 0 1px rgba(255,255,255,0.25);
+  background: -webkit-gradient(linear, left top, left bottom, from(rgba(255,255,255,0.45)), to(rgba(255,255,255,0.2)));
+  background-clip: padding-box;
+  color: #252F3B;
+  text-shadow: 0 1px rgba(255, 255, 255, .4);
+}
+
+input[type=button]:active:hover:not([disabled="true"]) {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.2), 0 1px rgba(255,255,255,0.25);
+  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(45,54,71,0.3)), to(rgba(45,54,71,0.1)));
+  border-color: rgba(60,73,97,0.7);
+}
+
+input[type=button][disabled="true"] {
+  background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(230,230,230)), to(rgb(200,200,200)));
+  color: rgb(120,120,120);
+}

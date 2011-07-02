@@ -1,0 +1,170 @@
+﻿<!--
+	***** BEGIN LICENSE BLOCK *****
+	
+	Copyright © 2010 Center for History and New Media
+					 George Mason University, Fairfax, Virginia, USA
+					 http://zotero.org
+	
+	This file is part of Zotero.
+	
+	Zotero is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+	
+	Zotero is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+	
+	You should have received a copy of the GNU General Public License
+	along with Zotero.  If not, see <http://www.gnu.org/licenses/>.
+	
+	***** END LICENSE BLOCK *****
+-->
+<html><head>
+<!--BEGIN GLOBAL SCRIPTS-->
+<script type="text/javascript" src="zotero.js"></script>
+<script type="text/javascript" src="zotero/connector.js"></script>
+<script type="text/javascript" src="zotero/connector_debug.js"></script>
+<script type="text/javascript" src="zotero/cachedTypes.js"></script>
+<script type="text/javascript" src="zotero/date.js"></script>
+<script type="text/javascript" src="zotero/debug.js"></script>
+<script type="text/javascript" src="zotero/errors_webkit.js"></script>
+<script type="text/javascript" src="zotero/oauth.js"></script>
+<script type="text/javascript" src="zotero/oauthsimple.js"></script>
+<script type="text/javascript" src="zotero/openurl.js"></script>
+<script type="text/javascript" src="zotero/http.js"></script>
+<script type="text/javascript" src="zotero/repo.js"></script>
+<script type="text/javascript" src="zotero/tlds.js"></script>
+<script type="text/javascript" src="zotero/translator.js"></script>
+<script type="text/javascript" src="zotero/typeSchemaData.js"></script>
+<script type="text/javascript" src="zotero/utilities.js"></script>
+<script type="text/javascript" src="zotero/messages.js"></script>
+<script type="text/javascript" src="zotero/messaging.js"></script>
+<!--END GLOBAL SCRIPTS-->
+<script type="text/javascript">
+Zotero.Connector_Browser = new function() {
+	var _selectCallbacksForTabIDs = {};
+	
+	/**
+	 * Called when a new page has been loaded to clear previous translators
+	 */
+	this.onPageLoad = function(tab) {
+		if(tab.translators) {
+			tab.translators = [];
+		}
+	}
+	
+	/**
+	 * Called when translators are available for a given page
+	 */
+	this.onTranslators = function(translators, instanceID, tab) {
+		// if we already have translators for this page, return
+		if(tab.translators && tab.translators.length) return;
+		tab.instanceID = instanceID;
+		tab.translators = translators;
+		tab.translatorsForURL = tab.url;
+	}
+	
+	/**
+	 * Called to display select items dialog
+	 */
+	this.onSelect = function(items, callback, tab) {
+		var newTab = safari.application.openBrowserWindow().activeTab;
+		newTab.url = safari.extension.baseURI+"itemSelector.html?"+encodeURIComponent(JSON.stringify([tab.id, items]));
+		_selectCallbacksForTabIDs[tab.id] = callback;
+	}
+	
+	/**
+	 * Called when select items dialog is closed to pass data back to injected script
+	 */
+	this.onSelectDone = function(data) {
+		_selectCallbacksForTabIDs[data[0]](data[1]);
+		delete _selectCallbacksForTabIDs[data[0]];
+	}
+	
+	/**
+	 * Called when Zotero button is pressed
+	 */
+	this.onPerformCommand = function(event) {
+		var command = event.command;
+		if(command === "zotero-translate") {
+			var tab = safari.application.activeBrowserWindow.activeTab;
+			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("translate",
+					[tab.instanceID, tab.translators[0]]);
+		} else if(command === "zotero-preferences") {
+			var tab = safari.application.activeBrowserWindow.activeTab;
+			tab.url = safari.extension.baseURI+"preferences/preferences.html";
+		}
+	}
+	
+	/**
+	 * Called to determine if current page can be scraped
+	 */
+	this.onValidateCommand = function(event) {
+		if(event.command === "zotero-translate") {
+			_updateButtonStatus(event.target);
+		}
+	}
+	
+	/**
+	 * Called when Zotero goes online or offline
+	 */
+	this.onStateChange = function() {
+		_updateButtonStatus();
+	}
+	
+	/**
+	 * Called when an HTTP request fails
+	 */
+	this.onFailure = function(method) {
+		// do something?
+	}
+	
+	function _getZoteroButton() {
+		var itemArray = safari.extension.toolbarItems;
+		for(var i=0; i<itemArray.length; i++) {
+			if(itemArray[i].command == "zotero-translate") {
+				return itemArray[i];
+			}
+		}
+	}
+	
+	function _updateButtonStatus(zoteroButton) {
+		var tab = safari.application.activeBrowserWindow.activeTab;
+		if(!zoteroButton) zoteroButton = _getZoteroButton();
+		
+		if(tab.translators && tab.translators.length && tab.translatorsForURL == tab.url
+				&& (Zotero.Connector.isOnline || tab.translators[0].runMode !== Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE)) {
+			var itemType = tab.translators[0].itemType;
+			zoteroButton.image = (itemType === "multiple"
+					? safari.extension.baseURI+"images/toolbar/treesource-collection.png"
+					: Zotero.ItemTypes.getImageSrc(itemType).replace("/itemTypes/", "/toolbar/"));
+			zoteroButton.disabled = false;
+			
+			var translatorName = tab.translators[0].label;
+			if(tab.translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
+				translatorName += " via Zotero Standalone";
+			}
+			zoteroButton.tooltip = "Save to Zotero ("+translatorName+")";
+		} else if(Zotero.Connector.isOnline) {
+			zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-z-16px.png";
+			zoteroButton.disabled = true;
+			zoteroButton.tooltip = "Zotero is Online";
+		} else {
+			zoteroButton.image = safari.extension.baseURI+"images/zotero-z-16px-offline.png";
+			zoteroButton.disabled = true;
+			zoteroButton.tooltip = "Zotero is Offline";
+		}
+	}
+}
+
+ // register handlers
+safari.application.addEventListener("command", Zotero.Connector_Browser.onPerformCommand, false);
+safari.application.addEventListener("validate", Zotero.Connector_Browser.onValidateCommand, false);
+Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
+
+// initialize
+Zotero.initGlobal();
+</script></head></html>

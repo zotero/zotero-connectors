@@ -1,0 +1,144 @@
+﻿<!--
+	***** BEGIN LICENSE BLOCK *****
+	
+	Copyright © 2010 Center for History and New Media
+					 George Mason University, Fairfax, Virginia, USA
+					 http://zotero.org
+	
+	This file is part of Zotero.
+	
+	Zotero is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+	
+	Zotero is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+	
+	You should have received a copy of the GNU General Public License
+	along with Zotero.  If not, see <http://www.gnu.org/licenses/>.
+	
+	***** END LICENSE BLOCK *****
+-->
+<html><head>
+<!--BEGIN GLOBAL SCRIPTS-->
+<script type="text/javascript" src="zotero.js"></script>
+<script type="text/javascript" src="zotero/connector.js"></script>
+<script type="text/javascript" src="zotero/connector_debug.js"></script>
+<script type="text/javascript" src="zotero/cachedTypes.js"></script>
+<script type="text/javascript" src="zotero/date.js"></script>
+<script type="text/javascript" src="zotero/debug.js"></script>
+<script type="text/javascript" src="zotero/errors_webkit.js"></script>
+<script type="text/javascript" src="zotero/oauth.js"></script>
+<script type="text/javascript" src="zotero/oauthsimple.js"></script>
+<script type="text/javascript" src="zotero/openurl.js"></script>
+<script type="text/javascript" src="zotero/http.js"></script>
+<script type="text/javascript" src="zotero/repo.js"></script>
+<script type="text/javascript" src="zotero/tlds.js"></script>
+<script type="text/javascript" src="zotero/translator.js"></script>
+<script type="text/javascript" src="zotero/typeSchemaData.js"></script>
+<script type="text/javascript" src="zotero/utilities.js"></script>
+<script type="text/javascript" src="zotero/messages.js"></script>
+<script type="text/javascript" src="zotero/messaging.js"></script>
+<!--END GLOBAL SCRIPTS-->
+<script type="text/javascript"> 
+Zotero.Connector_Browser = new function() {
+	var _translatorsForTabIDs = {};
+	var _instanceIDsForTabs = {};
+	var _selectCallbacksForTabIDs = {};
+	
+	/**
+	 * Called when translators are available for a given page
+	 */
+	this.onTranslators = function(translators, instanceID, tab) {
+		if(!translators || !translators.length) return;
+		_translatorsForTabIDs[tab.id] = translators;
+		_instanceIDsForTabs[tab.id] = instanceID;
+		var itemType = translators[0].itemType;
+		
+		chrome.pageAction.setIcon({
+			tabId:tab.id,
+			path:(itemType === "multiple"
+					? "images/treesource-collection.png"
+					: Zotero.ItemTypes.getImageSrc(itemType))
+		});
+		
+		var translatorName = translators[0].label;
+		if(translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
+			translatorName += " via Zotero Standalone";
+		}
+		chrome.pageAction.setTitle({
+			tabId:tab.id,
+			title:"Save to Zotero ("+translatorName+")"
+		});
+		
+		chrome.pageAction.show(tab.id);
+	}
+	
+	/**
+	 * Called to display select items dialog
+	 */
+	this.onSelect = function(items, callback, tab) {
+		window.open(chrome.extension.getURL("itemSelector.html")+"?"+encodeURIComponent(JSON.stringify([tab.id, items])), '',
+		'height=325,width=500,location=no,toolbar=no,menubar=no,status=no');
+		_selectCallbacksForTabIDs[tab.id] = callback;
+	}
+	
+	/**
+	 * Called when select items dialog is closed to pass data back to injected script
+	 */
+	this.onSelectDone = function(data) {
+		_selectCallbacksForTabIDs[data[0]](data[1]);
+	}
+	
+	/**
+	 * Called when a tab is removed
+	 */
+	this.onTabRemoved = function(tabID) {
+		delete _translatorsForTabIDs[tabID];
+		delete _instanceIDsForTabs[tabID];
+		delete _selectCallbacksForTabIDs[tabID];
+	}
+	
+	/**
+	 * Called when the page action button has been clicked
+	 */
+	this.onPageActionClicked = function(tab) {
+		chrome.tabs.sendRequest(tab.id, ["translate",
+				[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
+	}
+	
+	/**
+	 * Called when Zotero goes online or offline
+	 */
+	this.onStateChange = function() {
+		if(!Zotero.Connector.isOnline) {
+			for(var i in _translatorsForTabIDs) {
+				if(_translatorsForTabIDs[i] && _translatorsForTabIDs[i].length
+						&& _translatorsForTabIDs[i][0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
+					try {
+						chrome.pageAction.hide(i);
+					} catch(e) {}
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Called when an HTTP request fails
+	 */
+	this.onFailure = function(method) {
+		// do something?
+	}
+}
+
+// register handlers
+chrome.tabs.onRemoved.addListener(Zotero.Connector_Browser.onTabRemoved);
+chrome.pageAction.onClicked.addListener(Zotero.Connector_Browser.onPageActionClicked);
+Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
+
+// initialize
+Zotero.initGlobal();
+</script></head></html>

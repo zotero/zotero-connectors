@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    ***** BEGIN LICENSE BLOCK *****
+    
+    Copyright © 2011 Center for History and New Media
+                     George Mason University, Fairfax, Virginia, USA
+                     http://zotero.org
+    
+    This file is part of Zotero.
+    
+    Zotero is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    Zotero is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+    
+    You should have received a copy of the GNU Affero General Public License
+    along with Zotero.  If not, see <http://www.gnu.org/licenses/>.
+    
+    ***** END LICENSE BLOCK *****
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<link rel="stylesheet" type="text/css" media="screen" href="itemSelector.css" />
+		<script type="text/javascript" src="itemSelector_browserSpecific.js"></script>
+		<script type="text/javascript" src="itemSelector.js"></script>
+		<title>Zotero Item Selector</title>
+	</head>
+	<body>
+		<div id="label">Select which items you'd like to add to your library:</div>
+		<div id="item-selector"></div>
+		<div id="buttons">
+			<div id="select-deselect">
+				<input type="submit" id="select" value="Select All" onclick="setAllCheckStates(true)"/>&nbsp;
+				<input type="submit" id="deselect" value="Deselect All" onclick="setAllCheckStates(false)"/>
+			</div>
+			<div id="cancel-ok">
+				<input type="submit" value="Cancel" id="cancel"/>&nbsp;
+				<input type="submit" value="OK" id="accept"/>
+			</div>
+		</div>
+	</body>
+</html>

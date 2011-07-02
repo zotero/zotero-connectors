@@ -1,0 +1,104 @@
+/*
+    ***** BEGIN LICENSE BLOCK *****
+    
+    Copyright © 2009 Center for History and New Media
+                     George Mason University, Fairfax, Virginia, USA
+                     http://zotero.org
+    
+    This file is part of Zotero.
+    
+    Zotero is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    Zotero is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+    
+    You should have received a copy of the GNU Affero General Public License
+    along with Zotero.  If not, see <http://www.gnu.org/licenses/>.
+    
+    ***** END LICENSE BLOCK *****
+*/
+
+// Put these functions in global Zotero namespace so that messaging works
+Zotero.TranslatorTester = {};
+var _tabData = {};
+
+/**
+ * Called to run tests using the testing framework in Chrome or Safari (not to be confused with
+ * Zotero.TranslatorTester#runTests
+ */
+Zotero.TranslatorTester.runTests = function(translator, type, instanceID, tab) {
+	var debug = function(obj, msg, level) {
+		Zotero.Messaging.sendMessage("translatorTester_debug", [instanceID, [null, msg, level]], tab);
+	}
+	
+	var translatorTester = new Zotero_TranslatorTester(translator, type, debug);
+	translatorTester.runTests(function() {
+		var args = new Array(arguments.length);
+		for(var i=0; i<arguments.length; i++) args[i] = arguments[i];
+		Zotero.Messaging.sendMessage("translatorTester_testDone", [instanceID, args], tab);
+	});
+}
+
+/**
+ * Called on every page load to test whether page is part of a test. This is why you shouldn't
+ * use a debug build for production purposes.
+ */
+Zotero.TranslatorTester.onLoad = function(callback, tab) {
+	if(_tabData[tab.id]) {
+		var tabData = _tabData[tab.id];
+		callback([tabData.instance._translator, tabData.instance._type, tabData.test]);
+	} else {
+		callback(false);
+	}
+}
+
+/**
+ * Called via injected script when test is complete
+ */
+Zotero.TranslatorTester.debug = function(obj, message, level, tab) {
+	_tabData[tab.id].instance._debug(obj, message, level);
+}
+
+/**
+ * Called via injected script when test is complete
+ */
+Zotero.TranslatorTester.testComplete = function(obj, test, status, message, tab) {
+	_tabData[tab.id].callback(obj, test, status, message);
+	delete _tabData[tab.id];
+	if(Zotero.isSafari) {
+		tab.close();
+	} else if(Zotero.isChrome) {
+		chrome.tabs.remove(tab.id);
+	}
+}
+
+/**
+ * Fetches the page for a given test and runs it
+ * @param {Object} test Test to execute
+ * @param {Function} testDoneCallback A callback to be executed when test is complete
+ */
+Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function(test, testDoneCallback) {
+	var tabData = {
+		"instance":this,
+		"test":test,
+		"callback":testDoneCallback
+	};
+	
+	if(Zotero.isSafari) {
+		var tab = safari.application.activeBrowserWindow.openTab("background");
+		tab.url = test.url;
+		tab.id = (new Date()).getTime();
+		tabData.tab = tab;
+		_tabData[tab.id] = tabData;
+	} else if(Zotero.isChrome) {
+		chrome.tabs.create({"url":test.url, "selected":false}, function(tab) {
+			tabData.tab = tab;
+			_tabData[tab.id] = tabData;
+		});
+	}
+}

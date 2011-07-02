@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    ***** BEGIN LICENSE BLOCK *****
+    
+    Copyright © 2011 Center for History and New Media
+                     George Mason University, Fairfax, Virginia, USA
+                     http://zotero.org
+    
+    This file is part of Zotero.
+    
+    Zotero is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    Zotero is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+    
+    You should have received a copy of the GNU Affero General Public License
+    along with Zotero.  If not, see <http://www.gnu.org/licenses/>.
+    
+    ***** END LICENSE BLOCK *****
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<script type="text/javascript" src="../zotero.js"></script>
+		<script type="text/javascript" src="../zotero/messages.js"></script>
+		<script type="text/javascript" src="../messaging_inject.js"></script>
+		<script type="text/javascript" src="preferences.js"></script>
+		<link rel="stylesheet" type="text/css" media="screen" href="preferences.css" />
+		<title>Zotero Connector Preferences</title>
+	</head>
+	<body>
+		<div id="panes">
+			<div id="pane-general" class="pane">
+				<div class="pane-image"><img src="../images/prefs-general.png" alt=""/></div>
+				<div class="pane-label">General</div>
+			</div>
+			<div id="pane-advanced" class="pane">
+				<div class="pane-image"><img src="../images/prefs-advanced.png" alt=""/></div>
+				<div class="pane-label">Advanced</div>
+			</div>
+		</div>
+		<div id="content-general" class="content">
+			<div class="group">
+				<div class="group-title">Zotero Standalone</div>
+				<div class="group-content">
+					<p>Zotero Standalone is currently <span id="general-span-standalone-status"></span>.</p>
+					<p><input type="button" value="Update Status" onclick="updateStandaloneStatus()"/></p>
+				</div>
+			</div>
+			<div class="group">
+				<div class="group-title">Authorization</div>
+				<div class="group-content">
+					<div id="general-authorization-not-authorized">
+						<p>Zotero Connector must be authorized in order to save items when Zotero Standalone is not open.</p>
+						<p><input type="button" value="Authorize" onclick="authorize()"/></p>
+					</div>
+					<div id="general-authorization-authorized" style="display:none">
+						<p>Zotero Connector is authorized as <span id="general-span-authorization-username"></span>.</p>
+						<p>
+							<input type="button" value="Reauthorize" onclick="authorize()"/>
+							<input type="button" value="Clear Credentials" onclick="clearCredentials()"/>
+						</p>
+					</div>
+				</div>
+			</div>
+			<div class="group">
+				<div class="group-title">Report Errors</div>
+				<div class="group-content">
+					<div id="general-no-errors">
+						Zotero Connector has not experienced any errors since it was first started.
+					</div>
+					<div id="general-have-errors" style="display:none">
+						<p>Zotero Connector has experienced the following errors since it was first started:</p>
+						<p><textarea id="general-textarea-errors" style="width:100%; height:10em;" readonly="true"></textarea></p>
+						<p><input type="button" id="general-button-report-errors" value="Report Errors" onclick="submitErrors()"/></p>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="content-advanced" class="content">
+			<div class="group">
+				<div class="group-title">Debug Output Logging</div>
+				<div class="group-content">
+					<p>Debug output can help Zotero developers diagnose problems in Zotero. Debug logging will slow down Zotero, so you should generally leave it disabled unless a Zotero developer requests debug output.</p>
+					<p>
+						<input type="checkbox" id="advanced-checkbox-enable-logging" onchange="Zotero.Debug.setStore(this.checked);"/>&nbsp;Enable Logging<br/>
+						<input type="checkbox" id="advanced-checkbox-enable-at-startup" onchange="Zotero.Prefs.set('debug.store', this.checked);"/>&nbsp;Enable at Startup<br/>
+						<input type="checkbox" id="advanced-checkbox-show-in-console" onchange="Zotero.Prefs.set('debug.log', this.checked);"/>&nbsp;Show in Console<br/>
+					</p>
+					<p>
+						<span id="advanced-span-lines-logged"></span> lines logged
+					</p>
+					<p>
+						<input type="button" id="advanced-button-view-output" value="View Output" onclick="viewDebugOutput()"/>
+						<input type="button" id="advanced-button-clear-output" value="Clear Output" onclick="clearDebugOutput()"/>
+						<input type="button" id="advanced-button-submit-output" value="Submit to Zotero Server" onclick="submitDebugOutput()"/>
+					</p>
+				</div>
+			</div>
+			<div class="group">
+				<div class="group-title">Translators</div>
+				<div class="group-content">
+					<input type="button" id="advanced-update-translators" value="Update Translators" onclick="Zotero.Repo.update(false)"/>
+					<input type="button" id="advanced-reset-translators" value="Reset Translators" onclick="Zotero.Repo.update(true)"/>
+					<!--BEGIN DEBUG-->
+					<input type="button" value="Open Translator Tester" onclick="openTranslatorTester()"/>
+					<!--END DEBUG-->
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

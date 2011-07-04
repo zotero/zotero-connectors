@@ -49,6 +49,7 @@ if(isTopWindow) {
 			"overflow":"hidden", "whiteSpace":"nowrap", "lineHeight":"16px"};
 		const cssDescription = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"11px"};
 		var _progressDiv, _headlineDiv, _timeoutID;
+		var _shownItemDivsById = {};
 		
 		/**
 		 * Initializes and shows the progress div
@@ -63,6 +64,9 @@ if(isTopWindow) {
 			for(var i in cssHeadline) _headlineDiv.style[i] = cssHeadline[i];
 			_progressDiv.appendChild(_headlineDiv);
 			_progressDiv = document.body.appendChild(_progressDiv);
+			
+			// TODO localize
+			Zotero.ProgressWindow.changeHeadline("Saving Item...");
 		}
 		
 		/**
@@ -76,6 +80,8 @@ if(isTopWindow) {
 		 * Shows the scraping error message in the progress window
 		 */
 		this.showError = function() {
+			Zotero.ProgressWindow.show();
+			
 			var desc = document.createElement('div');
 			desc.style.cssText = cssDivClearString;
 			for(var j in cssDescription) desc.style[j] = cssDescription[j];
@@ -99,28 +105,43 @@ if(isTopWindow) {
 		}
 		
 		/**
-		 * Adds lines to progress window
+		 * Adds an item to progress window
 		 */
-		this.addLines = function(label, icon) {
-			for(var i in label) {
-				var item = document.createElement('div');
-				item.style.cssText = cssDivClearString;
-				for(var j in cssItem) item.style[j] = cssItem[j];
-				
-				var newImage = document.createElement('img');
-				newImage.style.cssText = cssImgClearString;
-				for(var j in cssIcon) newImage.style[j] = cssIcon[j];
-				newImage.src = icon[i];
-				
-				var textDiv = document.createElement('div');
-				textDiv.style.cssText = cssDivClearString;
-				for(var j in cssLabel) textDiv.style[j] = cssLabel[j];
-				textDiv.appendChild(document.createTextNode(label[i]));
-				
-				item.appendChild(newImage);
-				item.appendChild(textDiv)
-				_progressDiv.appendChild(item);
-			}
+		this.itemSaving = function(item) {
+			Zotero.ProgressWindow.show();
+			
+			if(_shownItemDivsById[item.id]) return;
+			
+			var itemDiv = document.createElement('div');
+			itemDiv.style.cssText = cssDivClearString;
+			for(var j in cssItem) itemDiv.style[j] = cssItem[j];
+			
+			var newImage = document.createElement('img');
+			newImage.style.cssText = cssImgClearString;
+			for(var j in cssIcon) newImage.style[j] = cssIcon[j];
+			newImage.style.opacity = "0.2";
+			newImage.src = Zotero.ItemTypes.getImageSrc(item.itemType);
+			
+			var textDiv = document.createElement('div');
+			textDiv.style.cssText = cssDivClearString;
+			for(var j in cssLabel) textDiv.style[j] = cssLabel[j];
+			textDiv.appendChild(document.createTextNode(item.title));
+			
+			itemDiv.appendChild(newImage);
+			itemDiv.appendChild(textDiv);
+			_progressDiv.appendChild(itemDiv);
+			
+			_shownItemDivsById[item.id] = itemDiv;
+		}
+		
+		/**
+		 * Marks an item as saved in the progress window
+		 */
+		this.itemDone = function(item) {
+			Zotero.ProgressWindow.show();
+			
+			if(!_shownItemDivsById[item.id]) Zotero.ProgressWindow.itemSaving(item);
+			_shownItemDivsById[item.id].firstChild.style.opacity = "1";
 		}
 		
 		/**
@@ -139,6 +160,10 @@ if(isTopWindow) {
 		this.close = function() {
 			document.body.removeChild(_progressDiv);
 			_progressDiv = undefined;
+			_headlineDiv = undefined;
+			if(_timeoutID) window.clearTimeout(_timeoutID);
+			_timeoutID = undefined;
+			_shownItemDivsById = {};
 		}
 	}
 	
@@ -149,23 +174,17 @@ if(isTopWindow) {
 	 * When an item is saved (by this page or by an iframe), the item will be relayed back to 
 	 * the background script and then to this handler, which will show the saving dialog
 	 */
-	Zotero.Messaging.addMessageListener("saveDialog_show", function() {
-		Zotero.ProgressWindow.show();
-		// TODO localize
-		Zotero.ProgressWindow.changeHeadline("Saving Item...");
-	});
-	Zotero.Messaging.addMessageListener("saveDialog_itemDone", function(item) {
-		Zotero.ProgressWindow.show();
-		Zotero.ProgressWindow.addLines([item.title], [Zotero.ItemTypes.getImageSrc(item.itemType)]);
-		Zotero.ProgressWindow.startCloseTimer();
-	});
-	Zotero.Messaging.addMessageListener("saveDialog_close", function() {
-		Zotero.ProgressWindow.close();
-	});
-	Zotero.Messaging.addMessageListener("saveDialog_error", function() {
-		Zotero.ProgressWindow.show();
-		Zotero.ProgressWindow.showError();
-		Zotero.ProgressWindow.startCloseTimer(8000);
+	Zotero.Messaging.addMessageListener("saveDialog_show", Zotero.ProgressWindow.show);
+	Zotero.Messaging.addMessageListener("saveDialog_itemSaving", Zotero.ProgressWindow.itemSaving);
+	Zotero.Messaging.addMessageListener("saveDialog_itemDone", Zotero.ProgressWindow.itemDone);
+	Zotero.Messaging.addMessageListener("saveDialog_close", Zotero.ProgressWindow.close);
+	Zotero.Messaging.addMessageListener("saveDialog_done", function(returnValue) {
+		if(returnValue) {
+			Zotero.ProgressWindow.startCloseTimer(2500);
+		} else {
+			Zotero.ProgressWindow.showError();
+			Zotero.ProgressWindow.startCloseTimer(8000);
+		}
 	});
 }
 
@@ -229,14 +248,16 @@ Zotero.Inject = new function() {
 					callback(returnItems);
 				});
 			});
+			_translate.setHandler("itemSaving", function(obj, item) {
+				// this relays an item from this tab to the top level of the window
+				Zotero.Messaging.sendMessage("saveDialog_itemSaving", item);
+			});
 			_translate.setHandler("itemDone", function(obj, dbItem, item) {
 				// this relays an item from this tab to the top level of the window
 				Zotero.Messaging.sendMessage("saveDialog_itemDone", item);
 			});
 			_translate.setHandler("done", function(obj, status) {
-				if(!status || (!_translate.newItems.length && !cancelled)) {
-					Zotero.Messaging.sendMessage("saveDialog_error", status);
-				}
+				Zotero.Messaging.sendMessage("saveDialog_done", status);
 			});
 			_translate.getTranslators();
 		} catch(e) {

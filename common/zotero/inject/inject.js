@@ -114,12 +114,12 @@ if(isTopWindow) {
 			
 			var itemDiv = document.createElement('div');
 			itemDiv.style.cssText = cssDivClearString;
+			itemDiv.style.opacity = "0.5";
 			for(var j in cssItem) itemDiv.style[j] = cssItem[j];
 			
 			var newImage = document.createElement('img');
 			newImage.style.cssText = cssImgClearString;
 			for(var j in cssIcon) newImage.style[j] = cssIcon[j];
-			newImage.style.opacity = "0.2";
 			newImage.src = Zotero.ItemTypes.getImageSrc(item.itemType);
 			
 			var textDiv = document.createElement('div');
@@ -141,7 +141,7 @@ if(isTopWindow) {
 			Zotero.ProgressWindow.show();
 			
 			if(!_shownItemDivsById[item.id]) Zotero.ProgressWindow.itemSaving(item);
-			_shownItemDivsById[item.id].firstChild.style.opacity = "1";
+			_shownItemDivsById[item.id].style.opacity = "1";
 		}
 		
 		/**

@@ -206,6 +206,6 @@ Zotero.OAuth = new function() {
 		// do post
 		Zotero.HTTP.doPost(url, body, function(xmlhttp) {
 			callback([200, 201, 204].indexOf(xmlhttp.status) !== -1, xmlhttp.responseText);
-		});
+		}, {"Content-Type":"application/json"});
 	};
 }

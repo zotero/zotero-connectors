@@ -60,6 +60,12 @@
 				<string>zotero/inject/http.js</string>
 				<string>zotero/inject/translator.js</string>
 				<string>zotero/openurl.js</string>
+				<string>zotero/rdf/uri.js</string>
+				<string>zotero/rdf/term.js</string>
+				<string>zotero/rdf/identity.js</string>
+				<string>zotero/rdf/match.js</string>
+				<string>zotero/rdf/rdfparser.js</string>
+				<string>zotero/rdf.js</string>
 				<string>zotero/translate.js</string>
 				<string>zotero/translate_item.js</string>
 				<string>zotero/inject/translate_webkit.js</string>

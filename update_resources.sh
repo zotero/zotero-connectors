@@ -17,7 +17,13 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/debug.js' \
 	'zotero/inject/http.js' \
 	'zotero/inject/translator.js' \
-	'zotero/openurl.js'\
+	'zotero/openurl.js' \
+	'zotero/rdf/uri.js' \
+	'zotero/rdf/term.js' \
+	'zotero/rdf/identity.js' \
+	'zotero/rdf/match.js' \
+	'zotero/rdf/rdfparser.js' \
+	'zotero/rdf.js' \
 	'zotero/translate.js' \
 	'zotero/translate_item.js' \
 	'zotero/inject/translate_webkit.js'\
@@ -114,10 +120,12 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 		perl -000 -pi -e 's/<!--BEGIN DEBUG-->(.*?)<!--END DEBUG-->//sg' "$dir/preferences/preferences.html"
 	fi
 	
-	cp "$XPCOMDIR/utilities.js" \
+	cp -r "$XPCOMDIR/utilities.js" \
 	   "$XPCOMDIR/date.js" \
 	   "$XPCOMDIR/debug.js" \
 	   "$XPCOMDIR/openurl.js" \
+	   "$XPCOMDIR/rdf.js" \
+	   "$XPCOMDIR/rdf" \
 	   "$dir/zotero"
 	
 	cp "$XPCOMDIR/translation/translate.js" \

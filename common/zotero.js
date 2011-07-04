@@ -54,6 +54,16 @@ var Zotero = new function() {
 	};
 	
 	this.initInject = function() {
+		// We have to load AJAW into global namespace, so move it to local
+		if(window.RDFIndexedFormula) {
+			Zotero.RDF = {
+				"AJAW":{
+					"RDFIndexedFormula":RDFIndexedFormula,
+					"RDFSymbol":RDFSymbol
+				}
+			};
+		}
+		
 		Zotero.Debug.init();
 		Zotero.Messaging.init();
 	};

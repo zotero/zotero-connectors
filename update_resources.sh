@@ -26,7 +26,7 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/rdf.js' \
 	'zotero/translate.js' \
 	'zotero/translate_item.js' \
-	'zotero/inject/translate_webkit.js'\
+	'zotero/translate_generic.js'\
 	'zotero/utilities.js' \
 	'zotero/messages.js' \
 	'messaging_inject.js')
@@ -126,9 +126,8 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	   "$XPCOMDIR/openurl.js" \
 	   "$XPCOMDIR/rdf.js" \
 	   "$XPCOMDIR/rdf" \
-	   "$dir/zotero"
-	
-	cp "$XPCOMDIR/translation/translate.js" \
+	   "$XPCOMDIR/translation/translate.js" \
+	   "$XPCOMDIR/translation/translate_generic.js" \
 	   "$XPCOMDIR/translation/tlds.js" \
 	   "$dir/zotero"
 	

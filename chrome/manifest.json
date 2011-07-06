@@ -27,13 +27,11 @@
 				"zotero/rdf.js",
 				"zotero/translate.js",
 				"zotero/translate_item.js",
-				"zotero/inject/translate_webkit.js",
+				"zotero/translate_generic.js",
 				"zotero/utilities.js",
 				"zotero/messages.js",
 				"messaging_inject.js",
-				"tools/testTranslators/translatorTester.js",
-				"zotero/inject/inject.js",
-				"tools/testTranslators/translatorTester_inject.js"
+				"zotero/inject/inject.js"
 			],
 			"run_at": "document_idle"
 		}

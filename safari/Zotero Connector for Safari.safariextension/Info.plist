@@ -68,13 +68,11 @@
 				<string>zotero/rdf.js</string>
 				<string>zotero/translate.js</string>
 				<string>zotero/translate_item.js</string>
-				<string>zotero/inject/translate_webkit.js</string>
+				<string>zotero/translate_generic.js</string>
 				<string>zotero/utilities.js</string>
 				<string>zotero/messages.js</string>
 				<string>messaging_inject.js</string>
-				<string>tools/testTranslators/translatorTester.js</string>
 				<string>zotero/inject/inject.js</string>
-				<string>tools/testTranslators/translatorTester_inject.js</string>
 			</array>
 		</dict>
 	</dict>

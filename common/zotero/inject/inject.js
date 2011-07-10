@@ -286,3 +286,4 @@ if(document.readyState == "loading") {
 } else {
 	Zotero.Inject.detect();
 }
+document.addEventListener("ZoteroItemUpdated", function() { Zotero.Inject.detect() }, false);

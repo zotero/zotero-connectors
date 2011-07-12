@@ -26,7 +26,7 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/rdf.js' \
 	'zotero/translate.js' \
 	'zotero/translate_item.js' \
-	'zotero/translate_generic.js'\
+	'zotero/inject/translate_inject.js'\
 	'zotero/utilities.js' \
 	'zotero/messages.js' \
 	'messaging_inject.js')
@@ -102,7 +102,7 @@ perl -000 -pi -e "s/$INJECT_BEGIN_SAFARI.*?$INJECT_END_SAFARI/$INJECT_BEGIN_SAFA
 scripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${GLOBAL_INCLUDE[@]}")
 escapedScripts=$(echo "$scripts" | sed -e 's/\//\\\//g')
 
-# Copy translation-related resources
+# Copy translation-related resources for Chrome/Safari
 for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	# Update global scripts
 	perl -000 -pi -e "s/$GLOBAL_BEGIN.*$GLOBAL_END/$GLOBAL_BEGIN\\n$escapedScripts$GLOBAL_END/s" "$dir/global.html"
@@ -127,7 +127,6 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	   "$XPCOMDIR/rdf.js" \
 	   "$XPCOMDIR/rdf" \
 	   "$XPCOMDIR/translation/translate.js" \
-	   "$XPCOMDIR/translation/translate_generic.js" \
 	   "$XPCOMDIR/translation/tlds.js" \
 	   "$dir/zotero"
 	

@@ -27,7 +27,7 @@
 				"zotero/rdf.js",
 				"zotero/translate.js",
 				"zotero/translate_item.js",
-				"zotero/translate_generic.js",
+				"zotero/inject/translate_inject.js",
 				"zotero/utilities.js",
 				"zotero/messages.js",
 				"messaging_inject.js",

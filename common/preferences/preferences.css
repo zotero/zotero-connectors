@@ -35,6 +35,7 @@ body {
 	display: table-cell;
 	vertical-align: middle;
 	padding-left: 12px;
+	padding-top: 3px;
 }
 
 .pane-label {

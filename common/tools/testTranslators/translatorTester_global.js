@@ -51,7 +51,7 @@ Zotero.TranslatorTester.runTests = function(translator, type, instanceID, tab) {
 Zotero.TranslatorTester.onLoad = function(callback, tab) {
 	if(_tabData[tab.id]) {
 		var tabData = _tabData[tab.id];
-		callback([tabData.instance._translator, tabData.instance._type, tabData.test]);
+		callback([tabData.instance.translator, tabData.instance.type, tabData.test]);
 	} else {
 		callback(false);
 	}

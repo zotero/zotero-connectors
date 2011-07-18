@@ -99,8 +99,7 @@ const MESSAGES = {
 	"Connector":
 		{
 			"checkIsOnline":true,
-			"callMethod":true,
-			"getSchemaAndPreferences":true
+			"callMethod":true
 		},
 	"Connector_Browser":
 		{

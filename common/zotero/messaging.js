@@ -75,7 +75,9 @@ Zotero.Messaging = new function() {
 			}
 			args.push(tab);
 			
-			Zotero[messageParts[0]][messageParts[1]].apply(Zotero[messageParts[0]], args);		
+			var fn = Zotero[messageParts[0]][messageParts[1]];
+			if(!fn) throw new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
+			fn.apply(Zotero[messageParts[0]], args);		
 		} catch(e) {
 			Zotero.logError(e);
 		}

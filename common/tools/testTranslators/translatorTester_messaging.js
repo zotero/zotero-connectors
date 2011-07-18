@@ -32,17 +32,17 @@ Zotero_TranslatorTester.prototype._runTests = Zotero_TranslatorTester.prototype.
  * Overloads Zotero_TranslatorTester#runTests for Chrome/Safari environments
  */
 Zotero_TranslatorTester.prototype.runTests = function(callback) {
-	if(this._type === "web") {
+	if(this.type === "web") {
 		// web translators need to be run in their own environments
 		var instanceID = Math.floor(Math.random()*12);
 		_instanceData[instanceID] = {"testDone":callback, "debug":this._debug};
-		Zotero.TranslatorTester.runTests(this._translator, this._type, instanceID);
+		Zotero.TranslatorTester.runTests(this.translator, this.type, instanceID);
 	} else {
 		// other translators get passed right through, after we get schema and preferences
 		var me = this;
-		Zotero.Connector.getSchemaAndPreferences(function(data) {
-			Zotero.Connector.data = data;
-			Zotero.Connector.Types.init(data.schema);
+		Zotero.Connector_Types.getSchema(function(schema) {
+			Zotero.Connector_Types.schema = schema;
+			Zotero.Connector_Types.init();
 			me._runTests(callback);
 		});
 	}

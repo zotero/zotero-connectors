@@ -34,7 +34,7 @@ Zotero_TranslatorTester.prototype._runTests = Zotero_TranslatorTester.prototype.
 Zotero_TranslatorTester.prototype.runTests = function(callback) {
 	if(this.type === "web") {
 		// web translators need to be run in their own environments
-		var instanceID = Math.floor(Math.random()*12);
+		var instanceID = Math.floor(Math.random()*1e12);
 		_instanceData[instanceID] = {"testDone":callback, "debug":this._debug};
 		Zotero.TranslatorTester.runTests(this.translator, this.type, instanceID);
 	} else {

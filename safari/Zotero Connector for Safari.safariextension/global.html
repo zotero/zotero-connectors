@@ -46,6 +46,7 @@
 <script type="text/javascript">
 Zotero.Connector_Browser = new function() {
 	var _selectCallbacksForTabIDs = {};
+	var _incompatibleVersionMessageShown;
 	
 	/**
 	 * Called when a new page has been loaded to clear previous translators
@@ -116,13 +117,6 @@ Zotero.Connector_Browser = new function() {
 		_updateButtonStatus();
 	}
 	
-	/**
-	 * Called when an HTTP request fails
-	 */
-	this.onFailure = function(method) {
-		// do something?
-	}
-	
 	function _getZoteroButton() {
 		var itemArray = safari.extension.toolbarItems;
 		for(var i=0; i<itemArray.length; i++) {
@@ -158,6 +152,20 @@ Zotero.Connector_Browser = new function() {
 			zoteroButton.disabled = true;
 			zoteroButton.tooltip = "Zotero is Offline";
 		}
+	}
+	
+	/**
+	 * Called if Zotero version is determined to be incompatible with Standalone
+	 */
+	this.onIncompatibleStandaloneVersion = function(zoteroVersion, standaloneVersion) {
+		if(_incompatibleVersionMessageShown) return;
+		alert('Zotero Connector for Safari '+zoteroVersion+' is incompatible with the running '+
+			'version of Zotero Standalone'+(standaloneVersion ? " ("+standaloneVersion+")" : "")+
+			'. Zotero Connector will continue to operate, but functionality that relies upon '+
+			'Zotero Standalone may be unavaliable.\n\n'+
+			'Please ensure that you have installed the latest version of these components. See '+
+			'http://www.zotero.org/support/standalone for more details.');
+		_incompatibleVersionMessageShown = true;
 	}
 }
 

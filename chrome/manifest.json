@@ -33,7 +33,8 @@
 				"messaging_inject.js",
 				"zotero/inject/inject.js"
 			],
-			"run_at": "document_idle"
+			"run_at": "document_idle",
+			"all_frames": true
 		}
 	],
 	"options_page": "preferences/preferences.html",

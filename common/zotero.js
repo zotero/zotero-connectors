@@ -22,7 +22,6 @@
     
     ***** END LICENSE BLOCK *****
 */
-const VERSION = "1.0a2";
 
 const ZOTERO_CONFIG = {
 	REPOSITORY_URL: 'https://repodev.zotero.org/repo',
@@ -44,6 +43,7 @@ var Zotero = new function() {
 	this.isConnector = true;
 	this.isChrome = !!window.chrome;
 	this.isSafari = !!window.safari;
+	this.version = "2.1.999";
 	this.browser = (window.chrome ? "c" : "s");
 	
 	this.initGlobal = function() {

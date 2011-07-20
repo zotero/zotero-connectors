@@ -58,6 +58,7 @@
 				<string>zotero/date.js</string>
 				<string>zotero/debug.js</string>
 				<string>zotero/inject/http.js</string>
+				<string>zotero/inject/progressWindow.js</string>
 				<string>zotero/inject/translator.js</string>
 				<string>zotero/openurl.js</string>
 				<string>zotero/rdf/uri.js</string>

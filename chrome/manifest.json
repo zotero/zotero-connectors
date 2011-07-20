@@ -17,6 +17,7 @@
 				"zotero/date.js",
 				"zotero/debug.js",
 				"zotero/inject/http.js",
+				"zotero/inject/progressWindow.js",
 				"zotero/inject/translator.js",
 				"zotero/openurl.js",
 				"zotero/rdf/uri.js",

@@ -4,6 +4,8 @@ CWD=`pwd`
 EXTENSIONDIR="$CWD/../../extension/trunk"
 SAFARIDIR="$CWD/safari/Zotero Connector for Safari.safariextension"
 CHROMEDIR="$CWD/chrome"
+COMMONDIR="$CWD/common"
+BOOKMARKLETDIR="$CWD/bookmarklet"
 
 SKINDIR="$EXTENSIONDIR/chrome/skin/default/zotero"
 XPCOMDIR="$EXTENSIONDIR/chrome/content/zotero/xpcom"
@@ -16,6 +18,7 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
 	'zotero/inject/http.js' \
+	'zotero/inject/progressWindow.js' \
 	'zotero/inject/translator.js' \
 	'zotero/openurl.js' \
 	'zotero/rdf/uri.js' \
@@ -43,7 +46,6 @@ fi
 # Scripts to be included in background page
 GLOBAL_INCLUDE=('zotero.js' \
 	'zotero/connector.js' \
-	'zotero/connector_debug.js' \
 	'zotero/cachedTypes.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
@@ -72,6 +74,37 @@ INJECT_END_SAFARI='\t\t\t<\/array>'
 
 GLOBAL_BEGIN='<!--BEGIN GLOBAL SCRIPTS-->'
 GLOBAL_END='<!--END GLOBAL SCRIPTS-->'
+
+# Scripts to be included in bookmarklet
+BOOKMARKLET_INCLUDE=("$COMMONDIR/zotero.js" \
+	"$XPCOMDIR/connector/cachedTypes.js" \
+	"$XPCOMDIR/connector/connector.js" \
+	"$XPCOMDIR/date.js" \
+	"$XPCOMDIR/debug.js" \
+	"$COMMONDIR/zotero/errors_webkit.js" \
+	"$COMMONDIR/zotero/http.js" \
+	"$COMMONDIR/zotero/inject/http.js" \
+	"$COMMONDIR/zotero/oauth.js" \
+	"$COMMONDIR/zotero/oauthsimple.js" \
+	"$XPCOMDIR/openurl.js" \
+	"$COMMONDIR/zotero/inject/progressWindow.js" \
+	"$XPCOMDIR/rdf/uri.js" \
+	"$XPCOMDIR/rdf/term.js" \
+	"$XPCOMDIR/rdf/identity.js" \
+	"$XPCOMDIR/rdf/match.js" \
+	"$XPCOMDIR/rdf/rdfparser.js" \
+	"$XPCOMDIR/rdf.js" \
+	"$XPCOMDIR/connector/repo.js" \
+	"$COMMONDIR/zotero/inject/progressWindow.js" \
+	"$XPCOMDIR/translation/tlds.js" \
+	"$XPCOMDIR/connector/translator.js" \
+	"$XPCOMDIR/translation/translate.js" \
+	"$XPCOMDIR/connector/translate_item.js" \
+	"$COMMONDIR/zotero/inject/translate_inject.js" \
+	"$XPCOMDIR/connector/typeSchemaData.js" \
+	"$XPCOMDIR/utilities.js" \
+	"$BOOKMARKLETDIR/bookmarklet_base.js")
+	
 
 # Make alpha images for Safari
 rm -rf "$SAFARIDIR/images/itemTypes" "$SAFARIDIR/images/toolbar"
@@ -109,7 +142,7 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	
 	# Copy files
 	rm -rf "$dir/zotero" "$dir/tools" "$dir/preferences"
-	cd "$CWD/common"
+	cd "$COMMONDIR"
 	find . -not \( -name ".?*" -prune \) -not -name "." -type d -exec mkdir "$dir/"{} \;
 	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$dir/"{} \;
 	cd "$CWD"
@@ -141,3 +174,13 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$dir/zotero/"{} \;
 	cd "$CWD"
 done
+
+# Combine bookmarklet-related resources
+for f in "${BOOKMARKLET_INCLUDE[@]}"
+do
+	# Remove Windows CRs when bundling
+	echo "/******** BEGIN `basename $f` ********/"
+	LC_CTYPE=C tr -d '\r' < $f
+	echo ""
+	echo "/******** END `basename $f` ********/"
+done>"$BOOKMARKLETDIR/bookmarklet.js"

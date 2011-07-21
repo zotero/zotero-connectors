@@ -46,6 +46,7 @@
 Zotero.Connector_Browser = new function() {
 	var _selectCallbacksForTabIDs = {};
 	var _incompatibleVersionMessageShown;
+	var _zoteroButton;
 	
 	/**
 	 * Called when a new page has been loaded to clear previous translators
@@ -105,7 +106,8 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onValidateCommand = function(event) {
 		if(event.command === "zotero-translate") {
-			_updateButtonStatus(event.target);
+			_zoteroButton = event.target;
+			_updateButtonStatus();
 		}
 	}
 	
@@ -116,40 +118,33 @@ Zotero.Connector_Browser = new function() {
 		_updateButtonStatus();
 	}
 	
-	function _getZoteroButton() {
-		var itemArray = safari.extension.toolbarItems;
-		for(var i=0; i<itemArray.length; i++) {
-			if(itemArray[i].command == "zotero-translate") {
-				return itemArray[i];
-			}
-		}
-	}
-	
-	function _updateButtonStatus(zoteroButton) {
+	/**
+	 * Update status and tooltip of Zotero button
+	 */
+	function _updateButtonStatus() {
 		var tab = safari.application.activeBrowserWindow.activeTab;
-		if(!zoteroButton) zoteroButton = _getZoteroButton();
 		
 		if(tab.translators && tab.translators.length && tab.translatorsForURL == tab.url
 				&& (Zotero.Connector.isOnline || tab.translators[0].runMode !== Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE)) {
 			var itemType = tab.translators[0].itemType;
-			zoteroButton.image = (itemType === "multiple"
+			_zoteroButton.image = (itemType === "multiple"
 					? safari.extension.baseURI+"images/toolbar/treesource-collection.png"
 					: Zotero.ItemTypes.getImageSrc(itemType).replace("/itemTypes/", "/toolbar/"));
-			zoteroButton.disabled = false;
+			_zoteroButton.disabled = false;
 			
 			var translatorName = tab.translators[0].label;
 			if(tab.translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
 				translatorName += " via Zotero Standalone";
 			}
-			zoteroButton.tooltip = "Save to Zotero ("+translatorName+")";
+			_zoteroButton.toolTip = "Save to Zotero ("+translatorName+")";
 		} else if(Zotero.Connector.isOnline) {
-			zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-z-16px.png";
-			zoteroButton.disabled = true;
-			zoteroButton.tooltip = "Zotero is Online";
+			_zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-z-16px.png";
+			_zoteroButton.disabled = true;
+			_zoteroButton.toolTip = "Zotero is Online";
 		} else {
-			zoteroButton.image = safari.extension.baseURI+"images/zotero-z-16px-offline.png";
-			zoteroButton.disabled = true;
-			zoteroButton.tooltip = "Zotero is Offline";
+			_zoteroButton.image = safari.extension.baseURI+"images/zotero-z-16px-offline.png";
+			_zoteroButton.disabled = true;
+			_zoteroButton.toolTip = "Zotero is Offline";
 		}
 	}
 	

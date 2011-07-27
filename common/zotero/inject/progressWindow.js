@@ -68,7 +68,7 @@ Zotero.ProgressWindow = new function() {
 	}
 	
 	/**
-	 * Shows the scraping error message in the progress window
+	 * Shows the generic scraping error message in the progress window
 	 */
 	this.showError = function() {
 		Zotero.ProgressWindow.show();
@@ -96,9 +96,26 @@ Zotero.ProgressWindow = new function() {
 	}
 	
 	/**
+	 * Shows the Standalone not running error message
+	 */
+	this.showStandaloneError = function() {
+		Zotero.ProgressWindow.show();
+		
+		var desc = document.createElement('div');
+		desc.style.cssText = cssDivClearString;
+		for(var j in cssDescription) desc.style[j] = cssDescription[j];
+		
+		// TODO localize
+		desc.appendChild(document.createTextNode("This item could not be saved because Zotero "+
+			"Standalone is not open or unreachable. Please open Zotero Standalone and try again."));
+		
+		_progressDiv.appendChild(desc);
+	}
+	
+	/**
 	 * Adds an item to progress window
 	 */
-	this.itemSaving = function(item) {
+	this.itemSaving = function(icon, item) {
 		Zotero.ProgressWindow.show();
 		
 		if(_shownItemDivsById[item.id]) return;
@@ -111,7 +128,7 @@ Zotero.ProgressWindow = new function() {
 		var newImage = document.createElement('img');
 		newImage.style.cssText = cssImgClearString;
 		for(var j in cssIcon) newImage.style[j] = cssIcon[j];
-		newImage.src = Zotero.ItemTypes.getImageSrc(item.itemType);
+		newImage.src = icon;
 		
 		var textDiv = document.createElement('div');
 		textDiv.style.cssText = cssDivClearString;
@@ -128,10 +145,10 @@ Zotero.ProgressWindow = new function() {
 	/**
 	 * Marks an item as saved in the progress window
 	 */
-	this.itemDone = function(item) {
+	this.itemDone = function(icon, item) {
 		Zotero.ProgressWindow.show();
 		
-		if(!_shownItemDivsById[item.id]) Zotero.ProgressWindow.itemSaving(item);
+		if(!_shownItemDivsById[item.id]) Zotero.ProgressWindow.itemSaving(icon, item);
 		_shownItemDivsById[item.id].style.opacity = "1";
 	}
 	

@@ -7,7 +7,7 @@
 		"default_title": "Save to Zotero"
 	},
 	"background_page": "global.html",
-	"permissions": ["http://*/*", "https://*/*", "tabs"],
+	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus"],
 	"content_scripts": [
 		{
 			"matches": ["http://*/*", "https://*/*"],

@@ -22,6 +22,14 @@
 		<array>
 			<dict>
 				<key>Command</key>
+				<string>zotero-saveSnapshot</string>
+				<key>Identifier</key>
+				<string>zotero-saveSnapshot</string>
+				<key>Title</key>
+				<string>Save Zotero Snapshot from Current Page</string>
+			</dict>
+			<dict>
+				<key>Command</key>
 				<string>zotero-preferences</string>
 				<key>Identifier</key>
 				<string>zotero-preferences</string>

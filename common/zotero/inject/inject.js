@@ -39,8 +39,12 @@ if(isTopWindow) {
 	 * the background script and then to this handler, which will show the saving dialog
 	 */
 	Zotero.Messaging.addMessageListener("saveDialog_show", Zotero.ProgressWindow.show);
-	Zotero.Messaging.addMessageListener("saveDialog_itemSaving", Zotero.ProgressWindow.itemSaving);
-	Zotero.Messaging.addMessageListener("saveDialog_itemDone", Zotero.ProgressWindow.itemDone);
+	Zotero.Messaging.addMessageListener("saveDialog_itemSaving", function(data) {
+		Zotero.ProgressWindow.itemSaving(data[0], data[1]);
+	});
+	Zotero.Messaging.addMessageListener("saveDialog_itemDone", function(data) {
+		Zotero.ProgressWindow.itemDone(data[0], data[1]);
+	});
 	Zotero.Messaging.addMessageListener("saveDialog_close", Zotero.ProgressWindow.close);
 	Zotero.Messaging.addMessageListener("saveDialog_done", function(returnValue) {
 		if(returnValue) {
@@ -49,6 +53,33 @@ if(isTopWindow) {
 			Zotero.ProgressWindow.showError();
 			Zotero.ProgressWindow.startCloseTimer(8000);
 		}
+	});
+	Zotero.Messaging.addMessageListener("saveSnapshot", function() {
+		Zotero.Connector_Types.getSchema(function(schema) {
+			Zotero.Connector_Types.schema = schema;
+			Zotero.Connector_Types.init();
+			
+			var html = document.documentElement.innerHTML;
+			var id = Zotero.Utilities.randomString();
+			var icon = Zotero.ItemTypes.getImageSrc("webpage");
+			var item = {"id":id, "title":document.title};
+			Zotero.ProgressWindow.itemSaving(icon, item);
+			Zotero.Connector.callMethod("saveSnapshot", {"url":document.location.toString(),
+					"cookie":document.cookie, "html":html},
+				function(returnValue, status) {
+					if(returnValue === false) {
+						if(status === 0) {
+							Zotero.ProgressWindow.showStandaloneError();
+						} else {
+							Zotero.ProgressWindow.showError();
+						}
+						Zotero.ProgressWindow.startCloseTimer(8000);
+					} else {
+						Zotero.ProgressWindow.itemDone(icon, item);
+						Zotero.ProgressWindow.startCloseTimer(2500);
+					}
+				});
+		});
 	});
 }
 
@@ -114,11 +145,13 @@ Zotero.Inject = new function() {
 			});
 			_translate.setHandler("itemSaving", function(obj, item) {
 				// this relays an item from this tab to the top level of the window
-				Zotero.Messaging.sendMessage("saveDialog_itemSaving", item);
+				Zotero.Messaging.sendMessage("saveDialog_itemSaving",
+					[Zotero.ItemTypes.getImageSrc(item.itemType), item]);
 			});
 			_translate.setHandler("itemDone", function(obj, dbItem, item) {
 				// this relays an item from this tab to the top level of the window
-				Zotero.Messaging.sendMessage("saveDialog_itemDone", item);
+				Zotero.Messaging.sendMessage("saveDialog_itemDone",
+					[Zotero.ItemTypes.getImageSrc(item.itemType), item]);
 			});
 			_translate.setHandler("done", function(obj, status) {
 				Zotero.Messaging.sendMessage("saveDialog_done", status);
@@ -138,7 +171,7 @@ Zotero.Messaging.addMessageListener("translate", function(data) {
 // initialize
 Zotero.initInject();
 
-/**
+/*
  * Send page load event to clear current save icon (but only in Safari, since in Chrome the page
  * action is automatically invalidated when the page changes, so we don't need this message)
  */

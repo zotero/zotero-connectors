@@ -98,6 +98,10 @@ Zotero.Connector_Browser = new function() {
 		} else if(command === "zotero-preferences") {
 			var tab = safari.application.activeBrowserWindow.activeTab;
 			tab.url = safari.extension.baseURI+"preferences/preferences.html";
+		} else if(command === "zotero-saveSnapshot") {
+			var tab = safari.application.activeBrowserWindow.activeTab;
+			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("saveSnapshot",
+					null);
 		}
 	}
 	
@@ -122,6 +126,7 @@ Zotero.Connector_Browser = new function() {
 	 * Update status and tooltip of Zotero button
 	 */
 	function _updateButtonStatus() {
+		if(!_zoteroButton) return;
 		var tab = safari.application.activeBrowserWindow.activeTab;
 		
 		if(tab.translators && tab.translators.length && tab.translatorsForURL == tab.url

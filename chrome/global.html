@@ -146,6 +146,11 @@ chrome.tabs.onRemoved.addListener(Zotero.Connector_Browser.onTabRemoved);
 chrome.pageAction.onClicked.addListener(Zotero.Connector_Browser.onPageActionClicked);
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
 
+// create context menu item
+chrome.contextMenus.create({"title":"Save Zotero Snapshot from Current Page", "onclick":function(info, tab) {
+	chrome.tabs.sendRequest(tab.id, ["saveSnapshot"], null);
+}})
+
 // initialize
 Zotero.initGlobal();
 </script></head></html>

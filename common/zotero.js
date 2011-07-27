@@ -71,7 +71,7 @@ var Zotero = new function() {
 	this.getSystemInfo = function() {
 		var info = {
 			connector: "true",
-			version: VERSION,
+			version: this.version,
 			platform: navigator.platform,
 			locale: navigator.language,
 			appName: (this.isChrome ? "Chrome" : "Safari"),

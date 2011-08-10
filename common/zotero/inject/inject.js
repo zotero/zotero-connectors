@@ -89,7 +89,6 @@ if(isTopWindow) {
 var instanceID = (new Date()).getTime();
 Zotero.Inject = new function() {
 	var _translate;
-	var _detectionsRunning = 0;
 	this.translators = [];
 	
 	/**
@@ -127,8 +126,7 @@ Zotero.Inject = new function() {
 			_translate = new Zotero.Translate.Web();
 			_translate.setDocument(document);
 			_translate.setHandler("translators", function(obj, translators) {
-				_detectionsRunning--;
-				if(_detectionsRunning === 0 || (translators.length && !me.translators.length)) {
+				if(translators.length && !me.translators.length) {
 					me.translators = translators;
 					Zotero.Connector_Browser.onTranslators(translators, instanceID);
 				}

@@ -43,7 +43,7 @@ var Zotero = new function() {
 	this.isConnector = true;
 	this.isChrome = !!window.chrome;
 	this.isSafari = !!window.safari;
-	this.version = "2.1.999";
+	this.version = "2.999.1";
 	this.browser = (window.chrome ? "c" : "s");
 	
 	this.initGlobal = function() {

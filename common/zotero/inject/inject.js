@@ -114,6 +114,9 @@ Zotero.Inject = new function() {
 		if(document.location.href.substr(0, ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH_CALLBACK_URL+"?") {
 			Zotero.OAuth.onAuthorizationComplete(document.location.href.substr(ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1));
 			return;
+		} else if(document.location.href.substr(0, ZOTERO_CONFIG.OAUTH_NEW_KEY_URL.length) === ZOTERO_CONFIG.OAUTH_NEW_KEY_URL) {
+			document.getElementById("submit").click();
+			return;
 		}
 		
 		// wrap this in try/catch so that errors will reach logError

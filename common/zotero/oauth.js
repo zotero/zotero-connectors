@@ -133,17 +133,44 @@ Zotero.OAuth = new function() {
 				}
 			}
 			
-			var data = _decodeFormData(xmlhttp.responseText)
-			localStorage["auth-token"] = data.oauth_token;
-			localStorage["auth-token_secret"] = data.oauth_token_secret;
-			localStorage["auth-userID"] = data.userID;
-			localStorage["auth-username"] = data.username;
-			
-			try {
-				_callback(true, {"username":data.username, "userID":data.userID});
-			} finally {
-				_callback = undefined;
-			}
+			var data = _decodeFormData(xmlhttp.responseText);
+			Zotero.HTTP.doGet(ZOTERO_CONFIG.API_URL+"users/"+encodeURI(data.userID)
+					+"/keys/"+encodeURI(data.oauth_token_secret), function(xmlhttp) {
+				var access;
+				if(!xmlhttp.responseXML || !xmlhttp.responseXML.getElementsByTagName
+						|| !(access = xmlhttp.responseXML.getElementsByTagName("access")).length) {
+					try {
+						_callback(false, "API key could not be verified");
+					} finally {
+						_callback = undefined;
+						throw "Key verification failed with "+xmlhttp.status+'; reponse was '+xmlhttp.responseText;
+					}
+				}
+				
+				access = access[0];
+				
+				if(access.getAttribute("library") != "1" || access.getAttribute("write") != "1") {
+					try {
+						_callback(false, "The key you have generated does not have adequate "+
+							"permissions to save items to your Zotero library. Please try again "+
+							"without modifying your key's permissions.");
+					} finally {
+						_callback = undefined;
+						throw "Generated key had inadequate permissions; reponse was "+xmlhttp.responseText;
+					}
+				}
+				
+				localStorage["auth-token"] = data.oauth_token;
+				localStorage["auth-token_secret"] = data.oauth_token_secret;
+				localStorage["auth-userID"] = data.userID;
+				localStorage["auth-username"] = data.username;
+				
+				try {
+					_callback(true, {"username":data.username, "userID":data.userID});
+				} finally {
+					_callback = undefined;
+				}
+			});
 		}, {"Authorization":oauthSimple.getHeaderString()});
 		_tokenSecret = undefined;
 	};

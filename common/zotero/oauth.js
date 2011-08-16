@@ -90,7 +90,7 @@ Zotero.OAuth = new function() {
 			// open
 			if(Zotero.isChrome) {
 				window.open(url, 'ZoteroAuthenticate',
-					'height=600,width=600,location,toolbar=no,menubar=no,status=no');
+					'height=600,width=900,location,toolbar=no,menubar=no,status=no');
 			} else if(Zotero.isSafari) {
 				var newTab = safari.application.openBrowserWindow().activeTab;
 				newTab.url = url;

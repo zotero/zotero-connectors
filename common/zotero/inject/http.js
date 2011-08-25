@@ -103,6 +103,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	hiddenBrowser.addEventListener("load", onLoad, true);
 	
 	doLoad();
+	return hiddenBrowser;
 }
 
 Zotero.Browser = {
@@ -112,7 +113,7 @@ Zotero.Browser = {
 		document.body.appendChild(hiddenBrowser);
 		return hiddenBrowser;
 	},
-	"removeHiddenBrowser":function(hiddenBrowser) {
-		if(hiddenBrowser) document.body.removeChild(hiddenBrowser);
+	"deleteHiddenBrowser":function(hiddenBrowser) {
+		document.body.removeChild(hiddenBrowser);
 	}
 }

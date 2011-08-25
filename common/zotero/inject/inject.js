@@ -164,24 +164,33 @@ Zotero.Inject = new function() {
 	};
 };
 
-// add listener for translate message from extension
-Zotero.Messaging.addMessageListener("translate", function(data) {
-	if(data[0] !== instanceID) return;
-	Zotero.Inject.translate(data[1]);
-});
-// initialize
-Zotero.initInject();
-
-/*
- * Send page load event to clear current save icon (but only in Safari, since in Chrome the page
- * action is automatically invalidated when the page changes, so we don't need this message)
- */
-if(isTopWindow && Zotero.isSafari) Zotero.Connector_Browser.onPageLoad();
-
-// wait until load is finished, then run detection
-if(document.readyState == "loading") {
-	document.addEventListener("load", function() { Zotero.Inject.detect() }, false);
-} else {
-	Zotero.Inject.detect();
+// check whether this is a hidden browser window being used for scraping
+var isHiddenIFrame = false;
+if(!isTopWindow) {
+	try {
+		isHiddenIFrame = window.frameElement.style.display === "none";
+	} catch(e) {}
 }
-document.addEventListener("ZoteroItemUpdated", function() { Zotero.Inject.detect() }, false);
+
+// don't try to scrape on hidden frames
+if(!isHiddenIFrame) {
+	// add listener for translate message from extension
+	Zotero.Messaging.addMessageListener("translate", function(data) {
+		if(data[0] !== instanceID) return;
+		Zotero.Inject.translate(data[1]);
+	});
+	// initialize
+	Zotero.initInject();
+	
+	// Send page load event to clear current save icon (but only in Safari, since in Chrome the page
+	// action is automatically invalidated when the page changes, so we don't need this message)
+	if(isTopWindow && Zotero.isSafari) Zotero.Connector_Browser.onPageLoad();
+	
+	// wait until load is finished, then run detection
+	if(document.readyState == "loading") {
+		document.addEventListener("load", function() { Zotero.Inject.detect() }, false);
+	} else {
+		Zotero.Inject.detect();
+	}
+	document.addEventListener("ZoteroItemUpdated", function() { Zotero.Inject.detect() }, false);
+}

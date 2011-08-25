@@ -37,13 +37,13 @@ if(!Zotero.HTTP) Zotero.HTTP = {};
  * @param {Function} done Callback to be executed after all documents have been loaded
  * @param {Function} exception Callback to be executed if an exception occurs
  */
-Zotero.HTTP.processDocuments = function(urls, processor, done, exception) {
+Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDelete) {
 	/**
 	 * Removes event listener for the load event and deletes the hidden browser
 	 */
 	var removeListeners = function() {
 		hiddenBrowser.removeEventListener("load", onLoad, true);
-		document.body.removeChild(hiddenBrowser);
+		if(!dontDelete) Zotero.Browser.removeHiddenBrowser(hiddenBrowser);
 	}
 	
 	/**
@@ -99,9 +99,20 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception) {
 	
 	var prevUrl;
 	
-	var hiddenBrowser = document.createElement("iframe");
-	document.body.appendChild(hiddenBrowser);
+	var hiddenBrowser = Zotero.Browser.createHiddenBrowser();
 	hiddenBrowser.addEventListener("load", onLoad, true);
 	
 	doLoad();
+}
+
+Zotero.Browser = {
+	"createHiddenBrowser":function() {
+		var hiddenBrowser = document.createElement("iframe");
+		hiddenBrowser.style.display = "none";
+		document.body.appendChild(hiddenBrowser);
+		return hiddenBrowser;
+	},
+	"removeHiddenBrowser":function(hiddenBrowser) {
+		if(hiddenBrowser) document.body.removeChild(hiddenBrowser);
+	}
 }

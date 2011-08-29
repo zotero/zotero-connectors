@@ -13,6 +13,7 @@
 			"matches": ["http://*/*", "https://*/*"],
 			"js": [
 				"zotero.js",
+				"zotero_config.js",
 				"zotero/cachedTypes.js",
 				"zotero/date.js",
 				"zotero/debug.js",

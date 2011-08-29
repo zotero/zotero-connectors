@@ -28,6 +28,9 @@
  * See messages.js for an overview of the message handling process.
  */
 Zotero.Messaging = new function() {
+	const BOOKMARKLET_MESSAGE_PREFIX = "ZOTERO_MSG ";
+	const BOOKMARKLET_MESSAGE_RESPONSE_PREFIX = "ZOTERO_MSG_RESPONSE ";
+	
 	var _safariTabs = [];
 	var _messageListeners = {};
 	var _nextTabIndex = 1;
@@ -87,7 +90,9 @@ Zotero.Messaging = new function() {
 	 * Sends a message to a tab
 	 */
 	this.sendMessage = function(messageName, args, tab) {
-		if(Zotero.isChrome) {
+		if(Zotero.isBookmarklet) {
+			window.top.postMessage(BOOKMARKLET_MESSAGE_PREFIX+JSON.stringify([messageName, args]), "*");
+		} else if(Zotero.isChrome) {
 			chrome.tabs.sendRequest(tab.id, [messageName, args]);
 		} else if(Zotero.isSafari) {
 			tab.page.dispatchMessage(messageName, args);
@@ -98,7 +103,20 @@ Zotero.Messaging = new function() {
 	 * Adds messaging listener
 	 */
 	this.init = function() {
-		if(Zotero.isChrome) {
+		if(Zotero.isBookmarklet) {
+			window.addEventListener("message", function(event) {
+				var data = event.data, source = event.source;
+				
+				// Ensure this message was sent by Zotero
+				if(data.substr(0, BOOKMARKLET_MESSAGE_PREFIX.length) !== BOOKMARKLET_MESSAGE_PREFIX) return;
+				
+				// Parse and receive message
+				data = JSON.parse(data.substr(BOOKMARKLET_MESSAGE_PREFIX.length));
+				Zotero.Messaging.receiveMessage(data[1], data[2], function(output) {
+					source.postMessage(BOOKMARKLET_MESSAGE_RESPONSE_PREFIX+JSON.stringify([data[0], data[1], output]), "*");
+				});
+			}, false);
+		} else if(Zotero.isChrome) {
 			chrome.extension.onRequest.addListener(function(request, sender, sendResponseCallback) {
 				Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab);
 			});

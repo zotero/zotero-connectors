@@ -64,6 +64,7 @@
 			<key>End</key>
 			<array>
 				<string>zotero.js</string>
+				<string>zotero_config.js</string>
 				<string>zotero/cachedTypes.js</string>
 				<string>zotero/date.js</string>
 				<string>zotero/debug.js</string>

@@ -1,7 +1,7 @@
 ﻿/*
 	***** BEGIN LICENSE BLOCK *****
 	
-	Copyright © 2010 Center for History and New Media
+	Copyright © 2011 Center for History and New Media
 					 George Mason University, Fairfax, Virginia, USA
 					 http://zotero.org
 	
@@ -29,8 +29,5 @@
 function sendMessage() {
 	if(responseSent) return;
 	responseSent = true;
-	safari.self.tab.dispatchMessage("selectDone", [null, [tabID, items]]);
-	window.close();
+	window.top.postMessage("ZOTERO_MSG "+JSON.stringify(["selectDone", items]), "*");
 }
-
-window.addEventListener("load", function() { window.resizeTo(500, 370) }, false);

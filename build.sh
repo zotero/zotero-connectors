@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CWD=`pwd`
-EXTENSIONDIR="$CWD/../../extension/trunk"
+EXTENSIONDIR="$Z"
 SAFARIDIR="$CWD/safari/Zotero Connector for Safari.safariextension"
 CHROMEDIR="$CWD/chrome"
 COMMONDIR="$CWD/common"
@@ -14,6 +14,7 @@ PREFS_IMAGES="$SKINDIR/prefs-general.png $SKINDIR/prefs-advanced.png"
 
 # Scripts to be included in inject scripts
 INJECT_INCLUDE=('zotero.js' \
+	'zotero_config.js' \
 	'zotero/cachedTypes.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
@@ -45,6 +46,7 @@ fi
 
 # Scripts to be included in background page
 GLOBAL_INCLUDE=('zotero.js' \
+	'zotero_config.js' \
 	'zotero/connector.js' \
 	'zotero/cachedTypes.js' \
 	'zotero/date.js' \
@@ -76,16 +78,14 @@ GLOBAL_BEGIN='<!--BEGIN GLOBAL SCRIPTS-->'
 GLOBAL_END='<!--END GLOBAL SCRIPTS-->'
 
 # Scripts to be included in bookmarklet
-BOOKMARKLET_INCLUDE=("$COMMONDIR/zotero.js" \
+BOOKMARKLET_INJECT_INCLUDE=("$COMMONDIR/zotero.js" \
+	"$BOOKMARKLETDIR/zotero_config.js" \
 	"$XPCOMDIR/connector/cachedTypes.js" \
-	"$XPCOMDIR/connector/connector.js" \
 	"$XPCOMDIR/date.js" \
 	"$XPCOMDIR/debug.js" \
 	"$COMMONDIR/zotero/errors_webkit.js" \
 	"$COMMONDIR/zotero/http.js" \
 	"$COMMONDIR/zotero/inject/http.js" \
-	"$COMMONDIR/zotero/oauth.js" \
-	"$COMMONDIR/zotero/oauthsimple.js" \
 	"$XPCOMDIR/openurl.js" \
 	"$COMMONDIR/zotero/inject/progressWindow.js" \
 	"$XPCOMDIR/rdf/uri.js" \
@@ -94,16 +94,31 @@ BOOKMARKLET_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$XPCOMDIR/rdf/match.js" \
 	"$XPCOMDIR/rdf/rdfparser.js" \
 	"$XPCOMDIR/rdf.js" \
-	"$XPCOMDIR/connector/repo.js" \
-	"$COMMONDIR/zotero/inject/progressWindow.js" \
-	"$XPCOMDIR/translation/tlds.js" \
-	"$XPCOMDIR/connector/translator.js" \
 	"$XPCOMDIR/translation/translate.js" \
 	"$XPCOMDIR/connector/translate_item.js" \
 	"$COMMONDIR/zotero/inject/translate_inject.js" \
+	"$COMMONDIR/zotero/inject/translator.js" \
 	"$XPCOMDIR/connector/typeSchemaData.js" \
 	"$XPCOMDIR/utilities.js" \
-	"$BOOKMARKLETDIR/bookmarklet_base.js")
+	"$BOOKMARKLETDIR/messages.js" \
+	"$BOOKMARKLETDIR/messaging_inject.js" \
+	"$BOOKMARKLETDIR/inject_base.js")
+BOOKMARKLET_IFRAME_INCLUDE=("$COMMONDIR/zotero.js" \
+	"$BOOKMARKLETDIR/zotero_config.js" \
+	"$XPCOMDIR/connector/connector.js" \
+	"$XPCOMDIR/date.js" \
+	"$XPCOMDIR/debug.js" \
+	"$COMMONDIR/zotero/errors_webkit.js" \
+	"$COMMONDIR/zotero/http.js" \
+	"$COMMONDIR/zotero/oauth.js" \
+	"$COMMONDIR/zotero/oauthsimple.js" \
+	"$XPCOMDIR/openurl.js" \
+	"$XPCOMDIR/translation/tlds.js" \
+	"$BOOKMARKLETDIR/translator.js" \
+	"$XPCOMDIR/utilities.js" \
+	"$BOOKMARKLETDIR/messages.js" \
+	"$COMMONDIR/zotero/messaging.js" \
+	"$BOOKMARKLETDIR/iframe_base.js")
 	
 
 # Make alpha images for Safari
@@ -175,12 +190,32 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	cd "$CWD"
 done
 
+rm -rf "$BOOKMARKLETDIR/dist"
+mkdir "$BOOKMARKLETDIR/dist"
+mkdir "$BOOKMARKLETDIR/dist/icons"
+
 # Combine bookmarklet-related resources
-for f in "${BOOKMARKLET_INCLUDE[@]}"
+echo "new function() { if(!window.Zotero) {" > "$BOOKMARKLETDIR/dist/inject.js"
+for f in "${BOOKMARKLET_INJECT_INCLUDE[@]}"
 do
 	# Remove Windows CRs when bundling
 	echo "/******** BEGIN `basename $f` ********/"
 	LC_CTYPE=C tr -d '\r' < $f
 	echo ""
 	echo "/******** END `basename $f` ********/"
-done>"$BOOKMARKLETDIR/bookmarklet.js"
+done>>"$BOOKMARKLETDIR/dist/inject.js"
+
+for f in "${BOOKMARKLET_IFRAME_INCLUDE[@]}"
+do
+	# Remove Windows CRs when bundling
+	echo "/******** BEGIN `basename $f` ********/"
+	LC_CTYPE=C tr -d '\r' < $f
+	echo ""
+	echo "/******** END `basename $f` ********/"
+done>"$BOOKMARKLETDIR/dist/iframe.js"
+
+cp "$BOOKMARKLETDIR/iframe.html" \
+	"$BOOKMARKLETDIR/itemSelector_browserSpecific.js" \
+	"$COMMONDIR/itemSelector"*\
+	"$BOOKMARKLETDIR/dist"
+cp $IMAGES "$BOOKMARKLETDIR/dist/icons"

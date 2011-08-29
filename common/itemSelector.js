@@ -76,7 +76,6 @@ function accept() {
 	}
 	items = newItems;
 	sendMessage();
-	window.close();
 }
 
 /**
@@ -85,7 +84,6 @@ function accept() {
 function cancel() {
 	items = {};
 	sendMessage();
-	window.close();
 }
 
 /**
@@ -105,4 +103,4 @@ function makeClickHandler(checkbox) {
 }
 
 window.addEventListener("load", load, false);
-window.addEventListener("unload", cancel, false);
+window.addEventListener("beforeunload", cancel, false);

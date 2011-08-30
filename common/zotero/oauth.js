@@ -61,11 +61,12 @@ Zotero.OAuth = new function() {
 		
 		Zotero.HTTP.doPost(ZOTERO_CONFIG.OAUTH_REQUEST_URL, "", function(xmlhttp) {
 			if(xmlhttp.status !== 200) {
+				Zotero.logError("OAuth request failed with "+xmlhttp.status+'; response was '+xmlhttp.responseText);
 				try {
 					_callback(false, "An invalid response was received from the Zotero server");
 				} finally {
 					_callback = undefined;
-					throw "OAuth request failed with "+xmlhttp.status+'; reponse was '+xmlhttp.responseText;
+					return;
 				}
 			}
 			
@@ -140,11 +141,12 @@ Zotero.OAuth = new function() {
 		
 		Zotero.HTTP.doPost(ZOTERO_CONFIG.OAUTH_ACCESS_URL, "", function(xmlhttp) {
 			if(xmlhttp.status !== 200) {
+				Zotero.logError("OAuth access failed with "+xmlhttp.status+'; response was '+xmlhttp.responseText);
 				try {
 					_callback(false, "An invalid response was received from the Zotero server");
 				} finally {
 					_callback = undefined;
-					throw "OAuth access failed with "+xmlhttp.status+'; reponse was '+xmlhttp.responseText;
+					return;
 				}
 			}
 			
@@ -154,31 +156,41 @@ Zotero.OAuth = new function() {
 				var access;
 				if(!xmlhttp.responseXML || !xmlhttp.responseXML.getElementsByTagName
 						|| !(access = xmlhttp.responseXML.getElementsByTagName("access")).length) {
+					Zotero.logError("Key verification failed with "+xmlhttp.status+'; response was '+xmlhttp.responseText);
 					try {
 						_callback(false, "API key could not be verified");
 					} finally {
 						_callback = undefined;
-						throw "Key verification failed with "+xmlhttp.status+'; reponse was '+xmlhttp.responseText;
+						return;
 					}
 				}
 				
 				access = access[0];
 				
 				if(access.getAttribute("library") != "1" || access.getAttribute("write") != "1") {
+					Zotero.logError("Generated key had inadequate permissions; response was "+xmlhttp.responseText);
 					try {
 						_callback(false, "The key you have generated does not have adequate "+
 							"permissions to save items to your Zotero library. Please try again "+
 							"without modifying your key's permissions.");
 					} finally {
 						_callback = undefined;
-						throw "Generated key had inadequate permissions; reponse was "+xmlhttp.responseText;
+						return;
 					}
 				}
 				
-				localStorage["auth-token"] = data.oauth_token;
-				localStorage["auth-token_secret"] = data.oauth_token_secret;
-				localStorage["auth-userID"] = data.userID;
-				localStorage["auth-username"] = data.username;
+				if(Zotero.isBookmarklet) {
+					var cookieExpires = new Date(Date.now()+24*60*60*1000*365).toGMTString();
+					document.cookie = 'bookmarklet-auth-token_secret='
+						+encodeURIComponent(data.oauth_token_secret)+'; expires='+cookieExpires;
+					document.cookie = 'bookmarklet-auth-userID='
+						+encodeURIComponent(data.userID)+'; expires='+cookieExpires;
+				} else {
+					localStorage["auth-token"] = data.oauth_token;
+					localStorage["auth-token_secret"] = data.oauth_token_secret;
+					localStorage["auth-userID"] = data.userID;
+					localStorage["auth-username"] = data.username;
+				}
 				
 				try {
 					_callback(true, {"username":data.username, "userID":data.userID});
@@ -194,6 +206,11 @@ Zotero.OAuth = new function() {
 	 * Clears OAuth credentials from localStorage
 	 */
 	this.clearCredentials = function() {
+		if(Zotero.isBookmarklet) {
+			throw new Error("Zotero.OAuth.clearCredentials() not supported in bookmarklet");
+			return;
+		}
+		
 		delete localStorage["auth-token"];
 		delete localStorage["auth-token_secret"];
 		delete localStorage["auth-userID"];
@@ -206,6 +223,12 @@ Zotero.OAuth = new function() {
 	 * @param {Function} callback Callback to receive username (or null if none is define)
 	 */
 	this.getUserInfo = function(callback) {
+		if(Zotero.isBookmarklet) {
+			Zotero.logError(new Error("Zotero.OAuth.getUserInfo() not supported in bookmarklet"));
+			callback(null);
+			return;
+		}
+		
 		callback(localStorage.hasOwnProperty("auth-token")
 			? {"username":localStorage["auth-username"], "userID":localStorage["auth-userID"]}
 			: null);
@@ -223,12 +246,23 @@ Zotero.OAuth = new function() {
 	 * @param {String} headers Request HTTP headers
 	 */
 	this.doAuthenticatedPost = function(path, body, callback, askForAuth) {
-		if(!localStorage.hasOwnProperty("auth-token")) {
+		if(Zotero.isBookmarklet) {
+			var idAndApiKey = _getUserIDAndAPIKey(),
+				userID = idAndApiKey[0],
+				apiKey = idAndApiKey[1];
+		} else {
+			var userID = localStorage["auth-userID"],
+				apiKey = localStorage["auth-token_secret"];
+		}
+		
+		if(!userID) {
 			// ask user to authorize if necessary
 			if(askForAuth) {
 				Zotero.OAuth.authorize(function(status, msg) {
 					if(!status) {
-						callback(false, msg);
+						Zotero.logError("Translate: Save to server failed with message "+msg);
+						Zotero.debug("Translate: Save to server failed with message "+msg+"; payload:\n\n"+body);
+						callback(false);
 						return;
 					}
 					
@@ -242,12 +276,31 @@ Zotero.OAuth = new function() {
 		
 		// process url
 		var url = ZOTERO_CONFIG.API_URL+path
-			.replace("%%USERID%%", localStorage["auth-userID"])
-			.replace("%%APIKEY%%", localStorage["auth-token_secret"]);
+			.replace("%%USERID%%", userID)
+			.replace("%%APIKEY%%", apiKey);
 		
 		// do post
 		Zotero.HTTP.doPost(url, body, function(xmlhttp) {
-			callback([200, 201, 204].indexOf(xmlhttp.status) !== -1, xmlhttp.responseText);
+			callback([200, 201, 204].indexOf(xmlhttp.status) !== -1);
 		}, {"Content-Type":"application/json"});
 	};
+	
+	/**
+	 * Gets user ID and API key from cookies (in bookmarklet only)
+	 */
+	function _getUserIDAndAPIKey() {
+		var userID, apiKey, cookies = document.cookie.split(/ *; */);
+		for(var i=0, n=cookies.length; i<n; i++) {
+			var cookie = cookies[i],
+				equalsIndex = cookie.indexOf("="),
+				key = cookie.substr(0, equalsIndex);
+			if(key === "bookmarklet-auth-userID") {
+				userID = cookie.substr(equalsIndex+1);
+			} else if(key === "bookmarklet-auth-token_secret") {
+				apiKey = cookie.substr(equalsIndex+1);
+			} 
+		}
+		
+		return [userID, apiKey];
+	}
 }

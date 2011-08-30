@@ -83,17 +83,8 @@ const MESSAGES = {
 		},
 	"OAuth":
 		{
-			"authorize":true,
-			"onAuthorizationComplete":false,
-			"clearCredentials":false,
-			"getUserInfo":true,
 			"doAuthenticatedPost":{
 				"callbackArg":2
 			}
-		},
-	"Prefs":
-		{
-			"set":false,
-			"getCallback":true
 		}
 };

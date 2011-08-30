@@ -195,7 +195,7 @@ mkdir "$BOOKMARKLETDIR/dist"
 mkdir "$BOOKMARKLETDIR/dist/icons"
 
 # Combine bookmarklet-related resources
-echo "new function() { if(!window.Zotero) {" > "$BOOKMARKLETDIR/dist/inject.js"
+echo "new function() { if(!window.zoteroShowProgressWindow) {" > "$BOOKMARKLETDIR/dist/inject.js"
 for f in "${BOOKMARKLET_INJECT_INCLUDE[@]}"
 do
 	# Remove Windows CRs when bundling
@@ -215,6 +215,7 @@ do
 done>"$BOOKMARKLETDIR/dist/iframe.js"
 
 cp "$BOOKMARKLETDIR/iframe.html" \
+	"$BOOKMARKLETDIR/auth_complete.html" \
 	"$BOOKMARKLETDIR/itemSelector_browserSpecific.js" \
 	"$COMMONDIR/itemSelector"*\
 	"$BOOKMARKLETDIR/dist"

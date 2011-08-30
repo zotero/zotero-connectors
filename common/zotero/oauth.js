@@ -24,8 +24,7 @@
 */
 
 Zotero.OAuth = new function() {
-	var _callback;
-	var _tokenSecret;
+	var _callback, _tokenSecret, _bookmarkletIFrame;
 	
 	/**
 	 * Decodes application/x-www-form-urlencoded data
@@ -81,14 +80,27 @@ Zotero.OAuth = new function() {
 			
 			// add parameters
 			var url = signature.signed_url+"&library_access=1&notes_access=0&write_access=1&name=";
-			if(Zotero.isChrome) {
+			if(Zotero.isBookmarklet) {
+				url += "Zotero Bookmarklet";
+			} else if(Zotero.isChrome) {
 				url += "Zotero Connector for Chrome";
 			} else if(Zotero.isSafari) {
 				url += "Zotero Connector for Safari";
 			}
 			
 			// open
-			if(Zotero.isChrome) {
+			if(Zotero.isBookmarklet) {
+				_bookmarkletIFrame = document.createElement("iframe");
+				_bookmarkletIFrame.src = url;
+				_bookmarkletIFrame.style.borderStyle = "none";
+				_bookmarkletIFrame.style.position = "absolute";
+				_bookmarkletIFrame.style.top = "0px";
+				_bookmarkletIFrame.style.left = "0px";
+				_bookmarkletIFrame.style.width = "100%";
+				_bookmarkletIFrame.style.height = "100%";
+				document.body.appendChild(_bookmarkletIFrame);
+				Zotero.Messaging.sendMessage("revealZoteroIFrame", null);
+			} else if(Zotero.isChrome) {
 				window.open(url, 'ZoteroAuthenticate',
 					'height=600,width=900,location,toolbar=no,menubar=no,status=no');
 			} else if(Zotero.isSafari) {
@@ -106,7 +118,10 @@ Zotero.OAuth = new function() {
 	 */
 	this.onAuthorizationComplete = function(data, tab) {
 		// close auth window
-		if(Zotero.isChrome) {
+		if(Zotero.isBookmarklet) {
+			Zotero.Messaging.sendMessage("hideZoteroIFrame", null);
+			document.body.removeChild(_bookmarkletIFrame);
+		} else if(Zotero.isChrome) {
 			chrome.tabs.remove(tab.id);
 		} else if(Zotero.isSafari) {
 			tab.close();

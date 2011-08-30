@@ -106,6 +106,7 @@ var Zotero = new function() {
 Zotero.Prefs = new function() {
 	const DEFAULTS = {
 		"debug.log":true,
+		"debug.stackTrace":false,
 		"debug.store":false,
 		"debug.store.limit":750000,
 		"debug.level":5,

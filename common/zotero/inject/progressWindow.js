@@ -30,16 +30,16 @@ const cssAClearString = 'background-attachment: scroll; background-color: transp
 Zotero.ProgressWindow = new function() {
 	const cssBox = {"position":"fixed", "right":"25px", "bottom":"25px", "width":"240px",
 		"borderWidth":"2px", "borderStyle":"solid", "borderColor":"#7a0000",
-		"backgroundColor":"#ededed", "opacity":"0.9", "z-index":"9999999999999999999999999999",
+		"backgroundColor":"#ededed", "opacity":"0.9", "zIndex":"16777269",
 		"padding":"6px", "minHeight":"45px"};
-	const cssHeadline = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"11px",
+	const cssHeadline = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt",
 		"fontWeight":"bold", "marginBottom":"8px"};
 	const cssItem = {"marginBottom":"4px"};
 	const cssIcon = {"width":"16px", "height":"16px", "marginRight":"4px", "float":"left"};
-	const cssLabel = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"11px",
+	const cssLabel = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt",
 		"verticalAlign":"middle", "textOverflow":"ellipsis", "height":"16px",
 		"overflow":"hidden", "whiteSpace":"nowrap", "lineHeight":"16px"};
-	const cssDescription = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"11px"};
+	const cssDescription = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt"};
 	var _progressDiv, _headlineDiv, _timeoutID;
 	var _shownItemDivsById = {};
 	

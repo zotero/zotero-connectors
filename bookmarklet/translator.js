@@ -57,14 +57,13 @@ Zotero.Translators = new function() {
 			
 			// then try repo
 			Zotero.HTTP.doGet(ZOTERO_CONFIG.REPOSITORY_URL+"/code/"+ZOTERO_CONFIG.REPOSITORY_CHANNEL+"/"+translatorID, function(xmlhttp) {
-				Zotero.debug(xmlhttp.status);
 				if(xmlhttp.status !== 200) {
 					Zotero.logError(new Error("Translator " + translatorID + " could not be retrieved"));
 					callback(false);
 					return;
 				}
 				
-				callback(result);
+				callback(xmlhttp.responseText);
 			});
 		});
 	}

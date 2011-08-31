@@ -195,7 +195,7 @@ mkdir "$BOOKMARKLETDIR/dist"
 mkdir "$BOOKMARKLETDIR/dist/icons"
 
 # Combine bookmarklet-related resources
-echo "new function() { if(!window.zoteroShowProgressWindow) {" > "$BOOKMARKLETDIR/dist/inject.js"
+echo "new function() { if(!window.zoteroShowProgressWindow) {" > "$BOOKMARKLETDIR/dist/inject_tmp.js"
 for f in "${BOOKMARKLET_INJECT_INCLUDE[@]}"
 do
 	# Remove Windows CRs when bundling
@@ -203,7 +203,7 @@ do
 	LC_CTYPE=C tr -d '\r' < $f
 	echo ""
 	echo "/******** END `basename $f` ********/"
-done>>"$BOOKMARKLETDIR/dist/inject.js"
+done>>"$BOOKMARKLETDIR/dist/inject_tmp.js"
 
 for f in "${BOOKMARKLET_IFRAME_INCLUDE[@]}"
 do
@@ -212,7 +212,17 @@ do
 	LC_CTYPE=C tr -d '\r' < $f
 	echo ""
 	echo "/******** END `basename $f` ********/"
-done>"$BOOKMARKLETDIR/dist/iframe.js"
+done>"$BOOKMARKLETDIR/dist/iframe_tmp.js"
+
+for f in "inject" "iframe"
+do
+	if [ "$1" == "debug" ]; then
+		mv "$BOOKMARKLETDIR/dist/${f}_tmp.js" "$BOOKMARKLETDIR/dist/${f}.js"
+	else
+		uglifyjs "$BOOKMARKLETDIR/dist/${f}_tmp.js" > "$BOOKMARKLETDIR/dist/${f}.js"
+		rm "$BOOKMARKLETDIR/dist/${f}_tmp.js"
+	fi
+done
 
 cp "$BOOKMARKLETDIR/iframe.html" \
 	"$BOOKMARKLETDIR/auth_complete.html" \

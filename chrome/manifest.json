@@ -33,7 +33,9 @@
 				"zotero/utilities.js",
 				"zotero/messages.js",
 				"messaging_inject.js",
-				"zotero/inject/inject.js"
+				"tools/testTranslators/translatorTester.js",
+				"zotero/inject/inject.js",
+				"tools/testTranslators/translatorTester_inject.js"
 			],
 			"run_at": "document_idle",
 			"all_frames": true

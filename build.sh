@@ -103,6 +103,7 @@ BOOKMARKLET_INJECT_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$BOOKMARKLETDIR/messages.js" \
 	"$BOOKMARKLETDIR/messaging_inject.js" \
 	"$BOOKMARKLETDIR/inject_base.js")
+
 BOOKMARKLET_IFRAME_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$BOOKMARKLETDIR/zotero_config.js" \
 	"$XPCOMDIR/connector/connector.js" \
@@ -120,7 +121,6 @@ BOOKMARKLET_IFRAME_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$COMMONDIR/zotero/messaging.js" \
 	"$BOOKMARKLETDIR/iframe_base.js")
 	
-
 # Make alpha images for Safari
 rm -rf "$SAFARIDIR/images/itemTypes" "$SAFARIDIR/images/toolbar"
 mkdir "$SAFARIDIR/images/itemTypes"
@@ -214,6 +214,7 @@ do
 	echo "/******** END `basename $f` ********/"
 done>"$BOOKMARKLETDIR/dist/iframe_tmp.js"
 
+# Minify if not in debug mode
 for f in "inject" "iframe"
 do
 	if [ "$1" == "debug" ]; then
@@ -224,6 +225,7 @@ do
 	fi
 done
 
+# Copy to dist directory
 cp "$BOOKMARKLETDIR/iframe.html" \
 	"$BOOKMARKLETDIR/auth_complete.html" \
 	"$BOOKMARKLETDIR/itemSelector_browserSpecific.js" \

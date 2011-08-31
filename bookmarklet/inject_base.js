@@ -105,7 +105,7 @@ translate.setHandler("translators", function(obj, translators) {
 	}
 });
 translate.setHandler("select", function(obj, items, callback) {
-	var frame = new BookmarkletFrame(ZOTERO_CONFIG.BOOKMARKLET_URL+"itemSelector.html?"
+	var frame = new BookmarkletFrame(ZOTERO_CONFIG.BOOKMARKLET_URL+"itemSelector.html#"
 		+encodeURIComponent(JSON.stringify([null, items])), 600, 350);
 	
 	selectCallback = function(items) {

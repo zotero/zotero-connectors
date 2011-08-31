@@ -82,7 +82,7 @@ Zotero.Connector_Browser = new function() {
 	 * Called to display select items dialog
 	 */
 	this.onSelect = function(items, callback, tab) {
-		window.open(chrome.extension.getURL("itemSelector.html")+"?"+encodeURIComponent(JSON.stringify([tab.id, items])), '',
+		window.open(chrome.extension.getURL("itemSelector.html")+"#"+encodeURIComponent(JSON.stringify([tab.id, items])), '',
 		'height=325,width=500,location=no,toolbar=no,menubar=no,status=no');
 		_selectCallbacksForTabIDs[tab.id] = callback;
 	}

@@ -37,7 +37,7 @@ function load(event) {
 	document.getElementById('cancel').addEventListener("click", cancel, false);
 	
 	// decode JSON-ized data regading items to save
-	var queryArg = window.location.search.substr(1);
+	var queryArg = window.location.hash.substr(1);
 	var data = JSON.parse(decodeURIComponent(queryArg));
 	var itemSelector = document.getElementById('item-selector');
 	

@@ -214,9 +214,14 @@ do
 	echo "/******** END `basename $f` ********/"
 done>"$BOOKMARKLETDIR/dist/iframe_tmp.js"
 
-# Minify if not in debug mode
 for f in "inject" "iframe"
 do
+	# const -> var
+	perl -pi -e "s/const/var/" "$BOOKMARKLETDIR/dist/${f}_tmp.js"
+	# __defineGetter__ -> defineProperty
+	perl -pi -e "s/__defineGetter__/defineProperty" "$BOOKMARKLETDIR/dist/${f}_tmp.js"
+	
+	# Minify if not in debug mode
 	if [ "$1" == "debug" ]; then
 		mv "$BOOKMARKLETDIR/dist/${f}_tmp.js" "$BOOKMARKLETDIR/dist/${f}.js"
 	else
@@ -224,6 +229,7 @@ do
 		rm "$BOOKMARKLETDIR/dist/${f}_tmp.js"
 	fi
 done
+
 
 # Copy to dist directory
 cp "$BOOKMARKLETDIR/iframe.html" \

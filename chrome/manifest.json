@@ -31,6 +31,7 @@
 				"zotero/translate_item.js",
 				"zotero/inject/translate_inject.js",
 				"zotero/utilities.js",
+				"zotero/utilities_translate.js",
 				"zotero/messages.js",
 				"messaging_inject.js",
 				"tools/testTranslators/translatorTester.js",

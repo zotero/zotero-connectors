@@ -104,7 +104,7 @@ Zotero.Messaging = new function() {
 	 */
 	this.init = function() {
 		if(Zotero.isBookmarklet) {
-			window.addEventListener("message", function(event) {
+			var listener = function(event) {
 				var data = event.data, source = event.source;
 				
 				// Ensure this message was sent by Zotero
@@ -115,7 +115,13 @@ Zotero.Messaging = new function() {
 				Zotero.Messaging.receiveMessage(data[1], data[2], function(output) {
 					source.postMessage(BOOKMARKLET_MESSAGE_RESPONSE_PREFIX+JSON.stringify([data[0], data[1], output]), "*");
 				});
-			}, false);
+			};
+			
+			if(window.addEventListener) {
+				window.addEventListener("message", listener, false);
+			} else {
+				window.attachEvent("message", listener);
+			}
 		} else if(Zotero.isChrome) {
 			chrome.extension.onRequest.addListener(function(request, sender, sendResponseCallback) {
 				Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab);

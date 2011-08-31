@@ -27,6 +27,7 @@ var Zotero = new function() {
 	this.isConnector = true;
 	this.isChrome = !!window.chrome;
 	this.isSafari = !!window.safari;
+	this.isIE = window.navigator.appName === "Microsoft Internet Explorer";
 	this.version = "2.999.1";
 	this.browser = (window.chrome ? "c" : "s");
 	
@@ -58,9 +59,18 @@ var Zotero = new function() {
 			version: this.version,
 			platform: navigator.platform,
 			locale: navigator.language,
-			appName: (this.isChrome ? "Chrome" : "Safari"),
 			appVersion: navigator.appVersion
 		};
+		
+		if(this.isChrome) {
+			info.appName = "Chrome";
+		} else if(this.isSafari) {
+			info.appName = "Safari";
+		} else if(this.isIE) {
+			info.appName = "Internet Explorer";
+		} else {
+			info.appName = window.navigator.appName;
+		}
 		
 		var str = '';
 		for (var key in info) {
@@ -91,6 +101,22 @@ var Zotero = new function() {
 				fileName = m[1];
 				lineNumber = m[2];
 			}
+		}
+		
+		if(!fileName && !lineNumber && Zotero.isIE && typeof err === "object") {
+			// IE can give us a line number if we re-throw the exception, but we wrap this in a
+			// setTimeout call so that we won't throw in the middle of a function
+			window.setTimeout(function() {
+				window.onerror = function(errmsg, fileName, lineNumber) {
+					try {
+						Zotero.Errors.log("message" in err ? err.message : err.toString(), fileName, lineNumber);
+					} catch(e) {};
+					return true;
+				};
+				throw err;
+				window.onerror = undefined;
+			}, 0);
+			return;
 		}
 		
 		if(fileName && lineNumber) {

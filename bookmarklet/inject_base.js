@@ -23,9 +23,9 @@
     ***** END LICENSE BLOCK *****
 */
 
-const cssBookmarkletFrameDimmer = {"background":"black", "opacity":"0.5", "position":"fixed",
+var cssBookmarkletFrameDimmer = {"background":"black", "opacity":"0.5", "position":"fixed",
 	"top":"0px", "bottom":"0px", "left":"0px", "right":"0px", "zIndex":"16777270"};
-const cssBookmarkletFrame = {"position":"fixed", "zIndex":"16777271", "top":"50%",
+var cssBookmarkletFrame = {"position":"fixed", "zIndex":"16777271", "top":"50%",
 	"left":"50%", "background":"white"};
 
 Zotero.isBookmarklet = true;

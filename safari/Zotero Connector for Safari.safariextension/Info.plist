@@ -82,6 +82,7 @@
 				<string>zotero/translate_item.js</string>
 				<string>zotero/inject/translate_inject.js</string>
 				<string>zotero/utilities.js</string>
+				<string>zotero/utilities_translate.js</string>
 				<string>zotero/messages.js</string>
 				<string>messaging_inject.js</string>
 				<string>tools/testTranslators/translatorTester.js</string>

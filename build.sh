@@ -32,6 +32,7 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/translate_item.js' \
 	'zotero/inject/translate_inject.js'\
 	'zotero/utilities.js' \
+	'zotero/utilities_translate.js' \
 	'zotero/messages.js' \
 	'messaging_inject.js')
 if [ "$1" == "debug" ]; then
@@ -100,26 +101,23 @@ BOOKMARKLET_INJECT_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$COMMONDIR/zotero/inject/translator.js" \
 	"$XPCOMDIR/connector/typeSchemaData.js" \
 	"$XPCOMDIR/utilities.js" \
+	"$XPCOMDIR/utilities_translate.js" \
 	"$BOOKMARKLETDIR/messages.js" \
-	"$BOOKMARKLETDIR/messaging_inject.js" \
-	"$BOOKMARKLETDIR/inject_base.js")
+	"$BOOKMARKLETDIR/messaging_inject.js")
 
 BOOKMARKLET_IFRAME_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$BOOKMARKLETDIR/zotero_config.js" \
 	"$XPCOMDIR/connector/connector.js" \
-	"$XPCOMDIR/date.js" \
 	"$XPCOMDIR/debug.js" \
 	"$COMMONDIR/zotero/errors_webkit.js" \
 	"$COMMONDIR/zotero/http.js" \
 	"$COMMONDIR/zotero/oauth.js" \
 	"$COMMONDIR/zotero/oauthsimple.js" \
-	"$XPCOMDIR/openurl.js" \
 	"$XPCOMDIR/translation/tlds.js" \
 	"$BOOKMARKLETDIR/translator.js" \
 	"$XPCOMDIR/utilities.js" \
 	"$BOOKMARKLETDIR/messages.js" \
-	"$COMMONDIR/zotero/messaging.js" \
-	"$BOOKMARKLETDIR/iframe_base.js")
+	"$COMMONDIR/zotero/messaging.js")
 	
 # Make alpha images for Safari
 rm -rf "$SAFARIDIR/images/itemTypes" "$SAFARIDIR/images/toolbar"
@@ -169,6 +167,7 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	fi
 	
 	cp -r "$XPCOMDIR/utilities.js" \
+	   "$XPCOMDIR/utilities_translate.js" \
 	   "$XPCOMDIR/date.js" \
 	   "$XPCOMDIR/debug.js" \
 	   "$XPCOMDIR/openurl.js" \
@@ -214,19 +213,31 @@ do
 	echo "/******** END `basename $f` ********/"
 done>"$BOOKMARKLETDIR/dist/iframe_tmp.js"
 
-for f in "inject" "iframe"
+for scpt in "inject" "iframe"
 do
 	# const -> var
-	perl -pi -e "s/const/var/" "$BOOKMARKLETDIR/dist/${f}_tmp.js"
-	# __defineGetter__ -> defineProperty
-	perl -pi -e "s/__defineGetter__/defineProperty" "$BOOKMARKLETDIR/dist/${f}_tmp.js"
+	perl -pi -e "s/const/var/" "$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
+	
+	# Array.indexOf
+	perl -000 -pi -e 's/((?:[\w.]+|\[[^\]]*\])+)\.indexOf(\((((?>[^()]+)|(?2))*)\))/indexOf($1, $3)/gs' \
+		"$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
+	
+	# ie_compat.js and *_base.js
+	for f in "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/${scpt}_base.js"
+	do
+		# Remove Windows CRs when bundling
+		echo "/******** BEGIN `basename $f` ********/"
+		LC_CTYPE=C tr -d '\r' < $f
+		echo ""
+		echo "/******** END `basename $f` ********/"
+	done>>"$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
 	
 	# Minify if not in debug mode
 	if [ "$1" == "debug" ]; then
-		mv "$BOOKMARKLETDIR/dist/${f}_tmp.js" "$BOOKMARKLETDIR/dist/${f}.js"
+		mv "$BOOKMARKLETDIR/dist/${scpt}_tmp.js" "$BOOKMARKLETDIR/dist/${scpt}.js"
 	else
-		uglifyjs "$BOOKMARKLETDIR/dist/${f}_tmp.js" > "$BOOKMARKLETDIR/dist/${f}.js"
-		rm "$BOOKMARKLETDIR/dist/${f}_tmp.js"
+		uglifyjs "$BOOKMARKLETDIR/dist/${scpt}_tmp.js" > "$BOOKMARKLETDIR/dist/${scpt}.js"
+		rm "$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
 	fi
 done
 

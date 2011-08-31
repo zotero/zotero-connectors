@@ -88,8 +88,7 @@ Zotero.Messaging = new function() {
 			}
 		}
 		
-		// in the bookmarklet, our listener must also handle responses
-		window.addEventListener("message", function(event) {
+		var listener = function(event) {
 			try {
 				var data = event.data, source = event.source;
 				if(data.substr(0, BOOKMARKLET_MESSAGE_PREFIX.length) === BOOKMARKLET_MESSAGE_PREFIX) {
@@ -127,6 +126,13 @@ Zotero.Messaging = new function() {
 			} catch(e) {
 				Zotero.logError(e);
 			}
-		}, false);
+		}
+		
+		// in the bookmarklet, our listener must also handle responses
+		if(window.addEventListener) {
+			window.addEventListener("message", listener, false);
+		} else {
+			window.attachEvent("message", listener);
+		}
 	}
 }

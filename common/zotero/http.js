@@ -66,24 +66,38 @@ Zotero.HTTP = new function() {
 			+ " to " + url);
 		
 		var xmlhttp = new XMLHttpRequest();
-		xmlhttp.open('POST', url, true);
-		
-		if (!headers) headers = {};
-		if (!headers["Content-Type"]) {
-			headers["Content-Type"] = "application/x-www-form-urlencoded";
+		try {
+			xmlhttp.open('POST', url, true);
+			
+			if (!headers) headers = {};
+			if (!headers["Content-Type"]) {
+				headers["Content-Type"] = "application/x-www-form-urlencoded";
+			}
+			
+			for (var header in headers) {
+				xmlhttp.setRequestHeader(header, headers[header]);
+			}
+			
+			/** @ignore */
+			xmlhttp.onreadystatechange = function(){
+				_stateChange(xmlhttp, onDone);
+			};
+			
+			xmlhttp.send(body);
+		} catch(e) {
+			Zotero.logError(e);
+			if(onDone) {
+				window.setTimeout(function() {
+					try {
+						onDone({"status":0});
+					} catch(e) {
+						Zotero.logError(e);
+						return;
+					}
+				}, 0);
+			}
 		}
-		
-		for (var header in headers) {
-			xmlhttp.setRequestHeader(header, headers[header]);
-		}
-		
-		/** @ignore */
-		xmlhttp.onreadystatechange = function(){
-			_stateChange(xmlhttp, onDone);
-		};
-		
-		xmlhttp.send(body);
-		
+			
 		return xmlhttp;
 	}
 	

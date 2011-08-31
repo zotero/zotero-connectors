@@ -34,17 +34,6 @@ Zotero.Translators = new function() {
 	const infoRe = /^\s*{[\S\s]*?}\s*?[\r\n]/;
 	
 	/**
-	 * Gets the translator that corresponds to a given ID, without attempting to retrieve code
-	 * @param {String} id The ID of the translator
-	 * @param {Function} [callback] An optional callback to be executed when translators have been
-	 *                              retrieved. If no callback is specified, translators are
-	 *                              returned.
-	 */
-	this.getWithoutCode = function(id) {
-		throw new Error("Not implemented");
-	}
-	
-	/**
 	 * Gets translator code; only in this implementation
 	 */
 	this._getCode = function(translatorID, callback) {

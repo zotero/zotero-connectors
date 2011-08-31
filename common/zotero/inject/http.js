@@ -76,12 +76,21 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	 * @inner
 	 */
 	var onLoad = function() {
-		if(hiddenBrowser.contentDocument.location.href == "about:blank") return;
+		var newDoc = hiddenBrowser.contentDocument;
+		if(newDoc.location.href == "about:blank") return;
 		Zotero.debug("HTTP.processDocuments: "+hiddenBrowser.contentDocument.location.href+" has been loaded");
-		if(hiddenBrowser.contentDocument.location.href != prevUrl) {	// Just in case it fires too many times
-			prevUrl = hiddenBrowser.contentDocument.location.href;
+		if(newDoc.location.href != prevUrl) {	// Just in case it fires too many times
+			prevUrl = newDoc.location.href;
+			
+			// ugh ugh ugh ugh
+			if(newDoc.implementation
+				&& newDoc.implementation.hasFeature
+				&& newDoc.implementation.hasFeature("XPath", null)) {
+				installDOM3XPathSupport(hiddenBrowser.contentDocument, new XPathParser());
+			}
+			
 			try {
-				processor(hiddenBrowser.contentDocument);
+				processor(newDoc);
 			} catch(e) {
 				removeListeners();
 				if(exception) {

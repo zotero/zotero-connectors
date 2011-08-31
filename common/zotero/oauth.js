@@ -154,7 +154,7 @@ Zotero.OAuth = new function() {
 			Zotero.HTTP.doGet(ZOTERO_CONFIG.API_URL+"users/"+encodeURI(data.userID)
 					+"/keys/"+encodeURI(data.oauth_token_secret), function(xmlhttp) {
 				var access;
-				if(!xmlhttp.responseXML || !xmlhttp.responseXML.getElementsByTagName
+				if(!("responseXML" in xmlhttp) || !("getElementsByTagName" in xmlhttp.responseXML)
 						|| !(access = xmlhttp.responseXML.getElementsByTagName("access")).length) {
 					Zotero.logError("Key verification failed with "+xmlhttp.status+'; response was '+xmlhttp.responseText);
 					try {
@@ -182,9 +182,10 @@ Zotero.OAuth = new function() {
 				if(Zotero.isBookmarklet) {
 					var cookieExpires = new Date(Date.now()+24*60*60*1000*365).toGMTString();
 					document.cookie = 'bookmarklet-auth-token_secret='
-						+encodeURIComponent(data.oauth_token_secret)+'; expires='+cookieExpires;
+						+encodeURIComponent(data.oauth_token_secret)+'; expires='+cookieExpires
+						+'; secure';
 					document.cookie = 'bookmarklet-auth-userID='
-						+encodeURIComponent(data.userID)+'; expires='+cookieExpires;
+						+encodeURIComponent(data.userID)+'; expires='+cookieExpires+'; secure';
 				} else {
 					localStorage["auth-token"] = data.oauth_token;
 					localStorage["auth-token_secret"] = data.oauth_token_secret;
@@ -260,8 +261,7 @@ Zotero.OAuth = new function() {
 			if(askForAuth) {
 				Zotero.OAuth.authorize(function(status, msg) {
 					if(!status) {
-						Zotero.logError("Translate: Save to server failed with message "+msg);
-						Zotero.debug("Translate: Save to server failed with message "+msg+"; payload:\n\n"+body);
+						Zotero.logError("Translate: Authentication failed with message "+msg);
 						callback(false);
 						return;
 					}
@@ -281,7 +281,14 @@ Zotero.OAuth = new function() {
 		
 		// do post
 		Zotero.HTTP.doPost(url, body, function(xmlhttp) {
-			callback([200, 201, 204].indexOf(xmlhttp.status) !== -1);
+			if([200, 201, 204].indexOf(xmlhttp.status) !== -1) {
+				callback(true);
+			} else {
+				var msg = xmlhttp.responseText;
+				Zotero.logError("Translate: Save to server failed with message "+msg);
+				Zotero.debug("Translate: Save to server failed with message "+msg+"; payload:\n\n"+body);
+				callback(false);
+			}
 		}, {"Content-Type":"application/json"});
 	};
 	

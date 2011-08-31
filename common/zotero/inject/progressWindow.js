@@ -107,13 +107,11 @@ Zotero.ProgressWindow = new function() {
 		for(var j in cssDescription) desc.style[j] = cssDescription[j];
 		
 		// TODO localize
-		Zotero.Connector.checkIsOnline(function(online) {
-			desc.appendChild(document.createTextNode("No items could be saved because this website "+
-				"is not supported by any Zotero translator."+(!online ? " Try opening Zotero "+
-				"Standalone and saving the page again." : "")));
-			
-			_progressDiv.appendChild(desc);
-		});
+		var textNode = document.createTextNode("No items could be saved because this website "+
+				"is not supported by any Zotero translator. If Zotero Standalone is not open, try "+
+				"opening it to increase the number of supported sites.");
+		desc.appendChild(textNode);
+		_progressDiv.appendChild(desc);
 	}
 	
 	/**

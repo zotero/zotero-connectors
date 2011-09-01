@@ -29,8 +29,10 @@ Zotero.Messaging.init();
 if(Zotero.isIE) {
 	Zotero.Connector.checkIsOnline(function(status) {
 		if(!status && window.location.protocol === "http:") {
+			Zotero.debug("Switching to https");
 			window.location.replace("https:"+window.location.toString().substr(5));
 		} else {
+			Zotero.debug("Sending translate message");
 			Zotero.Messaging.sendMessage("translate", null);
 		}
 	});

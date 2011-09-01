@@ -134,10 +134,10 @@ Zotero.Messaging = new function() {
 		}
 		
 		// in the bookmarklet, our listener must also handle responses
-		if(window.addEventListener) {
+		if("addEventListener" in window) {
 			window.addEventListener("message", listener, false);
 		} else {
-			window.attachEvent("message", listener);
+			window.onmessage = function() { listener(event) };
 		}
 	}
 }

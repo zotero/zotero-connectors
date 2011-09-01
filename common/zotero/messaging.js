@@ -120,7 +120,7 @@ Zotero.Messaging = new function() {
 			if(window.addEventListener) {
 				window.addEventListener("message", listener, false);
 			} else {
-				window.attachEvent("message", listener);
+				window.onmessage = function() { listener(event) };
 			}
 		} else if(Zotero.isChrome) {
 			chrome.extension.onRequest.addListener(function(request, sender, sendResponseCallback) {

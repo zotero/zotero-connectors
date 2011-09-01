@@ -42,7 +42,9 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	 * Removes event listener for the load event and deletes the hidden browser
 	 */
 	var removeListeners = function() {
-		hiddenBrowser.removeEventListener("load", onLoad, true);
+		if("removeEventListener" in hiddenBrowser) {
+			hiddenBrowser.removeEventListener("load", onLoad, true);
+		}
 		if(!dontDelete) Zotero.Browser.removeHiddenBrowser(hiddenBrowser);
 	}
 	
@@ -76,14 +78,16 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	 * @inner
 	 */
 	var onLoad = function() {
-		var newDoc = hiddenBrowser.contentDocument;
-		if(newDoc.location.href == "about:blank") return;
-		Zotero.debug("HTTP.processDocuments: "+hiddenBrowser.contentDocument.location.href+" has been loaded");
-		if(newDoc.location.href != prevUrl) {	// Just in case it fires too many times
-			prevUrl = newDoc.location.href;
+		var newDoc = hiddenBrowser.contentDocument,
+			newWin = hiddenBrowser.contentWindow,
+			newLoc = newWin.location.toString();
+		if(newLoc === "about:blank") return;
+		Zotero.debug("HTTP.processDocuments: "+newLoc+" has been loaded");
+		if(newLoc !== prevUrl) {	// Just in case it fires too many times
+			prevUrl = newLoc;
 			
 			// ugh ugh ugh ugh
-			installXPathIfNecessary(newDoc);
+			installXPathIfNecessary(newWin);
 			
 			try {
 				processor(newDoc);
@@ -105,7 +109,11 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	var prevUrl;
 	
 	var hiddenBrowser = Zotero.Browser.createHiddenBrowser();
-	hiddenBrowser.addEventListener("load", onLoad, true);
+	if(hiddenBrowser.addEventListener) {
+		hiddenBrowser.addEventListener("load", onLoad, true);
+	} else {
+		hiddenBrowser.onload = function() { onLoad(event) };
+	}
 	
 	doLoad();
 	return hiddenBrowser;

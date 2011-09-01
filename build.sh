@@ -266,7 +266,6 @@ fi
 # Copy to dist directory
 cp "$BOOKMARKLETDIR/iframe.html" \
 	"$BOOKMARKLETDIR/iframe_ie.html" \
-	"$BOOKMARKLETDIR/ie_hack.html" \
 	"$BOOKMARKLETDIR/ie_hack.js" \
 	"$BOOKMARKLETDIR/auth_complete.html" \
 	"$BOOKMARKLETDIR/itemSelector_browserSpecific.js" \

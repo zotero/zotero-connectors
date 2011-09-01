@@ -35,7 +35,8 @@ function indexOf(obj, member, startAt) {
 	}
 }
 
-if(document.documentMode) document.documentMode = 9;
+if("compatMode" in document) document.compatMode = "CSS1Compat";
+if("documentMode" in document) document.documentMode = 9;
 
 /*
     http://www.JSON.org/json2.js

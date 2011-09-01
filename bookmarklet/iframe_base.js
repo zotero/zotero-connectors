@@ -26,6 +26,14 @@
 Zotero.isBookmarklet = true;
 Zotero.Debug.init();
 Zotero.Messaging.init();
-Zotero.Connector.checkIsOnline(function() {
+if(Zotero.isIE) {
+	Zotero.Connector.checkIsOnline(function(status) {
+		if(!status && window.location.protocol === "http:") {
+			window.location.replace("https:"+window.location.toString().substr(5));
+		} else {
+			Zotero.Messaging.sendMessage("translate", null);
+		}
+	});
+} else {
 	Zotero.Messaging.sendMessage("translate", null);
-});
+}

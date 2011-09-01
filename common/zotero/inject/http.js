@@ -83,11 +83,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 			prevUrl = newDoc.location.href;
 			
 			// ugh ugh ugh ugh
-			if(newDoc.implementation
-				&& newDoc.implementation.hasFeature
-				&& newDoc.implementation.hasFeature("XPath", null)) {
-				installDOM3XPathSupport(hiddenBrowser.contentDocument, new XPathParser());
-			}
+			installXPathIfNecessary(newDoc);
 			
 			try {
 				processor(newDoc);

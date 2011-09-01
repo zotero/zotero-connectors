@@ -4259,18 +4259,21 @@ function installDOM3XPathSupport(doc, p) {
 // ---------------------------------------------------------------------------
 
 // Install DOM 3 XPath support for the current document.
-try {
-	var shouldInstall = true;
+function installXPathIfNecessary(document) {
 	try {
-		if (document.implementation
-				&& document.implementation.hasFeature
-				&& document.implementation.hasFeature("XPath", null)) {
-			shouldInstall = false;
+		var shouldInstall = true;
+		try {
+			if (document.implementation
+					&& document.implementation.hasFeature
+					&& document.implementation.hasFeature("XPath", null)) {
+				shouldInstall = false;
+			}
+		} catch (e) {
+		}
+		if (shouldInstall) {
+			installDOM3XPathSupport(document, new XPathParser());
 		}
 	} catch (e) {
 	}
-	if (shouldInstall) {
-		installDOM3XPathSupport(document, new XPathParser());
-	}
-} catch (e) {
 }
+installXPathIfNecessary(document);

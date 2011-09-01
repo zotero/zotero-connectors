@@ -82,7 +82,7 @@ Zotero.Messaging = new function() {
 						// send message
 						zoteroIFrame.contentWindow.postMessage(
 							BOOKMARKLET_MESSAGE_PREFIX+JSON.stringify([requestID, messageName, newArgs]),
-							ZOTERO_CONFIG.BOOKMARKLET_URL+"iframe.html");
+							ZOTERO_CONFIG.BOOKMARKLET_URL+(Zotero.isIE ? "iframe_ie.html" : "iframe.html"));
 					};
 				};
 			}
@@ -90,11 +90,16 @@ Zotero.Messaging = new function() {
 		
 		var listener = function(event) {
 			try {
-				var data = event.data, source = event.source;
+				var data = event.data, origin = event.origin;
+				if(event.origin !== "https://www.zotero.org"
+						&& (!Zotero.isIE || event.origin !== "http://www.zotero.org")) {
+					throw "Received message from invalid origin";
+				}
+				
 				if(data.substr(0, BOOKMARKLET_MESSAGE_PREFIX.length) === BOOKMARKLET_MESSAGE_PREFIX) {
 					// This would be a plain message
 					data = JSON.parse(data.substr(BOOKMARKLET_MESSAGE_PREFIX.length));
-					_messageListeners[data[0]](data[1]);
+					_messageListeners[data[0]](data[1], event);
 					return;
 				} else if(data.substr(0, BOOKMARKLET_MESSAGE_RESPONSE_PREFIX.length) !== BOOKMARKLET_MESSAGE_RESPONSE_PREFIX) {
 					// This would be the response to a previous message

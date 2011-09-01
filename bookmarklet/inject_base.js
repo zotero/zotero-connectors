@@ -131,7 +131,10 @@ translate.setHandler("done", function(obj, returnValue) {
 });
 
 // Add message listener for translate, so we don't call until the iframe is loaded
-Zotero.Messaging.addMessageListener("translate", function() {
+Zotero.Messaging.addMessageListener("translate", function(data, event) {
+	if(event.origin.substr(0, 6) === "https:") {
+		ZOTERO_CONFIG.BOOKMARKLET_URL = ZOTERO_CONFIG.BOOKMARKLET_URL.replace("http", "https");
+	}
 	translate.getTranslators();
 });
 Zotero.Messaging.addMessageListener("selectDone", function(returnItems) {
@@ -154,6 +157,9 @@ Zotero.Messaging.addMessageListener("hideZoteroIFrame", function() {
 });
 
 // Expose zoteroShowProgressWindow and zoteroBookmarkletURL
+if(Zotero.isIE && window.location.protocol === "http:") {
+	ZOTERO_CONFIG.BOOKMARKLET_URL = ZOTERO_CONFIG.BOOKMARKLET_URL.replace("https", "http");
+}
 window.zoteroShowProgressWindow = function() { Zotero.ProgressWindow.show() };
 window.zoteroBookmarkletURL = ZOTERO_CONFIG.BOOKMARKLET_URL;
 

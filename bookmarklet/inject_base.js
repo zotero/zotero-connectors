@@ -29,9 +29,8 @@ var cssBookmarkletFrame = {"position":"fixed", "zIndex":"16777271", "top":"50%",
 	"left":"50%", "background":"white"};
 
 Zotero.isBookmarklet = true;
-Zotero.Debug.init();
+Zotero.initInject();
 Zotero.Connector_Types.init();
-Zotero.Messaging.init();
 
 /**
  * Creates a new frame with the specified width and height
@@ -160,7 +159,7 @@ window.zoteroBookmarkletURL = ZOTERO_CONFIG.BOOKMARKLET_URL;
 
 // This closes the block of code to be injected only if the bookmarklet hasn't been previously
 // injected on this page
-}}
+};
 
 var zoteroIFrame;
 if(document.getElementById("zotero-iframe")) {
@@ -170,7 +169,7 @@ if(document.getElementById("zotero-iframe")) {
 	zoteroShowProgressWindow();
 	zoteroIFrame = document.createElement("iframe");
 	zoteroIFrame.id = "zotero-iframe";
-	zoteroIFrame.src = zoteroBookmarkletURL+"iframe.html";
+	zoteroIFrame.src = zoteroBookmarkletURL+"iframe"+(navigator.appName === "Microsoft Internet Explorer" ? "_ie" : "")+".html";
 	zoteroIFrame.style.display = "none";
 	(document.body ? document.body : document.documentElement).appendChild(zoteroIFrame);
 }

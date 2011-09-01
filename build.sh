@@ -193,57 +193,81 @@ rm -rf "$BOOKMARKLETDIR/dist"
 mkdir "$BOOKMARKLETDIR/dist"
 mkdir "$BOOKMARKLETDIR/dist/icons"
 
-# Combine bookmarklet-related resources
-echo "new function() { if(!window.zoteroShowProgressWindow) {" > "$BOOKMARKLETDIR/dist/inject_tmp.js"
-for f in "${BOOKMARKLET_INJECT_INCLUDE[@]}"
-do
-	# Remove Windows CRs when bundling
-	echo "/******** BEGIN `basename $f` ********/"
-	LC_CTYPE=C tr -d '\r' < $f
-	echo ""
-	echo "/******** END `basename $f` ********/"
-done>>"$BOOKMARKLETDIR/dist/inject_tmp.js"
-
-for f in "${BOOKMARKLET_IFRAME_INCLUDE[@]}"
-do
-	# Remove Windows CRs when bundling
-	echo "/******** BEGIN `basename $f` ********/"
-	LC_CTYPE=C tr -d '\r' < $f
-	echo ""
-	echo "/******** END `basename $f` ********/"
-done>"$BOOKMARKLETDIR/dist/iframe_tmp.js"
-
 for scpt in "inject" "iframe"
 do
-	# const -> var
-	perl -pi -e "s/const/var/" "$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
+	tmpScript="$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
 	
-	# Array.indexOf
-	perl -000 -pi -e 's/((?:[\w.]+|\[[^\]]*\])+)\.indexOf(\((((?>[^()]+)|(?2))*)\))/indexOf($1, $3)/gs' \
-		"$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
+	if [ "$scpt" == "inject" ]; then
+		files=("${BOOKMARKLET_INJECT_INCLUDE[@]}")
+		echo "new function() { if(window.zoteroShowProgressWindow) return;" > "$tmpScript"
+	else
+		files=("${BOOKMARKLET_IFRAME_INCLUDE[@]}")
+	fi
 	
-	# ie_compat.js and *_base.js
-	for f in "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/${scpt}_base.js"
+	# Bundle scripts
+	for f in "${files[@]}"
 	do
 		# Remove Windows CRs when bundling
 		echo "/******** BEGIN `basename $f` ********/"
 		LC_CTYPE=C tr -d '\r' < $f
 		echo ""
 		echo "/******** END `basename $f` ********/"
-	done>>"$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
+	done >> "$tmpScript"
 	
-	# Minify if not in debug mode
-	if [ "$1" == "debug" ]; then
-		mv "$BOOKMARKLETDIR/dist/${scpt}_tmp.js" "$BOOKMARKLETDIR/dist/${scpt}.js"
-	else
-		uglifyjs "$BOOKMARKLETDIR/dist/${scpt}_tmp.js" > "$BOOKMARKLETDIR/dist/${scpt}.js"
-		rm "$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
+	# Bundle for IE
+	tmpIEScript="$BOOKMARKLETDIR/dist/${scpt}_ie_tmp.js"
+	
+	# const -> var
+	perl -pe "s/const/var/" "$tmpScript" > "$tmpIEScript"
+	
+	# a.indexOf(b) -> indexOf(a,b)
+	perl -000 -pi -e 's/((?:[\w.]+|\[[^\]]*\])+)\.indexOf(\((((?>[^()]+)|(?2))*)\))/indexOf($1, $3)/gs' \
+		"$tmpIEScript"
+	
+	# Add IE compat functions to IE inject script
+	if [ "$scpt" == "inject" ]; then
+		for f in "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/${scpt}_ie_compat.js"
+		do
+			echo "/******** BEGIN `basename $f` ********/" >> "$tmpIEScript"
+			LC_CTYPE=C tr -d '\r' < $f >> "$tmpIEScript"
+			echo "" >> "$tmpIEScript"
+			echo "/******** END `basename $f` ********/" >> "$tmpIEScript"
+		done
 	fi
+	
+	for platform in "" "_ie"
+	do
+		tmpScript="$BOOKMARKLETDIR/dist/${scpt}${platform}_tmp.js"
+		builtScript="$BOOKMARKLETDIR/dist/${scpt}${platform}.js"
+		
+		# Bundle *_base.js
+		echo "/******** BEGIN ${scpt}_base.js ********/" >> "$tmpScript"
+		LC_CTYPE=C tr -d '\r' < "$BOOKMARKLETDIR/${scpt}_base.js" >> "$tmpScript"
+		echo "" >> "$tmpScript"
+		echo "/******** END ${scpt}_base.js ********/" >> "$tmpScript"
+		
+		# Minify if not in debug mode
+		if [ "$1" == "debug" ]; then
+			mv "$tmpScript" "$builtScript"
+		else
+			uglifyjs "$tmpScript" > "$builtScript"
+			rm "$tmpScript"
+		fi
+	done
 done
 
+# IE compat library
+if [ "$1" == "debug" ]; then
+	cp "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/dist/ie_compat.js"
+else
+	uglifyjs "$BOOKMARKLETDIR/ie_compat.js" > "$BOOKMARKLETDIR/dist/ie_compat.js"
+fi
 
 # Copy to dist directory
 cp "$BOOKMARKLETDIR/iframe.html" \
+	"$BOOKMARKLETDIR/iframe_ie.html" \
+	"$BOOKMARKLETDIR/ie_hack.html" \
+	"$BOOKMARKLETDIR/ie_hack.js" \
 	"$BOOKMARKLETDIR/auth_complete.html" \
 	"$BOOKMARKLETDIR/itemSelector_browserSpecific.js" \
 	"$COMMONDIR/itemSelector"*\

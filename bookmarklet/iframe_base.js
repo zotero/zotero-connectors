@@ -26,4 +26,6 @@
 Zotero.isBookmarklet = true;
 Zotero.Debug.init();
 Zotero.Messaging.init();
-Zotero.Messaging.sendMessage("translate", null);
+Zotero.Connector.checkIsOnline(function() {
+	Zotero.Messaging.sendMessage("translate", null);
+});

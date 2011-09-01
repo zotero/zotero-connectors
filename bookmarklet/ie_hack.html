@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript">
+try {
+	var xdr = new XDomainRequest();
+	xdr.open("POST", "http://127.0.0.1:23119/connector/ping", true);
+	xdr.onerror = xdr.ontimeout = fail;
+	xdr.onload = function() {
+		window.location.replace("http://127.0.0.1:23119/connector/ieHack");
+	};
+	xdr.send("");
+} catch(e) {
+	console.log(e);
+	fail();
+}
+
+function fail() {
+	window.parent.postMessage("ZOTERO_IE_STANDALONE_LOADED false",
+		"https://www.zotero.org/bookmarklet/iframe_ie.html");
+}
+</script>
+</head>
+<body></body>
+</html>

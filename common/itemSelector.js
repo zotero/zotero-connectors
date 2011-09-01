@@ -32,10 +32,6 @@ var responseSent = false;
  * Called when item selector is loaded
  */
 function load(event) {
-	// add event listeners for buttons
-	document.getElementById('accept').addEventListener("click", accept, false);
-	document.getElementById('cancel').addEventListener("click", cancel, false);
-	
 	// decode JSON-ized data regading items to save
 	var queryArg = window.location.hash.substr(1);
 	var data = JSON.parse(decodeURIComponent(queryArg));
@@ -57,7 +53,11 @@ function load(event) {
 		var textDiv = document.createElement('div');
 		textDiv.setAttribute('class', 'item-description');
 		textDiv.appendChild(document.createTextNode(items[i]));
-		textDiv.addEventListener("click", makeClickHandler(checkbox), false); 
+		if(textDiv.addEventListener) {
+			textDiv.addEventListener("click", makeClickHandler(checkbox), false);
+		} else {
+			textDiv.attachEvent("click", makeClickHandler(checkbox));
+		}
 		
 		item.appendChild(textDiv);
 		itemSelector.appendChild(item);
@@ -67,7 +67,7 @@ function load(event) {
 /**
  * Called when the "OK" button is pressed to save selected items
  */
-function accept() {
+function ok() {
 	var newItems = {};
 	for(var i in checkboxes) {
 		if(checkboxes[i].checked) {
@@ -102,5 +102,8 @@ function makeClickHandler(checkbox) {
 	return function() { checkbox.checked = !checkbox.checked };
 }
 
-window.addEventListener("load", load, false);
-window.addEventListener("beforeunload", cancel, false);
+if(navigator.appName === "Microsoft Internet Explorer") {
+	var s = document.createElement("script");
+	s.src = "https://www.zotero.org/bookmarklet/ie_compat.js";
+	document.getElementsByTagName("head")[0].appendChild(s);
+}

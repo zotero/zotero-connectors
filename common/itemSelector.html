@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
     ***** BEGIN LICENSE BLOCK *****
     
@@ -31,17 +30,17 @@
 		<script type="text/javascript" src="itemSelector.js"></script>
 		<title>Zotero Item Selector</title>
 	</head>
-	<body>
+	<body onload="load()" onbeforeunload="cancel()">
 		<div id="label">Select which items you'd like to add to your library:</div>
 		<div id="item-selector"></div>
 		<div id="buttons">
 			<div id="select-deselect">
-				<input type="submit" id="select" value="Select All" onclick="setAllCheckStates(true)"/>&nbsp;
+				<input type="submit" id="select" value="Select All" onclick="setAllCheckStates(true)"/>
 				<input type="submit" id="deselect" value="Deselect All" onclick="setAllCheckStates(false)"/>
 			</div>
 			<div id="cancel-ok">
-				<input type="submit" value="Cancel" id="cancel"/>&nbsp;
-				<input type="submit" value="OK" id="accept"/>
+				<input type="submit" value="Cancel" id="cancel" onclick="cancel()"/>
+				<input type="submit" value="OK" id="accept" onclick="ok()"/>
 			</div>
 		</div>
 	</body>

@@ -56,7 +56,7 @@ function load(event) {
 		if(textDiv.addEventListener) {
 			textDiv.addEventListener("click", makeClickHandler(checkbox), false);
 		} else {
-			textDiv.attachEvent("click", makeClickHandler(checkbox));
+			textDiv.onclick = makeClickHandler(checkbox);
 		}
 		
 		item.appendChild(textDiv);
@@ -100,10 +100,4 @@ function setAllCheckStates(state) {
  */
 function makeClickHandler(checkbox) {
 	return function() { checkbox.checked = !checkbox.checked };
-}
-
-if(navigator.appName === "Microsoft Internet Explorer") {
-	var s = document.createElement("script");
-	s.src = "https://www.zotero.org/bookmarklet/ie_compat.js";
-	document.getElementsByTagName("head")[0].appendChild(s);
 }

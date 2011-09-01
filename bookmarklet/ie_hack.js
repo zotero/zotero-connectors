@@ -1,14 +1,14 @@
-var BOOKMARKLET_MESSAGE_PREFIX = "ZOTERO_IE_HACK_MSG ";
+var BOOKMARKLET_MESSAGE_PREFIX = "ZOTERO_MSG ";
 
-window.addEventListener("message", function(event) {
+function messageListener(event) {
 	if(event.origin !== "https://www.zotero.org" && event.origin !== "http://www.zotero.org"
 	|| event.data.substr(0, BOOKMARKLET_MESSAGE_PREFIX.length) !== BOOKMARKLET_MESSAGE_PREFIX) {
 		throw "ie_hack.js received an invalid message";
 	}
 	
 	var data = JSON.parse(event.data.substr(BOOKMARKLET_MESSAGE_PREFIX.length));
-	if(data[0] !== "connectorRequest") return;
-	var requestID = data[1][0], method = data[1][1], payload = data[1][2];
+	if(data[1] !== "connectorRequest") return;
+	var requestID = data[2][0], method = data[2][1], payload = data[2][2];
 	
 	var xhr = new XMLHttpRequest();  
 	xhr.open("POST", "/connector/"+method, true);  
@@ -22,7 +22,8 @@ window.addEventListener("message", function(event) {
 				headers[rawHeader.substr(0, colonIndex).toLowerCase()] = rawHeader.substr(colonIndex+2);
 			}
 			
-			window.parent.postMessage(BOOKMARKLET_MESSAGE_PREFIX+" "+JSON.stringify(["connectorResponse",
+			window.parent.postMessage(BOOKMARKLET_MESSAGE_PREFIX+JSON.stringify([null,
+				"connectorResponse",
 				[requestID, xhr.status, xhr.responseText, headers]]),
 				"http://www.zotero.org/bookmarklet/iframe_ie.html");
 		}
@@ -31,7 +32,13 @@ window.addEventListener("message", function(event) {
 	xhr.setRequestHeader("X-Zotero-Version", "2.999.1");
 	xhr.setRequestHeader("X-Zotero-Connector-API-Version", 2);
 	xhr.send(payload);
-});
+}
 
-window.parent.postMessage("ZOTERO_IE_STANDALONE_LOADED true",
+if(window.addEventListener) {
+	window.addEventListener("message", messageListener, false);
+} else {
+	window.onmessage = function() { messageListener(event) };
+}
+
+window.parent.postMessage(BOOKMARKLET_MESSAGE_PREFIX+'[null, "standaloneLoaded", true]',
 	"http://www.zotero.org/bookmarklet/iframe_ie.html")

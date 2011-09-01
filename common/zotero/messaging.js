@@ -55,7 +55,7 @@ Zotero.Messaging = new function() {
 			
 			// first see if there is a message listener
 			if(_messageListeners[messageName]) {
-				_messageListeners[messageName](args);
+				_messageListeners[messageName](args, tab);
 				return;
 			}
 			
@@ -114,7 +114,7 @@ Zotero.Messaging = new function() {
 				data = JSON.parse(data.substr(BOOKMARKLET_MESSAGE_PREFIX.length));
 				Zotero.Messaging.receiveMessage(data[1], data[2], function(output) {
 					source.postMessage(BOOKMARKLET_MESSAGE_RESPONSE_PREFIX+JSON.stringify([data[0], data[1], output]), "*");
-				});
+				}, event);
 			};
 			
 			if(window.addEventListener) {

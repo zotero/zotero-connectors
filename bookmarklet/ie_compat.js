@@ -35,7 +35,6 @@ function indexOf(obj, member, startAt) {
 	}
 }
 
-if("compatMode" in document) document.compatMode = "CSS1Compat";
 if("documentMode" in document) document.documentMode = 9;
 
 /*

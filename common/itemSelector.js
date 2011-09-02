@@ -43,6 +43,7 @@ function load(event) {
 	// add checkboxes to selector
 	for(var i in items) {
 		var item = document.createElement('div');
+		item.setAttribute('class', 'item-description');
 		item.setAttribute('class', 'item');
 		
 		var checkbox = document.createElement('input');
@@ -50,16 +51,15 @@ function load(event) {
 		item.appendChild(checkbox);
 		checkboxes[i] = checkbox;
 		
-		var textDiv = document.createElement('div');
-		textDiv.setAttribute('class', 'item-description');
-		textDiv.appendChild(document.createTextNode(items[i]));
-		if(textDiv.addEventListener) {
-			textDiv.addEventListener("click", makeClickHandler(checkbox), false);
+		var span = document.createElement('span');
+		span.appendChild(document.createTextNode(items[i]));
+		if(span.addEventListener) {
+			span.addEventListener("click", makeClickHandler(checkbox), false);
 		} else {
-			textDiv.onclick = makeClickHandler(checkbox);
+			span.onclick = makeClickHandler(checkbox);
 		}
+		item.appendChild(span);
 		
-		item.appendChild(textDiv);
 		itemSelector.appendChild(item);
 	}
 }

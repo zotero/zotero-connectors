@@ -27,6 +27,7 @@ var Zotero = new function() {
 	this.isConnector = true;
 	this.isChrome = !!window.chrome;
 	this.isSafari = !!window.safari;
+	this.isWebKit = window.navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
 	this.isIE = window.navigator.appName === "Microsoft Internet Explorer";
 	this.version = "2.999.1";
 	this.browser = (window.chrome ? "c" : "s");

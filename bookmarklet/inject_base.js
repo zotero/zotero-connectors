@@ -23,9 +23,10 @@
     ***** END LICENSE BLOCK *****
 */
 
-var pos = (document.compatMode === "BackCompat" ? "absolute" : "fixed");
+var pos = (Zotero.isIE && document.compatMode === "BackCompat" ? "absolute" : "fixed");
 var cssBookmarkletFrameDimmer = {"background":"black", "opacity":"0.5", "position":pos,
-	"top":"0px", "bottom":"0px", "left":"0px", "right":"0px", "zIndex":"16777270"};
+	"top":"0px", "bottom":"0px", "left":"0px", "right":"0px", "zIndex":"16777270",
+	"height":"100%", "width":"100%", "filter":"alpha(opacity = 50);"};
 var cssBookmarkletFrame = {"position":pos, "zIndex":"16777271", "top":"50%",
 	"left":"50%", "background":"white"};
 

@@ -29,7 +29,7 @@ body {
 }
 
 #item-selector input {
-	float: left;
+	vertical-align: middle;
 	margin-right: 4px;
 }
 

@@ -28,18 +28,18 @@ const cssImgClearString = 'background-attachment: scroll; background-color: tran
 const cssAClearString = 'background-attachment: scroll; background-color: transparent; background-image: none; background-position: 0% 0%; background-repeat: repeat; border-bottom-color: rgb(0, 0, 238); border-bottom-style: none; border-bottom-width: 0px; border-collapse: separate; border-left-color: rgb(0, 0, 238); border-left-style: none; border-left-width: 0px; border-right-color: rgb(0, 0, 238); border-right-style: none; border-right-width: 0px; border-spacing: 0px 0px; border-top-color: rgb(0, 0, 238); border-top-style: none; border-top-width: 0px; bottom: auto; caption-side: top; clear: none; clip: auto; color: rgb(0, 0, 238); content: none; counter-increment: none; counter-reset: none; cursor: pointer; direction: ltr; display: inline; empty-cells: show; float: none; font-family: serif; font-size: 16px; font-size-adjust: none; font-stretch: normal; font-style: normal; font-variant: normal; font-weight: 400; height: auto; left: auto; letter-spacing: normal; line-height: 19.2px; list-style-image: none; list-style-position: outside; list-style-type: disc; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; margin-top: 0px; marker-offset: auto; max-height: none; max-width: none; min-height: 0px; min-width: 0px; ime-mode: auto; opacity: 1; outline-color: rgb(0, 0, 0); outline-style: none; outline-width: 0px; outline-offset: 0px; overflow: visible; overflow-x: visible; overflow-y: visible; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px; page-break-after: auto; page-break-before: auto; pointer-events: auto; position: static; quotes: "“" "”" "‘" "’"; right: auto; table-layout: auto; text-align: start; text-decoration: underline; text-indent: 0px; text-shadow: none; text-transform: none; top: auto; unicode-bidi: normal; vertical-align: baseline; visibility: visible; white-space: normal; width: auto; word-spacing: 0px; z-index: auto; background-clip: border-box; background-origin: padding-box; background-size: auto auto; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: none; resize: none; word-wrap: normal; clip-path: none; clip-rule: nonzero; color-interpolation: srgb; color-interpolation-filters: linearrgb; dominant-baseline: auto; fill: rgb(0, 0, 0); fill-opacity: 1; fill-rule: nonzero; filter: none; flood-color: rgb(0, 0, 0); flood-opacity: 1; lighting-color: rgb(255, 255, 255); image-rendering: auto; mask: none; marker-end: none; marker-mid: none; marker-start: none; shape-rendering: auto; stop-color: rgb(0, 0, 0); stop-opacity: 1; stroke: none; stroke-dasharray: none; stroke-dashoffset: 0px; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 4; stroke-opacity: 1; stroke-width: 1px; text-anchor: start; text-rendering: auto;'
 
 Zotero.ProgressWindow = new function() {
-	const cssBox = {"position":(document.compatMode === "BackCompat" ? "absolute" : "fixed"),
+	const cssBox = {"position":(Zotero.isIE && document.compatMode === "BackCompat" ? "absolute" : "fixed"),
 		"right":"25px", "bottom":"25px", "width":"240px",
 		"borderWidth":"2px", "borderStyle":"solid", "borderColor":"#7a0000",
-		"backgroundColor":"#ededed", "opacity":"0.9", "zIndex":"16777269",
-		"padding":"6px", "height":"45px"};
+		"backgroundColor":"#ededed", "opacity":"0.9", "filter":"alpha(opacity = 90)",
+		"zIndex":"16777269", "padding":"6px", "minHeight":"45px"};
 	const cssHeadline = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt",
 		"fontWeight":"bold", "marginBottom":"8px"};
-	const cssItem = {"marginBottom":"4px"};
-	const cssIcon = {"width":"16px", "height":"16px", "marginRight":"4px", "float":"left"};
-	const cssLabel = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt",
-		"verticalAlign":"middle", "height":"16px",
-		"overflow":"hidden", "whiteSpace":"nowrap", "lineHeight":"16px"};
+	const cssItem = {"fontFamily":"Lucida Grande, Tahoma, sans",
+		"fontSize":"8.25pt", "verticalAlign":"middle",
+		"overflow":"hidden", "whiteSpace":"nowrap", "lineHeight":"16px", "margin":"2px 0 2px 0"};
+	const cssIcon = {"width":"16px", "height":"16px", "verticalAlign":"middle",
+		"marginRight":"4px"};
 	const cssDescription = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt"};
 	var _progressDiv, _headlineDiv, _timeoutID;
 	var _shownItemDivsById = {};
@@ -55,7 +55,7 @@ Zotero.ProgressWindow = new function() {
 		_headlineDiv = document.createElement('div');
 		_headlineDiv.style.cssText = cssDivClearString;
 		for(var i in cssHeadline) _headlineDiv.style[i] = cssHeadline[i];
-		_headlineDiv.appendChild(document.createTextNode());
+		_headlineDiv.appendChild(document.createTextNode(""));
 		_progressDiv.appendChild(_headlineDiv);
 		_progressDiv = document.body.appendChild(_progressDiv);
 		
@@ -143,27 +143,28 @@ Zotero.ProgressWindow = new function() {
 		
 		var itemDiv = document.createElement('div');
 		itemDiv.style.cssText = cssDivClearString;
-		itemDiv.style.opacity = "0.5";
 		for(var j in cssItem) itemDiv.style[j] = cssItem[j];
+		itemDiv.style.opacity = "0.5";
+		itemDiv.style.filter = "alpha(opacity = 50)";
+		itemDiv.style.zoom = "1";
 		
 		var newImage = document.createElement('img');
 		newImage.style.cssText = cssImgClearString;
 		for(var j in cssIcon) newImage.style[j] = cssIcon[j];
+		if(Zotero.isWebKit) {
+			newImage.style.marginBottom = "2px";
+		}
 		newImage.src = icon;
+		itemDiv.appendChild(newImage);
 		
-		var textDiv = document.createElement('div');
-		textDiv.style.cssText = cssDivClearString;
-		for(var j in cssLabel) textDiv.style[j] = cssLabel[j];
-		if(Zotero.isChrome || Zotero.isSafari
+		if(Zotero.isWebKit
 				|| (Zotero.isIE && "documentMode" in document && document.documentMode >= 9)) {
-			textDiv.style.textOverflow = "ellipsis";
-			textDiv.appendChild(document.createTextNode(item.title));
+			itemDiv.style.textOverflow = "ellipsis";
+			itemDiv.appendChild(document.createTextNode(item.title));
 		} else {
-			textDiv.appendChild(document.createTextNode(item.title).substr(0, 25)+"...");
+			itemDiv.appendChild(document.createTextNode(item.title.substr(0, 35)+"..."));
 		}
 		
-		itemDiv.appendChild(newImage);
-		itemDiv.appendChild(textDiv);
 		_progressDiv.appendChild(itemDiv);
 		
 		_shownItemDivsById[item.id] = itemDiv;
@@ -176,7 +177,9 @@ Zotero.ProgressWindow = new function() {
 		Zotero.ProgressWindow.show();
 		
 		if(!_shownItemDivsById[item.id]) Zotero.ProgressWindow.itemSaving(icon, item);
-		_shownItemDivsById[item.id].style.opacity = "1";
+		var itemDiv = _shownItemDivsById[item.id];
+		itemDiv.style.opacity = "1";
+		itemDiv.style.filter = "";
 	}
 	
 	/**

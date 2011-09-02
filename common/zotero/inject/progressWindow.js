@@ -38,7 +38,7 @@ Zotero.ProgressWindow = new function() {
 	const cssItem = {"marginBottom":"4px"};
 	const cssIcon = {"width":"16px", "height":"16px", "marginRight":"4px", "float":"left"};
 	const cssLabel = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt",
-		"verticalAlign":"middle", "textOverflow":"ellipsis", "height":"16px",
+		"verticalAlign":"middle", "height":"16px",
 		"overflow":"hidden", "whiteSpace":"nowrap", "lineHeight":"16px"};
 	const cssDescription = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt"};
 	var _progressDiv, _headlineDiv, _timeoutID;
@@ -154,7 +154,13 @@ Zotero.ProgressWindow = new function() {
 		var textDiv = document.createElement('div');
 		textDiv.style.cssText = cssDivClearString;
 		for(var j in cssLabel) textDiv.style[j] = cssLabel[j];
-		textDiv.appendChild(document.createTextNode(item.title));
+		if(Zotero.isChrome || Zotero.isSafari
+				|| (Zotero.isIE && "documentMode" in document && document.documentMode >= 9)) {
+			textDiv.style.textOverflow = "ellipsis";
+			textDiv.appendChild(document.createTextNode(item.title));
+		} else {
+			textDiv.appendChild(document.createTextNode(item.title).substr(0, 25)+"...");
+		}
 		
 		itemDiv.appendChild(newImage);
 		itemDiv.appendChild(textDiv);

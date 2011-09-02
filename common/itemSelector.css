@@ -1,46 +1,46 @@
 body {
 	font-family: Lucida Grande, Arial;
-	font-size: 12px;
+	font-size: 12pt;
 }
 
 #label {
 	position: absolute;
-	top: 3px;
-	left: 3px;
-	right: 3px;
-	height: 25px;
+	top: 3pt;
+	left: 3pt;
+	right: 3pt;
+	height: 25pt;
 }
 
 #item-selector {
 	position: absolute;
-	top: 25px;
-	left: 3px;
-	right: 3px;
-	bottom: 43px;
+	top: 25pt;
+	left: 3pt;
+	right: 3pt;
+	bottom: 43pt;
 	overflow: scroll;
-	border: 1px solid black;
+	border: 1pt solid black;
 }
 
 #buttons {
 	position: absolute;
-	bottom: 9px;
-	left: 3px;
-	right: 3px;
+	bottom: 9pt;
+	left: 3pt;
+	right: 3pt;
 }
 
 #item-selector input {
 	vertical-align: middle;
-	margin-right: 4px;
+	margin-right: 4pt;
 }
 
 .item {
-	min-height: 19px;
+	min-height: 19pt;
 	white-space: nowrap;
 }
 
 .item-description {
-	font-size: 10px;
-	padding-top: 3px;
+	font-size: 10pt;
+	padding-top: 3pt;
 	white-space: nowrap;
 }
 

@@ -78,8 +78,8 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	 * @inner
 	 */
 	var onLoad = function() {
-		var newDoc = hiddenBrowser.contentDocument,
-			newWin = hiddenBrowser.contentWindow,
+		var newWin = hiddenBrowser.contentWindow,
+			newDoc = newWin.document,
 			newLoc = newWin.location.toString();
 		if(newLoc === "about:blank") return;
 		Zotero.debug("HTTP.processDocuments: "+newLoc+" has been loaded");
@@ -112,7 +112,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	if(hiddenBrowser.addEventListener) {
 		hiddenBrowser.addEventListener("load", onLoad, true);
 	} else {
-		hiddenBrowser.onload = function() { onLoad(event) };
+		hiddenBrowser.attachEvent("onload", onLoad);
 	}
 	
 	doLoad();
@@ -123,6 +123,7 @@ Zotero.Browser = {
 	"createHiddenBrowser":function() {
 		var hiddenBrowser = document.createElement("iframe");
 		hiddenBrowser.style.display = "none";
+		hiddenBrowser.setAttribute("onload", "alert('hi')");
 		document.body.appendChild(hiddenBrowser);
 		return hiddenBrowser;
 	},

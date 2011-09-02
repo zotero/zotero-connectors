@@ -133,8 +133,8 @@ translate.setHandler("done", function(obj, returnValue) {
 
 // Add message listener for translate, so we don't call until the iframe is loaded
 Zotero.Messaging.addMessageListener("translate", function(data, event) {
-	if(event.origin.substr(0, 6) === "https:") {
-		ZOTERO_CONFIG.BOOKMARKLET_URL = ZOTERO_CONFIG.BOOKMARKLET_URL.replace("http", "https");
+	if(event.origin.substr(0, 6) === "https:" && ZOTERO_CONFIG.BOOKMARKLET_URL.substr(0, 5) === "http:") {
+		ZOTERO_CONFIG.BOOKMARKLET_URL = "https:"+ZOTERO_CONFIG.BOOKMARKLET_URL.substr(5);
 	}
 	translate.getTranslators();
 });

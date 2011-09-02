@@ -85,6 +85,8 @@ var Zotero = new function() {
 	};
 	
 	this.logError = function(err) {
+		if(!window.console) return;
+		
 		// Firefox uses this
 		var fileName = (err.fileName ? err.fileName : null);
 		var lineNumber = (err.lineNumber ? err.lineNumber : null);

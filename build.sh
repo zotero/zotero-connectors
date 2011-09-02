@@ -263,6 +263,11 @@ else
 	uglifyjs "$BOOKMARKLETDIR/ie_compat.js" > "$BOOKMARKLETDIR/dist/ie_compat.js"
 fi
 
+# Bookmarklet itself
+echo -n "<a href='javascript:" > "$BOOKMARKLETDIR/dist/bookmarklet.html"
+uglifyjs "$BOOKMARKLETDIR/bookmarklet.js" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+echo -n "'>Save to Zotero</a>" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+
 # Copy to dist directory
 cp "$BOOKMARKLETDIR/iframe.html" \
 	"$BOOKMARKLETDIR/iframe_ie.html" \

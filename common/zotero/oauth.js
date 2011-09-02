@@ -180,7 +180,7 @@ Zotero.OAuth = new function() {
 				}
 				
 				if(Zotero.isBookmarklet) {
-					var cookieExpires = new Date(Date.now()+24*60*60*1000*365).toGMTString();
+					var cookieExpires = new Date((new Date()).valueOf()+24*60*60*1000*365).toGMTString();
 					document.cookie = 'bookmarklet-auth-token_secret='
 						+encodeURIComponent(data.oauth_token_secret)+'; expires='+cookieExpires
 						+'; secure';

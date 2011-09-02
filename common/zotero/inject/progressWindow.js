@@ -32,7 +32,7 @@ Zotero.ProgressWindow = new function() {
 		"right":"25px", "bottom":"25px", "width":"240px",
 		"borderWidth":"2px", "borderStyle":"solid", "borderColor":"#7a0000",
 		"backgroundColor":"#ededed", "opacity":"0.9", "zIndex":"16777269",
-		"padding":"6px", "minHeight":"45px"};
+		"padding":"6px", "height":"45px"};
 	const cssHeadline = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt",
 		"fontWeight":"bold", "marginBottom":"8px"};
 	const cssItem = {"marginBottom":"4px"};
@@ -55,6 +55,7 @@ Zotero.ProgressWindow = new function() {
 		_headlineDiv = document.createElement('div');
 		_headlineDiv.style.cssText = cssDivClearString;
 		for(var i in cssHeadline) _headlineDiv.style[i] = cssHeadline[i];
+		_headlineDiv.appendChild(document.createTextNode());
 		_progressDiv.appendChild(_headlineDiv);
 		_progressDiv = document.body.appendChild(_progressDiv);
 		
@@ -66,7 +67,7 @@ Zotero.ProgressWindow = new function() {
 	 * Changes the headline of the save window
 	 */
 	this.changeHeadline = function(headline) {
-		_headlineDiv.textContent = headline;
+		_headlineDiv.firstChild.nodeValue = headline;
 	}
 	
 	/**

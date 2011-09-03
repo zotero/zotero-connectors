@@ -52,7 +52,7 @@ Zotero.Translators = new function() {
 					return;
 				}
 				
-				callback(xmlhttp.responseText);
+				callback(Zotero.Translators.preprocessCode(xmlhttp.responseText));
 			});
 		});
 	}
@@ -272,6 +272,11 @@ Zotero.Translators = new function() {
 			code = code.replace(foreach, "$1var $3_zForEachSubject = $4; "+
 				"for(var $3_zForEachIndex in $3_zForEachSubject)$5{ "+
 				"$2$3 = $3_zForEachSubject[$3_zForEachIndex];", code);
+			if(Zotero.isIE) {
+				code = code.replace(/([\s\r\n])const([\s\r\n])/g, "$1var$2")
+					.replace(/((?:[\w.]+|\[[^\]]*\])+)\.indexOf(\((?:[^)]+|\([^)]*\))*\))/g,
+						"indexOf($1, $2)");
+			}
 		}
 		return code;
 	}
@@ -395,7 +400,7 @@ Zotero.Translator.prototype.init = function(info) {
 	}
 	
 	if(info.code) {
-		this.code = Zotero.Translators.preprocessCode(info.code);
+		this.code = info.code;
 	} else if(this.hasOwnProperty("code")) {
 		delete this.code;
 	}

@@ -1,6 +1,6 @@
 body {
 	font-family: Lucida Grande, Arial;
-	font-size: 10pt;
+	font-size: 11pt;
 }
 
 #label {
@@ -8,16 +8,17 @@ body {
 	top: 2pt;
 	left: 2pt;
 	right: 2pt;
-	height: 19pt;
+	height: 20.5pt;
 }
 
 #item-selector {
 	position: absolute;
-	top: 19pt;
+	top: 20.5pt;
 	left: 2pt;
 	right: 2pt;
 	bottom: 32pt;
 	overflow: auto;
+	padding: 2pt 1.5pt;
 	border: 1pt solid black;
 }
 
@@ -30,15 +31,13 @@ body {
 
 #item-selector input {
 	vertical-align: middle;
-	margin: 1pt 2.5pt 3pt 0;
+	margin: 0 2.5pt 2pt 0;
 }
 
 .item {
-	font-size: 8pt;
-	padding-top: 2pt;
-	min-height: 11pt;
-	line-height: 11pt;
+	font-size: 9pt;
 	white-space: nowrap;
+	min-height: 14pt;
 }
 
 #select-deselect {

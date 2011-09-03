@@ -96,6 +96,8 @@ var translate = new Zotero.Translate.Web(),
 	selectCallback;
 translate.setDocument(document);
 translate.setHandler("translators", function(obj, translators) {
+	Zotero.debug("Translators came back");
+	Zotero.debug(translators);
 	if(translators && translators.length) {
 		translate.setTranslator(translators[0]);
 		translate.translate();
@@ -123,7 +125,7 @@ translate.setHandler("itemDone", function(obj, dbItem, item) {
 		item);
 });
 translate.setHandler("done", function(obj, returnValue) {
-	if(returnValue) {
+	if(returnValue && obj.newItems.length) {
 		Zotero.ProgressWindow.startCloseTimer(2500);
 	} else {
 		Zotero.ProgressWindow.showError();

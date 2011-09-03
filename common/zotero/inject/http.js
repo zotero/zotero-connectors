@@ -78,29 +78,27 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	 * @inner
 	 */
 	var onLoad = function() {
-		var newWin = hiddenBrowser.contentWindow,
-			newDoc = newWin.document,
-			newLoc = newWin.location.toString();
-		if(newLoc === "about:blank") return;
-		Zotero.debug("HTTP.processDocuments: "+newLoc+" has been loaded");
-		if(newLoc !== prevUrl) {	// Just in case it fires too many times
-			prevUrl = newLoc;
-			
-			// ugh ugh ugh ugh
-			installXPathIfNecessary(newWin);
-			
-			try {
+		try {
+			var newWin = hiddenBrowser.contentWindow,
+				newDoc = newWin.document,
+				newLoc = newWin.location.toString();
+			if(newLoc === "about:blank") return;
+			Zotero.debug("HTTP.processDocuments: "+newLoc+" has been loaded");
+			if(newLoc !== prevUrl) {	// Just in case it fires too many times
+				prevUrl = newLoc;
+				
+				// ugh ugh ugh ugh
+				installXPathIfNecessary(newWin);
 				processor(newDoc);
-			} catch(e) {
-				removeListeners();
-				if(exception) {
-					exception(e);
-					return;
-				} else {
-					throw(e);
-				}
 			}
-			doLoad();
+		} catch(e) {
+			removeListeners();
+			if(exception) {
+				exception(e);
+			} else {
+				Zotero.logError(e);
+			}
+			return;
 		}
 	};
 	

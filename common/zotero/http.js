@@ -39,12 +39,26 @@ Zotero.HTTP = new function() {
 		Zotero.debug("HTTP GET " + url);
 		
 		var xmlhttp = new XMLHttpRequest();
-		xmlhttp.open('GET', url, true);
-		/** @ignore */
-		xmlhttp.onreadystatechange = function() {
-			_stateChange(xmlhttp, onDone);
-		};
-		xmlhttp.send(null);
+		try {
+			xmlhttp.open('GET', url, true);
+			/** @ignore */
+			xmlhttp.onreadystatechange = function() {
+				_stateChange(xmlhttp, onDone);
+			};
+			xmlhttp.send(null);
+		} catch(e) {
+			Zotero.logError(e);
+			if(onDone) {
+				window.setTimeout(function() {
+					try {
+						onDone({"status":0});
+					} catch(e) {
+						Zotero.logError(e);
+						return;
+					}
+				}, 0);
+			}
+		}
 		
 		return xmlhttp;
 	}

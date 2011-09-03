@@ -1,46 +1,43 @@
 body {
 	font-family: Lucida Grande, Arial;
-	font-size: 12pt;
+	font-size: 10pt;
 }
 
 #label {
 	position: absolute;
-	top: 3pt;
-	left: 3pt;
-	right: 3pt;
-	height: 25pt;
+	top: 2pt;
+	left: 2pt;
+	right: 2pt;
+	height: 19pt;
 }
 
 #item-selector {
 	position: absolute;
-	top: 25pt;
-	left: 3pt;
-	right: 3pt;
-	bottom: 43pt;
-	overflow: scroll;
+	top: 19pt;
+	left: 2pt;
+	right: 2pt;
+	bottom: 32pt;
+	overflow: auto;
 	border: 1pt solid black;
 }
 
 #buttons {
 	position: absolute;
-	bottom: 9pt;
-	left: 3pt;
-	right: 3pt;
+	bottom: 7pt;
+	left: 2pt;
+	right: 2pt;
 }
 
 #item-selector input {
 	vertical-align: middle;
-	margin-right: 4pt;
+	margin: 1pt 2.5pt 3pt 0;
 }
 
 .item {
-	min-height: 19pt;
-	white-space: nowrap;
-}
-
-.item-description {
-	font-size: 10pt;
-	padding-top: 3pt;
+	font-size: 8pt;
+	padding-top: 2pt;
+	min-height: 11pt;
+	line-height: 11pt;
 	white-space: nowrap;
 }
 

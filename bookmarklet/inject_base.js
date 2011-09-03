@@ -93,11 +93,12 @@ BookmarkletFrame.prototype.remove = function() {
 }
 
 var translate = new Zotero.Translate.Web(),
-	selectCallback;
+	selectCallback, cancelled, haveItem;
 translate.setDocument(document);
 translate.setHandler("translators", function(obj, translators) {
-	Zotero.debug("Translators came back");
-	Zotero.debug(translators);
+	selectCallback = cancelled = haveItem = null;
+	
+	Zotero.ProgressWindow.changeHeadline("Saving Item...");
 	if(translators && translators.length) {
 		translate.setTranslator(translators[0]);
 		translate.translate();
@@ -121,13 +122,14 @@ translate.setHandler("itemSaving", function(obj, item) {
 		item);
 });
 translate.setHandler("itemDone", function(obj, dbItem, item) {
+	haveItem = true;
 	Zotero.ProgressWindow.itemDone(Zotero.ItemTypes.getImageSrc(item.itemType),
 		item);
 });
 translate.setHandler("done", function(obj, returnValue) {
-	if(returnValue && obj.newItems.length) {
+	if(returnValue && haveItem) {
 		Zotero.ProgressWindow.startCloseTimer(2500);
-	} else {
+	} else if(!cancelled) {
 		Zotero.ProgressWindow.showError();
 		Zotero.ProgressWindow.startCloseTimer(8000);
 	}
@@ -136,6 +138,7 @@ translate.setHandler("done", function(obj, returnValue) {
 
 // Add message listener for translate, so we don't call until the iframe is loaded
 Zotero.Messaging.addMessageListener("translate", function(data, event) {
+	Zotero.ProgressWindow.changeHeadline("Looking for Translators...");
 	if(event.origin.substr(0, 6) === "https:" && ZOTERO_CONFIG.BOOKMARKLET_URL.substr(0, 5) === "http:") {
 		ZOTERO_CONFIG.BOOKMARKLET_URL = "https:"+ZOTERO_CONFIG.BOOKMARKLET_URL.substr(5);
 	}
@@ -144,6 +147,7 @@ Zotero.Messaging.addMessageListener("translate", function(data, event) {
 Zotero.Messaging.addMessageListener("selectDone", function(returnItems) {
 	// if no items selected, close save dialog immediately
 	if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
+		cancelled = true;
 		Zotero.ProgressWindow.close();
 	}
 	selectCallback(returnItems);
@@ -164,7 +168,10 @@ Zotero.Messaging.addMessageListener("hideZoteroIFrame", function() {
 if(Zotero.isIE && window.location.protocol === "http:") {
 	ZOTERO_CONFIG.BOOKMARKLET_URL = ZOTERO_CONFIG.BOOKMARKLET_URL.replace("https", "http");
 }
-window.zoteroShowProgressWindow = function() { Zotero.ProgressWindow.show() };
+window.zoteroShowProgressWindow = function() {
+	Zotero.ProgressWindow.show();
+	Zotero.ProgressWindow.changeHeadline("Looking for Zotero Standalone...");
+};
 window.zoteroBookmarkletURL = ZOTERO_CONFIG.BOOKMARKLET_URL;
 
 // This closes the block of code to be injected only if the bookmarklet hasn't been previously

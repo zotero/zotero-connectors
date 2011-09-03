@@ -191,7 +191,7 @@ Zotero.Translators = new function() {
 					
 					var converterInfo = false;
 					for(var j=0, m=searchURIs.length; j<m; j++) {
-						if(!translator.webRegexp || translator.webRegexp.test(searchURIs[i])) {
+						if(!translator.webRegexp || translator.webRegexp.test(searchURIs[j])) {
 							if(j === 0) {
 								converterInfo = null;
 							} else {
@@ -202,7 +202,9 @@ Zotero.Translators = new function() {
 					}
 					
 					if(converterInfo === false) {
-						throw new Error("Server returned translator that did not match any page");
+						Zotero.logError("Server returned translator that did not match any page. "+
+							"(Target: "+translator.target+", URIs: "+JSON.stringify(searchURIs)+")");
+						continue;
 					}
 					uniqueTranslatorsAndConverterFunctions.push([translator, converterInfo]);
 				}

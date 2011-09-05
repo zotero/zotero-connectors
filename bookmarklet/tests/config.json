@@ -1,6 +1,7 @@
 {
 	"translatorsDirectory":"/Users/simon/Desktop/Development/FS/translators",
 	"testPayload":"/Users/simon/Desktop/Development/FS/zotero-connectors/bookmarklet/tests/inject_test.js",
+	"concurrentTests":6,
 	"browser":"chrome",
 	"exclude":[
 		"8b73dd9c-b873-4d13-b36a-45922b9f04a1"

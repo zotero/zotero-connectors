@@ -129,14 +129,14 @@ public class BookmarkletTester {
 	}
 	
 	static void runTests() throws InterruptedException {
-		BookmarkletTestThread[] threads = new BookmarkletTestThread[NUM_CONCURRENT_TESTS];
+		BookmarkletTestThread[] threads = new BookmarkletTestThread[config.concurrentTests];
 		
-		for(int i=0; i<NUM_CONCURRENT_TESTS; i++) {
+		for(int i=0; i<config.concurrentTests; i++) {
 			threads[i] = new BookmarkletTestThread();
 			threads[i].start();
 		}
 		
-		for(int i=0; i<NUM_CONCURRENT_TESTS; i++) {
+		for(int i=0; i<config.concurrentTests; i++) {
 			threads[i].join();
 		}
 	}

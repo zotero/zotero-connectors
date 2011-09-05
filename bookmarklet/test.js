@@ -46,6 +46,7 @@ Zotero.Messaging.addMessageListener("translate", function(data, event) {
 		Zotero.ProgressWindow.changeHeadline("Test "+status.substr(0, 1).toUpperCase()+status.substr(1));
 		debugLines.push("TranslatorTester: "+myTranslator.label+" Test "+seleniumTestInfo.testNumber+": "+status+" ("+message+")");
 		seleniumCallback(JSON.stringify({"output":debugLines.join("\n\n"), "status":status}));
+		zoteroIFrame.parentNode.removeChild(zoteroIFrame);
 	}
 	
 	var translatorTester = new Zotero_TranslatorTester(myTranslator, "web", debug)

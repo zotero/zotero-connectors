@@ -24,14 +24,14 @@
 */
 
 // Enumeration of types of translators
-const TRANSLATOR_TYPES = {"import":1, "export":2, "web":4, "search":8};
+var TRANSLATOR_TYPES = {"import":1, "export":2, "web":4, "search":8};
 
 /**
  * Singleton to handle loading and caching of translators
  * @namespace
  */
 Zotero.Translators = new function() {
-	const infoRe = /^\s*{[\S\s]*?}\s*?[\r\n]/;
+	var infoRe = /^\s*{[\S\s]*?}\s*?[\r\n]/;
 	
 	/**
 	 * Gets translator code; only in this implementation
@@ -268,7 +268,7 @@ Zotero.Translators = new function() {
 	 */
 	this.preprocessCode = function(code) {
 		if(!Zotero.isFx) {
-			const foreach = /^(\s*)for each\s*\((var )?([^ ]+) in (.*?)\)(\s*){/gm;
+			var foreach = /^(\s*)for each\s*\((var )?([^ ]+) in (.*?)\)(\s*){/gm;
 			code = code.replace(foreach, "$1var $3_zForEachSubject = $4; "+
 				"for(var $3_zForEachIndex in $3_zForEachSubject)$5{ "+
 				"$2$3 = $3_zForEachSubject[$3_zForEachIndex];", code);
@@ -325,7 +325,7 @@ Zotero.Translators.CodeGetter.prototype.getCodeFor = function(i) {
 	}
 }
 
-const TRANSLATOR_REQUIRED_PROPERTIES = ["translatorID", "translatorType", "label", "creator", "target",
+var TRANSLATOR_REQUIRED_PROPERTIES = ["translatorID", "translatorType", "label", "creator", "target",
 		"priority", "lastUpdated"];
 var TRANSLATOR_PASSING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["displayOptions", "configOptions",
 		"browserSupport", "code", "runMode"]);
@@ -374,7 +374,9 @@ Zotero.Translator.prototype.init = function(info) {
 	
 	this.browserSupport = info["browserSupport"] ? info["browserSupport"] : "g";
 	
-	if(this.browserSupport.indexOf(Zotero.browser) !== -1 && this.browserSupport.indexOf("b") !== -1) {
+	if((this.browserSupport.indexOf(Zotero.browser) !== -1
+			&& this.browserSupport.indexOf("b") !== -1)
+			|| /(?:^|; ?)bookmarklet-debug-mode=1(?:$|; ?)/.test(document.cookie)) {
 		this.runMode = Zotero.Translator.RUN_MODE_IN_BROWSER;
 	} else {
 		this.runMode = Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE;

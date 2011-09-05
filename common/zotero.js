@@ -25,12 +25,22 @@
 
 var Zotero = new function() {
 	this.isConnector = true;
+	this.isFx = window.navigator.userAgent.indexOf("Netscape") !== -1;
 	this.isChrome = !!window.chrome;
 	this.isSafari = !!window.safari;
 	this.isWebKit = window.navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
 	this.isIE = window.navigator.appName === "Microsoft Internet Explorer";
 	this.version = "2.999.1";
-	this.browser = (window.chrome ? "c" : "s");
+	
+	if(this.isFx) {
+		this.browser = "g";
+	} else if(this.isSafari) {
+		this.browser = "c";
+	} else if(this.isIE) {
+		this.browser = "i";
+	} else {
+		this.browser = "c";
+	}
 	
 	this.initGlobal = function() {
 		Zotero.Debug.init();

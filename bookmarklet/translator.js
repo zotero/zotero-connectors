@@ -248,7 +248,7 @@ Zotero.Translators = new function() {
 		// handle translator arrays
 		if(translator.length !== undefined) {
 			var newTranslators = new Array(translator.length);
-			for(var i in translator) {
+			for(var i=0, n=translator.length; i<n; i++) {
 				newTranslators[i] = Zotero.Translators.serialize(translator[i], properties);
 			}
 			return newTranslators;
@@ -361,7 +361,7 @@ Zotero.Translator = function(info) {
  */
 Zotero.Translator.prototype.init = function(info) {
 	// make sure we have all the properties
-	for(var i in TRANSLATOR_REQUIRED_PROPERTIES) {
+	for(var i=0, n=TRANSLATOR_REQUIRED_PROPERTIES.length; i<n; i++) {
 		var property = TRANSLATOR_REQUIRED_PROPERTIES[i];
 		if(info[property] === undefined) {
 			this.logError('Missing property "'+property+'" in translator metadata JSON object in ' + info.label);
@@ -374,7 +374,7 @@ Zotero.Translator.prototype.init = function(info) {
 	
 	this.browserSupport = info["browserSupport"] ? info["browserSupport"] : "g";
 	
-	if(this.browserSupport.indexOf(Zotero.browser) !== -1) {
+	if(this.browserSupport.indexOf(Zotero.browser) !== -1 && this.browserSupport.indexOf("b") !== -1) {
 		this.runMode = Zotero.Translator.RUN_MODE_IN_BROWSER;
 	} else {
 		this.runMode = Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE;

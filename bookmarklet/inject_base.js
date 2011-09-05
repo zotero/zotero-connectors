@@ -98,11 +98,18 @@ translate.setDocument(document);
 translate.setHandler("translators", function(obj, translators) {
 	selectCallback = cancelled = haveItem = null;
 	
-	Zotero.ProgressWindow.changeHeadline("Saving Item...");
 	if(translators && translators.length) {
+		if(translators[0].runMode === Zotero.Translator.RUN_MODE_IN_BROWSER) {
+			Zotero.ProgressWindow.changeHeadline("Saving Item...");
+		} else {
+			Zotero.ProgressWindow.changeHeadline("Saving via Zotero Standalone...");
+		}
+		
 		translate.setTranslator(translators[0]);
 		translate.translate();
 	} else {
+		Zotero.ProgressWindow.changeHeadline("Saving Failed");
+		
 		Zotero.ProgressWindow.showNoTranslatorError();
 		Zotero.ProgressWindow.startCloseTimer(8000);
 		zoteroIFrame.parentNode.removeChild(zoteroIFrame);

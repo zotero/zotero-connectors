@@ -6,31 +6,43 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.android.AndroidDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.ie.InternetExplorerDriver;
-import org.openqa.selenium.iphone.IPhoneDriver;
 
 public class BookmarkletTester {
+	public static final int NUM_CONCURRENT_TESTS = 6;
+	
 	public static ObjectMapper mapper;
 	public static String testPayload = "";
 	public static Config config = null;
-	public static LinkedList<TranslatorTester> translatorTesters = new LinkedList<TranslatorTester>();
+	private static LinkedList<TranslatorTester> translatorTesters = new LinkedList<TranslatorTester>();
+	private static Iterator<TranslatorTester> testIterator;
 	
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		mapper = new ObjectMapper();
+		
+		String configFile, outputFile;
+		
+		if(args.length != 0) {
+			configFile = args[0];
+		} else {
+			configFile = "config.json";
+		}
+		
+		if(args.length >= 2) {
+			outputFile = args[1];
+		} else {
+			outputFile = "testResults.json";
+		}
 		
 		// Load config file
 		try {
-			config = mapper.readValue(new File("config.json"), Config.class);
+			config = mapper.readValue(new File(configFile), Config.class);
 		} catch(Exception e) {
 			System.err.println("Invalid configuration file");
 			e.printStackTrace();
@@ -46,7 +58,7 @@ public class BookmarkletTester {
 		
 		loadTranslators();
 		runTests();
-		mapper.writeValue(new File("testOutput.json"), translatorTesters);
+		mapper.writeValue(new File(outputFile), translatorTesters);
 	}
 	
 	static void loadTranslators() throws IOException {
@@ -111,40 +123,26 @@ public class BookmarkletTester {
 			translatorTesters.add(translatorTester);
 		}
 		
+		testIterator = translatorTesters.iterator();
 		System.out.println("Loaded "+Integer.toString(translatorTesters.size())
 				+" translators ("+Integer.toString(nTests)+" tests)");
 	}
 	
-	static void runTests() {
-		WebDriver driver;
-		if(config.browser.equals("firefox")) {
-			driver = new FirefoxDriver();
-		} else if(config.browser.equals("chrome")) {
-			System.setProperty("webdriver.chrome.driver", "chromedriver");
-			driver = new ChromeDriver();
-		} else if(config.browser.equals("ie")) {
-			driver = new InternetExplorerDriver();
-		} else if(config.browser.equals("iphone")) {
-			try {
-				driver = new IPhoneDriver();
-			} catch(Exception e) {
-				System.err.println("iPhone driver not available");
-				e.printStackTrace();
-				System.exit(1);
-				return;
-			}
-		} else if(config.browser.equals("android")) {
-			driver = new AndroidDriver();
-		} else {
-			System.out.println("Unknown browser "+config.browser);
-			System.exit(1);
-			return;
+	static void runTests() throws InterruptedException {
+		BookmarkletTestThread[] threads = new BookmarkletTestThread[NUM_CONCURRENT_TESTS];
+		
+		for(int i=0; i<NUM_CONCURRENT_TESTS; i++) {
+			threads[i] = new BookmarkletTestThread();
+			threads[i].start();
 		}
 		
-		driver.manage().timeouts().setScriptTimeout(15, java.util.concurrent.TimeUnit.SECONDS);
-		
-		for(TranslatorTester translatorTester : translatorTesters) {
-			translatorTester.runTests(driver);
+		for(int i=0; i<NUM_CONCURRENT_TESTS; i++) {
+			threads[i].join();
 		}
+	}
+	
+	static synchronized TranslatorTester getNextTranslatorTester() {
+		if(!testIterator.hasNext()) return null;
+		return (TranslatorTester) testIterator.next();
 	}
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 
@@ -30,9 +31,22 @@ class TranslatorTester {
 				pending.add(translatorTest);
 			}
 		}
+		
+		isSupported = false;
+		if(translator.browserSupport.contains("b")) {
+			if(BookmarkletTester.config.browser.equals("firefox")) {
+				isSupported = translator.browserSupport.contains("g");
+			} else if(BookmarkletTester.config.browser.equals("ie")) {
+				isSupported = translator.browserSupport.contains("i");
+			} else {
+				isSupported = translator.browserSupport.contains("c");
+			}
+		}
 	}
 	
 	void runTests(WebDriver driver) {
+		ObjectMapper mapper = new ObjectMapper();
+		
 		int i = 0;
 		while(pending.size() != 0) {
 			Test test = pending.removeFirst();
@@ -44,10 +58,10 @@ class TranslatorTester {
 			
 				String json = null;
 				String setup = "var seleniumCallback = arguments[0];\n"
-						+"var seleniumTestInfo = "+BookmarkletTester.mapper.writeValueAsString(testInfo)+";\n";
+						+"var seleniumTestInfo = "+mapper.writeValueAsString(testInfo)+";\n";
 				json = (String) ((JavascriptExecutor) driver).executeAsyncScript(setup+BookmarkletTester.testPayload);
 			
-				testOutput = BookmarkletTester.mapper.readValue(json, TestOutput.class);
+				testOutput = mapper.readValue(json, TestOutput.class);
 			} catch (Exception e) { 
 				testOutput = new TestOutput();
 				testOutput.output = e.toString();

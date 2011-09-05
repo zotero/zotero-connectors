@@ -8,6 +8,10 @@ public class Translator {
 	public Map<String,Object> configOptions, displayOptions;
 	public boolean inRepository;
 	
+	public Translator() {
+		browserSupport = "g";
+	}
+	
 	public void setTranslatorID(String x) { translatorID = x; }
 	public void setLabel(String x) { label = x; }
 	public void setCreator(String x) { creator = x; }

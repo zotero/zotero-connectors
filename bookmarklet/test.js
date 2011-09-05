@@ -35,6 +35,7 @@ Zotero.Messaging.addMessageListener("translate", function(data, event) {
 	var translator = seleniumTestInfo.translator;
 	translator.code = Zotero.Translators.preprocessCode(translator.code);
 	var myTranslator = new Zotero.Translator(seleniumTestInfo.translator);
+	myTranslator.runMode = Zotero.Translator.RUN_MODE_IN_BROWSER;
 	
 	var debugLines = [];
 	function debug(obj, message) {

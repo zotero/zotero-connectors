@@ -103,7 +103,8 @@ BOOKMARKLET_INJECT_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$XPCOMDIR/utilities.js" \
 	"$XPCOMDIR/utilities_translate.js" \
 	"$BOOKMARKLETDIR/messages.js" \
-	"$BOOKMARKLETDIR/messaging_inject.js")
+	"$BOOKMARKLETDIR/messaging_inject.js" \
+	"$BOOKMARKLETDIR/inject_base.js")
 
 BOOKMARKLET_IFRAME_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$BOOKMARKLETDIR/zotero_config.js" \
@@ -117,8 +118,14 @@ BOOKMARKLET_IFRAME_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$BOOKMARKLETDIR/translator.js" \
 	"$XPCOMDIR/utilities.js" \
 	"$BOOKMARKLETDIR/messages.js" \
-	"$COMMONDIR/zotero/messaging.js")
-	
+	"$COMMONDIR/zotero/messaging.js" \
+	"$BOOKMARKLETDIR/iframe_base.js")
+
+BOOKMARKLET_INJECT_TEST_INCLUDE=( \
+	"$EXTENSIONDIR/chrome/content/zotero/tools/testTranslators/translatorTester.js" \
+	"$BOOKMARKLETDIR/translator.js" \
+	"$BOOKMARKLETDIR/test.js")
+
 # Make alpha images for Safari
 rm -rf "$SAFARIDIR/images/itemTypes" "$SAFARIDIR/images/toolbar"
 mkdir "$SAFARIDIR/images/itemTypes"
@@ -240,11 +247,30 @@ do
 		tmpScript="$BOOKMARKLETDIR/dist/${scpt}${platform}_tmp.js"
 		builtScript="$BOOKMARKLETDIR/dist/${scpt}${platform}.js"
 		
-		# Bundle *_base.js
-		echo "/******** BEGIN ${scpt}_base.js ********/" >> "$tmpScript"
-		LC_CTYPE=C tr -d '\r' < "$BOOKMARKLETDIR/${scpt}_base.js" >> "$tmpScript"
-		echo "" >> "$tmpScript"
-		echo "/******** END ${scpt}_base.js ********/" >> "$tmpScript"
+		if [ "$scpt" == "inject" ]; then
+			# Make test scripts
+			testScript="$BOOKMARKLETDIR/tests/inject${platform}_test.js"
+			cp "$tmpScript" "$testScript"
+			
+			# Bundle test.js
+			for f in "${BOOKMARKLET_INJECT_TEST_INCLUDE[@]}"
+			do
+				echo "/******** BEGIN `basename $f` ********/"
+				LC_CTYPE=C tr -d '\r' < $f
+				echo ""
+				echo "/******** END `basename $f` ********/"
+			done >> "$testScript"
+			
+			# Bundle inject_post.js
+			for myTmpScript in "$tmpScript" "$testScript"
+			do
+				echo "}" >> "$myTmpScript"
+				echo "/******** BEGIN inject_post.js ********/" >> "$myTmpScript"
+				LC_CTYPE=C tr -d '\r' < "$BOOKMARKLETDIR/inject_post.js" >> "$myTmpScript"
+				echo "" >> "$myTmpScript"
+				echo "/******** END inject_post.js ********/" >> "$myTmpScript"
+			done
+		fi
 		
 		# Minify if not in debug mode
 		if [ "$1" == "debug" ]; then

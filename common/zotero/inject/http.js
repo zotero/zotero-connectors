@@ -87,8 +87,10 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 			if(newLoc !== prevUrl) {	// Just in case it fires too many times
 				prevUrl = newLoc;
 				
-				// ugh ugh ugh ugh
-				installXPathIfNecessary(newWin);
+				if(Zotero.isIE) {
+					// ugh ugh ugh ugh
+					installXPathIfNecessary(newWin);
+				}
 				processor(newDoc);
 			}
 		} catch(e) {
@@ -121,7 +123,6 @@ Zotero.Browser = {
 	"createHiddenBrowser":function() {
 		var hiddenBrowser = document.createElement("iframe");
 		hiddenBrowser.style.display = "none";
-		hiddenBrowser.setAttribute("onload", "alert('hi')");
 		document.body.appendChild(hiddenBrowser);
 		return hiddenBrowser;
 	},

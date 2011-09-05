@@ -33,6 +33,7 @@ Zotero.Messaging = new function() {
 	
 	var _callbacks = {};
 	var _messageListeners = {};
+	var _listenerRegistered = false;
 	
 	/**
 	 * Add a message listener
@@ -88,6 +89,8 @@ Zotero.Messaging = new function() {
 			}
 		}
 		
+		if(_listenerRegistered) return;
+		
 		var listener = function(event) {
 			try {
 				var data = event.data, origin = event.origin;
@@ -139,5 +142,7 @@ Zotero.Messaging = new function() {
 		} else {
 			window.onmessage = function() { listener(event) };
 		}
+		
+		_listenerRegistered = true;
 	}
 }

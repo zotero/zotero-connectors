@@ -30,7 +30,7 @@ Zotero.Translators = {
 	 */
 	"getConverterFunctions":function(converterDataArray) {
 		var converterFunctions = new Array(converterDataArray.length);
-		for(var i in converterDataArray) {
+		for(var i=0; i<converterDataArray.length; i++) {
 			if(converterDataArray[i] === null) {
 				converterFunctions[i] = null;
 			} else {

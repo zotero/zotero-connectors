@@ -173,20 +173,3 @@ window.zoteroShowProgressWindow = function() {
 	Zotero.ProgressWindow.changeHeadline("Looking for Zotero Standalone...");
 };
 window.zoteroBookmarkletURL = ZOTERO_CONFIG.BOOKMARKLET_URL;
-
-// This closes the block of code to be injected only if the bookmarklet hasn't been previously
-// injected on this page
-};
-
-var zoteroIFrame;
-if(document.getElementById("zotero-iframe")) {
-	alert("A previous translation process is still in progress. Please wait for it to complete, "+
-		"or refresh the page.");
-} else {
-	zoteroShowProgressWindow();
-	zoteroIFrame = document.createElement("iframe");
-	zoteroIFrame.id = "zotero-iframe";
-	zoteroIFrame.src = zoteroBookmarkletURL+"iframe"+(navigator.appName === "Microsoft Internet Explorer" ? "_ie" : "")+".html";
-	zoteroIFrame.style.display = "none";
-	(document.body ? document.body : document.documentElement).appendChild(zoteroIFrame);
-}

@@ -43,7 +43,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	 */
 	var removeListeners = function() {
 		if("removeEventListener" in hiddenBrowser) {
-			hiddenBrowser.removeEventListener("load", onLoad, true);
+			hiddenBrowser.removeEventListener("load", onLoad, false);
 		}
 		if(!dontDelete) Zotero.Browser.removeHiddenBrowser(hiddenBrowser);
 	}
@@ -59,17 +59,29 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 				Zotero.debug("HTTP.processDocuments: Loading "+url);
 				hiddenBrowser.src = url;
 			} catch(e) {
-				removeListeners();
 				if(exception) {
-					exception(e);
+					try {
+						exception(e);
+					} catch(e) {
+						Zotero.logError(e);
+					}
 					return;
 				} else {
-					throw(e);
+					Zotero.logError(e);
 				}
+				
+				removeListeners();
 			}
 		} else {
+			if(done) {
+				try {
+					done();
+				} catch(e) {
+					Zotero.logError(done);
+				}
+			}
+			
 			removeListeners();
-			if(done) done();
 		}
 	};
 	
@@ -80,8 +92,8 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	var onLoad = function() {
 		try {
 			var newWin = hiddenBrowser.contentWindow,
-				newDoc = newWin.document,
-				newLoc = newWin.location.toString();
+				newDoc = (newWin ? newWin.document : hiddenBrowser.contentDocument),
+				newLoc = (newWin ? newWin.location : newDoc.location).toString();
 			if(newLoc === "about:blank") return;
 			Zotero.debug("HTTP.processDocuments: "+newLoc+" has been loaded");
 			if(newLoc !== prevUrl) {	// Just in case it fires too many times
@@ -91,15 +103,27 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 					// ugh ugh ugh ugh
 					installXPathIfNecessary(newWin);
 				}
-				processor(newDoc);
+				
+				try {
+					processor(newDoc);
+				} catch(e) {
+					Zotero.logError(e);
+				}
+				
+				doLoad();
 			}
 		} catch(e) {
-			removeListeners();
 			if(exception) {
-				exception(e);
+				try {
+					exception(e);
+				} catch(e) {
+					Zotero.logError(e);
+				}
 			} else {
 				Zotero.logError(e);
 			}
+			
+			removeListeners();
 			return;
 		}
 	};
@@ -110,7 +134,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	
 	var hiddenBrowser = Zotero.Browser.createHiddenBrowser();
 	if(hiddenBrowser.addEventListener) {
-		hiddenBrowser.addEventListener("load", onLoad, true);
+		hiddenBrowser.addEventListener("load", onLoad, false);
 	} else {
 		hiddenBrowser.attachEvent("onload", onLoad);
 	}

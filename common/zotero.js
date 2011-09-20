@@ -64,7 +64,7 @@ var Zotero = new function() {
 		Zotero.Messaging.init();
 	};
 	
-	this.getSystemInfo = function() {
+	this.getSystemInfo = function(callback) {
 		var info = {
 			connector: "true",
 			version: this.version,
@@ -88,7 +88,7 @@ var Zotero = new function() {
 			str += key + ' => ' + info[key] + ', ';
 		}
 		str = str.substr(0, str.length - 2);
-		return str;
+		callback(str);
 	};
 	
 	this.debug = function(message, level) {

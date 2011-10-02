@@ -27,9 +27,11 @@
  * Only register progress window code in top window
  */
 var isTopWindow = false;
-try {
-	isTopWindow = window.top == window;
-} catch(e) {};
+if(window.top) {
+	try {
+		isTopWindow = window.top == window;
+	} catch(e) {};
+}
 
 if(isTopWindow) {
 	/*
@@ -166,7 +168,7 @@ Zotero.Inject = new function() {
 
 // check whether this is a hidden browser window being used for scraping
 var isHiddenIFrame = false;
-if(!isTopWindow) {
+if(!isTopWindow && window.frameElement) {
 	try {
 		isHiddenIFrame = window.frameElement.style.display === "none";
 	} catch(e) {}

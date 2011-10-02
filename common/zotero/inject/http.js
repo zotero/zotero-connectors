@@ -28,6 +28,20 @@
  * @namespace
  */
 if(!Zotero.HTTP) Zotero.HTTP = {};
+
+/**
+ * Determines whether the page to be loaded has the same origin as the current page
+ */
+Zotero.HTTP.isSameOrigin = function(url) {
+	const hostPortRe = /^(?:([^:]+):)\/\/([^\/]+)/i;
+	var m = hostPortRe.exec(url);
+	if(!m) {
+		return true;
+	} else {
+		return m[0].toLowerCase() === window.location.protocol.toLowerCase() &&
+			m[1].toLowerCase() === window.host.toLowerCase();
+	}
+}
  
 /**
  * Load one or more documents in a hidden iframe
@@ -38,12 +52,14 @@ if(!Zotero.HTTP) Zotero.HTTP = {};
  * @param {Function} exception Callback to be executed if an exception occurs
  */
 Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDelete) {
+	var loadingURL;
+	
 	/**
 	 * Removes event listener for the load event and deletes the hidden browser
 	 */
 	var removeListeners = function() {
 		if("removeEventListener" in hiddenBrowser) {
-			hiddenBrowser.removeEventListener("load", onLoad, false);
+			hiddenBrowser.removeEventListener("load", onFrameLoad, false);
 		}
 		if(!dontDelete) Zotero.Browser.removeHiddenBrowser(hiddenBrowser);
 	}
@@ -54,10 +70,16 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	 */
 	var doLoad = function() {
 		if(urls.length) {
-			var url = urls.shift();
+			loadingURL = urls.shift();
 			try {
-				Zotero.debug("HTTP.processDocuments: Loading "+url);
-				hiddenBrowser.src = url;
+				Zotero.debug("HTTP.processDocuments: Loading "+loadingURL);
+				if(Zotero.HTTP.isSameOrigin(loadingURL)) {	
+					hiddenBrowser.src = loadingURL;
+				} else if(Zotero.isBookmarklet) {
+					throw "Cross-site requests are not supported in the bookmarklet";
+				} else {
+					Zotero.HTTP.doGet(loadingURL, onCrossSiteLoad);
+				}
 			} catch(e) {
 				if(exception) {
 					try {
@@ -86,14 +108,11 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	};
 	
 	/**
-	 * Callback to be executed when a page load completes
+	 * Process a loaded document
 	 * @inner
 	 */
-	var onLoad = function() {
+	var process = function(newLoc, newDoc, newWin) {
 		try {
-			var newWin = hiddenBrowser.contentWindow,
-				newDoc = (newWin ? newWin.document : hiddenBrowser.contentDocument),
-				newLoc = (newWin ? newWin.location : newDoc.location).toString();
 			if(newLoc === "about:blank") return;
 			Zotero.debug("HTTP.processDocuments: "+newLoc+" has been loaded");
 			if(newLoc !== prevUrl) {	// Just in case it fires too many times
@@ -105,7 +124,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 				}
 				
 				try {
-					processor(newDoc);
+					processor(newDoc, newLoc);
 				} catch(e) {
 					Zotero.logError(e);
 				}
@@ -126,6 +145,55 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 			removeListeners();
 			return;
 		}
+	}
+	
+	/**
+	 * Callback to be executed when a page is retrieved via cross-site XHR
+	 * @inner
+	 */
+	var onCrossSiteLoad = function(xmlhttp) {
+		// add iframe
+		var iframe = document.createElement("iframe");
+		iframe.style.display = "none";
+		// ban script execution
+		iframe.setAttribute("sandbox", "allow-same-origin allow-forms");
+		document.body.appendChild(iframe);
+		
+		// load cross-site data into iframe
+		doc = iframe.contentDocument;
+		doc.open();
+		doc.write(xmlhttp.responseText);
+		doc.close();
+		process(loadingURL, doc, iframe.contentWindow);
+	}
+	
+	/**
+	 * Callback to be executed when a page load completes
+	 * @inner
+	 */
+	var onFrameLoad = function() {
+		var newWin = hiddenBrowser.contentWindow, newDoc, newLoc;
+		try {
+			newDoc = (newWin ? newWin.document : hiddenBrowser.contentDocument);
+			newLoc = (newWin ? newWin.location : newDoc.location).toString();
+		} catch(e) {
+			e = "Same origin HTTP request redirected to a different origin not handled";
+			
+			if(exception) {
+				try {
+					exception(e);
+				} catch(e) {
+					Zotero.logError(e);
+				}
+			} else {
+				Zotero.logError(e);
+			}
+			
+			removeListeners();
+			return;
+		}
+		
+		process(newLoc, newDoc, newWin);
 	};
 	
 	if(typeof(urls) == "string") urls = [urls];
@@ -134,9 +202,9 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	
 	var hiddenBrowser = Zotero.Browser.createHiddenBrowser();
 	if(hiddenBrowser.addEventListener) {
-		hiddenBrowser.addEventListener("load", onLoad, false);
+		hiddenBrowser.addEventListener("load", onFrameLoad, false);
 	} else {
-		hiddenBrowser.attachEvent("onload", onLoad);
+		hiddenBrowser.attachEvent("onload", onFrameLoad);
 	}
 	
 	doLoad();

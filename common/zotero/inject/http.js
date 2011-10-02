@@ -33,13 +33,13 @@ if(!Zotero.HTTP) Zotero.HTTP = {};
  * Determines whether the page to be loaded has the same origin as the current page
  */
 Zotero.HTTP.isSameOrigin = function(url) {
-	const hostPortRe = /^(?:([^:]+):)\/\/([^\/]+)/i;
+	const hostPortRe = /^([^:]+:)\/\/([^\/]+)/i;
 	var m = hostPortRe.exec(url);
 	if(!m) {
 		return true;
 	} else {
-		return m[0].toLowerCase() === window.location.protocol.toLowerCase() &&
-			m[1].toLowerCase() === window.host.toLowerCase();
+		return m[1].toLowerCase() === window.location.protocol.toLowerCase() &&
+			m[2].toLowerCase() === window.location.host.toLowerCase();
 	}
 }
  

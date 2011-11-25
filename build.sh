@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CWD=`pwd`
-EXTENSIONDIR="$Z"
+EXTENSIONDIR="$CWD/modules/zotero"
 SAFARIDIR="$CWD/safari/Zotero Connector for Safari.safariextension"
 CHROMEDIR="$CWD/chrome"
 COMMONDIR="$CWD/common"

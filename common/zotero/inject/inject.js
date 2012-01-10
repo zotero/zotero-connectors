@@ -184,9 +184,8 @@ if(!isHiddenIFrame) {
 	// initialize
 	Zotero.initInject();
 	
-	// Send page load event to clear current save icon (but only in Safari, since in Chrome the page
-	// action is automatically invalidated when the page changes, so we don't need this message)
-	if(isTopWindow && Zotero.isSafari) Zotero.Connector_Browser.onPageLoad();
+	// Send page load event to clear current save icon/data
+	if(isTopWindow) Zotero.Connector_Browser.onPageLoad();
 	
 	// wait until load is finished, then run detection
 	if(document.readyState == "loading") {

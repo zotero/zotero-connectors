@@ -42,8 +42,6 @@
 <script type="text/javascript" src="zotero/utilities.js"></script>
 <script type="text/javascript" src="zotero/messages.js"></script>
 <script type="text/javascript" src="zotero/messaging.js"></script>
-<script type="text/javascript" src="tools/testTranslators/translatorTester.js"></script>
-<script type="text/javascript" src="tools/testTranslators/translatorTester_global.js"></script>
 <!--END GLOBAL SCRIPTS-->
 <script type="text/javascript"> 
 Zotero.Connector_Browser = new function() {
@@ -56,7 +54,9 @@ Zotero.Connector_Browser = new function() {
 	 * Called when translators are available for a given page
 	 */
 	this.onTranslators = function(translators, instanceID, tab) {
-		if(!translators || !translators.length) return;
+		var oldTranslators = _translatorsForTabIDs[tab.id];
+		if(oldTranslators && oldTranslators.length
+			&& (!translators.length || oldTranslators[0].priority <= translators[0].priority)) return;
 		_translatorsForTabIDs[tab.id] = translators;
 		_instanceIDsForTabs[tab.id] = instanceID;
 		var itemType = translators[0].itemType;
@@ -97,9 +97,9 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	/**
-	 * Called when a tab is removed
+	 * Called when a tab is removed or the URL has changed
 	 */
-	this.onTabRemoved = function(tabID) {
+	this.onTabRemoved = this.onPageLoad = function(tabID) {
 		delete _translatorsForTabIDs[tabID];
 		delete _instanceIDsForTabs[tabID];
 		delete _selectCallbacksForTabIDs[tabID];

@@ -42,8 +42,6 @@
 <script type="text/javascript" src="zotero/utilities.js"></script>
 <script type="text/javascript" src="zotero/messages.js"></script>
 <script type="text/javascript" src="zotero/messaging.js"></script>
-<script type="text/javascript" src="tools/testTranslators/translatorTester.js"></script>
-<script type="text/javascript" src="tools/testTranslators/translatorTester_global.js"></script>
 <!--END GLOBAL SCRIPTS-->
 <script type="text/javascript">
 Zotero.Connector_Browser = new function() {
@@ -65,7 +63,8 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onTranslators = function(translators, instanceID, tab) {
 		// if we already have translators for this page, return
-		if(tab.translators && tab.translators.length) return;
+		if(tab.translators && tab.translators.length
+			&& (!translators.length || tab.translators[0].priority <= translators[0].priority)) return;
 		tab.instanceID = instanceID;
 		tab.translators = translators;
 		tab.translatorsForURL = tab.url;

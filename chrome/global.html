@@ -99,10 +99,9 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Called when a tab is removed or the URL has changed
 	 */
-	this.onTabRemoved = this.onPageLoad = function(tabID) {
-		delete _translatorsForTabIDs[tabID];
-		delete _instanceIDsForTabs[tabID];
-		delete _selectCallbacksForTabIDs[tabID];
+	this.onTabRemoved = _clearInfoForTab;
+	this.onPageLoad = function(tab) {
+		_clearInfoForTab(tab.id);
 	}
 	
 	/**
@@ -141,6 +140,15 @@ Zotero.Connector_Browser = new function() {
 			'Please ensure that you have installed the latest version of these components. See '+
 			'http://www.zotero.org/support/standalone for more details.');
 		_incompatibleVersionMessageShown = true;
+	}
+	
+	/**
+	 * Removes information about a specific tab
+	 */
+	function _clearInfoForTab(tabID) {
+		delete _translatorsForTabIDs[tabID];
+		delete _instanceIDsForTabs[tabID];
+		delete _selectCallbacksForTabIDs[tabID];
 	}
 }
 

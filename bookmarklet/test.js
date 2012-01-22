@@ -27,6 +27,12 @@
 Zotero.Messaging.init();
 
 Zotero.Messaging.addMessageListener("translate", function(data, event) {
+	var debugLines = [];
+	function debug(obj, message) {
+		if(typeof message !== "string") message = JSON.stringify(message);
+		debugLines.push(message);
+	}
+	
 	Zotero.ProgressWindow.changeHeadline("Running Test...");
 	if(event.origin.substr(0, 6) === "https:" && ZOTERO_CONFIG.BOOKMARKLET_URL.substr(0, 5) === "http:") {
 		ZOTERO_CONFIG.BOOKMARKLET_URL = "https:"+ZOTERO_CONFIG.BOOKMARKLET_URL.substr(5);
@@ -34,18 +40,14 @@ Zotero.Messaging.addMessageListener("translate", function(data, event) {
 	
 	var translator = seleniumTestInfo.translator;
 	translator.code = Zotero.Translators.preprocessCode(translator.code);
+	debug(null, "\nTranslatorTester: Running "+translator.label+" Test "+seleniumTestInfo.testNumber);
 	var myTranslator = new Zotero.Translator(seleniumTestInfo.translator);
 	myTranslator.runMode = Zotero.Translator.RUN_MODE_IN_BROWSER;
 	
-	var debugLines = [];
-	function debug(obj, message) {
-		if(typeof message !== "string") message = JSON.stringify(message);
-		debugLines.push(message);
-	}	
 	function testDoneCallback(obj, test, status, message) {
 		Zotero.ProgressWindow.changeHeadline("Test "+status.substr(0, 1).toUpperCase()+status.substr(1));
 		debugLines.push("TranslatorTester: "+myTranslator.label+" Test "+seleniumTestInfo.testNumber+": "+status+" ("+message+")");
-		seleniumCallback(JSON.stringify({"output":debugLines.join("\n\n"), "status":status}));
+		seleniumCallback(JSON.stringify({"output":debugLines.join("\n"), "status":status}));
 		zoteroIFrame.parentNode.removeChild(zoteroIFrame);
 	}
 	

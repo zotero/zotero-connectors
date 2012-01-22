@@ -87,6 +87,7 @@ class TranslatorTester {
 	public String getOutput() { return output; }
 	public String getTranslatorID() { return translator.translatorID; }
 	public String getLabel() { return translator.label; }
+	public boolean getIsSupported() { return isSupported; }
 	public int getPending() { return pending.size(); }
 	public int getFailed() { return failed.size(); }
 	public int getSucceeded() { return succeeded.size(); }

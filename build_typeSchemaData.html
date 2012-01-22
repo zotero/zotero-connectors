@@ -20,9 +20,9 @@ var types = Zotero.ItemTypes.getTypes();
 var fieldIDs = Zotero.DB.columnQuery("SELECT fieldID FROM fieldsCombined");
 var baseMappedFields = Zotero.ItemFields.getBaseMappedFields();
 for each(var fieldID in fieldIDs) {
-	var fieldObj = {"name":Zotero.ItemFields.getName(fieldID)};
+	var fieldObj = [/* name */Zotero.ItemFields.getName(fieldID)];
 	try {
-		fieldObj.localizedString = Zotero.getString("itemFields." + fieldObj.name)
+		fieldObj.push(/* localizedString */Zotero.getString("itemFields." + fieldObj.name));
 	} catch(e) {}
 	schema.fields[fieldID] = fieldObj;
 }
@@ -33,24 +33,37 @@ for each(var type in types) {
 	var baseFields = {};
 	for each(var fieldID in fieldIDs) {
 		if(baseMappedFields.indexOf(fieldID) !== -1) {
-			baseFields[fieldID] = Zotero.ItemFields.getFieldIDFromTypeAndBase(type.id, fieldID);
+			baseFields[fieldID] = Zotero.ItemFields.getBaseIDFromTypeAndField(type.id, fieldID);
 		}
 	}
 	
 	var icon = Zotero.ItemTypes.getImageSrc(type.name);
 	icon = icon.substr(icon.lastIndexOf("/")+1);
 	
-	schema.itemTypes[type.id] = {"name":type.name,
-		"localizedString":Zotero.ItemTypes.getLocalizedString(type.name),
-		"creatorTypes":[creatorType.id for each(creatorType in Zotero.CreatorTypes.getTypesForItemType(type.id))],
-		"fields":fieldIDs, "baseFields":baseFields, "icon":icon};
+	var creatorTypes = [creatorType.id for each(creatorType in Zotero.CreatorTypes.getTypesForItemType(type.id))];
+	var primaryCreatorType = Zotero.CreatorTypes.getPrimaryIDForType(type.id);
+	if(creatorTypes[0] != primaryCreatorType) {
+		creatorTypes.splice(creatorTypes.indexOf(primaryCreatorType), 1);
+		creatorTypes.unshift(primaryCreatorType);
+	}
+	
+	schema.itemTypes[type.id] = [
+		/* name */type.name,
+		/* localizedString */Zotero.ItemTypes.getLocalizedString(type.name),
+		/* creatorTypes */creatorTypes,
+		/* fields */ fieldIDs,
+		/* baseFields */baseFields,
+		/* icon */icon
+	];
 		
 }
 
 var types = Zotero.CreatorTypes.getTypes();
 for each(var type in types) {
-	schema.creatorTypes[type.id] = {"name":type.name,
-		"localizedString":Zotero.CreatorTypes.getLocalizedString(type.name)};
+	schema.creatorTypes[type.id] = [
+		/* name */type.name,
+		/* localizedString */Zotero.CreatorTypes.getLocalizedString(type.name)
+	];
 }
 
 // Write to file

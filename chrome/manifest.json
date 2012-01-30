@@ -1,6 +1,6 @@
 {
 	"name": "Zotero Connector for Chrome",
-	"version": "2.999.5",
+	"version": "3.0",
 	"description": "Saves references to Zotero from Chrome",
 	"page_action": {
 		"default_icon": "images/zotero-z-16px.png",

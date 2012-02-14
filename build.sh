@@ -196,6 +196,7 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	cd "$CWD"
 done
 
+# Make bookmarklet
 rm -rf "$BOOKMARKLETDIR/dist"
 mkdir "$BOOKMARKLETDIR/dist"
 mkdir "$BOOKMARKLETDIR/dist/icons"

@@ -107,10 +107,22 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function(test, testDoneC
 		tab.id = (new Date()).getTime();
 		tabData.tab = tab;
 		_tabData[tab.id] = tabData;
+		
+		window.setTimeout(function() {
+			try {
+				tab.close();
+			} catch(e) {}
+		}, TEST_RUN_TIMEOUT);
 	} else if(Zotero.isChrome) {
 		chrome.tabs.create({"url":(url ? url : test.url), "selected":false}, function(tab) {
 			tabData.tab = tab;
 			_tabData[tab.id] = tabData;
+			
+			window.setTimeout(function() {
+				try {
+					chrome.tabs.remove(tab.id);
+				} catch(e) {}
+			}, TEST_RUN_TIMEOUT);
 		});
 	}
 }

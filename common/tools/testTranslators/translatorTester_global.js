@@ -117,5 +117,8 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function(test, testDoneC
  * Runs non-web tests in a different tab
  */
 Zotero_TranslatorTester.prototype.runTest = function(test, doc, testDoneCallback) {
-	this.fetchPageAndRunTest(test, testDoneCallback, "http://127.0.0.1:23119/");
+	var me = this;
+	window.setTimeout(function() {
+		me.fetchPageAndRunTest(test, testDoneCallback, "http://127.0.0.1:23119/");
+	}, 60000);
 }

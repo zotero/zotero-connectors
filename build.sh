@@ -132,13 +132,16 @@ BOOKMARKLET_INJECT_TEST_INCLUDE=( \
 rm -rf "$SAFARIDIR/images/itemTypes" "$SAFARIDIR/images/toolbar"
 mkdir "$SAFARIDIR/images/itemTypes"
 mkdir "$SAFARIDIR/images/toolbar"
-cp $IMAGES "$SAFARIDIR/images/itemTypes"
-cp $PREFS_IMAGES "$SAFARIDIR/images"
-for f in $IMAGES
-do
-	convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
-			Opacity -contrast-stretch 50 "$SAFARIDIR/images/toolbar/"`basename $f`
-done
+convert -version > /dev/null
+if [ $? == 0 ]; then
+	cp $IMAGES "$SAFARIDIR/images/itemTypes"
+	cp $PREFS_IMAGES "$SAFARIDIR/images"
+	for f in $IMAGES
+	do
+		convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
+				Opacity -contrast-stretch 50 "$SAFARIDIR/images/toolbar/"`basename $f`
+	done
+fi
 
 # Copy images for Chrome
 rm -rf "$CHROMEDIR/images"

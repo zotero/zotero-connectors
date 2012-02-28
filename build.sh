@@ -37,6 +37,7 @@ INJECT_INCLUDE=('zotero.js' \
 	'messaging_inject.js')
 if [ "$1" == "debug" ]; then
 	INJECT_INCLUDE=("${INJECT_INCLUDE[@]}" \
+		'tools/testTranslators/translatorTester_messages.js' \
 		'tools/testTranslators/translatorTester.js' \
 		'zotero/inject/inject.js' \
 		'tools/testTranslators/translatorTester_inject.js')
@@ -66,6 +67,7 @@ GLOBAL_INCLUDE=('zotero.js' \
 	'zotero/messaging.js')
 if [ "$1" == "debug" ]; then
 	GLOBAL_INCLUDE=("${GLOBAL_INCLUDE[@]}" \
+		'tools/testTranslators/translatorTester_messages.js' \
 		'tools/testTranslators/translatorTester.js' \
 		'tools/testTranslators/translatorTester_global.js')
 fi

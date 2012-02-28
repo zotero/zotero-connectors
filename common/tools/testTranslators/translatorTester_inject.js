@@ -50,10 +50,22 @@ if(isTopWindow) {
 		}
 	}
 	
+	/**
+	 * Called once the page has loaded
+	 */
+	var onLoad = function() {
+		if(document.documentURI === "http://127.0.0.1:23119/provo/run"
+				&& document.documentElement.textContent === "fnord") {
+			Zotero.TranslatorTester.runAutomatedTesting();
+		} else {
+			Zotero.TranslatorTester.onLoad(Zotero_TranslatorTester.runTest);
+		}
+	};
+	
 	// wait until load is finished, then see if there are associated tests
 	if(document.readyState == "loading") {
-		document.addEventListener("load", function() { Zotero.TranslatorTester.onLoad(Zotero_TranslatorTester.runTest) }, false);
+		document.addEventListener("load", onLoad, false);
 	} else {
-		Zotero.TranslatorTester.onLoad(Zotero_TranslatorTester.runTest);
+		onLoad();
 	}
 }

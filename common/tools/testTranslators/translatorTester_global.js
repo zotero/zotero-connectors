@@ -23,13 +23,12 @@
     ***** END LICENSE BLOCK *****
 */
 
-// Put these functions in global Zotero namespace so that messaging works
 Zotero.TranslatorTester = {};
 var _tabData = {};
 
 /**
- * Called to run tests using the testing framework in Chrome or Safari (not to be confused with
- * Zotero.TranslatorTester#runTests
+ * Called to run tests using the testing framework in Chrome or Safari, not to be confused with
+ * Zotero_TranslatorTester#runTests
  */
 Zotero.TranslatorTester.runTests = function(translator, type, instanceID, tab) {
 	var debug = function(obj, msg, level) {
@@ -58,7 +57,7 @@ Zotero.TranslatorTester.onLoad = function(callback, tab) {
 }
 
 /**
- * Called via injected script when test is complete
+ * Called via injected script with debug output
  */
 Zotero.TranslatorTester.debug = function(obj, message, level, tab) {
 	_tabData[tab.id].instance._debug(obj, message, level);
@@ -78,11 +77,22 @@ Zotero.TranslatorTester.testComplete = function(obj, test, status, message, tab)
 }
 
 /**
+ * Performs automated translator testing
+ */
+Zotero.TranslatorTester.runAutomatedTesting = function() {	
+	Zotero_TranslatorTesters.runAllTests(6, {}, function(data) {
+		Zotero.HTTP.doPost("http://127.0.0.1:23119/provo/save", JSON.stringify(data),
+				function() {}, {"Content-Type":"application/json"});
+	});
+};
+
+/**
  * Fetches the page for a given test and runs it
  * @param {Object} test Test to execute
  * @param {Function} testDoneCallback A callback to be executed when test is complete
+ * @param {String} url URL to override the test URL
  */
-Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function(test, testDoneCallback) {
+Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function(test, testDoneCallback, url) {
 	var tabData = {
 		"instance":this,
 		"test":test,
@@ -91,14 +101,21 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function(test, testDoneC
 	
 	if(Zotero.isSafari) {
 		var tab = safari.application.activeBrowserWindow.openTab("background");
-		tab.url = test.url;
+		tab.url = (url ? url : test.url);
 		tab.id = (new Date()).getTime();
 		tabData.tab = tab;
 		_tabData[tab.id] = tabData;
 	} else if(Zotero.isChrome) {
-		chrome.tabs.create({"url":test.url, "selected":false}, function(tab) {
+		chrome.tabs.create({"url":(url ? url : test.url), "selected":false}, function(tab) {
 			tabData.tab = tab;
 			_tabData[tab.id] = tabData;
 		});
 	}
+}
+
+/**
+ * Runs non-web tests in a different tab
+ */
+Zotero_TranslatorTester.prototype.runTest = function(test, doc, testDoneCallback) {
+	this.fetchPageAndRunTest(test, testDoneCallback, "http://127.0.0.1:23119/");
 }

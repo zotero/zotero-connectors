@@ -67,7 +67,7 @@
  * See other messaging scripts for more details.
  */
 const MESSAGE_SEPARATOR = ".";
-const MESSAGES = {
+var MESSAGES = {
 	"Translators":
 		{
 			"get":{
@@ -167,12 +167,5 @@ const MESSAGES = {
 	"Repo":
 		{
 			"update":false
-		},
-	"TranslatorTester":
-		{
-			"onLoad":true,
-			"debug":false,
-			"runTests":false,
-			"testComplete":false
 		}
 };

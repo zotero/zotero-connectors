@@ -141,6 +141,8 @@ do
 done
 
 # Copy images for Chrome
+rm -rf "$CHROMEDIR/images"
+mkdir "$CHROMEDIR/images"
 cp $IMAGES "$CHROMEDIR/images"
 cp $PREFS_IMAGES "$CHROMEDIR/images"
 

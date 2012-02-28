@@ -81,7 +81,7 @@ Zotero.TranslatorTester.testComplete = function(obj, test, status, message, tab)
  */
 Zotero.TranslatorTester.runAutomatedTesting = function() {	
 	window.setTimeout(function() {
-		Zotero_TranslatorTesters.runAllTests(4, {}, function(data) {
+		Zotero_TranslatorTesters.runAllTests(3, {}, function(data) {
 				Zotero.HTTP.doPost("http://127.0.0.1:23119/provo/save", JSON.stringify(data),
 						function() {}, {"Content-Type":"application/json"});
 		});

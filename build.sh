@@ -132,7 +132,7 @@ BOOKMARKLET_INJECT_TEST_INCLUDE=( \
 rm -rf "$SAFARIDIR/images/itemTypes" "$SAFARIDIR/images/toolbar"
 mkdir "$SAFARIDIR/images/itemTypes"
 mkdir "$SAFARIDIR/images/toolbar"
-convert -version > /dev/null
+convert -version > /dev/null 2>&1
 if [ $? == 0 ]; then
 	cp $IMAGES "$SAFARIDIR/images/itemTypes"
 	cp $PREFS_IMAGES "$SAFARIDIR/images"
@@ -141,6 +141,11 @@ if [ $? == 0 ]; then
 		convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
 				Opacity -contrast-stretch 50 "$SAFARIDIR/images/toolbar/"`basename $f`
 	done
+else
+	echo "ImageMagick not installed; not creating monochrome Safari icons"
+	cp $IMAGES "$SAFARIDIR/images/itemTypes"
+	cp $IMAGES "$SAFARIDIR/images/toolbar"
+	cp $PREFS_IMAGES "$SAFARIDIR/images"
 fi
 
 # Copy images for Chrome

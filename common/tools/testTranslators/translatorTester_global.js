@@ -80,10 +80,12 @@ Zotero.TranslatorTester.testComplete = function(obj, test, status, message, tab)
  * Performs automated translator testing
  */
 Zotero.TranslatorTester.runAutomatedTesting = function() {	
-	Zotero_TranslatorTesters.runAllTests(6, {}, function(data) {
-		Zotero.HTTP.doPost("http://127.0.0.1:23119/provo/save", JSON.stringify(data),
-				function() {}, {"Content-Type":"application/json"});
-	});
+	window.setTimeout(function() {
+		Zotero_TranslatorTesters.runAllTests(6, {}, function(data) {
+				Zotero.HTTP.doPost("http://127.0.0.1:23119/provo/save", JSON.stringify(data),
+						function() {}, {"Content-Type":"application/json"});
+		});
+	}, 60000);
 };
 
 /**
@@ -117,8 +119,5 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function(test, testDoneC
  * Runs non-web tests in a different tab
  */
 Zotero_TranslatorTester.prototype.runTest = function(test, doc, testDoneCallback) {
-	var me = this;
-	window.setTimeout(function() {
-		me.fetchPageAndRunTest(test, testDoneCallback, "http://127.0.0.1:23119/");
-	}, 60000);
+	me.fetchPageAndRunTest(test, testDoneCallback, "http://127.0.0.1:23119/");
 }

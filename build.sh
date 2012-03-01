@@ -1,6 +1,26 @@
 #!/bin/bash
 
-CWD=`pwd`
+# Copyright (c) 2012  Zotero
+#                     Center for History and New Media
+#                     George Mason University, Fairfax, Virginia, USA
+#                     http://zotero.org
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. "$CWD/config.sh"
+
 EXTENSIONDIR="$CWD/modules/zotero"
 SAFARIDIR="$CWD/safari/Zotero Connector for Safari.safariextension"
 CHROMEDIR="$CWD/chrome"
@@ -207,6 +227,50 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$dir/zotero/"{} \;
 	cd "$CWD"
 done
+
+# Build Chrome extension
+if [ -e "$CHROME_CERTIFICATE" -a -e "$CHROME_EXECUTABLE" ]; then
+	"$CHROME_EXECUTABLE" --pack-extension="$CHROMEDIR" --pack-extension-key="$CHROME_CERTIFICATE" \
+		> /dev/null
+else
+	echo "No Chrome certificate found; not building Chrome extension"
+fi
+
+# Build Safari extension
+if [ -e "$SAFARI_PRIVATE_KEY" -a -e "$XAR_EXECUTABLE" ]; then
+	SAFARI_EXT="$CWD/Zotero_Connector.safariextz"
+	
+	# Make a temporary directory
+	TMP_BUILD_DIR="/tmp/zotero-connector-safari-build"
+	rm -rf "$TMP_BUILD_DIR"
+	mkdir "$TMP_BUILD_DIR"
+	
+	# Get size of signature
+	SIGSIZE=`: | openssl dgst -sign "$SAFARI_PRIVATE_KEY" -binary | wc -c`
+	
+	# Make XAR
+	pushd "$CWD/safari" > /dev/null
+	xar -cf "$SAFARI_EXT" --distribution "`basename \"$SAFARIDIR\"`"
+	popd "$CWD/safari" > /dev/null
+	
+	# Convert pem certificate to der
+	openssl x509 -outform der -in "$SAFARI_PRIVATE_KEY" -out "$TMP_BUILD_DIR/safari_key.der"
+	# Make signature data
+	"$XAR_EXECUTABLE" --sign -f "$CWD/Zotero_Connector.safariextz" \
+		--data-to-sign "$TMP_BUILD_DIR/safari_sha1.dat"  --sig-size $SIGSIZE \
+		--cert-loc="$TMP_BUILD_DIR/safari_key.der" --cert-loc="$SAFARI_AUX_CERTIFICATE1" \
+		--cert-loc="$SAFARI_AUX_CERTIFICATE2" > /dev/null
+	# Delete converted signature
+	rm -P "$TMP_BUILD_DIR/safari_key.der"
+	# Sign signature data
+	(echo "3021300906052B0E03021A05000414" | xxd -r -p; cat "$TMP_BUILD_DIR/safari_sha1.dat") \
+		| openssl rsautl -sign -inkey "$SAFARI_PRIVATE_KEY" > "$TMP_BUILD_DIR/signature.dat"
+	# Inject signature
+	"$XAR_EXECUTABLE" --inject-sig "$TMP_BUILD_DIR/signature.dat" -f "$SAFARI_EXT" > /dev/null
+else
+	echo "No Safari certificate found; not building Safari extension"
+fi
+
 
 # Make bookmarklet
 rm -rf "$BOOKMARKLETDIR/dist"

@@ -188,8 +188,11 @@ if(!isHiddenIFrame) {
 	if(isTopWindow) Zotero.Connector_Browser.onPageLoad();
 	
 	// wait until load is finished, then run detection
-	if(document.readyState == "loading") {
-		document.addEventListener("load", function() { Zotero.Inject.detect() }, false);
+	if(document.readyState !== "complete") {
+		document.addEventListener("readystatechange", function(e) {
+			if(e.target !== document || document.readyState !== "complete") return;
+			Zotero.Inject.detect();
+		}, false);
 	} else {
 		Zotero.Inject.detect();
 	}

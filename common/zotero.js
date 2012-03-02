@@ -35,7 +35,7 @@ var Zotero = new function() {
 	if(this.isFx) {
 		this.browser = "g";
 	} else if(this.isSafari) {
-		this.browser = "c";
+		this.browser = "s";
 	} else if(this.isIE) {
 		this.browser = "i";
 	} else {

@@ -68,6 +68,7 @@ Zotero.TranslatorTester.debug = function(obj, message, level, tab) {
  */
 Zotero.TranslatorTester.testComplete = function(obj, test, status, message, tab) {
 	_tabData[tab.id].callback(obj, test, status, message);
+	window.clearTimeout(_tabData[tab.id].timeoutID);
 	delete _tabData[tab.id];
 	if(Zotero.isSafari) {
 		tab.close();
@@ -106,23 +107,25 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function(test, testDoneC
 		tab.url = (url ? url : test.url);
 		tab.id = (new Date()).getTime();
 		tabData.tab = tab;
-		_tabData[tab.id] = tabData;
-		
-		window.setTimeout(function() {
+		tabData.timeoutID = window.setTimeout(function() {
 			try {
 				tab.close();
+				delete _tabData[tab.id];
 			} catch(e) {}
 		}, TEST_RUN_TIMEOUT);
+		
+		_tabData[tab.id] = tabData;
 	} else if(Zotero.isChrome) {
 		chrome.tabs.create({"url":(url ? url : test.url), "selected":false}, function(tab) {
 			tabData.tab = tab;
-			_tabData[tab.id] = tabData;
-			
-			window.setTimeout(function() {
+			tabData.timeoutID = window.setTimeout(function() {
 				try {
 					chrome.tabs.remove(tab.id);
+					delete _tabData[tab.id];
 				} catch(e) {}
 			}, TEST_RUN_TIMEOUT);
+			
+			_tabData[tab.id] = tabData;
 		});
 	}
 }

@@ -189,8 +189,8 @@ if(!isHiddenIFrame) {
 	
 	// wait until load is finished, then run detection
 	if(document.readyState !== "complete") {
-		document.addEventListener("readystatechange", function(e) {
-			if(e.target !== document || document.readyState !== "complete") return;
+		window.addEventListener("load", function(e) {
+			if(e.target !== document) return;
 			Zotero.Inject.detect();
 		}, false);
 	} else {

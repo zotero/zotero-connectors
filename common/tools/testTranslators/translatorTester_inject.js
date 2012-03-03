@@ -72,8 +72,8 @@ if(isTopWindow) {
 	
 	// wait until load is finished, then see if there are associated tests
 	if(document.readyState !== "complete") {
-		document.addEventListener("load", function(e) {
-			if(e.target !== document || document.readyState !== "complete") return;
+		window.addEventListener("load", function(e) {
+			if(e.target !== document) return;
 			onLoad();
 		}, false);
 	} else {

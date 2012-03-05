@@ -2,7 +2,26 @@
 <project default="create_run_jar" name="Create Runnable Jar for Project BookmarkletTester">
     <!--this file was created by Eclipse Runnable JAR Export Wizard-->
     <!--ANT 1.7 is required                                        -->
-    <target name="create_run_jar">
+    <path id="master-classpath">
+        <fileset dir="lib">
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="lib/selenium-2.20.0">
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="lib/selenium-2.20.0/libs">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+    <target name="prepare">
+        <mkdir dir="bin"/>
+    </target>
+    <target name="compile" depends="prepare">
+        <javac srcdir="src" destdir="bin" includeantruntime="false">
+            <classpath refid="master-classpath"/>
+        </javac>
+    </target>
+    <target name="create_run_jar" depends="compile">
         <jar destfile="test.jar" filesetmanifest="mergewithoutmain">
             <manifest>
                 <attribute name="Main-Class" value="org.zotero.BookmarkletTester.BookmarkletTester"/>

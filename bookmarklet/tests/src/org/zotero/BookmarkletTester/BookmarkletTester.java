@@ -50,18 +50,47 @@ public class BookmarkletTester {
 		}
 		
 		// Load js inject code
-		String s;
 		BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(config.testPayload), "UTF-8"));
+		String injectPayload = "";
+		String s;
 		while((s = in.readLine()) != null) {
-			testPayload += s+"\n";
+			injectPayload += s+"\n";
 		}
+		testPayload = "new function() { var f = document.createElement('iframe'),\n"+
+		"	a = (document.body ? document.body : document.documentElement);\n"+
+		"f.id = 'zotero-iframe'\n"+
+		"f.style.display = 'none';\n"+
+		"f.style.borderStyle = 'none';\n"+
+		"f.setAttribute('frameborder', '0');\n"+
+		"a.appendChild(f);\n";
+		if(config.browser.equals("i")) {
+			// IE doesn't support data URIs
+			String htmlPayload = mapper.writeValueAsString(
+					"<!DOCTYPE html><html><head><script type=\"text/javascript\">"
+					+injectPayload+"</script></head></html>");
+			testPayload += "var init = function() {\n"
+					+"f.contentWindow.document.write("+htmlPayload+") }\n"
+					+"if(f.contentWindow.document.readyState === 'complete') { init(); } else { "
+					+"f.onload = init; }";
+		} else {
+			testPayload += "var init = function() {\n"
+					+"var d = f.contentWindow.document, s = d.createElement('script');\n"
+					+"s.appendChild(d.createTextNode("+mapper.writeValueAsString(injectPayload)+"));\n"
+					+"s.type = 'text/javascript';\n"
+					+"(d.body ? d.body : d.documentElement).appendChild(s); }\n"
+					+"if(f.contentWindow.document.readyState === 'complete') { init(); } else { "
+					+"f.onload = init; }";
+		}
+		testPayload += "}";
 		
 		loadTranslators();
 		runTests();
-		mapper.writeValue(new File(outputFile), translatorTesters);
+		
+		TestResults results = new TestResults(config.browser+"b", config.version, translatorTesters);
+		mapper.writeValue(new File(outputFile), results);
 	}
 	
-	static void loadTranslators() throws IOException {
+	static void loadTranslators() {
 		Pattern infoRe = Pattern.compile("^\\s*\\{[\\S\\s]*?\\}\\s*?[\\r\\n]");
 		int nTests = 0;
 		
@@ -74,9 +103,14 @@ public class BookmarkletTester {
 			// Read file
 			String s;
 			String translatorContent = "";
-			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
-			while((s = in.readLine()) != null) {
-				translatorContent += s+"\n";
+			try {
+				BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
+				while((s = in.readLine()) != null) {
+					translatorContent += s+"\n";
+				}
+			} catch(IOException e) {
+				System.err.println("Failed to read "+file.getName());
+				continue;
 			}
 			
 			// Cut BOM if necessary
@@ -97,8 +131,7 @@ public class BookmarkletTester {
 				translator = mapper.readValue(json, Translator.class);
 			} catch(Exception e) {
 				System.err.println("Invalid translator metadata for "+file.getName()+"\n");
-				e.printStackTrace();
-				System.exit(1);
+				continue;
 			}
 			translator.code = translatorContent;
 			
@@ -112,7 +145,12 @@ public class BookmarkletTester {
 				if(testCode.endsWith(";")) {
 					testCode = testCode.substring(0, -1);
 				}
-				translatorTests = mapper.readValue(testCode, new TypeReference<ArrayList<Test>>() {});
+				try {
+					translatorTests = mapper.readValue(testCode, new TypeReference<ArrayList<Test>>() {});
+				} catch (Exception e) {
+					System.err.println("Failed to parse test JSON for "+translator.getLabel());
+					translatorTests = new ArrayList<Test>();
+				}
 			} else {
 				translatorTests = new ArrayList<Test>();
 			}

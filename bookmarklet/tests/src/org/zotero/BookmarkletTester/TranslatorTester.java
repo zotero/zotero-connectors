@@ -55,12 +55,15 @@ class TranslatorTester {
 			TestOutput testOutput;
 			try {
 				driver.get(test.url);
+				if(test.defer) {
+					Thread.sleep(10000);
+				}
 			
 				String json = null;
-				String setup = "var seleniumCallback = arguments[0];\n"
-						+"var seleniumTestInfo = "+mapper.writeValueAsString(testInfo)+";\n";
+				String setup = "window.zoteroSeleniumCallback = arguments[0];\n"
+						+"window.zoteroSeleniumTestInfo = "+mapper.writeValueAsString(testInfo)+";\n";
 				json = (String) ((JavascriptExecutor) driver).executeAsyncScript(setup+BookmarkletTester.testPayload);
-			
+				
 				testOutput = mapper.readValue(json, TestOutput.class);
 			} catch (Exception e) { 
 				testOutput = new TestOutput();
@@ -88,8 +91,8 @@ class TranslatorTester {
 	public String getTranslatorID() { return translator.translatorID; }
 	public String getLabel() { return translator.label; }
 	public boolean getIsSupported() { return isSupported; }
-	public int getPending() { return pending.size(); }
-	public int getFailed() { return failed.size(); }
-	public int getSucceeded() { return succeeded.size(); }
-	public int getUnknown() { return unknown.size(); }
+	public LinkedList<Test> getPending() { return pending; }
+	public LinkedList<Test> getFailed() { return failed; }
+	public LinkedList<Test> getSucceeded() { return succeeded; }
+	public LinkedList<Test> getUnknown() { return unknown; }
 }

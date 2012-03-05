@@ -38,8 +38,9 @@ Zotero.HTTP.isSameOrigin = function(url) {
 	if(!m) {
 		return true;
 	} else {
-		return m[1].toLowerCase() === window.location.protocol.toLowerCase() &&
-			m[2].toLowerCase() === window.location.host.toLowerCase();
+		var location = Zotero.isConnector ? window.parent.location : window.location;
+		return m[1].toLowerCase() === location.protocol.toLowerCase() &&
+			m[2].toLowerCase() === location.host.toLowerCase();
 	}
 }
  
@@ -76,7 +77,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 				if(Zotero.HTTP.isSameOrigin(loadingURL)) {	
 					hiddenBrowser.src = loadingURL;
 				} else if(Zotero.isBookmarklet) {
-					throw "Cross-site requests are not supported in the bookmarklet";
+					throw "Zotero.HTTP.processDocuments: Cannot perform cross-site request from "+window.parent.location+" to "+loadingURL;
 				} else {
 					Zotero.HTTP.doGet(loadingURL, onCrossSiteLoad);
 				}
@@ -122,6 +123,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 					// ugh ugh ugh ugh
 					installXPathIfNecessary(newWin);
 				}
+				newWin.alert = function() {};
 				
 				try {
 					processor(newDoc, newLoc);

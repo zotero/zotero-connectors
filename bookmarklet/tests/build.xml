@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project BookmarkletTester">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+        <jar destfile="test.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="org.zotero.BookmarkletTester.BookmarkletTester"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/selenium-java-2.20.0-srcs.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/selenium-java-2.20.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/jackson-core-lgpl-1.9.5.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/jackson-mapper-lgpl-1.9.5.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/apache-mime4j-0.6.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/bsh-1.3.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/cglib-nodep-2.1_3.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/commons-codec-1.6.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/commons-collections-3.2.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/commons-exec-1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/commons-io-2.0.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/commons-jxpath-1.3.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/commons-lang-2.6.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/commons-logging-1.1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/cssparser-0.9.5.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/guava-11.0.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/hamcrest-all-1.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/htmlunit-2.9.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/htmlunit-core-js-2.9.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/httpclient-4.1.2.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/httpcore-4.1.3.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/httpmime-4.1.2.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/ini4j-0.5.2.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/jcommander-1.13.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/jna-3.4.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/jna-platform-3.4.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/json-20080701.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/junit-dep-4.10.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/nekohtml-1.9.15.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/operadriver-v0.10.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/protobuf-java-2.4.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/sac-1.3.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/serializer-2.7.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/testng-6.0.1-nobsh-noguice.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/xalan-2.7.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/xercesImpl-2.9.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/selenium-2.20.0/libs/xml-apis-1.3.04.jar"/>
+        </jar>
+    </target>
+</project>

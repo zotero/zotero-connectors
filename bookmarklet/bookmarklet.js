@@ -20,7 +20,7 @@ new function() {
 			var s = d.createElement("script");
 			s.type = "text/javascript";
 			s.src = r;
-			(d.body ? d.body : documentElement).appendChild(s);
+			(d.body ? d.body : d.documentElement).appendChild(s);
 		} else {
 			d.write("<!DOCTYPE html><html><head><script type=\"text/javascript\" src=\""+r+"\"></script></head></html>");
 		}

@@ -283,7 +283,7 @@ do
 	
 	if [ "$scpt" == "inject" ]; then
 		files=("${BOOKMARKLET_INJECT_INCLUDE[@]}")
-		echo "new function() { if(window.zoteroShowProgressWindow) return;" > "$tmpScript"
+		echo "new function() { " > "$tmpScript"
 	else
 		files=("${BOOKMARKLET_IFRAME_INCLUDE[@]}")
 	fi
@@ -342,10 +342,6 @@ do
 			for myTmpScript in "$tmpScript" "$testScript"
 			do
 				echo "}" >> "$myTmpScript"
-				echo "/******** BEGIN inject_post.js ********/" >> "$myTmpScript"
-				LC_CTYPE=C tr -d '\r' < "$BOOKMARKLETDIR/inject_post.js" >> "$myTmpScript"
-				echo "" >> "$myTmpScript"
-				echo "/******** END inject_post.js ********/" >> "$myTmpScript"
 			done
 		fi
 		
@@ -367,9 +363,9 @@ else
 fi
 
 # Bookmarklet itself
-echo -n "<a href='javascript:" > "$BOOKMARKLETDIR/dist/bookmarklet.html"
-uglifyjs "$BOOKMARKLETDIR/bookmarklet.js" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
-echo -n "'>Save to Zotero</a>" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+echo -n '<a href="javascript:' > "$BOOKMARKLETDIR/dist/bookmarklet.html"
+uglifyjs "$BOOKMARKLETDIR/bookmarklet.js" | sed 's/"/\&quot;/g' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+echo -n '">Save to Zotero</a>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
 
 # Copy to dist directory
 cp "$BOOKMARKLETDIR/iframe.html" \

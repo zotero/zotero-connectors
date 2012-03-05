@@ -91,7 +91,7 @@ Zotero.Messaging = new function() {
 	 */
 	this.sendMessage = function(messageName, args, tab) {
 		if(Zotero.isBookmarklet) {
-			window.top.postMessage(BOOKMARKLET_MESSAGE_PREFIX+JSON.stringify([messageName, args]), "*");
+			window.parent.postMessage(BOOKMARKLET_MESSAGE_PREFIX+JSON.stringify([messageName, args]), "*");
 		} else if(Zotero.isChrome) {
 			chrome.tabs.sendRequest(tab.id, [messageName, args]);
 		} else if(Zotero.isSafari) {

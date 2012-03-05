@@ -40,3 +40,4 @@ const ZOTERO_CONFIG = {
 	OAUTH_CLIENT_SECRET: '9891148126da331d9c64',
 	BOOKMARKLET_URL: 'https://www.zotero.org/bookmarklet/'
 };
+Zotero.isBookmarklet = true;

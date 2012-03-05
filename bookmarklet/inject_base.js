@@ -30,7 +30,6 @@ var cssBookmarkletFrameDimmer = {"background":"black", "opacity":"0.5", "positio
 var cssBookmarkletFrame = {"position":pos, "zIndex":"16777271", "top":"50%",
 	"left":"50%", "background":"white"};
 
-Zotero.isBookmarklet = true;
 Zotero.initInject();
 Zotero.Connector_Types.init();
 
@@ -39,19 +38,23 @@ Zotero.Connector_Types.init();
  * @constructor
  */
 var BookmarkletFrame = function(url, width, height) {
-	this._appendTo = (document.body ? document.body : document.documentElement);
+	var parentWin = window.parent,
+		parentDoc = parentWin.document;
+	
+	this._appendFrameTo = (document.body ? document.body : document.documentElement);
+	this._appendDimmerTo = (parentDoc.body ? parentDoc.body : parentDoc.documentElement);
 	
 	// Make sure iframe is not bigger than window
 	var windowWidth, windowHeight;
-	if(window.innerWidth) {
-		windowWidth = window.innerWidth;
-		windowHeight = window.innerHeight;
-	} else if(document.documentElement.offsetWidth) {
-		windowWidth = document.documentElement.offsetWidth;
-		windowHeight = document.documentElement.offsetHeight;
-	} else if(document.body && document.body.offsetWidth) {
-		windowWidth = document.body.offsetWidth;
-		windowHeight = document.body.offsetHeight;
+	if(parentWin.innerWidth) {
+		windowWidth = parentWin.innerWidth;
+		windowHeight = parentWin.innerHeight;
+	} else if(parentDoc.documentElement.offsetWidth) {
+		windowWidth = parentDoc.documentElement.offsetWidth;
+		windowHeight = parentDoc.documentElement.offsetHeight;
+	} else if(parentDoc.body && parentDoc.body.offsetWidth) {
+		windowWidth = parentDoc.body.offsetWidth;
+		windowHeight = parentDoc.body.offsetHeight;
 	} else {
 		windowWidth = windowHeight = Infinity;
 	}
@@ -60,10 +63,10 @@ var BookmarkletFrame = function(url, width, height) {
 	height = Math.min(windowHeight-10, height);
 	width = Math.min(windowWidth-10, width);
 	
-	this._dimmer = document.createElement("div");
+	this._dimmer = parentDoc.createElement("div");
 	this._dimmer.style.cssText = cssDivClearString;
 	for(var i in cssBookmarkletFrameDimmer) this._dimmer.style[i] = cssBookmarkletFrameDimmer[i];
-	this._appendTo.appendChild(this._dimmer);
+	this._appendDimmerTo.appendChild(this._dimmer);
 	
 	// Add iframe
 	if(url) {
@@ -71,30 +74,41 @@ var BookmarkletFrame = function(url, width, height) {
 		this._frame.src = url;
 	} else {
 		this._frame = zoteroIFrame;
+		zoteroIFrame.style.display = "block";
 	}
-	for(var i in cssBookmarkletFrame) this._frame.style[i] = cssBookmarkletFrame[i];
-	this._frame.style.display = "block";
-	this._frame.style.margin = "-"+height/2+"px 0 0 -"+width/2+"px";
-	this._frame.style.width = width+"px";
-	this._frame.style.height = height+"px";
-	if(url) this._appendTo.appendChild(this._frame);
+	this._frame.style.position = "absolute";
+	this._frame.style.top = "0px";
+	this._frame.style.left = "0px";
+	this._frame.style.width = "100%";
+	this._frame.style.height = "100%";
+	this._frame.style.borderStyle = "none";
+	this._frame.setAttribute("frameborder", "0");
+	
+	var frameElementStyle = window.frameElement.style;
+	for(var i in cssBookmarkletFrame) frameElementStyle[i] = cssBookmarkletFrame[i];
+	frameElementStyle.display = "block";
+	frameElementStyle.margin = "-"+height/2+"px 0 0 -"+width/2+"px";
+	frameElementStyle.width = width+"px";
+	frameElementStyle.height = height+"px";
+	if(url) this._appendFrameTo.appendChild(this._frame);
 }
 
 /**
  * Removes the frame
  */
 BookmarkletFrame.prototype.remove = function() {
-	this._appendTo.removeChild(this._dimmer);
+	this._appendDimmerTo.removeChild(this._dimmer);
 	if(this._frame == zoteroIFrame) {
 		zoteroIFrame.style.display = "none";
 	} else {
-		this._appendTo.removeChild(this._frame);
+		this._appendFrameTo.removeChild(this._frame);
 	}
+	window.frameElement.style.display = "none";
 }
 
 var translate = new Zotero.Translate.Web(),
 	selectCallback, cancelled, haveItem;
-translate.setDocument(document);
+translate.setDocument(window.parent.document);
 translate.setHandler("translators", function(obj, translators) {
 	selectCallback = cancelled = haveItem = null;
 	
@@ -141,11 +155,13 @@ translate.setHandler("done", function(obj, returnValue) {
 		Zotero.ProgressWindow.startCloseTimer(8000);
 	}
 	zoteroIFrame.parentNode.removeChild(zoteroIFrame);
+	window.frameElement.parentNode.removeChild(window.frameElement);
 });
 
 // Add message listener for translate, so we don't call until the iframe is loaded
 Zotero.Messaging.addMessageListener("translate", function(data, event) {
 	Zotero.ProgressWindow.changeHeadline("Looking for Translators...");
+	if(Zotero.isIE) installXPathIfNecessary(window.parent);
 	if(event.origin.substr(0, 6) === "https:" && ZOTERO_CONFIG.BOOKMARKLET_URL.substr(0, 5) === "http:") {
 		ZOTERO_CONFIG.BOOKMARKLET_URL = "https:"+ZOTERO_CONFIG.BOOKMARKLET_URL.substr(5);
 	}
@@ -171,12 +187,27 @@ Zotero.Messaging.addMessageListener("hideZoteroIFrame", function() {
 	revealedFrame.remove();
 });
 
-// Expose zoteroShowProgressWindow and zoteroBookmarkletURL
+// For IE, load from http to avoid a warning
 if(Zotero.isIE && window.location.protocol === "http:") {
 	ZOTERO_CONFIG.BOOKMARKLET_URL = ZOTERO_CONFIG.BOOKMARKLET_URL.replace("https", "http");
 }
-window.zoteroShowProgressWindow = function() {
+
+var zoteroIFrame;
+// Start translation
+function startTranslation() {
 	Zotero.ProgressWindow.show();
 	Zotero.ProgressWindow.changeHeadline("Looking for Zotero Standalone...");
-};
-window.zoteroBookmarkletURL = ZOTERO_CONFIG.BOOKMARKLET_URL;
+	
+	zoteroIFrame = document.createElement("iframe");
+	zoteroIFrame.id = "zotero-privileged-iframe";
+	zoteroIFrame.src = ZOTERO_CONFIG.BOOKMARKLET_URL+"iframe"+(navigator.appName === "Microsoft Internet Explorer" ? "_ie" : "")+".html";
+	zoteroIFrame.style.display = "none";
+	document.body.appendChild(zoteroIFrame);
+	document.body.style.overflow = "hidden";
+}
+
+if(document.readyState && document.readyState !== "interactive" && document.readyState !== "complete") {
+	window.onload = startTranslation;
+} else {
+	startTranslation();
+}

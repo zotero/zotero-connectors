@@ -23,7 +23,11 @@
     ***** END LICENSE BLOCK *****
 */
 
-String.prototype.trim = function() { return this.replace(/^\s+|\s+$/, ''); };
+if(!String.prototype.trim) {
+	String.prototype.trim = function() { return this.replace(/^\s+|\s+$/, ''); };
+}
+
+var XMLHttpRequest = window.parent.XMLHttpRequest;
 
 /*  JavaScript-XPath 0.1.12
  *  (c) 2007 Cybozu Labs, Inc.

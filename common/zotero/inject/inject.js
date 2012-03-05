@@ -168,11 +168,9 @@ Zotero.Inject = new function() {
 
 // check whether this is a hidden browser window being used for scraping
 var isHiddenIFrame = false;
-if(!isTopWindow && window.frameElement) {
-	try {
-		isHiddenIFrame = window.frameElement.style.display === "none";
-	} catch(e) {}
-}
+try {
+	isHiddenIFrame = !isTopWindow && window.frameElement && window.frameElement.style.display === "none";
+} catch(e) {}
 
 // don't try to scrape on hidden frames
 if(!isHiddenIFrame) {

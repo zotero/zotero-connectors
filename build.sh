@@ -338,7 +338,7 @@ do
 				echo "/******** END `basename $f` ********/"
 			done >> "$testScript"
 			
-			# Bundle inject_post.js
+			# Add close paren
 			for myTmpScript in "$tmpScript" "$testScript"
 			do
 				echo "}" >> "$myTmpScript"

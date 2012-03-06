@@ -1,5 +1,6 @@
 package org.zotero.BookmarkletTester;
 
+import org.openqa.selenium.UnsupportedCommandException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.android.AndroidDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -35,7 +36,12 @@ public class BookmarkletTestThread extends Thread {
 		}
 		
 		driver.manage().timeouts().setScriptTimeout(600, java.util.concurrent.TimeUnit.SECONDS);
-		driver.manage().timeouts().pageLoadTimeout(600, java.util.concurrent.TimeUnit.SECONDS);
+		try {
+			driver.manage().timeouts().pageLoadTimeout(600, java.util.concurrent.TimeUnit.SECONDS);
+		} catch(UnsupportedCommandException e) {
+			System.setProperty("sun.net.client.defaultReadTimeout", "600000");
+			System.setProperty("sun.net.client.defaultConnectTimeout", "600000");
+		}
 		
 		TranslatorTester translatorTester;
 		while((translatorTester = BookmarkletTester.getNextTranslatorTester()) != null) {

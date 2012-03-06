@@ -176,8 +176,13 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	var onFrameLoad = function() {
 		var newWin = hiddenBrowser.contentWindow, newDoc, newLoc;
 		try {
-			newDoc = (newWin ? newWin.document : hiddenBrowser.contentDocument);
-			newLoc = (newWin ? newWin.location : newDoc.location).toString();
+			if(newWin) {
+				newDoc = newWin.document;
+			} else {
+				newDoc = hiddenBrowser.contentDocument;
+				newWin = newDoc.defaultView;
+			}
+			newLoc = newDoc.documentURI || newWin.location.toString();
 		} catch(e) {
 			e = "Same origin HTTP request redirected to a different origin not handled";
 			

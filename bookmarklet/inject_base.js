@@ -126,7 +126,7 @@ translate.setHandler("translators", function(obj, translators) {
 		
 		Zotero.ProgressWindow.showNoTranslatorError();
 		Zotero.ProgressWindow.startCloseTimer(8000);
-		zoteroIFrame.parentNode.removeChild(zoteroIFrame);
+		cleanup();
 	}
 });
 translate.setHandler("select", function(obj, items, callback) {
@@ -154,8 +154,7 @@ translate.setHandler("done", function(obj, returnValue) {
 		Zotero.ProgressWindow.showError();
 		Zotero.ProgressWindow.startCloseTimer(8000);
 	}
-	zoteroIFrame.parentNode.removeChild(zoteroIFrame);
-	window.frameElement.parentNode.removeChild(window.frameElement);
+	cleanup();
 });
 
 // Add message listener for translate, so we don't call until the iframe is loaded
@@ -193,7 +192,10 @@ if(Zotero.isIE && window.location.protocol === "http:") {
 }
 
 var zoteroIFrame;
-// Start translation
+
+/**
+ * Load privileged iframe and begin translation
+ */
 function startTranslation() {
 	Zotero.ProgressWindow.show();
 	Zotero.ProgressWindow.changeHeadline("Looking for Zotero Standalone...");
@@ -204,6 +206,14 @@ function startTranslation() {
 	zoteroIFrame.style.display = "none";
 	document.body.appendChild(zoteroIFrame);
 	document.body.style.overflow = "hidden";
+}
+
+/**
+ * Remove the frames
+ */
+function cleanup() {
+	zoteroIFrame.parentNode.removeChild(zoteroIFrame);
+	window.frameElement.parentNode.removeChild(window.frameElement);
 }
 
 if(document.readyState && document.readyState !== "interactive" && document.readyState !== "complete") {

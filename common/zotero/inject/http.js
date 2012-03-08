@@ -119,11 +119,9 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 			if(newLoc !== prevUrl) {	// Just in case it fires too many times
 				prevUrl = newLoc;
 				
-				if(Zotero.isIE) {
-					// ugh ugh ugh ugh
-					installXPathIfNecessary(newWin);
-				}
-				newWin.alert = function() {};
+				// ugh ugh ugh ugh
+				if(Zotero.isIE) installXPathIfNecessary(newWin);
+				if(newWin) newWin.alert = function() {};
 				
 				try {
 					processor(newDoc, newLoc);
@@ -166,7 +164,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 		doc.open();
 		doc.write(xmlhttp.responseText);
 		doc.close();
-		process(loadingURL, doc, iframe.contentWindow);
+		process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView);
 	}
 	
 	/**

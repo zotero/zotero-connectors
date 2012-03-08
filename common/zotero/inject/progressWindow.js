@@ -28,6 +28,7 @@ const cssImgClearString = 'background-attachment: scroll; background-color: tran
 const cssAClearString = 'background-attachment: scroll; background-color: transparent; background-image: none; background-position: 0% 0%; background-repeat: repeat; border-bottom-color: rgb(0, 0, 238); border-bottom-style: none; border-bottom-width: 0px; border-collapse: separate; border-left-color: rgb(0, 0, 238); border-left-style: none; border-left-width: 0px; border-right-color: rgb(0, 0, 238); border-right-style: none; border-right-width: 0px; border-spacing: 0px 0px; border-top-color: rgb(0, 0, 238); border-top-style: none; border-top-width: 0px; bottom: auto; caption-side: top; clear: none; clip: auto; color: rgb(0, 0, 238); content: none; counter-increment: none; counter-reset: none; cursor: pointer; direction: ltr; display: inline; empty-cells: show; float: none; font-family: serif; font-size: 16px; font-size-adjust: none; font-stretch: normal; font-style: normal; font-variant: normal; font-weight: 400; height: auto; left: auto; letter-spacing: normal; line-height: 19.2px; list-style-image: none; list-style-position: outside; list-style-type: disc; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; margin-top: 0px; marker-offset: auto; max-height: none; max-width: none; min-height: 0px; min-width: 0px; ime-mode: auto; opacity: 1; outline-color: rgb(0, 0, 0); outline-style: none; outline-width: 0px; outline-offset: 0px; overflow: visible; overflow-x: visible; overflow-y: visible; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px; page-break-after: auto; page-break-before: auto; pointer-events: auto; position: static; quotes: "“" "”" "‘" "’"; right: auto; table-layout: auto; text-align: left; text-decoration: underline; text-indent: 0px; text-shadow: none; text-transform: none; top: auto; unicode-bidi: normal; vertical-align: baseline; visibility: visible; white-space: normal; width: auto; word-spacing: 0px; z-index: auto; background-clip: border-box; background-origin: padding-box; background-size: auto auto; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: none; resize: none; word-wrap: normal; clip-path: none; clip-rule: nonzero; color-interpolation: srgb; color-interpolation-filters: linearrgb; dominant-baseline: auto; fill: rgb(0, 0, 0); fill-opacity: 1; fill-rule: nonzero; filter: none; flood-color: rgb(0, 0, 0); flood-opacity: 1; lighting-color: rgb(255, 255, 255); image-rendering: auto; mask: none; marker-end: none; marker-mid: none; marker-start: none; shape-rendering: auto; stop-color: rgb(0, 0, 0); stop-opacity: 1; stroke: none; stroke-dasharray: none; stroke-dashoffset: 0px; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 4; stroke-opacity: 1; stroke-width: 1px; text-anchor: start; text-rendering: auto;'
 
 Zotero.ProgressWindow = new function() {
+	var win = Zotero.isBookmarklet ? window.parent : window;
 	var document = Zotero.isBookmarklet ? window.parent.document : window.document;
 	
 	const cssBox = {"position":(Zotero.isIE && document.compatMode === "BackCompat" ? "absolute" : "fixed"),
@@ -190,8 +191,8 @@ Zotero.ProgressWindow = new function() {
 	this.startCloseTimer = function(delay) {
 		if(!_progressDiv) return;
 		if(!delay) delay = 2500;
-		if(_timeoutID) window.clearTimeout(_timeoutID);
-		_timeoutID = window.setTimeout(Zotero.ProgressWindow.close, delay);
+		if(_timeoutID) win.clearTimeout(_timeoutID);
+		_timeoutID = win.setTimeout(Zotero.ProgressWindow.close, delay);
 	}
 	
 	/**
@@ -201,7 +202,7 @@ Zotero.ProgressWindow = new function() {
 		document.body.removeChild(_progressDiv);
 		_progressDiv = undefined;
 		_headlineDiv = undefined;
-		if(_timeoutID) window.clearTimeout(_timeoutID);
+		if(_timeoutID) win.clearTimeout(_timeoutID);
 		_timeoutID = undefined;
 		_shownItemDivsById = {};
 	}

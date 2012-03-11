@@ -76,6 +76,24 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 				Zotero.debug("HTTP.processDocuments: Loading "+loadingURL);
 				if(Zotero.HTTP.isSameOrigin(loadingURL)) {	
 					hiddenBrowser.src = loadingURL;
+					
+					if(Zotero.isBookmarklet) {
+						// Hack to disable window.alert() on iframe loads
+						var id = window.setInterval(function() {
+							var win;
+							if(hiddenBrowser.contentWindow) {
+								win = hiddenBrowser.contentWindow;
+							} else if(hiddenBrowser.contentDocument) {
+								win = hiddenBrowser.contentDocument.window;
+							}
+							
+							if(win) {
+								if(hiddenBrowser.contentWindow.location == "about:blank") return;
+								hiddenBrowser.contentWindow.alert = function() {};
+							}
+							window.clearInterval(id);
+						}, 0);
+					}
 				} else if(Zotero.isBookmarklet) {
 					throw "HTTP.processDocuments: Cannot perform cross-site request from "+window.parent.location+" to "+loadingURL;
 				} else {
@@ -199,19 +217,6 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 		process(newLoc, newDoc, newWin);
 	};
 	
-	/**
-	 * Callback to make sure inner frames don't show alerts
-	 */ 
-	var onFrameDOMContentLoaded = function() {
-		var newWin;
-		if(hiddenBrowser.contentWindow) {
-			newWin = hiddenBrowser.contentWindow;
-		} else if(hiddenBrowser.contentDocument) {
-			newWin = hiddenBrowser.contentDocument.defaultView;
-		}
-		if(newWin) newWin.alert = function() {};
-	}
-	
 	if(typeof(urls) == "string") urls = [urls];
 	
 	var prevUrl;
@@ -219,7 +224,6 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	var hiddenBrowser = Zotero.Browser.createHiddenBrowser();
 	if(hiddenBrowser.addEventListener) {
 		hiddenBrowser.addEventListener("load", onFrameLoad, false);
-		hiddenBrowser.addEventListener("DOMContentLoaded", onFrameDOMContentLoaded, true);
 	} else {
 		hiddenBrowser.attachEvent("onload", onFrameLoad);
 	}
@@ -232,6 +236,7 @@ Zotero.Browser = {
 	"createHiddenBrowser":function() {
 		var hiddenBrowser = document.createElement("iframe");
 		hiddenBrowser.style.display = "none";
+		hiddenBrowser.sandbox = "allow-same-origin allow-forms allow-scripts";
 		document.body.appendChild(hiddenBrowser);
 		return hiddenBrowser;
 	},

@@ -77,7 +77,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 				if(Zotero.HTTP.isSameOrigin(loadingURL)) {	
 					hiddenBrowser.src = loadingURL;
 				} else if(Zotero.isBookmarklet) {
-					throw "Zotero.HTTP.processDocuments: Cannot perform cross-site request from "+window.parent.location+" to "+loadingURL;
+					throw "HTTP.processDocuments: Cannot perform cross-site request from "+window.parent.location+" to "+loadingURL;
 				} else {
 					Zotero.HTTP.doGet(loadingURL, onCrossSiteLoad);
 				}
@@ -121,7 +121,6 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 				
 				// ugh ugh ugh ugh
 				if(Zotero.isIE) installXPathIfNecessary(newWin);
-				if(newWin) newWin.alert = function() {};
 				
 				try {
 					processor(newDoc, newLoc);
@@ -197,9 +196,21 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 			removeListeners();
 			return;
 		}
-		
 		process(newLoc, newDoc, newWin);
 	};
+	
+	/**
+	 * Callback to make sure inner frames don't show alerts
+	 */ 
+	var onFrameDOMContentLoaded = function() {
+		var newWin;
+		if(hiddenBrowser.contentWindow) {
+			newWin = hiddenBrowser.contentWindow;
+		} else if(hiddenBrowser.contentDocument) {
+			newWin = hiddenBrowser.contentDocument.defaultView;
+		}
+		if(newWin) newWin.alert = function() {};
+	}
 	
 	if(typeof(urls) == "string") urls = [urls];
 	
@@ -208,6 +219,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	var hiddenBrowser = Zotero.Browser.createHiddenBrowser();
 	if(hiddenBrowser.addEventListener) {
 		hiddenBrowser.addEventListener("load", onFrameLoad, false);
+		hiddenBrowser.addEventListener("DOMContentLoaded", onFrameDOMContentLoaded, true);
 	} else {
 		hiddenBrowser.attachEvent("onload", onFrameLoad);
 	}

@@ -69,7 +69,7 @@ if(isTopWindow) {
 				&& document.documentElement.textContent === "fnord") {
 			window.setTimeout(function() {
 				Zotero.TranslatorTester.runAutomatedTesting();
-			}, 30);
+			}, 30000);
 		} else {
 			Zotero.TranslatorTester.onLoad(Zotero_TranslatorTester.runTest);
 		}

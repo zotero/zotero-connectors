@@ -61,7 +61,8 @@ class TranslatorTester {
 			
 				String json = null;
 				String setup = "window.zoteroSeleniumCallback = arguments[0];\n"
-						+"window.zoteroSeleniumTestInfo = "+mapper.writeValueAsString(testInfo)+";\n";
+						+"window.zoteroSeleniumTestInfo = "+mapper.writeValueAsString(mapper.writeValueAsString(testInfo))+";\n";
+				//System.out.println(setup+BookmarkletTester.testPayload);
 				json = (String) ((JavascriptExecutor) driver).executeAsyncScript(setup+BookmarkletTester.testPayload);
 				
 				testOutput = mapper.readValue(json, TestOutput.class);

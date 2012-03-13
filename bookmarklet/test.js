@@ -28,13 +28,12 @@ Zotero.Messaging.init();
 
 window.alert = function() {};
 Zotero.Messaging.addMessageListener("translate", function(data, event) {
-	var seleniumTestInfo = window.parent.zoteroSeleniumTestInfo,
+	var seleniumTestInfo = JSON.parse(window.parent.zoteroSeleniumTestInfo),
 		seleniumCallback = window.parent.zoteroSeleniumCallback;
 	
 	var debugLines = [];
 	function debug(obj, message) {
-		if(typeof message !== "string") message = JSON.stringify(message);
-		debugLines.push(message);
+		debugLines.push(typeof message !== "string" ? JSON.stringify(message) : message);
 	}
 	
 	Zotero.ProgressWindow.changeHeadline("Running Test...");

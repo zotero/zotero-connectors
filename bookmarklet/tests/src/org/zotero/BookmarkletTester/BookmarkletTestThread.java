@@ -1,6 +1,5 @@
 package org.zotero.BookmarkletTester;
 
-import org.openqa.selenium.UnsupportedCommandException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.android.AndroidDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -18,10 +17,16 @@ public class BookmarkletTestThread extends Thread {
 			profile.setPreference("permissions.default.image", 2);
 			
 			driver = new FirefoxDriver();
+			driver.manage().timeouts().pageLoadTimeout(600, java.util.concurrent.TimeUnit.SECONDS);
 		} else if(BookmarkletTester.config.browser.equals("c")) {
-			System.setProperty("webdriver.chrome.driver", "chromedriver");
+			System.setProperty("sun.net.client.defaultReadTimeout", "600000");
+			System.setProperty("sun.net.client.defaultConnectTimeout", "600000");
+			
 			driver = new ChromeDriver();
 		} else if(BookmarkletTester.config.browser.equals("i")) {
+			System.setProperty("sun.net.client.defaultReadTimeout", "600000");
+			System.setProperty("sun.net.client.defaultConnectTimeout", "600000");
+			
 			driver = new InternetExplorerDriver();
 		} else if(BookmarkletTester.config.browser.equals("p")) {
 			try {
@@ -41,12 +46,6 @@ public class BookmarkletTestThread extends Thread {
 		}
 		
 		driver.manage().timeouts().setScriptTimeout(600, java.util.concurrent.TimeUnit.SECONDS);
-		try {
-			driver.manage().timeouts().pageLoadTimeout(600, java.util.concurrent.TimeUnit.SECONDS);
-		} catch(UnsupportedCommandException e) {
-			System.setProperty("sun.net.client.defaultReadTimeout", "600000");
-			System.setProperty("sun.net.client.defaultConnectTimeout", "600000");
-		}
 		
 		TranslatorTester translatorTester;
 		while((translatorTester = BookmarkletTester.getNextTranslatorTester()) != null) {

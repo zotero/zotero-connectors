@@ -133,6 +133,9 @@ public class BookmarkletTester {
 				System.err.println("Invalid translator metadata for "+file.getName()+"\n");
 				continue;
 			}
+			// Exclude non-web translators
+			if((translator.translatorType & 4) != 4) continue;
+			
 			translator.code = translatorContent;
 			
 			// Extract translator tests

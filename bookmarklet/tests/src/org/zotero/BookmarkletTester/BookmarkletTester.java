@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
@@ -67,7 +68,7 @@ public class BookmarkletTester {
 			// IE doesn't support data URIs
 			String htmlPayload = mapper.writeValueAsString(
 					"<!DOCTYPE html><html><head><script type=\"text/javascript\">"
-					+injectPayload+"</script></head></html>");
+					+StringEscapeUtils.escapeXml(injectPayload)+"</script></head></html>");
 			testPayload += "var init = function() {\n"
 					+"f.contentWindow.document.write("+htmlPayload+") }\n";
 		} else {

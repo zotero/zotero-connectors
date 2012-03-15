@@ -18,6 +18,18 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+function explorerify {
+	FROM="$1"
+	TO="$2"
+	
+	# const -> var
+	perl -pe "s/const/var/" "$FROM" > "$TO"
+	
+	# a.indexOf(b) -> indexOf(a,b)
+	perl -000 -pi -e 's/((?:[\w.]+|\[[^\]]*\])+)\.indexOf(\((((?>[^()]+)|(?2))*)\))/indexOf($1, $3)/gs' \
+		"$TO"
+}
+
 CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . "$CWD/config.sh"
 
@@ -297,39 +309,20 @@ do
 		echo ""
 		echo "/******** END `basename $f` ********/"
 	done >> "$tmpScript"
+
+	tmpScript="$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
+	builtScript="$BOOKMARKLETDIR/dist/${scpt}.js"
+	ieTmpScript="$BOOKMARKLETDIR/dist/${scpt}_ie_tmp.js"
+	ieBuiltScript="$BOOKMARKLETDIR/dist/${scpt}_ie.js"
 	
-	# Bundle for IE
-	tmpIEScript="$BOOKMARKLETDIR/dist/${scpt}_ie_tmp.js"
-	
-	# const -> var
-	perl -pe "s/const/var/" "$tmpScript" > "$tmpIEScript"
-	
-	# a.indexOf(b) -> indexOf(a,b)
-	perl -000 -pi -e 's/((?:[\w.]+|\[[^\]]*\])+)\.indexOf(\((((?>[^()]+)|(?2))*)\))/indexOf($1, $3)/gs' \
-		"$tmpIEScript"
-	
-	# Add IE compat functions to IE inject script
 	if [ "$scpt" == "inject" ]; then
-		for f in "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/${scpt}_ie_compat.js"
-		do
-			echo "/******** BEGIN `basename $f` ********/" >> "$tmpIEScript"
-			LC_CTYPE=C tr -d '\r' < $f >> "$tmpIEScript"
-			echo "" >> "$tmpIEScript"
-			echo "/******** END `basename $f` ********/" >> "$tmpIEScript"
-		done
-	fi
-	
-	for platform in "" "_ie"
-	do
-		tmpScript="$BOOKMARKLETDIR/dist/${scpt}${platform}_tmp.js"
-		builtScript="$BOOKMARKLETDIR/dist/${scpt}${platform}.js"
-		
-		if [ "$scpt" == "inject" ]; then
+		if [ "$1" == "debug" ]; then
 			# Make test scripts
-			testScript="$BOOKMARKLETDIR/tests/inject${platform}_test.js"
-			cp "$tmpScript" "$testScript"
+			testScript="$BOOKMARKLETDIR/tests/inject_test.js"
+			ieTestScript="$BOOKMARKLETDIR/tests/inject_ie_test.js"
 			
-			# Bundle test.js
+			# Make inject_test.js
+			cp "$tmpScript" "$testScript"
 			for f in "${BOOKMARKLET_INJECT_TEST_INCLUDE[@]}"
 			do
 				echo "/******** BEGIN `basename $f` ********/"
@@ -338,24 +331,49 @@ do
 				echo "/******** END `basename $f` ********/"
 			done >> "$testScript"
 			
+			# Make inject_ie_test.js
+			explorerify "$testScript" "$ieTestScript"
+			cat "$BOOKMARKLETDIR/ie_compat.js" "$ieTestScript" "$BOOKMARKLETDIR/inject_ie_compat.js" | tee "$ieTestScript" > /dev/null
+			for f in "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/inject_ie_compat.js"
+			do
+				echo "/******** BEGIN `basename $f` ********/"
+				LC_CTYPE=C tr -d '\r' < $f
+				echo ""
+				echo "/******** END `basename $f` ********/"
+			done >> "$ieTestScript"
+			
 			# Add close paren
-			for myTmpScript in "$tmpScript" "$testScript"
+			for myTmpScript in "$testScript" "$ieTestScript"
 			do
 				echo "}" >> "$myTmpScript"
 			done
 		fi
 		
-		# Minify if not in debug mode
-		if [ "$1" == "debug" ]; then
-			mv "$tmpScript" "$builtScript"
-		else
-			uglifyjs "$tmpScript" > "$builtScript"
-			rm "$tmpScript"
-		fi
-	done
+		# Add close paren
+		for myTmpScript in "$tmpScript" "ieTmpScript"
+		do
+			echo "}" >> "$myTmpScript"
+		done
+	fi
+	
+	# Minify if not in debug mode
+	explorerify "$tmpScript" "$ieTmpScript"
+	if [ "$1" == "debug" ]; then
+		mv "$tmpScript" "$builtScript"
+		mv "$ieTmpScript" "$ieBuiltScript"
+	else
+		uglifyjs "$tmpScript" > "$builtScript"
+		uglifyjs "$ieTmpScript" > "$ieBuiltScript"
+		rm "$tmpScript" "$ieTmpScript"
+	fi
+	
+	if [ "$scpt" == "inject" ]; then
+		# Currently this part can't be minified
+		cat "$BOOKMARKLETDIR/inject_ie_compat.js" >> "$ieBuiltScript";
+	fi
 done
 
-# IE compat library
+# IE compat libraries
 if [ "$1" == "debug" ]; then
 	cp "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/dist/ie_compat.js"
 else

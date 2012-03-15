@@ -5,31 +5,38 @@ new function() {
 		return;
 	};
 	
-	var f = document.createElement("iframe"),
-		a = (document.body ? document.body : document.documentElement);
-	f.id = "zotero-iframe"
-	f.style.display = "none";
-	f.style.borderStyle = "none";
-	f.setAttribute("frameborder", "0");
-	a.appendChild(f);
+	var iframe = document.createElement("iframe"),
+		tag = (document.body ? document.body : document.documentElement);
+	iframe.id = "zotero-iframe"
+	iframe.style.display = "none";
+	iframe.style.borderStyle = "none";
+	iframe.setAttribute("frameborder", "0");
+	tag.appendChild(iframe);
 	
-	var init = function() {
-		var d = f.contentWindow.document,
-			r = "https://www.zotero.org/bookmarklet/inject"+(navigator.appName === "Microsoft Internet Explorer" ? "_ie": "")+".js";
-		if(d.documentElement && d.documentElement.appendChild) {
-			var s = d.createElement("script");
-			s.type = "text/javascript";
-			s.src = r;
-			(d.body ? d.body : d.documentElement).appendChild(s);
+	var doc = iframe.contentWindow.document,
+		init = function() {
+		var baseURL = "https://www.zotero.org/bookmarklet/",
+		scripts = (navigator.appName === "Microsoft Internet Explorer"
+			? [baseURL+"ie_compat.js", baseURL+"inject_ie.js"] : [baseURL+"inject.js"]);
+		
+		if(doc.documentElement && doc.documentElement.appendChild) {
+			for(var i in scripts) {
+				var script = doc.createElement("script");
+				script.type = "text/javascript";
+				script.src = scripts[i];
+				(doc.body ? doc.body : doc.documentElement).appendChild(script);
+			}
 		} else {
-			d.write("<!DOCTYPE html><html><head><script type=\"text/javascript\" src=\""+r+"\"></script></head></html>");
+			d.write("<!DOCTYPE html><html><head><script type=\"text/javascript\" src=\""
+				+scripts.join("\"></script><script type=\"text/javascript\" src=\"")
+				+"\"></script></head></html>");
 		}
 	}
 	
-	if(f.contentWindow.document.readyState === "complete") {
+	if(doc.readyState === "complete") {
 		init();
 	} else {
-		f.onload = init;
+		iframe.onload = init;
 	}
 };
 undefined;

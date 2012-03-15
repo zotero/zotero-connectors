@@ -28,6 +28,8 @@ Zotero.Messaging.init();
 
 window.alert = function() {};
 Zotero.Messaging.addMessageListener("translate", function(data, event) {
+	if(Zotero.isIE) installXPathIfNecessary(window.parent);
+	
 	var seleniumTestInfo = JSON.parse(window.parent.zoteroSeleniumTestInfo),
 		seleniumCallback = window.parent.zoteroSeleniumCallback;
 	

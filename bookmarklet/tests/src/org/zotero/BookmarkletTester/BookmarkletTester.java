@@ -56,19 +56,31 @@ public class BookmarkletTester {
 		while((s = in.readLine()) != null) {
 			injectPayload += s+"\n";
 		}
-		testPayload = "new function() { var f = document.createElement('iframe'),\n"+
-		"	a = (document.body ? document.body : document.documentElement);\n"+
-		"f.id = 'zotero-iframe'\n"+
-		"f.style.display = 'none';\n"+
-		"f.style.borderStyle = 'none';\n"+
-		"f.setAttribute('frameborder', '0');\n"+
-		"a.appendChild(f);\n"+
-		"var init = function() {\n"+
-		"var d = f.contentWindow.document, s = d.createElement('script');\n"+
-		"s.appendChild(d.createTextNode("+mapper.writeValueAsString(injectPayload)+"));\n"+
-		"s.type = 'text/javascript';\n"+
-		"(d.body ? d.body : d.documentElement).appendChild(s); }\n"+
-		"if(f.contentWindow.document.readyState === 'complete') { init(); } else { f.onload = init; }}";
+		testPayload = "new function() {\n"+
+		"	var f = document.createElement('iframe'),\n"+
+		"		a = (document.body ? document.body : document.documentElement),\n"+
+		"		code = "+mapper.writeValueAsString(injectPayload)+"\n;"+
+		"	f.id = 'zotero-iframe'\n"+
+		"	f.style.display = 'none';\n"+
+		"	f.style.borderStyle = 'none';\n"+
+		"	f.setAttribute('frameborder', '0');\n"+
+		"	a.appendChild(f);\n"+
+		"	var init = function() {\n"+
+		"		var d = f.contentWindow.document, s = d.createElement('script');\n"+
+		"		s.type = 'text/javascript';\n"+
+		"		if(s.canHaveChildren === false) {\n"+
+		"			s.text = code;\n"+
+		"		} else {\n"+
+		"			s.appendChild(d.createTextNode(code));\n"+
+		"		}\n"+
+		"		(d.body ? d.body : d.documentElement).appendChild(s);\n"+
+		"	}\n"+
+		"	if(f.contentWindow.document.readyState === 'complete') {"+
+		"		init();\n"+
+		"	} else {\n"+
+		"		f.onload = init;" +
+		"	}"+
+		"}";
 		
 		loadTranslators();
 		runTests();

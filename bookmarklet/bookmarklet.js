@@ -27,7 +27,7 @@ new function() {
 				(doc.body ? doc.body : doc.documentElement).appendChild(script);
 			}
 		} else {
-			d.write("<!DOCTYPE html><html><head><script type=\"text/javascript\" src=\""
+			doc.write("<!DOCTYPE html><html><head><script type=\"text/javascript\" src=\""
 				+scripts.join("\"></script><script type=\"text/javascript\" src=\"")
 				+"\"></script></head></html>");
 		}

@@ -23,7 +23,7 @@ function explorerify {
 	TO="$2"
 	
 	# const -> var
-	perl -pe "s/const/var/" "$FROM" > "$TO"
+	perl -pe "s/\bconst /var /" "$FROM" > "$TO"
 	
 	# a.indexOf(b) -> indexOf(a,b)
 	perl -000 -pi -e 's/((?:[\w.]+|\[[^\]]*\])+)\.indexOf(\((((?>[^()]+)|(?2))*)\))/indexOf($1, $3)/gs' \

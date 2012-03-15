@@ -332,15 +332,9 @@ do
 			done >> "$testScript"
 			
 			# Make inject_ie_test.js
-			explorerify "$testScript" "$ieTestScript"
-			cat "$BOOKMARKLETDIR/ie_compat.js" "$ieTestScript" "$BOOKMARKLETDIR/inject_ie_compat.js" | tee "$ieTestScript" > /dev/null
-			for f in "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/inject_ie_compat.js"
-			do
-				echo "/******** BEGIN `basename $f` ********/"
-				LC_CTYPE=C tr -d '\r' < $f
-				echo ""
-				echo "/******** END `basename $f` ********/"
-			done >> "$ieTestScript"
+			explorerify "$testScript" "$ieBuiltScript"
+			cat "$BOOKMARKLETDIR/ie_compat.js" "$ieBuiltScript" "$BOOKMARKLETDIR/inject_ie_compat.js" > "$ieTestScript"
+			rm "$ieBuiltScript"
 			
 			# Add close paren
 			for myTmpScript in "$testScript" "$ieTestScript"

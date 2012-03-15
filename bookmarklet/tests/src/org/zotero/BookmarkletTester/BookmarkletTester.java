@@ -11,7 +11,6 @@ import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringEscapeUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
@@ -63,23 +62,13 @@ public class BookmarkletTester {
 		"f.style.display = 'none';\n"+
 		"f.style.borderStyle = 'none';\n"+
 		"f.setAttribute('frameborder', '0');\n"+
-		"a.appendChild(f);\n";
-		if(config.browser.equals("i")) {
-			// IE doesn't support data URIs
-			String htmlPayload = mapper.writeValueAsString(
-					"<!DOCTYPE html><html><head><script type=\"text/javascript\">"
-					+StringEscapeUtils.escapeXml(injectPayload)+"</script></head></html>");
-			testPayload += "var init = function() {\n"
-					+"f.contentWindow.document.write("+htmlPayload+") }\n";
-		} else {
-			testPayload += "var init = function() {\n"
-					+"var d = f.contentWindow.document, s = d.createElement('script');\n"
-					+"s.appendChild(d.createTextNode("+mapper.writeValueAsString(injectPayload)+"));\n"
-					+"s.type = 'text/javascript';\n"
-					+"(d.body ? d.body : d.documentElement).appendChild(s); }\n";
-		}
-		testPayload += "if(f.contentWindow.document.readyState === 'complete') { init(); } else { "
-					+"f.onload = init; }}";
+		"a.appendChild(f);\n"+
+		"var init = function() {\n"+
+		"var d = f.contentWindow.document, s = d.createElement('script');\n"+
+		"s.appendChild(d.createTextNode("+mapper.writeValueAsString(injectPayload)+"));\n"+
+		"s.type = 'text/javascript';\n"+
+		"(d.body ? d.body : d.documentElement).appendChild(s); }\n"+
+		"if(f.contentWindow.document.readyState === 'complete') { init(); } else { f.onload = init; }}";
 		
 		loadTranslators();
 		runTests();

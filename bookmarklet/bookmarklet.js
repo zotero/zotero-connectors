@@ -18,18 +18,12 @@ new function() {
 		var baseURL = "https://www.zotero.org/bookmarklet/",
 		scripts = (navigator.appName === "Microsoft Internet Explorer"
 			? [baseURL+"ie_compat.js", baseURL+"inject_ie.js"] : [baseURL+"inject.js"]);
-		
-		if(doc.documentElement && doc.documentElement.appendChild) {
-			for(var i in scripts) {
-				var script = doc.createElement("script");
-				script.type = "text/javascript";
-				script.src = scripts[i];
-				(doc.body ? doc.body : doc.documentElement).appendChild(script);
-			}
-		} else {
-			doc.write("<!DOCTYPE html><html><head><script type=\"text/javascript\" src=\""
-				+scripts.join("\"></script><script type=\"text/javascript\" src=\"")
-				+"\"></script></head></html>");
+	
+		for(var i in scripts) {
+			var script = doc.createElement("script");
+			script.type = "text/javascript";
+			script.src = scripts[i];
+			(doc.body ? doc.body : doc.documentElement).appendChild(script);
 		}
 	}
 	

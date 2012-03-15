@@ -69,19 +69,16 @@ public class BookmarkletTester {
 					"<!DOCTYPE html><html><head><script type=\"text/javascript\">"
 					+injectPayload+"</script></head></html>");
 			testPayload += "var init = function() {\n"
-					+"f.contentWindow.document.write("+htmlPayload+") }\n"
-					+"if(f.contentWindow.document.readyState === 'complete') { init(); } else { "
-					+"f.onload = init; }";
+					+"f.contentWindow.document.write("+htmlPayload+") }\n";
 		} else {
 			testPayload += "var init = function() {\n"
 					+"var d = f.contentWindow.document, s = d.createElement('script');\n"
 					+"s.appendChild(d.createTextNode("+mapper.writeValueAsString(injectPayload)+"));\n"
 					+"s.type = 'text/javascript';\n"
-					+"(d.body ? d.body : d.documentElement).appendChild(s); }\n"
-					+"if(f.contentWindow.document.readyState === 'complete') { init(); } else { "
-					+"f.onload = init; }";
+					+"(d.body ? d.body : d.documentElement).appendChild(s); }\n";
 		}
-		testPayload += "}";
+		testPayload += "if(f.contentWindow.document.readyState === 'complete') { init(); } else { "
+					+"f.onload = init; }}";
 		
 		loadTranslators();
 		runTests();

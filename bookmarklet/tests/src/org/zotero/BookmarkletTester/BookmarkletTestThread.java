@@ -45,7 +45,7 @@ public class BookmarkletTestThread extends Thread {
 			return;
 		}
 		
-		driver.manage().timeouts().setScriptTimeout(240, java.util.concurrent.TimeUnit.SECONDS);
+		driver.manage().timeouts().setScriptTimeout(180, java.util.concurrent.TimeUnit.SECONDS);
 		
 		TranslatorTester translatorTester;
 		while((translatorTester = BookmarkletTester.getNextTranslatorTester()) != null) {

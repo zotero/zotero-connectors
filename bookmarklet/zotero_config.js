@@ -31,13 +31,7 @@ const ZOTERO_CONFIG = {
 	BASE_URI: 'http://zotero.org/',
 	WWW_BASE_URL: 'http://www.zotero.org/',
 	API_URL: 'https://www.zotero.org/api/',
-	OAUTH_REQUEST_URL: 'https://www.zotero.org/oauth/request',
-	OAUTH_ACCESS_URL: 'https://www.zotero.org/oauth/access',
-	OAUTH_AUTHORIZE_URL: 'https://www.zotero.org/oauth/authorize',
-	OAUTH_CALLBACK_URL: 'https://www.zotero.org/connector_auth_complete',
-	OAUTH_NEW_KEY_URL: 'https://www.zotero.org/settings/keys/new?oauth=1&oauth_consumer_key=05a4e25d3d9af8922eb9',
-	OAUTH_CLIENT_KEY: '83c9c5857d9916ff2850',
-	OAUTH_CLIENT_SECRET: '9891148126da331d9c64',
+	LOGIN_URL: 'https://www.zotero.org/user/login/',
 	BOOKMARKLET_URL: 'https://www.zotero.org/bookmarklet/'
 };
 Zotero.isBookmarklet = true;

@@ -113,13 +113,8 @@ GLOBAL_BEGIN='<!--BEGIN GLOBAL SCRIPTS-->'
 GLOBAL_END='<!--END GLOBAL SCRIPTS-->'
 
 # Scripts to be included in bookmarklet
-BOOKMARKLET_INJECT_INCLUDE=("$COMMONDIR/zotero.js" \
-	"$BOOKMARKLETDIR/zotero_config.js" \
-	"$XPCOMDIR/connector/cachedTypes.js" \
+BOOKMARKLET_INJECT_INCLUDE=("$XPCOMDIR/connector/cachedTypes.js" \
 	"$XPCOMDIR/date.js" \
-	"$XPCOMDIR/debug.js" \
-	"$COMMONDIR/zotero/errors_webkit.js" \
-	"$COMMONDIR/zotero/http.js" \
 	"$COMMONDIR/zotero/inject/http.js" \
 	"$XPCOMDIR/openurl.js" \
 	"$COMMONDIR/zotero/inject/progressWindow.js" \
@@ -134,26 +129,23 @@ BOOKMARKLET_INJECT_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$COMMONDIR/zotero/inject/translate_inject.js" \
 	"$COMMONDIR/zotero/inject/translator.js" \
 	"$XPCOMDIR/connector/typeSchemaData.js" \
-	"$XPCOMDIR/utilities.js" \
 	"$XPCOMDIR/utilities_translate.js" \
-	"$BOOKMARKLETDIR/messages.js" \
 	"$BOOKMARKLETDIR/messaging_inject.js" \
 	"$BOOKMARKLETDIR/inject_base.js")
 
-BOOKMARKLET_IFRAME_INCLUDE=("$COMMONDIR/zotero.js" \
+BOOKMARKLET_IFRAME_INCLUDE=("$XPCOMDIR/connector/connector.js" \
+	"$XPCOMDIR/translation/tlds.js" \
+	"$BOOKMARKLETDIR/translator.js" \
+	"$COMMONDIR/zotero/messaging.js" \
+	"$BOOKMARKLETDIR/iframe_base.js")
+
+BOOKMARKLET_COMMON_INCLUDE=("$COMMONDIR/zotero.js" \
 	"$BOOKMARKLETDIR/zotero_config.js" \
-	"$XPCOMDIR/connector/connector.js" \
 	"$XPCOMDIR/debug.js" \
 	"$COMMONDIR/zotero/errors_webkit.js" \
 	"$COMMONDIR/zotero/http.js" \
-	"$COMMONDIR/zotero/oauth.js" \
-	"$COMMONDIR/zotero/oauthsimple.js" \
-	"$XPCOMDIR/translation/tlds.js" \
-	"$BOOKMARKLETDIR/translator.js" \
 	"$XPCOMDIR/utilities.js" \
-	"$BOOKMARKLETDIR/messages.js" \
-	"$COMMONDIR/zotero/messaging.js" \
-	"$BOOKMARKLETDIR/iframe_base.js")
+	"$BOOKMARKLETDIR/messages.js")
 
 BOOKMARKLET_INJECT_TEST_INCLUDE=( \
 	"$EXTENSIONDIR/chrome/content/zotero/tools/testTranslators/translatorTester.js" \
@@ -289,15 +281,16 @@ rm -rf "$BOOKMARKLETDIR/dist"
 mkdir "$BOOKMARKLETDIR/dist"
 mkdir "$BOOKMARKLETDIR/dist/icons"
 
-for scpt in "inject" "iframe"
+for scpt in "iframe" "common" "inject"
 do
 	tmpScript="$BOOKMARKLETDIR/dist/${scpt}_tmp.js"
 	
-	if [ "$scpt" == "inject" ]; then
-		files=("${BOOKMARKLET_INJECT_INCLUDE[@]}")
-		echo "new function() { " > "$tmpScript"
-	else
+	if [ "$scpt" == "iframe" ]; then
 		files=("${BOOKMARKLET_IFRAME_INCLUDE[@]}")
+	elif [ "$scpt" == "common" ]; then
+		files=("${BOOKMARKLET_COMMON_INCLUDE[@]}")
+	elif [ "$scpt" == "inject" ]; then
+		files=("${BOOKMARKLET_INJECT_INCLUDE[@]}")
 	fi
 	
 	# Bundle scripts
@@ -322,7 +315,7 @@ do
 			ieTestScript="$BOOKMARKLETDIR/tests/inject_ie_test.js"
 			
 			# Make inject_test.js
-			cp "$tmpScript" "$testScript"
+			cat "$BOOKMARKLETDIR/dist/common.js" "$tmpScript" > "$testScript"
 			for f in "${BOOKMARKLET_INJECT_TEST_INCLUDE[@]}"
 			do
 				echo "/******** BEGIN `basename $f` ********/"
@@ -335,23 +328,18 @@ do
 			explorerify "$testScript" "$ieBuiltScript"
 			cat "$BOOKMARKLETDIR/ie_compat.js" "$ieBuiltScript" "$BOOKMARKLETDIR/inject_ie_compat.js" > "$ieTestScript"
 			rm "$ieBuiltScript"
-			
-			# Add close paren
-			for myTmpScript in "$testScript" "$ieTestScript"
-			do
-				echo "}" >> "$myTmpScript"
-			done
 		fi
-		
-		# Add close paren
-		for myTmpScript in "$tmpScript" "ieTmpScript"
-		do
-			echo "}" >> "$myTmpScript"
-		done
+	fi
+	
+	
+	explorerify "$tmpScript" "$ieTmpScript"
+	if [ "$scpt" == "common" ]; then
+		cp "$ieTmpScript" "$ieBuiltScript"
+		cat "$BOOKMARKLETDIR/ie_compat.js" "$ieBuiltScript" > "$ieTmpScript"
+		rm "$ieBuiltScript"
 	fi
 	
 	# Minify if not in debug mode
-	explorerify "$tmpScript" "$ieTmpScript"
 	if [ "$1" == "debug" ]; then
 		mv "$tmpScript" "$builtScript"
 		mv "$ieTmpScript" "$ieBuiltScript"
@@ -366,13 +354,6 @@ do
 		cat "$BOOKMARKLETDIR/inject_ie_compat.js" >> "$ieBuiltScript";
 	fi
 done
-
-# IE compat libraries
-if [ "$1" == "debug" ]; then
-	cp "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/dist/ie_compat.js"
-else
-	uglifyjs "$BOOKMARKLETDIR/ie_compat.js" > "$BOOKMARKLETDIR/dist/ie_compat.js"
-fi
 
 # Bookmarklet itself
 echo -n '<a href="javascript:' > "$BOOKMARKLETDIR/dist/bookmarklet.html"

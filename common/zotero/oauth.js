@@ -81,27 +81,14 @@ Zotero.OAuth = new function() {
 			
 			// add parameters
 			var url = signature.signed_url+"&library_access=1&notes_access=0&write_access=1&name=";
-			if(Zotero.isBookmarklet) {
-				url += "Zotero Bookmarklet";
-			} else if(Zotero.isChrome) {
+			if(Zotero.isChrome) {
 				url += "Zotero Connector for Chrome";
 			} else if(Zotero.isSafari) {
 				url += "Zotero Connector for Safari";
 			}
 			
 			// open
-			if(Zotero.isBookmarklet) {
-				_bookmarkletIFrame = document.createElement("iframe");
-				_bookmarkletIFrame.src = url;
-				_bookmarkletIFrame.style.borderStyle = "none";
-				_bookmarkletIFrame.style.position = "absolute";
-				_bookmarkletIFrame.style.top = "0px";
-				_bookmarkletIFrame.style.left = "0px";
-				_bookmarkletIFrame.style.width = "100%";
-				_bookmarkletIFrame.style.height = "100%";
-				document.body.appendChild(_bookmarkletIFrame);
-				Zotero.Messaging.sendMessage("revealZoteroIFrame", null);
-			} else if(Zotero.isChrome) {
+			if(Zotero.isChrome) {
 				window.open(url, 'ZoteroAuthenticate',
 					'height=600,width=900,location,toolbar=no,menubar=no,status=no');
 			} else if(Zotero.isSafari) {
@@ -119,10 +106,7 @@ Zotero.OAuth = new function() {
 	 */
 	this.onAuthorizationComplete = function(data, tab) {
 		// close auth window
-		if(Zotero.isBookmarklet) {
-			Zotero.Messaging.sendMessage("hideZoteroIFrame", null);
-			document.body.removeChild(_bookmarkletIFrame);
-		} else if(Zotero.isChrome) {
+		if(Zotero.isChrome) {
 			chrome.tabs.remove(tab.id);
 		} else if(Zotero.isSafari) {
 			tab.close();
@@ -178,20 +162,11 @@ Zotero.OAuth = new function() {
 						return;
 					}
 				}
-				
-				if(Zotero.isBookmarklet) {
-					var cookieExpires = new Date((new Date()).valueOf()+24*60*60*1000*365).toGMTString();
-					document.cookie = 'bookmarklet-auth-token_secret='
-						+encodeURIComponent(data.oauth_token_secret)+'; expires='+cookieExpires
-						+'; secure';
-					document.cookie = 'bookmarklet-auth-userID='
-						+encodeURIComponent(data.userID)+'; expires='+cookieExpires+'; secure';
-				} else {
-					localStorage["auth-token"] = data.oauth_token;
-					localStorage["auth-token_secret"] = data.oauth_token_secret;
-					localStorage["auth-userID"] = data.userID;
-					localStorage["auth-username"] = data.username;
-				}
+			
+				localStorage["auth-token"] = data.oauth_token;
+				localStorage["auth-token_secret"] = data.oauth_token_secret;
+				localStorage["auth-userID"] = data.userID;
+				localStorage["auth-username"] = data.username;
 				
 				try {
 					_callback(true, {"username":data.username, "userID":data.userID});
@@ -207,11 +182,6 @@ Zotero.OAuth = new function() {
 	 * Clears OAuth credentials from localStorage
 	 */
 	this.clearCredentials = function() {
-		if(Zotero.isBookmarklet) {
-			throw new Error("Zotero.OAuth.clearCredentials() not supported in bookmarklet");
-			return;
-		}
-		
 		delete localStorage["auth-token"];
 		delete localStorage["auth-token_secret"];
 		delete localStorage["auth-userID"];
@@ -224,12 +194,6 @@ Zotero.OAuth = new function() {
 	 * @param {Function} callback Callback to receive username (or null if none is define)
 	 */
 	this.getUserInfo = function(callback) {
-		if(Zotero.isBookmarklet) {
-			Zotero.logError(new Error("Zotero.OAuth.getUserInfo() not supported in bookmarklet"));
-			callback(null);
-			return;
-		}
-		
 		callback(localStorage.hasOwnProperty("auth-token")
 			? {"username":localStorage["auth-username"], "userID":localStorage["auth-userID"]}
 			: null);
@@ -240,21 +204,16 @@ Zotero.OAuth = new function() {
 	 * as first argument and status code or response body as second. This is separated here in order
 	 * to avoid passing credentials to injected scripts.
 	 *
-	 * @param {String} url URL to request. %%USERID%% and %%APIKEY%% in the URL will be
-	 *                     substituted for user-specific data.
+	 * @param {String} url URL to request. %%USERID%% in the URL will be substituted for the user ID
 	 * @param {String} body Request body
-	 * @param {Function} onDone Callback to be executed upon request completion
-	 * @param {String} headers Request HTTP headers
+	 * @param {Function} callback Callback to be executed upon request completion. Passed true if
+	 *     succeeded, or false if failed.
+	 * @param {Boolean} [askForAuth] Whether to ask the user for authorization if not already
+	 *     authorized.
 	 */
 	this.doAuthenticatedPost = function(path, body, callback, askForAuth) {
-		if(Zotero.isBookmarklet) {
-			var idAndApiKey = _getUserIDAndAPIKey(),
-				userID = idAndApiKey[0],
-				apiKey = idAndApiKey[1];
-		} else {
-			var userID = localStorage["auth-userID"],
-				apiKey = localStorage["auth-token_secret"];
-		}
+		var userID = localStorage["auth-userID"],
+			apiKey = localStorage["auth-token_secret"];
 		
 		if(!userID) {
 			// ask user to authorize if necessary
@@ -269,45 +228,24 @@ Zotero.OAuth = new function() {
 					Zotero.OAuth.doAuthenticatedPost(path, body, callback, false);
 				});
 			} else {
-				callback(false);
+				callback(false, "Not authorized");
 			}
 			return;
 		}
 		
-		// process url
 		var url = ZOTERO_CONFIG.API_URL+path
-			.replace("%%USERID%%", userID)
-			.replace("%%APIKEY%%", apiKey);
+			.replace("%%USERID%%", userID)+
+			(path.indexOf("?") === -1 ? "?" : "&")+"key="+apiKey;
 		
-		// do post
 		Zotero.HTTP.doPost(url, body, function(xmlhttp) {
 			if([200, 201, 204].indexOf(xmlhttp.status) !== -1) {
 				callback(true);
 			} else {
 				var msg = xmlhttp.responseText;
-				Zotero.logError("Translate: Save to server failed with message "+msg);
-				Zotero.debug("Translate: Save to server failed with message "+msg+"; payload:\n\n"+body);
+				Zotero.logError("Translate: API request failed with message "+msg);
+				Zotero.debug("Translate: API request failed with message "+msg+"; payload:\n\n"+body);
 				callback(false);
 			}
 		}, {"Content-Type":"application/json"});
 	};
-	
-	/**
-	 * Gets user ID and API key from cookies (in bookmarklet only)
-	 */
-	function _getUserIDAndAPIKey() {
-		var userID, apiKey, cookies = document.cookie.split(/ *; */);
-		for(var i=0, n=cookies.length; i<n; i++) {
-			var cookie = cookies[i],
-				equalsIndex = cookie.indexOf("="),
-				key = cookie.substr(0, equalsIndex);
-			if(key === "bookmarklet-auth-userID") {
-				userID = cookie.substr(equalsIndex+1);
-			} else if(key === "bookmarklet-auth-token_secret") {
-				apiKey = cookie.substr(equalsIndex+1);
-			} 
-		}
-		
-		return [userID, apiKey];
-	}
 }

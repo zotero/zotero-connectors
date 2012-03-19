@@ -14,18 +14,36 @@ new function() {
 	tag.appendChild(iframe);
 	
 	var doc = iframe.contentWindow.document,
-		init = function() {
-		var baseURL = "https://www.zotero.org/bookmarklet/",
-		scripts = (navigator.appName === "Microsoft Internet Explorer"
-			? [baseURL+"ie_compat.js", baseURL+"inject_ie.js"] : [baseURL+"inject.js"]);
+		baseURL = "https://www.zotero.org/bookmarklet/",
+		ie = (navigator.appName === "Microsoft Internet Explorer" ? "_ie" : ""),
+		common = baseURL+"common"+ie+".js",
+		inject = baseURL+"inject"+ie+".js";
+		
+	/**
+	 * Adds a script to the iframe page
+	 */
+	var addScript = function(src) {
+		var script = doc.createElement("script");
+		script.type = "text/javascript";
+		script.src = src;
+		(doc.body ? doc.body : doc.documentElement).appendChild(script);
+		return script;
+	};
 	
-		for(var i in scripts) {
-			var script = doc.createElement("script");
-			script.type = "text/javascript";
-			script.src = scripts[i];
-			(doc.body ? doc.body : doc.documentElement).appendChild(script);
-		}
-	}
+	/**
+	 * Starts loading the common script, triggering initialization cascade
+	 */
+	var init = function() {
+		var script = addScript(common),
+			loaded = false;
+		script.onload = function() {
+			if(!loaded) {
+				addScript(inject);
+				loaded = true;
+			}
+		};
+		script.onreadystatechange = function() { if(!loaded) script.onload(); };
+	};
 	
 	if(doc.readyState === "complete") {
 		init();

@@ -11,6 +11,7 @@ import org.openqa.selenium.iphone.IPhoneDriver;
 public class BookmarkletTestThread extends Thread {
 	public void run() {
 		WebDriver driver;
+		boolean useTimeoutThread = false;
 		if(BookmarkletTester.config.browser.equals("g")) {
 			FirefoxProfile profile = new FirefoxProfile();
 			profile.setPreference("permissions.default.stylesheet", 2);
@@ -19,14 +20,10 @@ public class BookmarkletTestThread extends Thread {
 			driver = new FirefoxDriver();
 			driver.manage().timeouts().pageLoadTimeout(600, java.util.concurrent.TimeUnit.SECONDS);
 		} else if(BookmarkletTester.config.browser.equals("c")) {
-			System.setProperty("sun.net.client.defaultReadTimeout", "600000");
-			System.setProperty("sun.net.client.defaultConnectTimeout", "600000");
-			
+			useTimeoutThread = true;
 			driver = new ChromeDriver();
 		} else if(BookmarkletTester.config.browser.equals("i")) {
-			System.setProperty("sun.net.client.defaultReadTimeout", "600000");
-			System.setProperty("sun.net.client.defaultConnectTimeout", "600000");
-			
+			useTimeoutThread = true;
 			driver = new InternetExplorerDriver();
 		} else if(BookmarkletTester.config.browser.equals("p")) {
 			try {
@@ -51,8 +48,18 @@ public class BookmarkletTestThread extends Thread {
 		while((translatorTester = BookmarkletTester.getNextTranslatorTester()) != null) {
 			// Don't try to translate with excluded translators
 			if(BookmarkletTester.config.exclude.contains(translatorTester.translator.translatorID)) continue;
+
+			TestTimeoutThread timeoutThread = null;
+			if(useTimeoutThread) {
+				timeoutThread = new TestTimeoutThread(600, this);
+				timeoutThread.start();
+			}
 			
 			translatorTester.runTests(driver);
+			
+			if(timeoutThread != null) {
+				timeoutThread.interrupt();
+			}
 		}
 		
 		driver.quit();

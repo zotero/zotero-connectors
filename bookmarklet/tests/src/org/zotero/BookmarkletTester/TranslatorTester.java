@@ -3,10 +3,13 @@ package org.zotero.BookmarkletTester;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.concurrent.TimeoutException;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.ie.InternetExplorerDriver;
 
 class TranslatorTester {
 	Translator translator;
@@ -44,20 +47,27 @@ class TranslatorTester {
 		}
 	}
 	
-	void runTests(WebDriver driver) {
+	void runTests(BookmarkletTestThread testThread) {
 		ObjectMapper mapper = new ObjectMapper();
 		
 		int i = 0;
 		while(pending.size() != 0) {
 			Test test = pending.removeFirst();
 			TestInfo testInfo = new TestInfo(translator, i, test);
-
 			TestOutput testOutput;
+			WebDriver driver = testThread.driver;
+			
+			TestTimeoutThread timeoutThread = null;
+			if(driver instanceof InternetExplorerDriver || driver instanceof ChromeDriver) {
+				timeoutThread = new TestTimeoutThread(600, driver);
+				timeoutThread.start();
+			}
+			
 			try {
-				driver.get(test.url);
-				if(test.defer) {
-					Thread.sleep(10000);
-				}
+				testThread.driver.get(test.url);
+				
+				if(timeoutThread != null) timeoutThread.interrupt();
+				if(test.defer) Thread.sleep(10000);
 			
 				String json = null;
 				String setup = "window.zoteroSeleniumCallback = arguments[0];\n"
@@ -70,6 +80,9 @@ class TranslatorTester {
 				testOutput = new TestOutput();
 				testOutput.output = e.toString();
 				testOutput.status = "failed";
+				if(e instanceof TimeoutException) {
+					testThread.setupDriver();
+				}
 			}
 			
 			System.out.println(testOutput.output+"\n");
@@ -81,6 +94,11 @@ class TranslatorTester {
 				failed.add(test);
 			} else {
 				unknown.add(test);
+			}
+			
+			// On timeout, we'll need to restart the WebDriver
+			if(timeoutThread != null && timeoutThread.timedOut) {
+				testThread.setupDriver();
 			}
 			
 			i++;

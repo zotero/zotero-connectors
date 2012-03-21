@@ -15,9 +15,10 @@ public class TestTimeoutThread extends Thread {
 	public void run() {
 		try {
 			Thread.sleep(timeout * 1000);
-			driver.close();
 		} catch (InterruptedException ex) {
 			return;
 		}
+		this.timedOut = true;
+		driver.close();
 	}
 }

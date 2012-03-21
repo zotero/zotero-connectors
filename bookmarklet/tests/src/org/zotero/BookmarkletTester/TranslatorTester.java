@@ -64,7 +64,7 @@ class TranslatorTester {
 			}
 			
 			try {
-				testThread.driver.get(test.url);
+				driver.get(test.url);
 				
 				if(timeoutThread != null) timeoutThread.interrupt();
 				if(test.defer) Thread.sleep(10000);

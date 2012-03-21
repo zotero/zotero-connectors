@@ -63,7 +63,7 @@ public class BookmarkletTestThread extends Thread {
 					timeoutThread.interrupt();
 				}
 				
-				if((++nTranslatorsTested) == 20 && BookmarkletTester.config.browser.equals("i")) {
+				if((++nTranslatorsTested) == 40 && BookmarkletTester.config.browser.equals("i")) {
 					// Internet Explorer leaks memory like a sieve
 					driver.quit();
 					continue running;

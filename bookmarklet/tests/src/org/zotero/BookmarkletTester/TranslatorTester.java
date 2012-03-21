@@ -80,9 +80,6 @@ class TranslatorTester {
 				testOutput = new TestOutput();
 				testOutput.output = e.toString();
 				testOutput.status = "failed";
-				if(e instanceof TimeoutException) {
-					testThread.setupDriver();
-				}
 			}
 			
 			System.out.println(testOutput.output+"\n");

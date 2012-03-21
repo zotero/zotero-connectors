@@ -58,7 +58,10 @@ class TranslatorTester {
 			WebDriver driver = testThread.driver;
 			
 			TestTimeoutThread timeoutThread = null;
-			if(driver instanceof InternetExplorerDriver || driver instanceof ChromeDriver) {
+			if(driver instanceof InternetExplorerDriver) {
+				timeoutThread = new TestTimeoutThread(180, driver);
+				timeoutThread.start();
+			} else if(driver instanceof ChromeDriver) {
 				timeoutThread = new TestTimeoutThread(600, driver);
 				timeoutThread.start();
 			}

@@ -12,6 +12,7 @@ public class TestTimeoutThread extends Thread {
 	public void run() {
 		try {
 			Thread.sleep(timeout * 1000);
+			System.out.println("Interrupted");
 			this.watchingThread.interrupt();
 		} catch (InterruptedException ex) {
 			return;

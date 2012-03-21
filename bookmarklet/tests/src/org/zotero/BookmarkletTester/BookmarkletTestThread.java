@@ -19,11 +19,14 @@ public class BookmarkletTestThread extends Thread {
 				profile.setPreference("permissions.default.image", 2);
 				
 				driver = new FirefoxDriver();
-				driver.manage().timeouts().pageLoadTimeout(600, java.util.concurrent.TimeUnit.SECONDS);
+				driver.manage().timeouts().pageLoadTimeout(30, java.util.concurrent.TimeUnit.SECONDS);
 			} else if(BookmarkletTester.config.browser.equals("c")) {
 				useTimeoutThread = true;
 				driver = new ChromeDriver();
 			} else if(BookmarkletTester.config.browser.equals("i")) {
+				System.setProperty("sun.net.client.defaultReadTimeout", "30000");
+				System.setProperty("sun.net.client.defaultConnectTimeout", "30000");
+				
 				useTimeoutThread = true;
 				driver = new InternetExplorerDriver();
 			} else if(BookmarkletTester.config.browser.equals("p")) {

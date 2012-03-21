@@ -46,6 +46,7 @@ public class BookmarkletTestThread extends Thread {
 	public void run() {
 		TranslatorTester translatorTester;
 		int nTranslatorsTested = 0;
+		setupDriver();
 		while((translatorTester = BookmarkletTester.getNextTranslatorTester()) != null) {
 			// Don't try to translate with excluded translators
 			if(BookmarkletTester.config.exclude.contains(translatorTester.translator.translatorID)) continue;

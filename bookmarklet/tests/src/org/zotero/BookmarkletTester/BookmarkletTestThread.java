@@ -12,6 +12,9 @@ public class BookmarkletTestThread extends Thread {
 	WebDriver driver;
 	
 	public void setupDriver() {
+		System.setProperty("sun.net.client.defaultReadTimeout", "300000");
+		System.setProperty("sun.net.client.defaultConnectTimeout", "300000");
+		
 		if(BookmarkletTester.config.browser.equals("g")) {
 			FirefoxProfile profile = new FirefoxProfile();
 			profile.setPreference("permissions.default.stylesheet", 2);

@@ -53,16 +53,20 @@ class TranslatorTester {
 		int i = 0;
 		while(pending.size() != 0) {
 			Test test = pending.removeFirst();
-			TestInfo testInfo = new TestInfo(translator, i, test);
+			TestInfo testInfo = new TestInfo(translator, i+1, test);
 			TestOutput testOutput;
 			WebDriver driver = testThread.driver;
 			
 			TestTimeoutThread timeoutThread = null;
+			int timeout = 0;
 			if(driver instanceof InternetExplorerDriver) {
-				timeoutThread = new TestTimeoutThread(180, driver);
-				timeoutThread.start();
+				timeout = 180;
 			} else if(driver instanceof ChromeDriver) {
-				timeoutThread = new TestTimeoutThread(600, driver);
+				timeout = 600;
+			}
+			
+			if(timeout != 0) {
+				timeoutThread = new TestTimeoutThread(timeout, driver);
 				timeoutThread.start();
 			}
 			
@@ -81,7 +85,11 @@ class TranslatorTester {
 				testOutput = mapper.readValue(json, TestOutput.class);
 			} catch (Exception e) { 
 				testOutput = new TestOutput();
-				testOutput.output = e.toString();
+				if(timeoutThread.timedOut) {
+					testOutput.output = "Test "+(i+1)+" timed out after "+timeout+" seconds\n\n";
+				} else {
+					testOutput.output = "Test "+(i+1)+": "+e.toString()+"\n\n";
+				}
 				testOutput.status = "failed";
 			}
 			

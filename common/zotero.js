@@ -42,6 +42,9 @@ var Zotero = new function() {
 		this.browser = "c";
 	}
 	
+	/**
+	 * Initializes Zotero services for the global page in Chrome or Safari
+	 */
 	this.initGlobal = function() {
 		Zotero.Debug.init();
 		Zotero.Messaging.init();
@@ -49,6 +52,9 @@ var Zotero = new function() {
 		Zotero.Repo.init();
 	};
 	
+	/**
+	 * Initializes Zotero services for injected pages and the inject side of the bookmarklet
+	 */
 	this.initInject = function() {
 		// We have to load AJAW into global namespace, so move it to local
 		try {
@@ -64,6 +70,12 @@ var Zotero = new function() {
 		Zotero.Messaging.init();
 	};
 	
+	
+	/**
+	 * Get versions, platform, etc.
+	 *
+	 * Can be used synchronously or asynchronously.
+	 */
 	this.getSystemInfo = function(callback) {
 		var info = {
 			connector: "true",
@@ -91,6 +103,9 @@ var Zotero = new function() {
 		callback(str);
 	};
 	
+	/**
+	 * Writes a line to the debug console
+	 */
 	this.debug = function(message, level) {
 		Zotero.Debug.log(message, level);
 	};
@@ -119,8 +134,8 @@ var Zotero = new function() {
 		if(!fileName && !lineNumber && Zotero.isIE && typeof err === "object") {
 			// IE can give us a line number if we re-throw the exception, but we wrap this in a
 			// setTimeout call so that we won't throw in the middle of a function
-			window.setTimeout(function() {
-				window.onerror = function(errmsg, fileName, lineNumber) {
+			window.parent.setTimeout(function() {
+				window.parent.onerror = function(errmsg, fileName, lineNumber) {
 					try {
 						Zotero.Errors.log("message" in err ? err.message : err.toString(), fileName, lineNumber);
 					} catch(e) {};

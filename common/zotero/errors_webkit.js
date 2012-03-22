@@ -43,9 +43,6 @@ Zotero.Errors = new function() {
 		err.push("]");
 		err = err.join("");
 		_output.push(err);
-		
-		// Log to console in bookmarklet
-		if(Zotero.isBookmarklet) Zotero.debug(err);
 	}
 	
 	/**

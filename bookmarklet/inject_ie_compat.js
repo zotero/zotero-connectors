@@ -2804,8 +2804,12 @@ var install = function(win) {
 	win.XPathResult.prototype.iterateNext = function() {
 		var node = this.nodes[this.index++];
 		if(!node) return undefined;
-		if(!("textContent" in node) && "innerText" in node) {
-			node.textContent = node.innerText;
+		if(!("textContent" in node)) {
+			if("innerText" in node) {
+				node.textContent = node.innerText;
+			} else if("nodeValue" in node) {
+				node.textContent = node.nodeValue;
+			}
 		}
 		return node;
 	};

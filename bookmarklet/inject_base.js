@@ -187,7 +187,7 @@ Zotero.Messaging.addMessageListener("hideZoteroIFrame", function() {
 });
 
 // For IE, load from http to avoid a warning
-if(Zotero.isIE && window.location.protocol === "http:") {
+if(Zotero.isIE && window.parent.location.protocol === "http:") {
 	ZOTERO_CONFIG.BOOKMARKLET_URL = ZOTERO_CONFIG.BOOKMARKLET_URL.replace("https", "http");
 }
 

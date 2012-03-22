@@ -19,6 +19,8 @@ public class TestTimeoutThread extends Thread {
 			return;
 		}
 		this.timedOut = true;
-		driver.close();
+		try {
+			driver.close();
+		} catch(Exception e) {}
 	}
 }

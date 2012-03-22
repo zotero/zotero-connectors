@@ -3,7 +3,6 @@ package org.zotero.BookmarkletTester;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.concurrent.TimeoutException;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.openqa.selenium.JavascriptExecutor;
@@ -72,8 +71,8 @@ class TranslatorTester {
 			
 			try {
 				driver.get(test.url);
-				
-				if(timeoutThread != null) timeoutThread.interrupt();
+
+				if(timeoutThread != null && timeoutThread.isAlive()) timeoutThread.interrupt();
 				if(test.defer) Thread.sleep(10000);
 			
 				String json = null;
@@ -88,6 +87,7 @@ class TranslatorTester {
 				if(timeoutThread.timedOut) {
 					testOutput.output = "Test "+(i+1)+" timed out after "+timeout+" seconds\n\n";
 				} else {
+					if(timeoutThread != null && timeoutThread.isAlive()) timeoutThread.interrupt();
 					testOutput.output = "Test "+(i+1)+": "+e.toString()+"\n\n";
 				}
 				testOutput.status = "failed";

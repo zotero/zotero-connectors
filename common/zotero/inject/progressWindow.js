@@ -200,10 +200,10 @@ Zotero.ProgressWindow = new function() {
 	 */
 	this.close = function() {
 		document.body.removeChild(_progressDiv);
-		_progressDiv = undefined;
-		_headlineDiv = undefined;
+		_progressDiv = void(0);
+		_headlineDiv = void(0);
 		if(_timeoutID) win.clearTimeout(_timeoutID);
-		_timeoutID = undefined;
+		_timeoutID = void(0);
 		_shownItemDivsById = {};
 	}
 }

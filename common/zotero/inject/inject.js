@@ -43,14 +43,12 @@ if(isTopWindow) {
 	Zotero.Messaging.addMessageListener("saveDialog_show", Zotero.ProgressWindow.show);
 	var itemProgress = {};
 	Zotero.Messaging.addMessageListener("saveDialog_itemSaving", function(data) {
-		Zotero.debug("Saving id "+data[2]);
 		itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1],
 			data.length > 3 ? itemProgress[data[3]] : undefined);
 	});
 	Zotero.Messaging.addMessageListener("saveDialog_itemProgress", function(data) {
 		var progress = itemProgress[data[2]];
 		if(!progress) {
-			Zotero.debug("No attachment for id "+data[2]);
 			progress = itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1]);
 		} else {
 			progress.setIcon(data[0]);
@@ -185,6 +183,7 @@ Zotero.Inject = new function() {
 			});
 			_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
 				// this relays an item from this tab to the top level of the window
+				if(progress === 0) return;
 				Zotero.Messaging.sendMessage("saveDialog_itemProgress",
 					[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
 			});

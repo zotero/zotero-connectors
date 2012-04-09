@@ -11,7 +11,8 @@ window.onmessage = function(event) {
 		}, false);
 	}
 	xhr.open("POST", "/", true);  
-	xhr.onloadend = function() {
+	xhr.onreadystatechange = function() {
+		if(xhr.readyState !== 4) return;
 		window.parent.postMessage([data.id,
 			(this.status == 200 || this.status == 201 ? 100 : false), this.responseText], POST_TO);
 	};

@@ -164,6 +164,11 @@ Zotero.Translators = new function() {
 						callback([[], []]);
 						return;
 					}
+					for(var i=0; i<foundTranslators.length; i++) {
+						if(!(foundTranslators[i].translatorType & TRANSLATOR_TYPES.web)) {
+							foundTranslators.splice(i, 1);
+						}
+					}
 					translators = translators.concat(foundTranslators);
 						
 					if(fetchURIs.length) {	// More URLs to try

@@ -155,9 +155,8 @@ var MESSAGES = {
 			"onAuthorizationComplete":false,
 			"clearCredentials":false,
 			"getUserInfo":true,
-			"doAuthenticatedPost":{
-				"callbackArg":2
-			}
+			"createItem":true,
+			"uploadAttachment":false
 		},
 	"Prefs":
 		{

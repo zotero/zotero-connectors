@@ -138,7 +138,8 @@ Zotero.OAuth = new function() {
 			Zotero.HTTP.doGet(ZOTERO_CONFIG.API_URL+"users/"+encodeURI(data.userID)
 					+"/keys/"+encodeURI(data.oauth_token_secret), function(xmlhttp) {
 				var access;
-				if(!("responseXML" in xmlhttp) || !("getElementsByTagName" in xmlhttp.responseXML)
+				if(!("responseXML" in xmlhttp) || !xmlhttp.responseXML
+						|| !("getElementsByTagName" in xmlhttp.responseXML)
 						|| !(access = xmlhttp.responseXML.getElementsByTagName("access")).length) {
 					Zotero.logError("Key verification failed with "+xmlhttp.status+'; response was '+xmlhttp.responseText);
 					try {
@@ -200,52 +201,177 @@ Zotero.OAuth = new function() {
 	};
 	
 	/**
-	 * Performs an authenticated POST request. Callback will be passed success (true or false)
-	 * as first argument and status code or response body as second. This is separated here in order
-	 * to avoid passing credentials to injected scripts.
-	 *
-	 * @param {String} url URL to request. %%USERID%% in the URL will be substituted for the user ID
-	 * @param {String} body Request body
+	 * Creates a new item
+	 * @param {Object} payload Item(s) to create, in the object format expected by the server.
+	 * @param {String|null} itemKey Parent item key, or null if a top-level item.
 	 * @param {Function} callback Callback to be executed upon request completion. Passed true if
-	 *     succeeded, or false if failed.
-	 * @param {Boolean} [askForAuth] Whether to ask the user for authorization if not already
-	 *     authorized.
+	 *     succeeded, or false if failed, along with the response body.
+	 * @param {Boolean} [askForAuth] If askForAuth === false, don't ask for authorization if not 
+	 *     already authorized.
 	 */
-	this.doAuthenticatedPost = function(path, body, callback, askForAuth) {
+	this.createItem = function(payload, itemKey, callback, askForAuth) {
+		if(itemKey && /[^a-zA-Z0-9]/.test(itemKey)) {
+			callback(500, 'Item key is invalid');
+			return;
+		}
+		
 		var userID = localStorage["auth-userID"],
 			apiKey = localStorage["auth-token_secret"];
 		
 		if(!userID) {
-			// ask user to authorize if necessary
-			if(askForAuth) {
+			if(askForAuth === false) {
+				callback(403, "Not authorized");
+			} else {
 				Zotero.OAuth.authorize(function(status, msg) {
 					if(!status) {
 						Zotero.logError("Translate: Authentication failed with message "+msg);
-						callback(false);
+						callback(403, "Authentication failed");
 						return;
 					}
 					
-					Zotero.OAuth.doAuthenticatedPost(path, body, callback, false);
+					Zotero.OAuth.createItem(payload, itemKey, callback, false);
 				});
-			} else {
-				callback(false, "Not authorized");
 			}
 			return;
 		}
 		
-		var url = ZOTERO_CONFIG.API_URL+path
-			.replace("%%USERID%%", userID)+
-			(path.indexOf("?") === -1 ? "?" : "&")+"key="+apiKey;
-		
-		Zotero.HTTP.doPost(url, body, function(xmlhttp) {
-			if([200, 201, 204].indexOf(xmlhttp.status) !== -1) {
-				callback(true);
+		var url = ZOTERO_CONFIG.API_URL+"users/"+userID+"/items"+(itemKey ? "/"+itemKey+"/children" : "")+"?key="+apiKey;
+		Zotero.HTTP.doPost(url, JSON.stringify(payload), function(xmlhttp) {
+			if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
+				callback(xmlhttp.status, xmlhttp.responseText);
+			} else if(askForAuth && xmlhttp.status === 403) {
+				Zotero.OAuth.authorize(function(status, msg) {
+					if(!status) {
+						Zotero.logError("Translate: Authentication failed with message "+msg);
+						callback(403, "Authentication failed");
+						return;
+					}
+					
+					Zotero.OAuth.createItem(payload, itemKey, callback, false);
+				});
 			} else {
-				var msg = xmlhttp.responseText;
-				Zotero.logError("Translate: API request failed with message "+msg);
-				Zotero.debug("Translate: API request failed with message "+msg+"; payload:\n\n"+body);
-				callback(false);
+				var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
+				Zotero.logError("API request failed with "+msg);
+				callback(xmlhttp.status, response);
 			}
 		}, {"Content-Type":"application/json"});
+	};
+	
+	/**
+	 * Uploads an attachment to the Zotero server
+	 * @param {Object} attachment An attachment object. This object must have the following keys<br>
+	 *     id - a unique identifier for the attachment used to identifiy it in subsequent progress
+	 *          messages<br>
+	 *     data - the attachment contents, as a typed array<br>
+	 *     filename - a filename for the attachment<br>
+	 *     key - the attachment item key<br>
+	 *     md5 - the MD5 hash of the attachment contents<br>
+	 *     mimeType - the attachment MIME type
+	 */
+	this.uploadAttachment = function(attachment, tab) {
+		var _dispatchAttachmentCallback = function(id, status, error) {
+			Zotero.Messaging.sendMessage("attachmentCallback",
+				(error ? [id, status, error.toString()] : [id, status]), tab);
+			if(error) throw error;
+		};
+		
+		const REQUIRED_PROPERTIES = ["id", "data", "filename", "key", "md5", "mimeType"];
+		for(var i=0; i<REQUIRED_PROPERTIES.length; i++) {
+			if(!attachment[REQUIRED_PROPERTIES[i]]) {
+				_dispatchAttachmentCallback(attachment.id, false,
+					'Required property "'+REQUIRED_PROPERTIES[i]+'" not defined');
+				return;
+			}
+		}
+		
+		if(/[^a-zA-Z0-9]/.test(attachment.key)) {
+			_dispatchAttachmentCallback(attachment.id, false, 'Attachment key is invalid');
+			return;
+		}
+		
+		var data = {
+			"md5":attachment.md5,
+			"filename":attachment.filename,
+			"filesize":attachment.data.byteLength,
+			"mtime":(+new Date),
+			"contentType":attachment.mimeType
+		};
+		if(attachment.charset) data.charset = attachment.charset;
+		var dataString = [];
+		for(var i in data) {
+			dataString.push(i+"="+encodeURIComponent(data[i]));
+		}
+		data = dataString.join("&");
+		
+		var userID = localStorage["auth-userID"],
+			apiKey = localStorage["auth-token_secret"];
+		var url = ZOTERO_CONFIG.API_URL+"users/"+userID+"/items/"+attachment.key+"/file?key="+apiKey;
+		Zotero.HTTP.doPost(url, data,
+			function(xmlhttp) {
+				if(xmlhttp.status !== 200) {
+					var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
+					_dispatchAttachmentCallback(attachment.id, false, msg);
+					return;
+				}
+				
+				try {
+					var response = JSON.parse(xmlhttp.responseText);
+				} catch(e) {
+					_dispatchAttachmentCallback(attachment.id, false, "Error parsing JSON from server");
+					return;
+				}
+				
+				// { "exists": 1 } implies no further action necessary
+				if(response.exists) {
+					Zotero.debug("OAuth: Attachment exists; no upload necessary");
+					_dispatchAttachmentCallback(attachment.id, 100);
+					return;
+				}
+				
+				Zotero.debug("OAuth: Upload authorized");
+				
+				// Append prefix and suffix to data array
+				var prefixLength = Zotero.Utilities.getStringByteLength(response.prefix),
+					suffixLength = Zotero.Utilities.getStringByteLength(response.suffix),
+					uploadData = new Uint8Array(attachment.data.byteLength + prefixLength
+						+ suffixLength);
+				Zotero.Utilities.stringToUTF8Array(response.prefix, uploadData, 0);
+				uploadData.set(new Uint8Array(attachment.data), response.prefix.length);
+				Zotero.Utilities.stringToUTF8Array(response.suffix, uploadData,
+					attachment.data.byteLength+prefixLength);
+				
+				var xhr = new XMLHttpRequest();
+				xhr.open("POST", response.url, true);
+				xhr.onloadend = function() {
+					if(this.status !== 200 && this.status !== 201) {
+						var msg = this.status+" ("+this.responseText+")";
+						_dispatchAttachmentCallback(attachment.id, false, msg);
+						return;
+					}
+				
+					// Upload complete; register it
+					Zotero.HTTP.doPost(url, "upload="+response.uploadKey, function(xmlhttp) {
+						if(xmlhttp.status === 204) {
+							Zotero.debug("OAuth: Upload registered");
+							_dispatchAttachmentCallback(attachment.id, 100);
+						} else {
+							var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
+							_dispatchAttachmentCallback(attachment.id, false, msg);
+						}
+					}, {
+						"Content-Type":"application/x-www-form-urlencoded",
+						"If-None-Match":"*"
+					});
+				};
+				xhr.onprogress = function(event) {
+					if(event.loaded == event.total) return;
+					_dispatchAttachmentCallback(attachment.id, event.loaded/event.total*100);
+				};
+				xhr.send(uploadData.buffer);
+			},
+			{
+				"Content-Type":"application/x-www-form-urlencoded",
+				"If-None-Match":"*"
+			});
 	};
 }

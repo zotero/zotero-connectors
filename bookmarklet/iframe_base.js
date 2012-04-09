@@ -23,7 +23,7 @@
     ***** END LICENSE BLOCK *****
 */
 
-Zotero.OAuth = new function() {	
+Zotero.OAuth = new function() {
 	/**
 	 * Performs authorization
 	 * @param {Function} callback Callback to execute when auth is complete. The first argument
@@ -44,12 +44,11 @@ Zotero.OAuth = new function() {
 		iframe.onload = function() {
 			var win = iframe.contentWindow;
 			if(win.location.href !== ZOTERO_CONFIG.LOGIN_URL
-					&& win.location.href !== "about:blank") {	
-				Zotero.Messaging.sendMessage("hideZoteroIFrame", null);
-				document.body.removeChild(iframe);
+					&& win.location.href !== "about:blank") {
 			
 				// Authorization should be done
-				var c = _getCredentials(), userID = c[0], sessionToken = c[1];
+				var c = _getCredentials(win.document ? win.document : document),
+					userID = c[0], sessionToken = c[1];
 				if(!userID || !sessionToken) {
 					if(!userID) {
 						var str = "User ID";
@@ -62,73 +61,177 @@ Zotero.OAuth = new function() {
 					callback(false, str);
 					return;
 				}
+				
+				Zotero.Messaging.sendMessage("hideZoteroIFrame", null);
+				document.body.removeChild(iframe);
 				callback(true);
 			}
 		};
 		
 		document.body.appendChild(iframe);
 		Zotero.Messaging.sendMessage("revealZoteroIFrame", null);
-	}
+	};
 	
 	/**
-	 * Performs an authenticated POST request. Callback will be passed success (true or false)
-	 * as first argument and status code or response body as second. This is separated here in order
-	 * to avoid passing credentials to injected scripts.
-	 *
-	 * @param {String} url URL to request. %%USERID%% in the URL will be substituted for the user ID
-	 * @param {String} body Request body
+	 * Creates a new item
+	 * @param {Object} payload Item(s) to create, in the object format expected by the server.
+	 * @param {String|null} itemKey Parent item key, or null if a top-level item.
 	 * @param {Function} callback Callback to be executed upon request completion. Passed true if
-	 *     succeeded, or false if failed.
-	 * @param {Boolean} [askForAuth] Whether to ask the user for authorization if not already
-	 *     authorized.
+	 *     succeeded, or false if failed, along with the response body.
+	 * @param {Boolean} [askForAuth] If askForAuth === false, don't ask for authorization if not 
+	 *     already authorized.
 	 */
-	this.doAuthenticatedPost = function(path, body, callback, askForAuth) {
-		var c = _getCredentials(), userID = c[0], sessionToken = c[1],
+	this.createItem = function(payload, itemKey, callback, askForAuth) {
+		if(itemKey && /[^a-zA-Z0-9]/.test(itemKey)) {
+			callback(500, 'Item key is invalid');
+			return;
+		}
+		
+		var c = _getCredentials(document), userID = c[0], sessionToken = c[1],
 			reauthorize = function() {
 			Zotero.OAuth.authorize(function(status, msg) {
 				if(!status) {
-					Zotero.logError("Translate: Authentication failed with message "+msg);
-					callback(false);
+					Zotero.logError("Authentication failed with message "+msg);
+					callback(403, "Authentication failed");
 					return;
 				}
 				
-				Zotero.OAuth.doAuthenticatedPost(path, body, callback, false);
+				Zotero.OAuth.createItem(payload, itemKey, callback, false);
 			});
 		};
 		
 		if(!userID || !sessionToken) {
-			if(askForAuth) {
+			if(askForAuth === false) {
+				callback(403, "Not authorized");
+			} else {
 				reauthorize();
 				return;
-			} else {
-				callback(false, "Not authorized");
 			}
 		}
 		
-		var url = ZOTERO_CONFIG.API_URL+path
-			.replace("%%USERID%%", userID)+
-			(path.indexOf("?") === -1 ? "?" : "&")+"session="+sessionToken;
+		var url = ZOTERO_CONFIG.API_URL+"users/"+userID+"/items"+(itemKey ? "/"+itemKey+"/children" : "")+"?session="+sessionToken;
 		
-		Zotero.HTTP.doPost(url, body, function(xmlhttp) {
-			if([200, 201, 204].indexOf(xmlhttp.status) !== -1) {
-				callback(true);
+		Zotero.HTTP.doPost(url, JSON.stringify(payload), function(xmlhttp) {
+			if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
+				callback(xmlhttp.status, xmlhttp.responseText);
 			} else if(xmlhttp.status == 403 && askForAuth) {
-				Zotero.debug("Translate: API request failed with 403 ("+xmlhttp.responseText+"); reauthorizing");
+				Zotero.debug("API request failed with 403 ("+xmlhttp.responseText+"); reauthorizing");
 				reauthorize();
 			} else {
 				var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
-				Zotero.logError("Translate: API request failed with "+msg);
-				Zotero.debug("Translate: API request failed with "+msg+"; payload:\n\n"+body);
-				callback(false);
+				Zotero.logError("API request failed with "+msg);
+				callback(xmlhttp.status, xmlhttp.responseText);
 			}
-		}, {"Content-Type":"application/json"});
-	}
+		}, {"Content-Type": "application/json"});
+	};
+	
+	/**
+	 * Uploads an attachment to the Zotero server
+	 * @param {Object} attachment An attachment object. This object must have the following keys<br>
+	 *     id - a unique identifier for the attachment used to identifiy it in subsequent progress
+	 *          messages<br>
+	 *     data - the attachment contents, as a typed array<br>
+	 *     filename - a filename for the attachment<br>
+	 *     key - the attachment item key<br>
+	 *     md5 - the MD5 hash of the attachment contents<br>
+	 *     mimeType - the attachment MIME type
+	 */
+	this.uploadAttachment = function(attachment) {
+		const REQUIRED_PROPERTIES = ["id", "data", "filename", "key", "md5", "mimeType"];
+		for(var i=0; i<REQUIRED_PROPERTIES.length; i++) {
+			if(!attachment[REQUIRED_PROPERTIES[i]]) {
+				_dispatchAttachmentCallback(attachment.id, false,
+					'Required property "'+REQUIRED_PROPERTIES[i]+'" not defined');
+			}
+		}
+		
+		if(/[^a-zA-Z0-9]/.test(attachment.key)) {
+			_dispatchAttachmentCallback(attachment.id, false, 'Attachment key is invalid');
+		}
+		
+		var data = {
+			"md5":attachment.md5,
+			"filename":attachment.filename,
+			"filesize":attachment.data.byteLength,
+			"mtime":(+new Date),
+			"contentType":attachment.mimeType
+		};
+		if(attachment.charset) data.charset = attachment.charset;
+		var dataString = [];
+		for(var i in data) {
+			dataString.push(i+"="+encodeURIComponent(data[i]));
+		}
+		data = dataString.join("&");
+		
+		var c = _getCredentials(document), userID = c[0], sessionToken = c[1];
+		var url = ZOTERO_CONFIG.API_URL+"users/"+userID+"/items/"+attachment.key+"/file?session="+sessionToken;
+		
+		Zotero.HTTP.doPost(url, data,
+			function(xmlhttp) {
+				if(xmlhttp.status !== 200) {
+					var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
+					_dispatchAttachmentCallback(attachment.id, false, msg);
+				}
+				
+				try {
+					var response = JSON.parse(xmlhttp.responseText);
+				} catch(e) {
+					_dispatchAttachmentCallback(attachment.id, false, "Error parsing JSON from server");
+				}
+				
+				// { "exists": 1 } implies no further action necessary
+				if(response.exists) {
+					Zotero.debug("OAuth: Attachment exists; no upload necessary");
+					_dispatchAttachmentCallback(attachment.id, 100);
+					return;
+				}
+				
+				Zotero.debug("OAuth: Upload authorized");
+				
+				// Append prefix and suffix to data array
+				var prefixLength = Zotero.Utilities.getStringByteLength(response.prefix),
+					suffixLength = Zotero.Utilities.getStringByteLength(response.suffix),
+					uploadData = new Uint8Array(attachment.data.byteLength + prefixLength
+						+ suffixLength);
+				Zotero.Utilities.stringToUTF8Array(response.prefix, uploadData, 0);
+				uploadData.set(new Uint8Array(attachment.data), response.prefix.length);
+				Zotero.Utilities.stringToUTF8Array(response.suffix, uploadData,
+					attachment.data.byteLength+prefixLength);
+				
+				Uploader.upload(response.contentType, uploadData, function(status, error) {
+					if(status === 100) {
+						// Upload complete; register it
+						Zotero.HTTP.doPost(url, "upload="+response.uploadKey, function(xmlhttp) {
+							if(xmlhttp.status === 204) {
+								Zotero.debug("OAuth: Upload registered");
+								_dispatchAttachmentCallback(attachment.id, 100);
+							} else {
+								var msg = "API request failed with "+xmlhttp.status+" ("+xmlhttp.responseText+")";
+								_dispatchAttachmentCallback(attachment.id, false, msg);
+							}
+						}, {
+							"Content-Type":"application/x-www-form-urlencoded",
+							"If-None-Match":"*"
+						});
+					} else {
+						// Upload progress/error
+						_dispatchAttachmentCallback(attachment.id, status, error);
+					}
+				});
+			},
+			{
+				"Content-Type":"application/x-www-form-urlencoded",
+				"If-None-Match":"*"
+			});
+		Uploader.init();
+	};
 	
 	/**
 	 * Extracts credentials from cookies
 	 */
-	function _getCredentials() {
-		var userID, sessionToken, cookies = document.cookie.split(/ *; */);
+	var userID, sessionToken;
+	function _getCredentials(doc) {
+		var cookies = doc.cookie.split(/ *; */);
 		for(var i=0, n=cookies.length; i<n; i++) {
 			var cookie = cookies[i],
 				equalsIndex = cookie.indexOf("="),
@@ -142,6 +245,80 @@ Zotero.OAuth = new function() {
 		}
 		return [userID, sessionToken];
 	}
+	
+	/**
+	 * Dispatches an attachmentCallback message to the parent window
+	 */
+	function _dispatchAttachmentCallback(id, status, error) {
+		Zotero.Messaging.sendMessage("attachmentCallback",
+			(error ? [id, status, error.toString()] : [id, status]));
+		if(error) throw error;
+	}
+	
+	/**
+	 * Loads an iframe on S3 to upload data
+	 * @param {Function} [callback] Callback to be executed when iframe is loaded
+	 */
+	var Uploader = new function() {	
+		var _uploadIframe,
+			_waitingForUploadIframe,
+			_attachmentCallbacks = [];
+		
+		this.init = function() {
+			if(_uploadIframe) return;
+			Zotero.debug("OAuth: Loading S3 iframe");
+			
+			_waitingForUploadIframe = [];
+			
+			_uploadIframe = document.createElement("iframe");
+			_uploadIframe.src = ZOTERO_CONFIG.S3_URL+"bookmarklet_upload.html";
+			
+			var listener = function(event) {
+				if(event.source != _uploadIframe.contentWindow) return;
+				event.stopPropagation();
+				
+				var data = event.data;
+				if(_waitingForUploadIframe) {
+					Zotero.debug("OAuth: S3 iframe loaded");
+					// If we were previously waiting for this iframe to load, call callbacks
+					var callbacks = _waitingForUploadIframe;
+					_waitingForUploadIframe = false;
+					for(var i=0; i<callbacks.length; i++) {
+						callbacks[i]();
+					}
+				} else {
+					// Otherwise, this is a callback for a specific attachment
+					_attachmentCallbacks[data[0]](data[1], data[2]);
+					if(data[1] === false || data[1] === 100) {
+						delete _attachmentCallbacks[data[0]];
+					}
+				}
+			};
+			
+			if(window.addEventListener) {
+				window.addEventListener("message", listener, false);
+			} else {
+				window.attachEvent("message", function() { listener(event) });
+			}
+			
+			document.body.appendChild(_uploadIframe);
+		}
+		
+		this.upload = function(contentType, data, progressCallback) {
+			this.init();
+			if(_waitingForUploadIframe) {
+				_waitingForUploadIframe.push(
+					function() { Uploader.upload(contentType, data, progressCallback); });
+				return;
+			}
+			
+			Zotero.debug("OAuth: Uploading attachment to S3");
+			var id = Zotero.Utilities.randomString();
+			_attachmentCallbacks[id] = progressCallback;
+			_uploadIframe.contentWindow.postMessage({"id":id, "contentType":contentType,
+				"data":data}, ZOTERO_CONFIG.S3_URL);
+		}
+	};
 }
 
 Zotero.isBookmarklet = true;

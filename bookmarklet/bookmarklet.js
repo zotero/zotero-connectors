@@ -23,7 +23,8 @@ new function() {
 	 * Adds a script to the iframe page
 	 */
 	var addScript = function(src) {
-		var script = doc.createElement("script");
+		var doc = iframe.contentWindow.document,
+			script = doc.createElement("script");
 		script.type = "text/javascript";
 		script.src = src;
 		(doc.body ? doc.body : doc.documentElement).appendChild(script);
@@ -42,7 +43,9 @@ new function() {
 				loaded = true;
 			}
 		};
-		script.onreadystatechange = function() { if(!loaded) script.onload(); };
+		script.onreadystatechange = function() {
+			if(!loaded && script.readyState == "complete") script.onload();
+		};
 	};
 	
 	if(doc.readyState === "complete") {

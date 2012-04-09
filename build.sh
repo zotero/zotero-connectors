@@ -41,7 +41,8 @@ BOOKMARKLETDIR="$CWD/bookmarklet"
 
 SKINDIR="$EXTENSIONDIR/chrome/skin/default/zotero"
 XPCOMDIR="$EXTENSIONDIR/chrome/content/zotero/xpcom"
-IMAGES="$SKINDIR/treeitem*png $SKINDIR/treesource-collection.png $SKINDIR/zotero-z-16px.png"
+ICONS="$SKINDIR/treeitem*png $SKINDIR/treesource-collection.png $SKINDIR/zotero-z-16px.png"
+IMAGES="$SKINDIR/progress_arcs.png $SKINDIR/cross.png"
 PREFS_IMAGES="$SKINDIR/prefs-general.png $SKINDIR/prefs-advanced.png"
 
 # Scripts to be included in inject scripts
@@ -151,6 +152,11 @@ BOOKMARKLET_INJECT_TEST_INCLUDE=( \
 	"$EXTENSIONDIR/chrome/content/zotero/tools/testTranslators/translatorTester.js" \
 	"$BOOKMARKLETDIR/translator.js" \
 	"$BOOKMARKLETDIR/test.js")
+	
+BOOKMARKLET_AUXILIARY_JS=( \
+	"$BOOKMARKLETDIR/ie_hack.js" \
+	"$BOOKMARKLETDIR/itemSelector_browserSpecific.js" \
+	"$BOOKMARKLETDIR/upload.js" )
 
 # Make alpha images for Safari
 rm -rf "$SAFARIDIR/images/itemTypes" "$SAFARIDIR/images/toolbar"
@@ -158,25 +164,24 @@ mkdir "$SAFARIDIR/images/itemTypes"
 mkdir "$SAFARIDIR/images/toolbar"
 convert -version > /dev/null 2>&1
 if [ $? == 0 ]; then
-	cp $IMAGES "$SAFARIDIR/images/itemTypes"
-	cp $PREFS_IMAGES "$SAFARIDIR/images"
-	for f in $IMAGES
+	cp $ICONS "$SAFARIDIR/images/itemTypes"
+	cp $IMAGES $PREFS_IMAGES "$SAFARIDIR/images"
+	for f in $ICONS
 	do
 		convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
 				Opacity -contrast-stretch 50 "$SAFARIDIR/images/toolbar/"`basename $f`
 	done
 else
 	echo "ImageMagick not installed; not creating monochrome Safari icons"
-	cp $IMAGES "$SAFARIDIR/images/itemTypes"
-	cp $IMAGES "$SAFARIDIR/images/toolbar"
-	cp $PREFS_IMAGES "$SAFARIDIR/images"
+	cp $ICONS "$SAFARIDIR/images/itemTypes"
+	cp $ICONS "$SAFARIDIR/images/toolbar"
+	cp $IMAGES $PREFS_IMAGES "$SAFARIDIR/images"
 fi
 
 # Copy images for Chrome
 rm -rf "$CHROMEDIR/images"
 mkdir "$CHROMEDIR/images"
-cp $IMAGES "$CHROMEDIR/images"
-cp $PREFS_IMAGES "$CHROMEDIR/images"
+cp $ICONS $IMAGES $PREFS_IMAGES "$CHROMEDIR/images"
 
 # Update Chrome manifest.json
 scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${INJECT_INCLUDE[@]}")
@@ -279,7 +284,6 @@ fi
 # Make bookmarklet
 rm -rf "$BOOKMARKLETDIR/dist"
 mkdir "$BOOKMARKLETDIR/dist"
-mkdir "$BOOKMARKLETDIR/dist/icons"
 
 for scpt in "iframe" "common" "inject"
 do
@@ -355,17 +359,27 @@ do
 	fi
 done
 
+# Copy/uglify auxiliary JS
+if [ "$1" == "debug" ]; then
+	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BOOKMARKLETDIR/debug_mode.html" "$BOOKMARKLETDIR/dist"
+else		
+	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
+	do
+		uglifyjs "$scpt" > "$BOOKMARKLETDIR/dist/`basename \"$scpt\"`"
+	done
+fi
+
 # Bookmarklet itself
 echo -n '<a href="javascript:' > "$BOOKMARKLETDIR/dist/bookmarklet.html"
-uglifyjs "$BOOKMARKLETDIR/bookmarklet.js" | sed 's/"/\&quot;/g' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+echo -n "`uglifyjs \"$BOOKMARKLETDIR/bookmarklet.js\" | sed 's/&/\&amp;/g' | sed 's/\"/\&quot;/g'`" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
 echo -n '">Save to Zotero</a>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
 
 # Copy to dist directory
 cp "$BOOKMARKLETDIR/iframe.html" \
 	"$BOOKMARKLETDIR/iframe_ie.html" \
-	"$BOOKMARKLETDIR/ie_hack.js" \
 	"$BOOKMARKLETDIR/auth_complete.html" \
-	"$BOOKMARKLETDIR/itemSelector_browserSpecific.js" \
 	"$COMMONDIR/itemSelector"*\
 	"$BOOKMARKLETDIR/dist"
-cp $IMAGES "$BOOKMARKLETDIR/dist/icons"
+cp "$BOOKMARKLETDIR/htaccess" "$BOOKMARKLETDIR/dist/.htaccess"
+mkdir "$BOOKMARKLETDIR/dist/images"
+cp $ICONS $IMAGES "$BOOKMARKLETDIR/dist/images"

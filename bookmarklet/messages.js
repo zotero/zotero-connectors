@@ -83,8 +83,7 @@ const MESSAGES = {
 		},
 	"OAuth":
 		{
-			"doAuthenticatedPost":{
-				"callbackArg":2
-			}
+			"createItem":true,
+			"uploadAttachment":false
 		}
 };

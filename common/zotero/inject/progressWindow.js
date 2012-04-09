@@ -23,173 +23,183 @@
     ***** END LICENSE BLOCK *****
 */
 
-const cssDivClearString = 'background-attachment: scroll; background-color: transparent; background-image: none; background-position: 0% 0%; background-repeat: repeat; border-bottom-color: rgb(0, 0, 0); border-bottom-style: none; border-bottom-width: 0px; border-collapse: separate; border-left-color: rgb(0, 0, 0); border-left-style: none; border-left-width: 0px; border-right-color: rgb(0, 0, 0); border-right-style: none; border-right-width: 0px; border-spacing: 0px 0px; border-top-color: rgb(0, 0, 0); border-top-style: none; border-top-width: 0px; bottom: auto; caption-side: top; clear: none; clip: auto; color: rgb(0, 0, 0); content: none; counter-increment: none; counter-reset: none; cursor: auto; direction: ltr; display: block; empty-cells: show; float: none; font-family: serif; font-size: 16px; font-size-adjust: none; font-stretch: normal; font-style: normal; font-variant: normal; font-weight: 400; left: auto; letter-spacing: normal; line-height: auto; list-style-image: none; list-style-position: outside; list-style-type: disc; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; margin-top: 0px; marker-offset: auto; max-height: none; max-width: none; min-height: 0px; min-width: 0px; ime-mode: auto; opacity: 1; outline-color: rgb(0, 0, 0); outline-style: none; outline-width: 0px; outline-offset: 0px; overflow: visible; overflow-x: visible; overflow-y: visible; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px; page-break-after: auto; page-break-before: auto; pointer-events: auto; position: static; quotes: "“" "”" "‘" "’"; right: auto; table-layout: auto; text-align: left; text-decoration: none; text-indent: 0px; text-shadow: none; text-transform: none; top: auto; unicode-bidi: embed; vertical-align: baseline; visibility: visible; white-space: normal; word-spacing: 0px; z-index: auto; background-clip: border-box; background-origin: padding-box; background-size: auto auto; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: none; resize: none; word-wrap: normal; clip-path: none; clip-rule: nonzero; color-interpolation: srgb; color-interpolation-filters: linearrgb; dominant-baseline: auto; fill: rgb(0, 0, 0); fill-opacity: 1; fill-rule: nonzero; filter: none; flood-color: rgb(0, 0, 0); flood-opacity: 1; lighting-color: rgb(255, 255, 255); image-rendering: auto; mask: none; marker-end: none; marker-mid: none; marker-start: none; shape-rendering: auto; stop-color: rgb(0, 0, 0); stop-opacity: 1; stroke: none; stroke-dasharray: none; stroke-dashoffset: 0px; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 4; stroke-opacity: 1; stroke-width: 1px; text-anchor: start; text-rendering: auto;';
-const cssImgClearString = 'background-attachment: scroll; background-color: transparent; background-image: none; background-position: 0% 0%; background-repeat: repeat; border-bottom-color: rgb(0, 0, 0); border-bottom-style: none; border-bottom-width: 0px; border-collapse: separate; border-left-color: rgb(0, 0, 0); border-left-style: none; border-left-width: 0px; border-right-color: rgb(0, 0, 0); border-right-style: none; border-right-width: 0px; border-spacing: 0px 0px; border-top-color: rgb(0, 0, 0); border-top-style: none; border-top-width: 0px; bottom: auto; caption-side: top; clear: none; clip: auto; color: rgb(0, 0, 0); content: none; counter-increment: none; counter-reset: none; cursor: auto; direction: ltr; display: inline; empty-cells: show; float: none; font-family: serif; font-size: 16px; font-size-adjust: none; font-stretch: normal; font-style: normal; font-variant: normal; font-weight: 400; height: auto; left: auto; letter-spacing: normal; line-height: auto; list-style-image: none; list-style-position: outside; list-style-type: disc; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; margin-top: 0px; marker-offset: auto; max-height: none; max-width: none; min-height: 0px; min-width: 0px; ime-mode: auto; opacity: 1; outline-color: rgb(0, 0, 0); outline-style: none; outline-width: 0px; outline-offset: 0px; overflow: visible; overflow-x: visible; overflow-y: visible; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px; page-break-after: auto; page-break-before: auto; pointer-events: auto; position: static; quotes: "“" "”" "‘" "’"; right: auto; table-layout: auto; text-align: left; text-decoration: none; text-indent: 0px; text-shadow: none; text-transform: none; top: auto; unicode-bidi: normal; vertical-align: baseline; visibility: visible; white-space: normal; width: auto; word-spacing: 0px; z-index: auto; background-clip: border-box; background-origin: padding-box; background-size: auto auto; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: none; word-wrap: normal; clip-path: none; clip-rule: nonzero; color-interpolation: srgb; color-interpolation-filters: linearrgb; dominant-baseline: auto; fill: rgb(0, 0, 0); fill-opacity: 1; fill-rule: nonzero; filter: none; flood-color: rgb(0, 0, 0); flood-opacity: 1; lighting-color: rgb(255, 255, 255); image-rendering: auto; mask: none; marker-end: none; marker-mid: none; marker-start: none; shape-rendering: auto; stop-color: rgb(0, 0, 0); stop-opacity: 1; stroke: none; stroke-dasharray: none; stroke-dashoffset: 0px; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 4; stroke-opacity: 1; stroke-width: 1px; text-anchor: start; text-rendering: auto;';
-const cssAClearString = 'background-attachment: scroll; background-color: transparent; background-image: none; background-position: 0% 0%; background-repeat: repeat; border-bottom-color: rgb(0, 0, 238); border-bottom-style: none; border-bottom-width: 0px; border-collapse: separate; border-left-color: rgb(0, 0, 238); border-left-style: none; border-left-width: 0px; border-right-color: rgb(0, 0, 238); border-right-style: none; border-right-width: 0px; border-spacing: 0px 0px; border-top-color: rgb(0, 0, 238); border-top-style: none; border-top-width: 0px; bottom: auto; caption-side: top; clear: none; clip: auto; color: rgb(0, 0, 238); content: none; counter-increment: none; counter-reset: none; cursor: pointer; direction: ltr; display: inline; empty-cells: show; float: none; font-family: serif; font-size: 16px; font-size-adjust: none; font-stretch: normal; font-style: normal; font-variant: normal; font-weight: 400; height: auto; left: auto; letter-spacing: normal; line-height: 19.2px; list-style-image: none; list-style-position: outside; list-style-type: disc; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; margin-top: 0px; marker-offset: auto; max-height: none; max-width: none; min-height: 0px; min-width: 0px; ime-mode: auto; opacity: 1; outline-color: rgb(0, 0, 0); outline-style: none; outline-width: 0px; outline-offset: 0px; overflow: visible; overflow-x: visible; overflow-y: visible; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px; page-break-after: auto; page-break-before: auto; pointer-events: auto; position: static; quotes: "“" "”" "‘" "’"; right: auto; table-layout: auto; text-align: left; text-decoration: underline; text-indent: 0px; text-shadow: none; text-transform: none; top: auto; unicode-bidi: normal; vertical-align: baseline; visibility: visible; white-space: normal; width: auto; word-spacing: 0px; z-index: auto; background-clip: border-box; background-origin: padding-box; background-size: auto auto; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: none; resize: none; word-wrap: normal; clip-path: none; clip-rule: nonzero; color-interpolation: srgb; color-interpolation-filters: linearrgb; dominant-baseline: auto; fill: rgb(0, 0, 0); fill-opacity: 1; fill-rule: nonzero; filter: none; flood-color: rgb(0, 0, 0); flood-opacity: 1; lighting-color: rgb(255, 255, 255); image-rendering: auto; mask: none; marker-end: none; marker-mid: none; marker-start: none; shape-rendering: auto; stop-color: rgb(0, 0, 0); stop-opacity: 1; stroke: none; stroke-dasharray: none; stroke-dashoffset: 0px; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 4; stroke-opacity: 1; stroke-width: 1px; text-anchor: start; text-rendering: auto;'
+const cssDivClearString = 'background-attachment: scroll; background-color: transparent; background-image: none; background-position: 0% 0%; background-repeat: repeat; border-bottom-color: rgb(0, 0, 0); border-bottom-style: none; border-bottom-width: 0px; border-collapse: separate; border-left-color: rgb(0, 0, 0); border-left-style: none; border-left-width: 0px; border-right-color: rgb(0, 0, 0); border-right-style: none; border-right-width: 0px; border-spacing: 0px 0px; border-top-color: rgb(0, 0, 0); border-top-style: none; border-top-width: 0px; bottom: auto; caption-side: top; clear: none; clip: auto; color: rgb(0, 0, 0); content: none; counter-increment: none; counter-reset: none; cursor: auto; direction: ltr; display: block; empty-cells: show; float: none; font-family: serif; font-size: 16px; font-size-adjust: none; font-stretch: normal; font-style: normal; font-variant: normal; font-weight: 400; left: auto; letter-spacing: normal; line-height: normal; list-style-image: none; list-style-position: outside; list-style-type: disc; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; margin-top: 0px; marker-offset: auto; max-height: none; max-width: none; min-height: 0px; min-width: 0px; ime-mode: auto; opacity: 1; outline-color: rgb(0, 0, 0); outline-style: none; outline-width: 0px; outline-offset: 0px; overflow: visible; overflow-x: visible; overflow-y: visible; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px; page-break-after: auto; page-break-before: auto; pointer-events: auto; position: static; quotes: "“" "”" "‘" "’"; right: auto; table-layout: auto; text-align: left; text-decoration: none; text-indent: 0px; text-shadow: none; text-transform: none; top: auto; unicode-bidi: embed; vertical-align: baseline; visibility: visible; white-space: normal; word-spacing: 0px; z-index: auto; background-clip: border-box; background-origin: padding-box; background-size: auto auto; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: none; resize: none; word-wrap: normal; clip-path: none; clip-rule: nonzero; color-interpolation: srgb; color-interpolation-filters: linearrgb; dominant-baseline: auto; fill: rgb(0, 0, 0); fill-opacity: 1; fill-rule: nonzero; filter: none; flood-color: rgb(0, 0, 0); flood-opacity: 1; lighting-color: rgb(255, 255, 255); image-rendering: auto; mask: none; marker-end: none; marker-mid: none; marker-start: none; shape-rendering: auto; stop-color: rgb(0, 0, 0); stop-opacity: 1; stroke: none; stroke-dasharray: none; stroke-dashoffset: 0px; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 4; stroke-opacity: 1; stroke-width: 1px; text-anchor: start; text-rendering: auto;';
+const cssAClearString = 'background-attachment: scroll; background-color: transparent; background-image: none; background-position: 0% 0%; background-repeat: repeat; border-bottom-color: rgb(0, 0, 238); border-bottom-style: none; border-bottom-width: 0px; border-collapse: separate; border-left-color: rgb(0, 0, 238); border-left-style: none; border-left-width: 0px; border-right-color: rgb(0, 0, 238); border-right-style: none; border-right-width: 0px; border-spacing: 0px 0px; border-top-color: rgb(0, 0, 238); border-top-style: none; border-top-width: 0px; bottom: auto; caption-side: top; clear: none; clip: auto; color: rgb(0, 0, 238); content: none; counter-increment: none; counter-reset: none; cursor: pointer; direction: ltr; display: inline; empty-cells: show; float: none; font-family: serif; font-size: 16px; font-size-adjust: none; font-stretch: normal; font-style: normal; font-variant: normal; font-weight: 400; height: auto; left: auto; letter-spacing: normal; line-height: normal; list-style-image: none; list-style-position: outside; list-style-type: disc; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; margin-top: 0px; marker-offset: auto; max-height: none; max-width: none; min-height: 0px; min-width: 0px; ime-mode: auto; opacity: 1; outline-color: rgb(0, 0, 0); outline-style: none; outline-width: 0px; outline-offset: 0px; overflow: visible; overflow-x: visible; overflow-y: visible; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px; page-break-after: auto; page-break-before: auto; pointer-events: auto; position: static; quotes: "“" "”" "‘" "’"; right: auto; table-layout: auto; text-align: left; text-decoration: underline; text-indent: 0px; text-shadow: none; text-transform: none; top: auto; unicode-bidi: normal; vertical-align: baseline; visibility: visible; white-space: normal; width: auto; word-spacing: 0px; z-index: auto; background-clip: border-box; background-origin: padding-box; background-size: auto auto; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: none; resize: none; word-wrap: normal; clip-path: none; clip-rule: nonzero; color-interpolation: srgb; color-interpolation-filters: linearrgb; dominant-baseline: auto; fill: rgb(0, 0, 0); fill-opacity: 1; fill-rule: nonzero; filter: none; flood-color: rgb(0, 0, 0); flood-opacity: 1; lighting-color: rgb(255, 255, 255); image-rendering: auto; mask: none; marker-end: none; marker-mid: none; marker-start: none; shape-rendering: auto; stop-color: rgb(0, 0, 0); stop-opacity: 1; stroke: none; stroke-dasharray: none; stroke-dashoffset: 0px; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 4; stroke-opacity: 1; stroke-width: 1px; text-anchor: start; text-rendering: auto;'
 
 Zotero.ProgressWindow = new function() {
-	var win = Zotero.isBookmarklet ? window.parent : window;
-	var document = Zotero.isBookmarklet ? window.parent.document : window.document;
-	
 	const cssBox = {"position":(Zotero.isIE && document.compatMode === "BackCompat" ? "absolute" : "fixed"),
 		"right":"25px", "bottom":"25px", "width":"240px",
-		"borderWidth":"1.5pt", "borderStyle":"solid", "borderColor":"#7a0000",
+		"borderWidth":"2px", "borderStyle":"solid", "borderColor":"#7a0000",
 		"backgroundColor":"#ededed", "opacity":"0.9", "filter":"alpha(opacity = 90)",
-		"zIndex":"16777269", "padding":"6px", "minHeight":"33pt"};
-	const cssHeadline = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt",
-		"fontWeight":"bold", "marginBottom":"4pt"};
-	const cssItem = {"fontFamily":"Lucida Grande, Tahoma, sans",
-		"fontSize":"8.25pt", "verticalAlign":"middle",
-		"overflow":"hidden", "whiteSpace":"nowrap", "lineHeight":"12pt", "margin":"1.5pt 0 1.5pt 0"};
-	const cssIcon = {"width":"16px", "height":"16px", "verticalAlign":"middle",
-		"marginRight":"4pt"};
-	const cssDescription = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"8.25pt",
-		"lineHeight":"1.4em"};
-	var _progressDiv, _headlineDiv, _timeoutID;
-	var _shownItemDivsById = {};
+		"zIndex":"16777269", "padding":"6px 6px 6px 6px", "minHeight":"40px"};
+	const cssHeadline = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"11px",
+		"fontWeight":"bold", "marginBottom":"6px"};
+	const cssItem = {"fontSize":"11px", "margin":"4px 0 4px 0"};
+	const cssIcon = {"position":"absolute", "fontSize":"11px", "width":"16px", "height":"16px",
+		"backgroundPosition":"0", "backgroundRepeat":"no-repeat"};
+	const cssItemText = {"fontFamily":"Lucida Grande, Tahoma, sans",
+		"fontSize":"11px", "verticalAlign":"middle", "overflow":"hidden",
+		"whiteSpace":"nowrap", "lineHeight":"16px", "margin":"0 0 0 20px"};
+	const cssDescription = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"11px",
+		"lineHeight":"1.4em", "marginBottom":"4px"};
+		
+	if(Zotero.isBookmarklet) {
+		var imageBase = ZOTERO_CONFIG.BOOKMARKLET_URL+"images/";
+	} else if(Zotero.isChrome) {
+		var imageBase =  chrome.extension.getURL("images/");
+	} else if(Zotero.isSafari) {
+		var imageBase = safari.extension.baseURI+"images/";
+	}
+	const nArcs = 20;
+	
+	var win = Zotero.isBookmarklet ? window.parent : window,
+		doc = Zotero.isBookmarklet ? window.parent.document : window.document,
+		container, headline, _timeoutID;
+	
+	var Headline = function(text) {
+		this._div = doc.createElement('div');
+		this._div.style.cssText = cssDivClearString;
+		for(var i in cssHeadline) this._div.style[i] = cssHeadline[i];
+		this._textNode = doc.createTextNode(text);
+		this._div.appendChild(this._textNode);
+		container.appendChild(this._div);
+	};
+	Headline.prototype.set = function(text) {
+		this._textNode.nodeValue = text;
+	};
+	
+	this.ItemProgress = function(iconSrc, title, parentItemProgress) {
+		this._div = doc.createElement('div');
+		this._div.className = "zotero-item-progress";
+		this._div.style.cssText = cssDivClearString;
+		for(var j in cssItem) this._div.style[j] = cssItem[j];
+		this._div.style.opacity = "0.5";
+		this._div.style.filter = "alpha(opacity = 50)";
+		this._div.style.zoom = "1";
+		if(parentItemProgress) this._div.style.marginLeft = "12px";
+		
+		this._image = doc.createElement('div');
+		this._image.style.cssText = cssDivClearString;
+		for(var j in cssIcon) this._image.style[j] = cssIcon[j];
+		this.setIcon(iconSrc);
+		this._div.appendChild(this._image);
+		
+		this._itemText = doc.createElement('div');
+		this._itemText.style.cssText = cssDivClearString;
+		for(var j in cssItemText) this._itemText.style[j] = cssItemText[j];
+		if(Zotero.isIE) {
+			this._itemText.appendChild(doc.createTextNode(title.substr(0, (parentItemProgress ? 30 : 35))+"..."));
+		} else {
+			this._itemText.style.textOverflow = "ellipsis";
+			this._itemText.appendChild(doc.createTextNode(title));
+		}
+		this._div.appendChild(this._itemText);
+		
+		if(parentItemProgress) {
+			var parentItemDiv = parentItemProgress._div,
+				containerNodes = container.childNodes,
+				captureNextItem = false,
+				nextItem = null;
+			
+			for(var i=0, n=containerNodes.length; i<n; i++) {
+				if(containerNodes[i] == parentItemDiv) {
+					captureNextItem = true;
+				} else if(captureNextItem && containerNodes[i].className == "zotero-item-progress") {
+					nextItem = containerNodes[i];
+					break;
+				}
+			}
+			container.insertBefore(this._div, nextItem);
+		} else {
+			container.appendChild(this._div);
+		}
+	};
+	this.ItemProgress.prototype.setProgress = function(percent) {
+		if(percent != 0 && percent != 100) {
+			// Indication of partial progress, so we will use the circular indicator
+			this._image.style.backgroundImage = "url('"+imageBase+"progress_arcs.png')";
+			Zotero.debug("backgroundPosition is -"+(Math.round(percent/100*nArcs)*16)+"px 0");
+			this._image.style.backgroundPosition = "-"+(Math.round(percent/100*nArcs)*16)+"px 0";
+			this._div.style.opacity = percent/200+.5;
+			this._div.style.filter = "alpha(opacity = "+(percent/2+50)+")";
+		} else if(percent == 100) {
+			this._image.style.backgroundImage = "url('"+this._iconSrc+"')";
+			this._image.style.backgroundPosition = "";
+			this._div.style.opacity = "1";
+			this._div.style.filter = "";
+		}
+	};
+	this.ItemProgress.prototype.setIcon = function(iconSrc) {
+		this._image.style.backgroundImage = "url('"+iconSrc+"')";
+		this._iconSrc = iconSrc;
+	};
+	this.ItemProgress.prototype.setError = function() {
+		this._image.style.backgroundImage = "url('"+imageBase+"cross.png')";
+		this._image.style.backgroundPosition = "";
+		this._itemText.style.color = "red";
+		this._div.style.opacity = "1";
+		this._div.style.filter = "";
+	};
+	
+	this.ErrorMessage = function(err) {
+		this._div = doc.createElement('div');
+		this._div.style.cssText = cssDivClearString;
+		for(var j in cssDescription) this._div.style[j] = cssDescription[j];
+		
+		if(err === "translationError") {
+			// TODO localize
+			this._div.appendChild(doc.createTextNode("An error occurred while saving this item. Check "));
+			
+			var link = doc.createElement('a');
+			link.style.cssText = cssAClearString;
+			for(var j in cssDescription) link.style[j] = cssDescription[j];
+			
+			link.title = link.href = "http://www.zotero.org/documentation/known_translator_issues";
+			// TODO localize
+			link.appendChild(doc.createTextNode("Known Translator Issues"));
+			
+			this._div.appendChild(link);
+			// TODO localize
+			this._div.appendChild(doc.createTextNode(" for more information."));
+		} else if(err === "noTranslator") {
+			var textNode = doc.createTextNode("No items could be saved because this website "+
+					"is not supported by any Zotero translator. If Zotero Standalone is not open, try "+
+					"opening it to increase the number of supported sites.");
+			this._div.appendChild(textNode);
+		} else if(err === "standaloneRequired") {
+			this._div.appendChild(doc.createTextNode("This item could not be saved because Zotero "+
+				"Standalone is not open or unreachable. Please open Zotero Standalone and try again."));
+		}
+		
+		container.appendChild(this._div);
+	};
 	
 	/**
 	 * Initializes and shows the progress div
 	 */
 	this.show = function() {
-		if(_progressDiv) return;
-		_progressDiv = document.createElement('div');
-		_progressDiv.style.cssText = cssDivClearString;
-		for(var i in cssBox) _progressDiv.style[i] = cssBox[i];
-		_headlineDiv = document.createElement('div');
-		_headlineDiv.style.cssText = cssDivClearString;
-		for(var i in cssHeadline) _headlineDiv.style[i] = cssHeadline[i];
-		_headlineDiv.appendChild(document.createTextNode(""));
-		_progressDiv.appendChild(_headlineDiv);
-		_progressDiv = document.body.appendChild(_progressDiv);
+		if(container) return;
+		container = doc.createElement('div');
+		container.style.cssText = cssDivClearString;
+		for(var i in cssBox) container.style[i] = cssBox[i];
+		doc.body.appendChild(container);
 		
 		// TODO localize
-		Zotero.ProgressWindow.changeHeadline("Saving Item...");
+		headline = new Headline("Saving Item...");
 	}
 	
 	/**
 	 * Changes the headline of the save window
 	 */
-	this.changeHeadline = function(headline) {
-		_headlineDiv.firstChild.nodeValue = headline;
-	}
-	
-	/**
-	 * Shows the generic scraping error message in the progress window
-	 */
-	this.showError = function() {
-		Zotero.ProgressWindow.show();
-		
-		var desc = document.createElement('div');
-		desc.style.cssText = cssDivClearString;
-		for(var j in cssDescription) desc.style[j] = cssDescription[j];
-		
-		// TODO localize
-		desc.appendChild(document.createTextNode("An error occurred while saving this item. Check "));
-		
-		var link = document.createElement('a');
-		link.style.cssText = cssAClearString;
-		for(var j in cssDescription) link.style[j] = cssDescription[j];
-		
-		link.title = link.href = "http://www.zotero.org/documentation/known_translator_issues";
-		// TODO localize
-		link.appendChild(document.createTextNode("Known Translator Issues"));
-		
-		desc.appendChild(link);
-		// TODO localize
-		desc.appendChild(document.createTextNode(" for more information."));
-		
-		_progressDiv.appendChild(desc);
-	}
-	
-	/**
-	 * Shows the generic scraping error message in the progress window
-	 */
-	this.showNoTranslatorError = function() {
-		Zotero.ProgressWindow.show();
-		
-		var desc = document.createElement('div');
-		desc.style.cssText = cssDivClearString;
-		for(var j in cssDescription) desc.style[j] = cssDescription[j];
-		
-		// TODO localize
-		var textNode = document.createTextNode("No items could be saved because this website "+
-				"is not supported by any Zotero translator. If Zotero Standalone is not open, try "+
-				"opening it to increase the number of supported sites.");
-		desc.appendChild(textNode);
-		_progressDiv.appendChild(desc);
-	}
-	
-	/**
-	 * Shows the Standalone not running error message
-	 */
-	this.showStandaloneError = function() {
-		Zotero.ProgressWindow.show();
-		
-		var desc = document.createElement('div');
-		desc.style.cssText = cssDivClearString;
-		for(var j in cssDescription) desc.style[j] = cssDescription[j];
-		
-		// TODO localize
-		desc.appendChild(document.createTextNode("This item could not be saved because Zotero "+
-			"Standalone is not open or unreachable. Please open Zotero Standalone and try again."));
-		
-		_progressDiv.appendChild(desc);
-	}
-	
-	/**
-	 * Adds an item to progress window
-	 */
-	this.itemSaving = function(icon, item) {
-		Zotero.ProgressWindow.show();
-		
-		if(_shownItemDivsById[item.id]) return;
-		
-		var itemDiv = document.createElement('div');
-		itemDiv.style.cssText = cssDivClearString;
-		for(var j in cssItem) itemDiv.style[j] = cssItem[j];
-		itemDiv.style.opacity = "0.5";
-		itemDiv.style.filter = "alpha(opacity = 50)";
-		itemDiv.style.zoom = "1";
-		
-		var newImage = document.createElement('img');
-		newImage.style.cssText = cssImgClearString;
-		for(var j in cssIcon) newImage.style[j] = cssIcon[j];
-		if(Zotero.isWebKit) {
-			newImage.style.marginBottom = "2px";
-		}
-		newImage.src = icon;
-		itemDiv.appendChild(newImage);
-		
-		if(Zotero.isWebKit) {
-			itemDiv.style.textOverflow = "ellipsis";
-			itemDiv.appendChild(document.createTextNode(item.title));
-		} else {
-			itemDiv.appendChild(document.createTextNode(item.title.substr(0, 35)+"..."));
-		}
-		
-		_progressDiv.appendChild(itemDiv);
-		
-		_shownItemDivsById[item.id] = itemDiv;
-	}
-	
-	/**
-	 * Marks an item as saved in the progress window
-	 */
-	this.itemDone = function(icon, item) {
-		Zotero.ProgressWindow.show();
-		
-		if(!_shownItemDivsById[item.id]) Zotero.ProgressWindow.itemSaving(icon, item);
-		var itemDiv = _shownItemDivsById[item.id];
-		itemDiv.style.opacity = "1";
-		itemDiv.style.filter = "";
+	this.changeHeadline = function(text) {
+		headline.set(text);
 	}
 	
 	/**
 	 * Starts the timer to close the progress div
 	 */
 	this.startCloseTimer = function(delay) {
-		if(!_progressDiv) return;
+		if(!container) return;
 		if(!delay) delay = 2500;
 		if(_timeoutID) win.clearTimeout(_timeoutID);
 		_timeoutID = win.setTimeout(Zotero.ProgressWindow.close, delay);
@@ -199,11 +209,10 @@ Zotero.ProgressWindow = new function() {
 	 * Closes the progress div
 	 */
 	this.close = function() {
-		document.body.removeChild(_progressDiv);
-		_progressDiv = void(0);
-		_headlineDiv = void(0);
+		if(!container) return;
+		doc.body.removeChild(container);
+		container = void(0);
 		if(_timeoutID) win.clearTimeout(_timeoutID);
 		_timeoutID = void(0);
-		_shownItemDivsById = {};
 	}
 }

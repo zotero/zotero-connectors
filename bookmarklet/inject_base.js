@@ -107,7 +107,7 @@ BookmarkletFrame.prototype.remove = function() {
 }
 
 var translate = new Zotero.Translate.Web(),
-	selectCallback, cancelled, haveItem;
+	selectCallback, cancelled, haveItem, attachmentsSaving;
 translate.setDocument(window.parent.document);
 translate.setHandler("translators", function(obj, translators) {
 	selectCallback = cancelled = haveItem = null;
@@ -115,6 +115,8 @@ translate.setHandler("translators", function(obj, translators) {
 	if(translators && translators.length) {
 		if(translators[0].runMode === Zotero.Translator.RUN_MODE_IN_BROWSER) {
 			Zotero.ProgressWindow.changeHeadline("Saving Item...");
+		} else if(translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_SERVER) {
+			Zotero.ProgressWindow.changeHeadline("Saving via Server...");
 		} else {
 			Zotero.ProgressWindow.changeHeadline("Saving via Zotero Standalone...");
 		}
@@ -124,7 +126,7 @@ translate.setHandler("translators", function(obj, translators) {
 	} else {
 		Zotero.ProgressWindow.changeHeadline("Saving Failed");
 		
-		Zotero.ProgressWindow.showNoTranslatorError();
+		new Zotero.ProgressWindow.ErrorMessage("noTranslator");
 		Zotero.ProgressWindow.startCloseTimer(8000);
 		cleanup();
 	}
@@ -138,20 +140,45 @@ translate.setHandler("select", function(obj, items, callback) {
 		callback(items);
 	};
 });
+var _itemProgress = {};
 translate.setHandler("itemSaving", function(obj, item) {
-	Zotero.ProgressWindow.itemSaving(Zotero.ItemTypes.getImageSrc(item.itemType),
-		item);
+	if(!_itemProgress[item.id]) {
+		_itemProgress[item.id] = new Zotero.ProgressWindow.ItemProgress(
+			Zotero.ItemTypes.getImageSrc(item.itemType), item.title);
+	}
 });
 translate.setHandler("itemDone", function(obj, dbItem, item) {
+	var itemProgress = _itemProgress[item.id];
+	if(!itemProgress) {
+		itemProgress = _itemProgress[item.id] = new Zotero.ProgressWindow.ItemProgress(
+			Zotero.ItemTypes.getImageSrc(item.itemType), item.title);
+	}
+	itemProgress.setProgress(100);
 	haveItem = true;
-	Zotero.ProgressWindow.itemDone(Zotero.ItemTypes.getImageSrc(item.itemType),
-		item);
+	for(var i=0; i<item.attachments.length; i++) {
+		var attachment = item.attachments[i];
+		_itemProgress[attachment.id] = new Zotero.ProgressWindow.ItemProgress(
+			Zotero.ItemTypes.getImageSrc(attachment.mimeType === "application/pdf"
+				? "attachment-pdf" : "attachment-snapshot"), attachment.title, itemProgress);
+	}
+});
+translate.setHandler("attachmentProgress", function(obj, attachment, progress) {
+	var attachmentProgress = _itemProgress[attachment.id];
+	if(!attachmentProgress) return;
+	if(progress === false) {
+		attachmentProgress.setError();
+	} else {
+		if(attachment.linkMode === "linked_url") {
+			attachmentProgress.setIcon(Zotero.ItemTypes.getImageSrc("attachment-web-link"));
+		}
+		attachmentProgress.setProgress(progress);
+	}
 });
 translate.setHandler("done", function(obj, returnValue) {
 	if(returnValue && haveItem) {
 		Zotero.ProgressWindow.startCloseTimer(2500);
 	} else if(!cancelled) {
-		Zotero.ProgressWindow.showError();
+		new Zotero.ProgressWindow.ErrorMessage("translationError");
 		Zotero.ProgressWindow.startCloseTimer(8000);
 	}
 	cleanup();

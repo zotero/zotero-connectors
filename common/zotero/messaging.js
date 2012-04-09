@@ -28,12 +28,12 @@
  * See messages.js for an overview of the message handling process.
  */
 Zotero.Messaging = new function() {
-	const BOOKMARKLET_MESSAGE_PREFIX = "ZOTERO_MSG ";
-	const BOOKMARKLET_MESSAGE_RESPONSE_PREFIX = "ZOTERO_MSG_RESPONSE ";
-	
-	var _safariTabs = [];
-	var _messageListeners = {};
-	var _nextTabIndex = 1;
+	var _safariTabs = [],
+		_messageListeners = {
+			"structuredCloneTest":function() {}
+		},
+		_nextTabIndex = 1,
+		_structuredCloneSupported = false;
 	
 	/**
 	 * Add a message listener
@@ -80,7 +80,7 @@ Zotero.Messaging = new function() {
 			
 			var fn = Zotero[messageParts[0]][messageParts[1]];
 			if(!fn) throw new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
-			fn.apply(Zotero[messageParts[0]], args);		
+			fn.apply(Zotero[messageParts[0]], args);
 		} catch(e) {
 			Zotero.logError(e);
 		}
@@ -91,7 +91,8 @@ Zotero.Messaging = new function() {
 	 */
 	this.sendMessage = function(messageName, args, tab) {
 		if(Zotero.isBookmarklet) {
-			window.parent.postMessage(BOOKMARKLET_MESSAGE_PREFIX+JSON.stringify([messageName, args]), "*");
+			window.parent.postMessage((_structuredCloneSupported
+				? [messageName, args] : JSON.stringify([messageName, args])), "*");
 		} else if(Zotero.isChrome) {
 			chrome.tabs.sendRequest(tab.id, [messageName, args]);
 		} else if(Zotero.isSafari) {
@@ -108,20 +109,33 @@ Zotero.Messaging = new function() {
 				var data = event.data, source = event.source;
 				
 				// Ensure this message was sent by Zotero
-				if(data.substr(0, BOOKMARKLET_MESSAGE_PREFIX.length) !== BOOKMARKLET_MESSAGE_PREFIX) return;
+				if(event.source !== window.parent && event.source !== window) return;
 				
 				// Parse and receive message
-				data = JSON.parse(data.substr(BOOKMARKLET_MESSAGE_PREFIX.length));
+				if(typeof data === "string") {
+					try {
+						// parse out the data
+						data = JSON.parse(data);
+					} catch(e) {
+						return;
+					}
+				} else {
+					_structuredCloneSupported = true;
+				}
+				
 				Zotero.Messaging.receiveMessage(data[1], data[2], function(output) {
-					source.postMessage(BOOKMARKLET_MESSAGE_RESPONSE_PREFIX+JSON.stringify([data[0], data[1], output]), "*");
+					var message = [data[0], data[1], output];
+					source.postMessage(_structuredCloneSupported ? message : JSON.stringify(message), "*");
 				}, event);
 			};
 			
 			if(window.addEventListener) {
 				window.addEventListener("message", listener, false);
 			} else {
-				window.onmessage = function() { listener(event) };
+				window.attachEvent("onmessage", function() { listener(event) });
 			}
+			
+			window.postMessage([null, "structuredCloneTest", null], window.location.href);
 		} else if(Zotero.isChrome) {
 			chrome.extension.onRequest.addListener(function(request, sender, sendResponseCallback) {
 				Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab);

@@ -41,18 +41,33 @@ if(isTopWindow) {
 	 * the background script and then to this handler, which will show the saving dialog
 	 */
 	Zotero.Messaging.addMessageListener("saveDialog_show", Zotero.ProgressWindow.show);
+	var itemProgress = {};
 	Zotero.Messaging.addMessageListener("saveDialog_itemSaving", function(data) {
-		Zotero.ProgressWindow.itemSaving(data[0], data[1]);
+		Zotero.debug("Saving id "+data[2]);
+		itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1],
+			data.length > 3 ? itemProgress[data[3]] : undefined);
 	});
-	Zotero.Messaging.addMessageListener("saveDialog_itemDone", function(data) {
-		Zotero.ProgressWindow.itemDone(data[0], data[1]);
+	Zotero.Messaging.addMessageListener("saveDialog_itemProgress", function(data) {
+		var progress = itemProgress[data[2]];
+		if(!progress) {
+			Zotero.debug("No attachment for id "+data[2]);
+			progress = itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1]);
+		} else {
+			progress.setIcon(data[0]);
+		}
+		
+		if(data[3] === false) {
+			progress.setError();
+		} else {
+			progress.setProgress(data[3]);
+		}
 	});
 	Zotero.Messaging.addMessageListener("saveDialog_close", Zotero.ProgressWindow.close);
 	Zotero.Messaging.addMessageListener("saveDialog_done", function(returnValue) {
 		if(returnValue) {
 			Zotero.ProgressWindow.startCloseTimer(2500);
 		} else {
-			Zotero.ProgressWindow.showError();
+			new Zotero.ProgressWindow.TranslationError("translationError");
 			Zotero.ProgressWindow.startCloseTimer(8000);
 		}
 	});
@@ -62,22 +77,20 @@ if(isTopWindow) {
 			Zotero.Connector_Types.init();
 			
 			var html = document.documentElement.innerHTML;
-			var id = Zotero.Utilities.randomString();
-			var icon = Zotero.ItemTypes.getImageSrc("webpage");
-			var item = {"id":id, "title":document.title};
-			Zotero.ProgressWindow.itemSaving(icon, item);
+			var progress = new Zotero.ProgressWindow.ItemProgress(
+				Zotero.ItemTypes.getImageSrc("webpage"), document.title);
 			Zotero.Connector.callMethod("saveSnapshot", {"url":document.location.toString(),
 					"cookie":document.cookie, "html":html},
 				function(returnValue, status) {
 					if(returnValue === false) {
 						if(status === 0) {
-							Zotero.ProgressWindow.showStandaloneError();
+							new Zotero.ProgressWindow.TranslationError("standaloneRequired");
 						} else {
-							Zotero.ProgressWindow.showError();
+							new Zotero.ProgressWindow.TranslationError("translationError");
 						}
 						Zotero.ProgressWindow.startCloseTimer(8000);
 					} else {
-						Zotero.ProgressWindow.itemDone(icon, item);
+						progress.setProgress(100);
 						Zotero.ProgressWindow.startCloseTimer(2500);
 					}
 				});
@@ -92,6 +105,14 @@ var instanceID = (new Date()).getTime();
 Zotero.Inject = new function() {
 	var _translate;
 	this.translators = [];
+	
+	function determineAttachmentIcon(attachment) {
+		if(attachment.linkMode === "linked_url") {
+			return Zotero.ItemTypes.getImageSrc("attachment-web-link");
+		}
+		return Zotero.ItemTypes.getImageSrc(attachment.mimeType === "application/pdf"
+							? "attachment-pdf" : "attachment-snapshot");
+	}
 	
 	/**
 	 * Translates this page. First, retrieves schema and preferences from global script, then
@@ -149,12 +170,23 @@ Zotero.Inject = new function() {
 			_translate.setHandler("itemSaving", function(obj, item) {
 				// this relays an item from this tab to the top level of the window
 				Zotero.Messaging.sendMessage("saveDialog_itemSaving",
-					[Zotero.ItemTypes.getImageSrc(item.itemType), item]);
+					[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id]);
 			});
 			_translate.setHandler("itemDone", function(obj, dbItem, item) {
 				// this relays an item from this tab to the top level of the window
-				Zotero.Messaging.sendMessage("saveDialog_itemDone",
-					[Zotero.ItemTypes.getImageSrc(item.itemType), item]);
+				Zotero.Messaging.sendMessage("saveDialog_itemProgress",
+					[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id, 100]);
+				for(var i=0; i<item.attachments.length; i++) {
+					var attachment = item.attachments[i];
+					Zotero.Messaging.sendMessage("saveDialog_itemSaving",
+						[determineAttachmentIcon(attachment), attachment.title, attachment.id,
+							item.id]);
+				}
+			});
+			_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
+				// this relays an item from this tab to the top level of the window
+				Zotero.Messaging.sendMessage("saveDialog_itemProgress",
+					[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
 			});
 			_translate.setHandler("done", function(obj, status) {
 				Zotero.Messaging.sendMessage("saveDialog_done", status);

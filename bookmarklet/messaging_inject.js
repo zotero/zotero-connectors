@@ -28,12 +28,10 @@
  * See messages.js for an overview of the message handling process.
  */
 Zotero.Messaging = new function() {
-	const BOOKMARKLET_MESSAGE_PREFIX = "ZOTERO_MSG ";
-	const BOOKMARKLET_MESSAGE_RESPONSE_PREFIX = "ZOTERO_MSG_RESPONSE ";
-	
-	var _callbacks = {};
-	var _messageListeners = {};
-	var _listenerRegistered = false;
+	var _callbacks = {},
+		_messageListeners = {},
+		_listenerRegistered = false,
+		_structuredCloneSupported = false;
 	
 	/**
 	 * Add a message listener
@@ -81,8 +79,9 @@ Zotero.Messaging = new function() {
 						}
 						
 						// send message
+						var message = [requestID, messageName, newArgs];
 						zoteroIFrame.contentWindow.postMessage(
-							BOOKMARKLET_MESSAGE_PREFIX+JSON.stringify([requestID, messageName, newArgs]),
+							(_structuredCloneSupported ? message : JSON.stringify(message)),
 							ZOTERO_CONFIG.BOOKMARKLET_URL+(Zotero.isIE ? "iframe_ie.html" : "iframe.html"));
 					};
 				};
@@ -99,18 +98,22 @@ Zotero.Messaging = new function() {
 					throw "Received message from invalid origin";
 				}
 				
-				if(data.substr(0, BOOKMARKLET_MESSAGE_PREFIX.length) === BOOKMARKLET_MESSAGE_PREFIX) {
-					// This would be a plain message
-					data = JSON.parse(data.substr(BOOKMARKLET_MESSAGE_PREFIX.length));
-					_messageListeners[data[0]](data[1], event);
-					return;
-				} else if(data.substr(0, BOOKMARKLET_MESSAGE_RESPONSE_PREFIX.length) !== BOOKMARKLET_MESSAGE_RESPONSE_PREFIX) {
-					// This would be the response to a previous message
-					return;
+				if(typeof data === "string") {
+					try {
+						// parse out the data
+						data = JSON.parse(data);
+					} catch(e) {
+						return;
+					}
+				} else {
+					_structuredCloneSupported = true;
 				}
 				
-				// parse out the data
-				data = JSON.parse(data.substr(BOOKMARKLET_MESSAGE_RESPONSE_PREFIX.length));
+				// first see if there is a message listener
+				if(_messageListeners[data[0]]) {
+					_messageListeners[data[0]](data[1], event);
+					return;
+				}
 				
 				// next determine original function name
 				var messageParts = data[1].split(MESSAGE_SEPARATOR);
@@ -137,10 +140,10 @@ Zotero.Messaging = new function() {
 		}
 		
 		// in the bookmarklet, our listener must also handle responses
-		if("addEventListener" in window) {
+		if(window.addEventListener) {
 			window.addEventListener("message", listener, false);
 		} else {
-			window.onmessage = function() { listener(event) };
+			window.attachEvent("onmessage", function() { listener(event) });
 		}
 		
 		_listenerRegistered = true;

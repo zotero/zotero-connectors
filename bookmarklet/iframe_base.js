@@ -194,7 +194,7 @@ Zotero.OAuth = new function() {
 					uploadData = new Uint8Array(attachment.data.byteLength + prefixLength
 						+ suffixLength);
 				Zotero.Utilities.stringToUTF8Array(response.prefix, uploadData, 0);
-				uploadData.set(new Uint8Array(attachment.data), response.prefix.length);
+				uploadData.set(new Uint8Array(attachment.data), prefixLength);
 				Zotero.Utilities.stringToUTF8Array(response.suffix, uploadData,
 					attachment.data.byteLength+prefixLength);
 				

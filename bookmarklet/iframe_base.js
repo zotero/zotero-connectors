@@ -275,7 +275,11 @@ Zotero.OAuth = new function() {
 			
 			var listener = function(event) {
 				if(event.source != _uploadIframe.contentWindow) return;
-				event.stopPropagation();
+				if(event.stopPropagation) {
+					event.stopPropagation();
+				} else {
+					event.cancelBubble = true;
+				}
 				
 				var data = event.data;
 				if(_waitingForUploadIframe) {

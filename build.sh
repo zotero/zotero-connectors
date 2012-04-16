@@ -154,7 +154,6 @@ BOOKMARKLET_INJECT_TEST_INCLUDE=( \
 	"$BOOKMARKLETDIR/test.js")
 	
 BOOKMARKLET_AUXILIARY_JS=( \
-	"$BOOKMARKLETDIR/ie_hack.js" \
 	"$BOOKMARKLETDIR/itemSelector_browserSpecific.js" \
 	"$BOOKMARKLETDIR/upload.js" )
 
@@ -359,10 +358,17 @@ do
 	fi
 done
 
+
+cat "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/ie_hack.js" > "$BOOKMARKLETDIR/dist/ie_compat_tmp.js"
+
 # Copy/uglify auxiliary JS
 if [ "$1" == "debug" ]; then
+	mv "$BOOKMARKLETDIR/dist/ie_compat_tmp.js" "$BOOKMARKLETDIR/dist/ie_compat.js"
 	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BOOKMARKLETDIR/debug_mode.html" "$BOOKMARKLETDIR/dist"
 else		
+	uglifyjs "$BOOKMARKLETDIR/dist/ie_compat_tmp.js" > "$BOOKMARKLETDIR/dist/ie_compat.js"
+	rm "$BOOKMARKLETDIR/dist/ie_compat.js"
+	
 	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
 	do
 		uglifyjs "$scpt" > "$BOOKMARKLETDIR/dist/`basename \"$scpt\"`"
@@ -370,9 +376,12 @@ else
 fi
 
 # Bookmarklet itself
-echo -n '<a href="javascript:' > "$BOOKMARKLETDIR/dist/bookmarklet.html"
+echo -n '<p><a href="javascript:' > "$BOOKMARKLETDIR/dist/bookmarklet.html"
 echo -n "`uglifyjs \"$BOOKMARKLETDIR/bookmarklet.js\" | sed 's/&/\&amp;/g' | sed 's/\"/\&quot;/g'`" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
-echo -n '">Save to Zotero</a>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+echo -n '">Save to Zotero</a></p>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+echo -n '<p><textarea>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+echo -n "javascript:`uglifyjs \"$BOOKMARKLETDIR/bookmarklet.js\" | sed 's/&/\&amp;/g' | sed 's/\"/\&quot;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g'`" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+echo -n '</textarea></p>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
 
 # Copy to dist directory
 cp "$BOOKMARKLETDIR/iframe.html" \

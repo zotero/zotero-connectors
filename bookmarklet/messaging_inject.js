@@ -105,8 +105,9 @@ Zotero.Messaging = new function() {
 					} catch(e) {
 						return;
 					}
-				} else {
+				} else if(!_structuredCloneSupported) {
 					_structuredCloneSupported = true;
+					Zotero.debug("Structured clone algorithm is supported");
 				}
 				
 				// first see if there is a message listener

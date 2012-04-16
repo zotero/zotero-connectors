@@ -1,4 +1,4 @@
-window.onmessage = function(event) {
+window.onmessage = function() {
 	if((event.origin !== "https://www.zotero.org" && event.origin !== "http://www.zotero.org")
 			|| event.source != window.parent) {
 		throw "ie_hack.js received an invalid message";

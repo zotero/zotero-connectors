@@ -124,7 +124,7 @@ var MESSAGES = {
 			"getErrors":true,
 			"sendErrorReport":true
 		},
-	"HTTP":
+	"COHTTP":
 		{
 			"doGet":{
 					// avoid trying to post responseXML

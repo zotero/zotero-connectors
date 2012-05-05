@@ -36,6 +36,11 @@ Zotero.HTTP = new function() {
 	* @return {Boolean} True if the request was sent, or false if the browser is offline
 	*/
 	this.doGet = function(url, onDone) {
+		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
+			Zotero.COHTTP.doGet(url, onDone);
+			return;
+		}
+		
 		Zotero.debug("HTTP GET " + url);
 		
 		var xmlhttp = new XMLHttpRequest();
@@ -73,6 +78,11 @@ Zotero.HTTP = new function() {
 	* @return {Boolean} True if the request was sent, or false if the browser is offline
 	*/
 	this.doPost = function(url, body, onDone, headers) {
+		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
+			Zotero.COHTTP.doPost(url, body, onDone, headers);
+			return;
+		}
+		
 		var bodyStart = body.substr(0, 1024);
 		Zotero.debug("HTTP POST "
 			+ (body.length > 1024 ?
@@ -150,3 +160,9 @@ Zotero.HTTP = new function() {
 		}
 	}
 }
+
+// Alias as COHTTP = Cross-origin HTTP; this is how we will call it from children
+Zotero.COHTTP = {
+	"doGet":Zotero.HTTP.doGet,
+	"doPost":Zotero.HTTP.doPost
+};

@@ -33,7 +33,7 @@ if(!Zotero.HTTP) Zotero.HTTP = {};
  * Determines whether the page to be loaded has the same origin as the current page
  */
 Zotero.HTTP.isSameOrigin = function(url) {
-	const hostPortRe = /^([^:]+:)\/\/([^\/]+)/i;
+	const hostPortRe = /^([^:\/]+:)\/\/([^\/]+)/i;
 	var m = hostPortRe.exec(url);
 	if(!m) {
 		return true;

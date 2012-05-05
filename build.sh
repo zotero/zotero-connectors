@@ -51,6 +51,7 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/cachedTypes.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
+	'zotero/http.js' \
 	'zotero/inject/http.js' \
 	'zotero/inject/progressWindow.js' \
 	'zotero/inject/translator.js' \

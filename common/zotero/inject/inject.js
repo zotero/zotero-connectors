@@ -65,7 +65,7 @@ if(isTopWindow) {
 		if(returnValue) {
 			Zotero.ProgressWindow.startCloseTimer(2500);
 		} else {
-			new Zotero.ProgressWindow.TranslationError("translationError");
+			new Zotero.ProgressWindow.ErrorMessage("translationError");
 			Zotero.ProgressWindow.startCloseTimer(8000);
 		}
 	});
@@ -82,9 +82,9 @@ if(isTopWindow) {
 				function(returnValue, status) {
 					if(returnValue === false) {
 						if(status === 0) {
-							new Zotero.ProgressWindow.TranslationError("standaloneRequired");
+							new Zotero.ProgressWindow.ErrorMessage("standaloneRequired");
 						} else {
-							new Zotero.ProgressWindow.TranslationError("translationError");
+							new Zotero.ProgressWindow.ErrorMessage("translationError");
 						}
 						Zotero.ProgressWindow.startCloseTimer(8000);
 					} else {

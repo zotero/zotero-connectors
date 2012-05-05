@@ -5,7 +5,7 @@
 	<key>Author</key>
 	<string>Center for History and New Media</string>
 	<key>Builder Version</key>
-	<string>7535.18.5</string>
+	<string>8536.8.5</string>
 	<key>CFBundleDisplayName</key>
 	<string>Zotero Connector for Safari</string>
 	<key>CFBundleIdentifier</key>
@@ -72,12 +72,12 @@
 				<string>zotero/inject/progressWindow.js</string>
 				<string>zotero/inject/translator.js</string>
 				<string>zotero/openurl.js</string>
+				<string>zotero/rdf/init.js</string>
 				<string>zotero/rdf/uri.js</string>
 				<string>zotero/rdf/term.js</string>
 				<string>zotero/rdf/identity.js</string>
 				<string>zotero/rdf/match.js</string>
 				<string>zotero/rdf/rdfparser.js</string>
-				<string>zotero/rdf.js</string>
 				<string>zotero/translate.js</string>
 				<string>zotero/translate_item.js</string>
 				<string>zotero/inject/translate_inject.js</string>

@@ -30,7 +30,7 @@ var Zotero = new function() {
 	this.isSafari = window.navigator.userAgent.indexOf("Safari/") !== -1;
 	this.isWebKit = window.navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
 	this.isIE = window.navigator.appName === "Microsoft Internet Explorer";
-	this.version = "3.0.2";
+	this.version = "3.0.4";
 	
 	if(this.isFx) {
 		this.browser = "g";
@@ -56,16 +56,6 @@ var Zotero = new function() {
 	 * Initializes Zotero services for injected pages and the inject side of the bookmarklet
 	 */
 	this.initInject = function() {
-		// We have to load AJAW into global namespace, so move it to local
-		try {
-			Zotero.RDF = {
-				"AJAW":{
-					"RDFIndexedFormula":RDFIndexedFormula,
-					"RDFSymbol":RDFSymbol
-				}
-			};
-		} catch(e) {}
-		
 		Zotero.Debug.init();
 		Zotero.Messaging.init();
 	};

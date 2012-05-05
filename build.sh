@@ -55,12 +55,12 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/inject/progressWindow.js' \
 	'zotero/inject/translator.js' \
 	'zotero/openurl.js' \
+	'zotero/rdf/init.js' \
 	'zotero/rdf/uri.js' \
 	'zotero/rdf/term.js' \
 	'zotero/rdf/identity.js' \
 	'zotero/rdf/match.js' \
 	'zotero/rdf/rdfparser.js' \
-	'zotero/rdf.js' \
 	'zotero/translate.js' \
 	'zotero/translate_item.js' \
 	'zotero/inject/translate_inject.js'\
@@ -119,12 +119,12 @@ BOOKMARKLET_INJECT_INCLUDE=("$XPCOMDIR/connector/cachedTypes.js" \
 	"$COMMONDIR/zotero/inject/http.js" \
 	"$XPCOMDIR/openurl.js" \
 	"$COMMONDIR/zotero/inject/progressWindow.js" \
+	"$XPCOMDIR/rdf/init.js" \
 	"$XPCOMDIR/rdf/uri.js" \
 	"$XPCOMDIR/rdf/term.js" \
 	"$XPCOMDIR/rdf/identity.js" \
 	"$XPCOMDIR/rdf/match.js" \
 	"$XPCOMDIR/rdf/rdfparser.js" \
-	"$XPCOMDIR/rdf.js" \
 	"$XPCOMDIR/translation/translate.js" \
 	"$XPCOMDIR/connector/translate_item.js" \
 	"$COMMONDIR/zotero/inject/translate_inject.js" \
@@ -218,7 +218,6 @@ for dir in "$CHROMEDIR" "$SAFARIDIR"; do
 	   "$XPCOMDIR/date.js" \
 	   "$XPCOMDIR/debug.js" \
 	   "$XPCOMDIR/openurl.js" \
-	   "$XPCOMDIR/rdf.js" \
 	   "$XPCOMDIR/rdf" \
 	   "$XPCOMDIR/translation/translate.js" \
 	   "$XPCOMDIR/translation/tlds.js" \

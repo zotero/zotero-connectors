@@ -17,7 +17,7 @@
         <mkdir dir="bin"/>
     </target>
     <target name="compile" depends="prepare">
-        <javac srcdir="src" destdir="bin" includeantruntime="false">
+        <javac srcdir="src" destdir="bin" includeantruntime="false" debug="on" debuglevel="lines,vars,source">
             <classpath refid="master-classpath"/>
         </javac>
     </target>

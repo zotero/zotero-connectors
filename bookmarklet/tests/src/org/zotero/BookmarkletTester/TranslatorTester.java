@@ -84,7 +84,7 @@ class TranslatorTester {
 				testOutput = mapper.readValue(json, TestOutput.class);
 			} catch (Exception e) { 
 				testOutput = new TestOutput();
-				if(timeoutThread.timedOut) {
+				if(timeoutThread != null && timeoutThread.timedOut) {
 					testOutput.output = "Test "+(i+1)+" timed out after "+timeout+" seconds\n\n";
 				} else {
 					if(timeoutThread != null && timeoutThread.isAlive()) timeoutThread.interrupt();

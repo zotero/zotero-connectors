@@ -69,6 +69,8 @@ Zotero.ProgressWindow = new function() {
 	};
 	
 	this.ItemProgress = function(iconSrc, title, parentItemProgress) {
+		Zotero.ProgressWindow.show();
+		
 		this._div = doc.createElement('div');
 		this._div.className = "zotero-item-progress";
 		this._div.style.cssText = cssDivClearString;
@@ -142,6 +144,8 @@ Zotero.ProgressWindow = new function() {
 	};
 	
 	this.ErrorMessage = function(err) {
+		Zotero.ProgressWindow.show();
+		
 		this._div = doc.createElement('div');
 		this._div.style.cssText = cssDivClearString;
 		for(var j in cssDescription) this._div.style[j] = cssDescription[j];

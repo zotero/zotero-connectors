@@ -46,6 +46,7 @@ var Zotero = new function() {
 	 * Initializes Zotero services for the global page in Chrome or Safari
 	 */
 	this.initGlobal = function() {
+		Zotero.isBackground = true;
 		Zotero.Debug.init();
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
@@ -56,6 +57,7 @@ var Zotero = new function() {
 	 * Initializes Zotero services for injected pages and the inject side of the bookmarklet
 	 */
 	this.initInject = function() {
+		Zotero.isInject = true;
 		Zotero.Debug.init();
 		Zotero.Messaging.init();
 	};

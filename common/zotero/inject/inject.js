@@ -204,7 +204,7 @@ try {
 } catch(e) {}
 
 // don't try to scrape on hidden frames
-if(!isHiddenIFrame) {
+if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.protocol === "https:")) {
 	// add listener for translate message from extension
 	Zotero.Messaging.addMessageListener("translate", function(data) {
 		if(data[0] !== instanceID) return;

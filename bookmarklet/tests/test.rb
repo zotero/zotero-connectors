@@ -144,7 +144,7 @@ end
 threads = []
 $config["concurrentTests"].times {
 	if $config["browser"] == "i"
-		_browser = Watir::Browser.new("ie")
+		_browser = Watir::Browser.new
 	elsif $config["browser"] == "g"
 		_browser = Watir::Browser.new("firefox")
 	elsif $config["browser"] == "c"

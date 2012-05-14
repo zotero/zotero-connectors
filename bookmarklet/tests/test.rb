@@ -147,7 +147,7 @@ $config["concurrentTests"].times {
 		_browser = Watir::Browser.new("firefox")
 	elsif $config["browser"] == "c"
 		_browser = Watir::Browser.new("chrome")
-	else $config["browser"] == "s"
+	elseif $config["browser"] == "s"
 		_browser = Watir::Browser.new("safari")
 	end
 	

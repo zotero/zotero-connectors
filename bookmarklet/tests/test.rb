@@ -143,9 +143,7 @@ end
 
 threads = []
 $config["concurrentTests"].times {
-	if $config["browser"] == "i"
-		_browser = Watir::Browser.new
-	elsif $config["browser"] == "g"
+	if $config["browser"] == "g"
 		_browser = Watir::Browser.new("firefox")
 	elsif $config["browser"] == "c"
 		_browser = Watir::Browser.new("chrome")
@@ -154,6 +152,10 @@ $config["concurrentTests"].times {
 	end
 	
 	threads << Thread.new {
+		if $config["browser"] == "i"
+			_browser = Watir::Browser.new
+		end
+		
 		while (translator_path = translator_paths.shift)
 			test_results["results"] << run_tests(_browser, translator_path)
 		end

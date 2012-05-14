@@ -1,7 +1,6 @@
 #!/usr/bin/ruby
 require 'rubygems'
 require 'json'
-require 'watir-webdriver'
 
 TIMEOUT = 60
 
@@ -136,13 +135,22 @@ test_results = {
 	"results" => []
 }
 
+if $config["browser"] == "i"
+	require 'watir'
+else
+	require 'watir-webdriver'
+end
+
 threads = []
 $config["concurrentTests"].times {
 	if $config["browser"] == "i"
-		_browser = Watir::IE.new
-		_browser.speed = :fast
-	else
-		_browser = Watir::Browser.new
+		_browser = Watir::Browser.new("ie")
+	elsif $config["browser"] == "g"
+		_browser = Watir::Browser.new("firefox")
+	elsif $config["browser"] == "c"
+		_browser = Watir::Browser.new("chrome")
+	else $config["browser"] == "s"
+		_browser = Watir::Browser.new("safari")
 	end
 	
 	threads << Thread.new {

@@ -6,8 +6,7 @@ require 'thread'
 TIMEOUT = 120
 
 def run_tests(browser, translator_path)
-	translator_code = nil
-	File.open(translator_path, "r") { |f| translator_code = f.read }
+	translator_code = File.read(translator_path)
 	translator = JSON.parse(/^\s*\{[\S\s]*?\}\s*?[\r\n]/.match(translator_code)[0])
 	translator["code"] = translator_code
 	tests = /\/\*\* BEGIN TEST CASES \*\*\/\s*var testCases =\s*([\s\S]*?)\s*\/\*\* END TEST CASES \*\*\//.match(translator_code)
@@ -93,9 +92,8 @@ else
 	test_results_file = "testResults.json"
 end
 
-File.open(config_file, "r") { |f| $config = JSON.parse(f.read) }
-payload = nil
-File.open($config["testPayload"], "r") { |f| payload = f.read }		
+$config = JSON.parse(File.read(config_file))
+payload = File.read($config["testPayload"])
 $inject_string = <<EOS
 new function() {
 	var a = (document.body ? document.body : document.documentElement);
@@ -130,8 +128,15 @@ new function() {
 }
 EOS
 
-Dir.chdir($config["translatorsDirectory"])
-translator_paths = Dir["[^.]*.js"].map { |f| File.join($config["translatorsDirectory"], f) }
+# Hack for Ruby Unicode path brokenness on Windows
+if RUBY_PLATFORM.downcase.include? "mswin"
+	translator_paths = Dir.entries($config["translatorsDirectory"], {'encoding' => 'UTF-8'})
+else
+	translator_paths = Dir.entries($config["translatorsDirectory"])
+end
+
+translator_paths = translator_paths.find_all { |f| f[0] != "." && f[-3..-1] == ".js" } \
+	.map { |f| File.join($config["translatorsDirectory"], f) }
 
 test_results = {
 	"browser" => $config["browser"],

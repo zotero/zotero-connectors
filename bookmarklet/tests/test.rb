@@ -53,7 +53,11 @@ def run_tests(browser, translator_path)
 		begin
 			Timeout::timeout(TIMEOUT) {
 				browser.goto(test["url"])
-				browser.execute_script("window.zoteroSeleniumTestInfo = #{test_info.to_json.to_json};\n#{$inject_string}");
+				if $config["browser"] == "i"
+					browser.document.parentWindow.execScript("window.zoteroSeleniumTestInfo = #{test_info.to_json.to_json};\n#{$inject_string}");
+				else
+					browser.execute_script("window.zoteroSeleniumTestInfo = #{test_info.to_json.to_json};\n#{$inject_string}");
+				end
 				while !browser.div(:id, 'zoteroWatirResult').exists?
 					sleep(1)
 				end

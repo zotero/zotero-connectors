@@ -40,7 +40,7 @@ Zotero.Translators = new function() {
 		// try standalone
 		Zotero.Connector.callMethod("getTranslatorCode", {"translatorID":translatorID}, function(result) {
 			if(result) {
-				callback(result);
+				callback(Zotero.Translators.preprocessCode(result));
 				return;
 			}
 			

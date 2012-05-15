@@ -37,8 +37,12 @@ Zotero.HTTP = new function() {
 	*/
 	this.doGet = function(url, onDone) {
 		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
-			Zotero.COHTTP.doGet(url, onDone);
-			return;
+			if(Zotero.isBookmarklet) {
+				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
+			} else {
+				Zotero.COHTTP.doGet(url, onDone);
+				return;
+			}
 		}
 		
 		Zotero.debug("HTTP GET " + url);
@@ -79,8 +83,12 @@ Zotero.HTTP = new function() {
 	*/
 	this.doPost = function(url, body, onDone, headers) {
 		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
-			Zotero.COHTTP.doPost(url, body, onDone, headers);
-			return;
+			if(Zotero.isBookmarklet) {
+				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
+			} else {
+				Zotero.COHTTP.doPost(url, body, onDone, headers);
+				return;
+			}
 		}
 		
 		var bodyStart = body.substr(0, 1024);

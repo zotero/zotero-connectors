@@ -154,8 +154,7 @@ $config["concurrentTests"].times {
 		_browser = nil
 		semaphore.synchronize {
 			if $config["browser"] == "i"
-				_browser = Watir::Browser.new
-				_browser.goto("http://http://www.this-page-intentionally-left-blank.org/")
+				_browser = Watir::IE.new
 			elsif $config["browser"] == "g"
 				_browser = Watir::Browser.new("firefox")
 			elsif $config["browser"] == "c"

@@ -130,9 +130,8 @@ new function() {
 }
 EOS
 
-translator_paths = Dir.entries($config["translatorsDirectory"]) \
-	.find_all { |f| f[0] != "." && f[-3..-1] == ".js" } \
-	.map { |f| File.join($config["translatorsDirectory"], f) }
+Dir.chdir($config["translatorsDirectory"])
+translator_paths = Dir["[^.]*.js"].map { |f| File.join($config["translatorsDirectory"], f) }
 
 test_results = {
 	"browser" => $config["browser"],

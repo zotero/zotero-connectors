@@ -129,8 +129,8 @@ new function() {
 EOS
 
 # Hack for Ruby Unicode path brokenness on Windows
-if RUBY_PLATFORM.downcase.include? "mswin"
-	translator_paths = Dir.entries($config["translatorsDirectory"], {'encoding' => 'UTF-8'})
+if ((RUBY_PLATFORM.downcase.include? "mswin") || (RUBY_PLATFORM.downcase.include? "mingw"))
+	translator_paths = Dir.entries($config["translatorsDirectory"], {:encoding => 'UTF-8'})
 else
 	translator_paths = Dir.entries($config["translatorsDirectory"])
 end

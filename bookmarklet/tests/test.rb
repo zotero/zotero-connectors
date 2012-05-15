@@ -3,7 +3,7 @@ require 'rubygems'
 require 'json'
 require 'thread'
 
-TIMEOUT = 60
+TIMEOUT = 120
 
 def run_tests(browser, translator_path)
 	translator_code = nil

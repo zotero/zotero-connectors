@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
 require 'rubygems'
 require 'json'
+require 'thread'
 
 TIMEOUT = 60
 
@@ -145,20 +146,24 @@ else
 	require 'watir-webdriver'
 end
 
+semaphore = Mutex.new
+
 threads = []
 $config["concurrentTests"].times {
-	if $config["browser"] == "g"
-		_browser = Watir::Browser.new("firefox")
-	elsif $config["browser"] == "c"
-		_browser = Watir::Browser.new("chrome")
-	elseif $config["browser"] == "s"
-		_browser = Watir::Browser.new("safari")
-	end
-	
 	threads << Thread.new {
-		if $config["browser"] == "i"
-			_browser = Watir::Browser.new
-		end
+		_browser = nil
+		semaphore.synchronize {
+			if $config["browser"] == "i"
+				_browser = Watir::Browser.new
+				_browser.goto("http://http://www.this-page-intentionally-left-blank.org/")
+			elsif $config["browser"] == "g"
+				_browser = Watir::Browser.new("firefox")
+			elsif $config["browser"] == "c"
+				_browser = Watir::Browser.new("chrome")
+			elsif $config["browser"] == "s"
+				_browser = Watir::Browser.new("safari")
+			end
+		}
 		
 		while (translator_path = translator_paths.shift)
 			test_results["results"] << run_tests(_browser, translator_path)

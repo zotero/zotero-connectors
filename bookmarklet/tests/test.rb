@@ -81,6 +81,18 @@ def run_tests(browser, translator_path)
 	return test_result
 end
 
+def get_browser()
+	if $config["browser"] == "i"
+		browser = Watir::IE.new
+	elsif $config["browser"] == "g"
+		browser = Watir::Browser.new("firefox")
+	elsif $config["browser"] == "c"
+		browser = Watir::Browser.new("chrome")
+	elsif $config["browser"] == "s"
+		browser = Watir::Browser.new("safari")
+	end
+end
+
 if ARGV.length > 0
 	config_file = ARGV[0]
 else
@@ -150,31 +162,28 @@ else
 	require 'watir-webdriver'
 end
 
-semaphore = Mutex.new
-
-threads = []
-$config["concurrentTests"].times {
-	threads << Thread.new {
-		_browser = nil
-		semaphore.synchronize {
-			if $config["browser"] == "i"
-				_browser = Watir::IE.new
-			elsif $config["browser"] == "g"
-				_browser = Watir::Browser.new("firefox")
-			elsif $config["browser"] == "c"
-				_browser = Watir::Browser.new("chrome")
-			elsif $config["browser"] == "s"
-				_browser = Watir::Browser.new("safari")
+# Only run in a separate thread if concurrentTests != 1, since threads appear to cause problems
+# with IE
+if $config["concurrentTests"] == 1
+	browser = get_browser()
+	while (translator_path = translator_paths.shift)
+		test_results["results"] << run_tests(browser, translator_path)
+	end
+	browser.close
+else
+	semaphore = Mutex.new
+	threads = []
+	$config["concurrentTests"].times {
+		threads << Thread.new {
+			browser = nil
+			semaphore.synchronize { browser = get_browser() }
+			while (translator_path = translator_paths.shift)
+				test_results["results"] << run_tests(browser, translator_path)
 			end
+			browser.close
 		}
-		
-		while (translator_path = translator_paths.shift)
-			test_results["results"] << run_tests(_browser, translator_path)
-		end
-		
-		_browser.close
 	}
-}
-threads.each { |thr| thr.join }
+	threads.each { |thr| thr.join }
+end
 
 File.open(test_results_file, "w") { |f| f.write(test_results.to_json) }

@@ -186,4 +186,5 @@ else
 	threads.each { |thr| thr.join }
 end
 
+test_results["results"].sort! { |a, b| a.label.downcase <=> b.label.downcase }
 File.open(test_results_file, "w") { |f| f.write(test_results.to_json) }

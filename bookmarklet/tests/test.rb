@@ -107,10 +107,7 @@ new function() {
 	var f = document.createElement('iframe'),
 		code = #{payload.to_json};
 	f.id = 'zotero-iframe';
-	f.style.display = 'inline';
-	f.style.width = '1px';
-	f.style.height = '1px';
-	f.style.borderStyle = 'none';
+	f.style.visibility = 'hidden';
 	f.setAttribute('frameborder', '0');
 	a.appendChild(f);
 	var init = function() {

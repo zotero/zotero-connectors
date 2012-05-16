@@ -126,8 +126,8 @@ var Zotero = new function() {
 		if(!fileName && !lineNumber && Zotero.isIE && typeof err === "object") {
 			// IE can give us a line number if we re-throw the exception, but we wrap this in a
 			// setTimeout call so that we won't throw in the middle of a function
-			window.parent.setTimeout(function() {
-				window.parent.onerror = function(errmsg, fileName, lineNumber) {
+			window.setTimeout(function() {
+				window.onerror = function(errmsg, fileName, lineNumber) {
 					try {
 						Zotero.Errors.log("message" in err ? err.message : err.toString(), fileName, lineNumber);
 					} catch(e) {};

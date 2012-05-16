@@ -81,15 +81,26 @@ def run_tests(browser, translator_path)
 	return test_result
 end
 
-def get_browser()
+def get_browser()	
+	if $config["browser"] == "i"
+		require 'watir'
+	else
+		require 'watir-webdriver'		
+		require 'selenium-webdriver'
+		require 'selenium/webdriver/remote/http/curb'
+	end
+	
 	if $config["browser"] == "i"
 		browser = Watir::IE.new
 	elsif $config["browser"] == "g"
-		browser = Watir::Browser.new("firefox")
+		browser = Watir::Browser.new(Selenium::WebDriver.for(:firefox,
+			:http_client => Selenium::WebDriver::Remote::Http::Curb.new))
 	elsif $config["browser"] == "c"
-		browser = Watir::Browser.new("chrome")
+		browser = Watir::Browser.new(Selenium::WebDriver.for(:chrome,
+			:http_client => Selenium::WebDriver::Remote::Http::Curb.new))
 	elsif $config["browser"] == "s"
-		browser = Watir::Browser.new("safari")
+		browser = Watir::Browser.new(Selenium::WebDriver.for(:safari,
+			:http_client => Selenium::WebDriver::Remote::Http::Curb.new))
 	end
 end
 
@@ -156,12 +167,6 @@ test_results = {
 	"results" => []
 }
 
-if $config["browser"] == "i"
-	require 'watir'
-else
-	require 'watir-webdriver'
-end
-
 # Only run in a separate thread if concurrentTests != 1, since threads appear to cause problems
 # with IE
 if $config["concurrentTests"] == 1
@@ -175,12 +180,12 @@ else
 	threads = []
 	$config["concurrentTests"].times {
 		threads << Thread.new {
-			browser = nil
-			semaphore.synchronize { browser = get_browser() }
+			_browser = nil
+			semaphore.synchronize { _browser = get_browser() }
 			while (translator_path = translator_paths.shift)
-				test_results["results"] << run_tests(browser, translator_path)
+				test_results["results"] << run_tests(_browser, translator_path)
 			end
-			browser.close
+			_browser.close
 		}
 	}
 	threads.each { |thr| thr.join }

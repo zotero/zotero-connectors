@@ -235,7 +235,13 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 Zotero.Browser = {
 	"createHiddenBrowser":function() {
 		var hiddenBrowser = document.createElement("iframe");
-		hiddenBrowser.style.display = "none";
+		if(Zotero.isIE) {
+			hiddenBrowser.style.display = "inline";
+			hiddenBrowser.style.width = "1px";
+			hiddenBrowser.style.height = "1px";
+		} else {
+			hiddenBrowser.style.display = "none";
+		}
 		hiddenBrowser.sandbox = "allow-same-origin allow-forms allow-scripts";
 		document.body.appendChild(hiddenBrowser);
 		return hiddenBrowser;

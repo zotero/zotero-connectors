@@ -55,9 +55,9 @@ def run_tests(browser, translator_path)
 				browser.goto(test["url"])
 				script = "window.zoteroSeleniumTestInfo = #{test_info.to_json.to_json};\n#{$inject_string}"
 				if $config["browser"] == "i"
-					browser.document.parentWindow.execScript(script);
+					browser.document.parentWindow.execScript(script)
 				else
-					browser.execute_script(script);
+					browser.execute_script(script)
 				end
 				while !browser.div(:id, 'zoteroWatirResult').exists?
 					sleep(1)
@@ -107,7 +107,9 @@ new function() {
 	var f = document.createElement('iframe'),
 		code = #{payload.to_json};
 	f.id = 'zotero-iframe';
-	f.style.display = 'none';
+	f.style.display = 'inline';
+	f.style.width = '1px';
+	f.style.height = '1px';
 	f.style.borderStyle = 'none';
 	f.setAttribute('frameborder', '0');
 	a.appendChild(f);

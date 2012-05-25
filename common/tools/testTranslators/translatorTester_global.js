@@ -80,13 +80,20 @@ Zotero.TranslatorTester.testComplete = function(obj, test, status, message, tab)
 /**
  * Performs automated translator testing
  */
-Zotero.TranslatorTester.runAutomatedTesting = function() {	
-	window.setTimeout(function() {
-		Zotero_TranslatorTesters.runAllTests(4, {}, function(data) {
+Zotero.TranslatorTester.runAutomatedTesting = new function() {
+	var isRunning = false;
+	
+	return function() {
+		if(isRunning) return;
+		isRunning = true;
+		window.setTimeout(function() {
+			Zotero_TranslatorTesters.runAllTests(4, {}, function(data) {
+				isRunning = false;
 				Zotero.HTTP.doPost("http://127.0.0.1:23119/provo/save", JSON.stringify(data),
 						function() {}, {"Content-Type":"application/json"});
-		});
-	}, 60000);
+			});
+		}, 60000);
+	};
 };
 
 /**

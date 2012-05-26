@@ -161,7 +161,7 @@ Zotero.Prefs = new function() {
 		"automaticSnapshots":false,
 		"connector.repo.lastCheck.localTime":0,
 		"connector.repo.lastCheck.repoTime":0,
-		"capitalizeTitles":true
+		"capitalizeTitles":false
 	};
 	
 	this.get = function(pref) {

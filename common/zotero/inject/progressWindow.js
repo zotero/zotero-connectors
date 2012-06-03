@@ -36,7 +36,7 @@ Zotero.ProgressWindow = new function() {
 		"fontWeight":"bold", "marginBottom":"6px"};
 	const cssItem = {"fontSize":"11px", "margin":"4px 0 4px 0"};
 	const cssIcon = {"position":"absolute", "fontSize":"11px", "width":"16px", "height":"16px",
-		"backgroundPosition":"0", "backgroundRepeat":"no-repeat"};
+		"backgroundPosition":"0", "backgroundRepeat":"no-repeat", "left":"6px"};
 	const cssItemText = {"fontFamily":"Lucida Grande, Tahoma, sans",
 		"fontSize":"11px", "verticalAlign":"middle", "overflow":"hidden",
 		"whiteSpace":"nowrap", "lineHeight":"16px", "margin":"0 0 0 20px"};

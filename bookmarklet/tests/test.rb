@@ -87,20 +87,16 @@ def get_browser()
 	else
 		require 'watir-webdriver'		
 		require 'selenium-webdriver'
-		require 'selenium/webdriver/remote/http/curb'
 	end
 	
 	if $config["browser"] == "i"
 		browser = Watir::IE.new
 	elsif $config["browser"] == "g"
-		browser = Watir::Browser.new(Selenium::WebDriver.for(:firefox,
-			:http_client => Selenium::WebDriver::Remote::Http::Curb.new))
+		browser = Watir::Browser.new(Selenium::WebDriver.for(:firefox))
 	elsif $config["browser"] == "c"
-		browser = Watir::Browser.new(Selenium::WebDriver.for(:chrome,
-			:http_client => Selenium::WebDriver::Remote::Http::Curb.new))
+		browser = Watir::Browser.new(Selenium::WebDriver.for(:chrome))
 	elsif $config["browser"] == "s"
-		browser = Watir::Browser.new(Selenium::WebDriver.for(:safari,
-			:http_client => Selenium::WebDriver::Remote::Http::Curb.new))
+		browser = Watir::Browser.new(Selenium::WebDriver.for(:safari))
 	end
 end
 
@@ -116,8 +112,16 @@ else
 	test_results_file = "testResults.json"
 end
 
+# Start server for test payload
 $config = JSON.parse(File.read(config_file))
 payload = File.read($config["testPayload"])
+Thread.new {
+	require 'rack'
+	Rack::Handler::WEBrick.run proc {|env| [200, {"Content-Type" => "application/javascript"}, payload]}, :Port => 31330
+}
+sleep(5)
+
+# Set up inject string
 $inject_string = <<EOS
 new function() {
 	var a = (document.body ? document.body : document.documentElement);
@@ -127,20 +131,14 @@ new function() {
 		div.appendChild(document.createTextNode(arg));
 		a.appendChild(div);
 	};
-	var f = document.createElement('iframe'),
-		code = #{payload.to_json};
+	var f = document.createElement('iframe');
 	f.id = 'zotero-iframe';
 	f.style.visibility = 'hidden';
 	f.setAttribute('frameborder', '0');
 	a.appendChild(f);
 	var init = function() {
 		var d = f.contentWindow.document, s = d.createElement('script');
-		s.type = 'text/javascript';
-		if(s.canHaveChildren === false) {
-			s.text = code;
-		} else {
-			s.appendChild(d.createTextNode(code));
-		}
+		s.src = "http://127.0.0.1:31330/";
 		(d.body ? d.body : d.documentElement).appendChild(s);
 	}
 	if(f.contentWindow.document.readyState === 'complete') {

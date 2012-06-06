@@ -364,7 +364,7 @@ cat "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/ie_hack.js" > "$BOOKMARKLETD
 # Copy/uglify auxiliary JS
 if [ "$1" == "debug" ]; then
 	mv "$BOOKMARKLETDIR/dist/ie_compat_tmp.js" "$BOOKMARKLETDIR/dist/ie_compat.js"
-	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BOOKMARKLETDIR/debug_mode.html" "$BOOKMARKLETDIR/dist"
+	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BOOKMARKLETDIR/dist"
 else		
 	uglifyjs "$BOOKMARKLETDIR/dist/ie_compat_tmp.js" > "$BOOKMARKLETDIR/dist/ie_compat.js"
 	rm "$BOOKMARKLETDIR/dist/ie_compat.js"
@@ -375,13 +375,16 @@ else
 	done
 fi
 
-# Bookmarklet itself
-echo -n '<p><a href="javascript:' > "$BOOKMARKLETDIR/dist/bookmarklet.html"
-echo -n "`uglifyjs \"$BOOKMARKLETDIR/bookmarklet.js\" | sed 's/&/\&amp;/g' | sed 's/\"/\&quot;/g'`" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
-echo -n '">Save to Zotero</a></p>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
-echo -n '<p><textarea>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
-echo -n "javascript:`uglifyjs \"$BOOKMARKLETDIR/bookmarklet.js\" | sed 's/&/\&amp;/g' | sed 's/\"/\&quot;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g'`" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
-echo -n '</textarea></p>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+cp "$BOOKMARKLETDIR/bookmarklet.html" "$BOOKMARKLETDIR/debug_mode.html" "$BOOKMARKLETDIR/dist"
+
+# Loader
+uglifyjs "$BOOKMARKLETDIR/loader.js" > "$BOOKMARKLETDIR/dist/loader.js"
+#echo -n '<p><a href="javascript:' > "$BOOKMARKLETDIR/dist/bookmarklet.html"
+#echo -n "`uglifyjs \"$BOOKMARKLETDIR/bookmarklet.js\" | sed 's/&/\&amp;/g' | sed 's/\"/\&quot;/g'`" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+#echo -n '">Save to Zotero</a></p>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+#echo -n '<p><textarea>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+#echo -n "javascript:`uglifyjs \"$BOOKMARKLETDIR/bookmarklet.js\" | sed 's/&/\&amp;/g' | sed 's/\"/\&quot;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g'`" >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
+#echo -n '</textarea></p>' >> "$BOOKMARKLETDIR/dist/bookmarklet.html"
 
 # Copy to dist directory
 cp "$BOOKMARKLETDIR/iframe.html" \

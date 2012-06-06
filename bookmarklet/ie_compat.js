@@ -35,6 +35,15 @@ function indexOf(obj, member, startAt) {
 	}
 }
 
+if(typeof DOMParser == "undefined") {
+	DOMParser = function () {};
+	DOMParser.prototype.parseFromString = function (str, contentType) {
+		var d = new ActiveXObject("MSXML.DomDocument");
+		d.loadXML(str);
+		return d;
+	}
+}
+
 /*
     http://www.JSON.org/json2.js
     2011-02-23

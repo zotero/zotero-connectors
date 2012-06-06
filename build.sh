@@ -155,6 +155,7 @@ BOOKMARKLET_INJECT_TEST_INCLUDE=( \
 	"$BOOKMARKLETDIR/test.js")
 	
 BOOKMARKLET_AUXILIARY_JS=( \
+	"$BOOKMARKLETDIR/ie_hack.js"
 	"$BOOKMARKLETDIR/itemSelector_browserSpecific.js" \
 	"$BOOKMARKLETDIR/upload.js" )
 
@@ -363,12 +364,8 @@ cat "$BOOKMARKLETDIR/ie_compat.js" "$BOOKMARKLETDIR/ie_hack.js" > "$BOOKMARKLETD
 
 # Copy/uglify auxiliary JS
 if [ "$1" == "debug" ]; then
-	mv "$BOOKMARKLETDIR/dist/ie_compat_tmp.js" "$BOOKMARKLETDIR/dist/ie_compat.js"
 	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BOOKMARKLETDIR/dist"
-else		
-	uglifyjs "$BOOKMARKLETDIR/dist/ie_compat_tmp.js" > "$BOOKMARKLETDIR/dist/ie_compat.js"
-	rm "$BOOKMARKLETDIR/dist/ie_compat.js"
-	
+else	
 	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
 	do
 		uglifyjs "$scpt" > "$BOOKMARKLETDIR/dist/`basename \"$scpt\"`"

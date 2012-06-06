@@ -112,15 +112,7 @@ else
 	test_results_file = "testResults.json"
 end
 
-# Start server for test payload
 $config = JSON.parse(File.read(config_file))
-payload = File.read($config["testPayload"])
-Thread.new {
-	require 'rack'
-	Rack::Handler::WEBrick.run proc {|env| [200, {"Content-Type" => "application/javascript"}, payload]}, :Port => 31330
-}
-sleep(5)
-
 # Set up inject string
 $inject_string = <<EOS
 new function() {

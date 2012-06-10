@@ -33,7 +33,11 @@ Zotero.ProgressWindow = new function() {
 		"backgroundColor":"#ededed", "opacity":"0.9", "filter":"alpha(opacity = 90)",
 		"zIndex":"16777269", "padding":"6px 6px 6px 6px", "minHeight":"40px"};
 	const cssHeadline = {"fontFamily":"Lucida Grande, Tahoma, sans", "fontSize":"11px",
-		"fontWeight":"bold", "marginBottom":"6px"};
+		"fontWeight":"bold", "marginBottom":"6px", "overflow":"hidden",
+		"whiteSpace":"nowrap", "textOverflow":"ellipsis"};
+	const cssHeadlineIcon = {"display":"none", "width":"16px", "height":"16px",
+		"backgroundPosition":"center", "backgroundRepeat":"no-repeat",
+		"verticalAlign":"-3px"};
 	const cssItem = {"fontSize":"11px", "margin":"4px 0 4px 0"};
 	const cssIcon = {"position":"absolute", "fontSize":"11px", "width":"16px", "height":"16px",
 		"backgroundPosition":"0", "backgroundRepeat":"no-repeat"};
@@ -54,20 +58,12 @@ Zotero.ProgressWindow = new function() {
 	
 	var win = Zotero.isBookmarklet ? window.parent : window,
 		doc = Zotero.isBookmarklet ? window.parent.document : window.document,
-		container, headline, _timeoutID;
+		container, timeoutID,
+		headlineDiv, headlinePreImageTextNode, headlinePostImageTextNode, headlineImage;
 	
-	var Headline = function(text) {
-		this._div = doc.createElement('div');
-		this._div.style.cssText = cssDivClearString;
-		for(var i in cssHeadline) this._div.style[i] = cssHeadline[i];
-		this._textNode = doc.createTextNode(text);
-		this._div.appendChild(this._textNode);
-		container.appendChild(this._div);
-	};
-	Headline.prototype.set = function(text) {
-		this._textNode.nodeValue = text;
-	};
-	
+	/**
+	 * Creates a new object representing a line in the progressWindow.
+	 */
 	this.ItemProgress = function(iconSrc, title, parentItemProgress) {
 		Zotero.ProgressWindow.show();
 		
@@ -84,6 +80,7 @@ Zotero.ProgressWindow = new function() {
 		this._image.style.cssText = cssDivClearString;
 		for(var j in cssIcon) this._image.style[j] = cssIcon[j];
 		if(parentItemProgress) {
+			this._div.zoteroIsChildItem = true;
 			this._image.style.left = "18px";
 		} else {
 			this._image.style.left = "6px";
@@ -95,7 +92,7 @@ Zotero.ProgressWindow = new function() {
 		this._itemText.style.cssText = cssDivClearString;
 		for(var j in cssItemText) this._itemText.style[j] = cssItemText[j];
 		if(Zotero.isIE) {
-			this._itemText.appendChild(doc.createTextNode(title.substr(0, (parentItemProgress ? 30 : 35))+"..."));
+			this._itemText.appendChild(doc.createTextNode(title.substr(0, (parentItemProgress ? 30 : 35))+"\u2026"));
 		} else {
 			this._itemText.style.textOverflow = "ellipsis";
 			this._itemText.appendChild(doc.createTextNode(title));
@@ -103,29 +100,24 @@ Zotero.ProgressWindow = new function() {
 		this._div.appendChild(this._itemText);
 		
 		if(parentItemProgress) {
-			var parentItemDiv = parentItemProgress._div,
-				containerNodes = container.childNodes,
-				captureNextItem = false,
-				nextItem = null;
-			
-			for(var i=0, n=containerNodes.length; i<n; i++) {
-				if(containerNodes[i] == parentItemDiv) {
-					captureNextItem = true;
-				} else if(captureNextItem && containerNodes[i].className == "zotero-item-progress") {
-					nextItem = containerNodes[i];
-					break;
-				}
+			var nextItem = parentItemProgress._div.nextSibling;
+			while(nextItem && nextItem.zoteroIsChildItem) {
+				nextItem = nextItem.nextSibling;
 			}
 			container.insertBefore(this._div, nextItem);
 		} else {
 			container.appendChild(this._div);
 		}
 	};
+	
+	/**
+	 * Sets the current save progress for this item.
+	 * @param {Integer} percent A percentage from 0 to 100.
+	 */
 	this.ItemProgress.prototype.setProgress = function(percent) {
 		if(percent != 0 && percent != 100) {
 			// Indication of partial progress, so we will use the circular indicator
 			this._image.style.backgroundImage = "url('"+imageBase+"progress_arcs.png')";
-			Zotero.debug("backgroundPosition is -"+(Math.round(percent/100*nArcs)*16)+"px 0");
 			this._image.style.backgroundPosition = "-"+(Math.round(percent/100*nArcs)*16)+"px 0";
 			this._div.style.opacity = percent/200+.5;
 			this._div.style.filter = "alpha(opacity = "+(percent/2+50)+")";
@@ -136,10 +128,20 @@ Zotero.ProgressWindow = new function() {
 			this._div.style.filter = "";
 		}
 	};
+	
+	/**
+	 * Sets the icon for this item.
+	 * @param {Integer} percent A percentage from 0 to 100.
+	 */
 	this.ItemProgress.prototype.setIcon = function(iconSrc) {
 		this._image.style.backgroundImage = "url('"+iconSrc+"')";
+		this._image.style.backgroundPosition = "";
 		this._iconSrc = iconSrc;
 	};
+	
+	/**
+	 * Indicates that an error occurred saving this item.
+	 */
 	this.ItemProgress.prototype.setError = function() {
 		this._image.style.backgroundImage = "url('"+imageBase+"cross.png')";
 		this._image.style.backgroundPosition = "";
@@ -191,17 +193,40 @@ Zotero.ProgressWindow = new function() {
 		container = doc.createElement('div');
 		container.style.cssText = cssDivClearString;
 		for(var i in cssBox) container.style[i] = cssBox[i];
-		doc.body.appendChild(container);
 		
-		// TODO localize
-		headline = new Headline("Saving Item...");
+		headlineDiv = doc.createElement('div');
+		headlineDiv.style.cssText = cssDivClearString;
+		for(var i in cssHeadline) headlineDiv.style[i] = cssHeadline[i];
+		
+		headlinePreImageTextNode = doc.createTextNode("Saving Item");
+		headlineDiv.appendChild(headlinePreImageTextNode);
+		
+		headlineImage = doc.createElement("div");
+		headlineImage.style.cssText = cssDivClearString;
+		for(var j in cssHeadlineIcon) headlineImage.style[j] = cssHeadlineIcon[j];
+		headlineDiv.appendChild(headlineImage);
+		
+		headlinePostImageTextNode = doc.createTextNode("\u2026");
+		headlineDiv.appendChild(headlinePostImageTextNode);
+		
+		container.appendChild(headlineDiv);
+		doc.body.appendChild(container);
 	}
 	
 	/**
 	 * Changes the headline of the save window
 	 */
-	this.changeHeadline = function(text) {
-		headline.set(text);
+	this.changeHeadline = function(text, icon, postText) {
+		Zotero.debug(text);
+		Zotero.debug(postText);
+		headlinePreImageTextNode.nodeValue = text;
+		if(icon) {
+			headlineImage.style.display = "inline-block";
+			headlineImage.style.backgroundImage = "url('"+imageBase+icon+"')";
+		} else {
+			headlineImage.style.display = "none";
+		}
+		headlinePostImageTextNode.nodeValue = (postText !== undefined ? " "+postText : "")+"\u2026";
 	}
 	
 	/**
@@ -210,8 +235,8 @@ Zotero.ProgressWindow = new function() {
 	this.startCloseTimer = function(delay) {
 		if(!container) return;
 		if(!delay) delay = 2500;
-		if(_timeoutID) win.clearTimeout(_timeoutID);
-		_timeoutID = win.setTimeout(Zotero.ProgressWindow.close, delay);
+		if(timeoutID) win.clearTimeout(timeoutID);
+		timeoutID = win.setTimeout(Zotero.ProgressWindow.close, delay);
 	}
 	
 	/**
@@ -221,7 +246,7 @@ Zotero.ProgressWindow = new function() {
 		if(!container) return;
 		doc.body.removeChild(container);
 		container = void(0);
-		if(_timeoutID) win.clearTimeout(_timeoutID);
-		_timeoutID = void(0);
+		if(timeoutID) win.clearTimeout(timeoutID);
+		timeoutID = void(0);
 	}
 }

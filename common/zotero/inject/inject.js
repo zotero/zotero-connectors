@@ -40,7 +40,15 @@ if(isTopWindow) {
 	 * When an item is saved (by this page or by an iframe), the item will be relayed back to 
 	 * the background script and then to this handler, which will show the saving dialog
 	 */
-	Zotero.Messaging.addMessageListener("saveDialog_show", Zotero.ProgressWindow.show);
+	Zotero.Messaging.addMessageListener("saveDialog_show", function() {
+		Zotero.ProgressWindow.show();
+		Zotero.Connector.callMethod("getSelectedCollection", {}, function(response, status) {
+			if(status !== 200) return;
+			Zotero.ProgressWindow.changeHeadline("Saving to ",
+				response.id ? "treesource-collection.png" : "treesource-library.png",
+				response.name);
+		});
+	});
 	var itemProgress = {};
 	Zotero.Messaging.addMessageListener("saveDialog_itemSaving", function(data) {
 		itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1],

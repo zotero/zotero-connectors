@@ -46,7 +46,7 @@ if(isTopWindow) {
 			if(status !== 200) return;
 			Zotero.ProgressWindow.changeHeadline("Saving to ",
 				response.id ? "treesource-collection.png" : "treesource-library.png",
-				response.name);
+				response.name+"\u2026");
 		});
 	});
 	var itemProgress = {};

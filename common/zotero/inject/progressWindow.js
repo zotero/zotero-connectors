@@ -217,8 +217,6 @@ Zotero.ProgressWindow = new function() {
 	 * Changes the headline of the save window
 	 */
 	this.changeHeadline = function(text, icon, postText) {
-		Zotero.debug(text);
-		Zotero.debug(postText);
 		headlinePreImageTextNode.nodeValue = text;
 		if(icon) {
 			headlineImage.style.display = "inline-block";
@@ -226,7 +224,9 @@ Zotero.ProgressWindow = new function() {
 		} else {
 			headlineImage.style.display = "none";
 		}
-		headlinePostImageTextNode.nodeValue = (postText !== undefined ? " "+postText : "")+"\u2026";
+		if(postText !== undefined) {
+			headlinePostImageTextNode.nodeValue = " "+postText;
+		}
 	}
 	
 	/**

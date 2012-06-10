@@ -25,7 +25,6 @@ new function() {
 	var addScript = function(src) {
 		var doc = iframe.contentWindow.document,
 			script = doc.createElement("script");
-		script.type = "text/javascript";
 		script.src = src;
 		(doc.body ? doc.body : doc.documentElement).appendChild(script);
 		return script;
@@ -36,15 +35,16 @@ new function() {
 	 */
 	var init = function() {
 		var script = addScript(common),
-			loaded = false;
-		script.onload = function() {
-			if(!loaded) {
-				addScript(inject);
-				loaded = true;
-			}
-		};
+			loaded = false,
+			onLoad = function() {
+				if(!loaded) {
+					addScript(inject);
+					loaded = true;
+				}
+			};
+		script.onload = onLoad;
 		script.onreadystatechange = function() {
-			if(!loaded && script.readyState == "complete") script.onload();
+			if(script.readyState === "loaded" || script.readyState === "complete") onLoad();
 		};
 	};
 	

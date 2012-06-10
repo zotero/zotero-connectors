@@ -42,7 +42,7 @@ BOOKMARKLETDIR="$CWD/bookmarklet"
 SKINDIR="$EXTENSIONDIR/chrome/skin/default/zotero"
 XPCOMDIR="$EXTENSIONDIR/chrome/content/zotero/xpcom"
 ICONS="$SKINDIR/treeitem*png $SKINDIR/treesource-collection.png $SKINDIR/zotero-z-16px.png"
-IMAGES="$SKINDIR/progress_arcs.png $SKINDIR/cross.png"
+IMAGES="$SKINDIR/progress_arcs.png $SKINDIR/cross.png $SKINDIR/treesource-library.png"
 PREFS_IMAGES="$SKINDIR/prefs-general.png $SKINDIR/prefs-advanced.png"
 
 # Scripts to be included in inject scripts

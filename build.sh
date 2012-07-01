@@ -88,7 +88,7 @@ GLOBAL_INCLUDE=('zotero.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
 	'zotero/errors_webkit.js' \
-	'zotero/oauth.js' \
+	'zotero/api.js' \
 	'zotero/oauthsimple.js' \
 	'zotero/openurl.js' \
 	'zotero/http.js' \

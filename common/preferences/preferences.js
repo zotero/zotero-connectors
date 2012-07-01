@@ -65,7 +65,7 @@ function onLoad() {
 	Zotero.Prefs.getCallback("debug.log", function(status) {
 		document.getElementById('advanced-checkbox-show-in-console').checked = status ? true : false;
 	});
-	Zotero.OAuth.getUserInfo(updateAuthorization);
+	Zotero.API.getUserInfo(updateAuthorization);
 	
 	refreshData();
 	window.setInterval(refreshData, 1000);
@@ -169,7 +169,7 @@ function updateAuthorization(userInfo) {
  * Authorizes the user
  */
 function authorize() {
-	Zotero.OAuth.authorize(function(status, data) {
+	Zotero.API.authorize(function(status, data) {
 		if(status) {
 			updateAuthorization(data);
 		} else {
@@ -182,7 +182,7 @@ function authorize() {
  * Clears authorization
  */
 function clearCredentials() {
-	Zotero.OAuth.clearCredentials();
+	Zotero.API.clearCredentials();
 	updateAuthorization(null);
 }
 

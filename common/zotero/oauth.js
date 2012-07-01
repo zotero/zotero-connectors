@@ -23,7 +23,7 @@
     ***** END LICENSE BLOCK *****
 */
 
-Zotero.OAuth = new function() {
+Zotero.API = new function() {
 	var _callback, _tokenSecret, _bookmarkletIFrame;
 	
 	/**
@@ -222,14 +222,14 @@ Zotero.OAuth = new function() {
 			if(askForAuth === false) {
 				callback(403, "Not authorized");
 			} else {
-				Zotero.OAuth.authorize(function(status, msg) {
+				Zotero.API.authorize(function(status, msg) {
 					if(!status) {
 						Zotero.logError("Translate: Authentication failed with message "+msg);
 						callback(403, "Authentication failed");
 						return;
 					}
 					
-					Zotero.OAuth.createItem(payload, itemKey, callback, false);
+					Zotero.API.createItem(payload, itemKey, callback, false);
 				});
 			}
 			return;
@@ -240,14 +240,14 @@ Zotero.OAuth = new function() {
 			if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
 				callback(xmlhttp.status, xmlhttp.responseText);
 			} else if(askForAuth && xmlhttp.status === 403) {
-				Zotero.OAuth.authorize(function(status, msg) {
+				Zotero.API.authorize(function(status, msg) {
 					if(!status) {
 						Zotero.logError("Translate: Authentication failed with message "+msg);
 						callback(403, "Authentication failed");
 						return;
 					}
 					
-					Zotero.OAuth.createItem(payload, itemKey, callback, false);
+					Zotero.API.createItem(payload, itemKey, callback, false);
 				});
 			} else {
 				var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";

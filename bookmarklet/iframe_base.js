@@ -23,7 +23,7 @@
     ***** END LICENSE BLOCK *****
 */
 
-Zotero.OAuth = new function() {
+Zotero.API = new function() {
 	/**
 	 * Performs authorization
 	 * @param {Function} callback Callback to execute when auth is complete. The first argument
@@ -89,14 +89,14 @@ Zotero.OAuth = new function() {
 		
 		var c = _getCredentials(document), userID = c[0], sessionToken = c[1],
 			reauthorize = function() {
-			Zotero.OAuth.authorize(function(status, msg) {
+			Zotero.API.authorize(function(status, msg) {
 				if(!status) {
 					Zotero.logError("Authentication failed with message "+msg);
 					callback(403, "Authentication failed");
 					return;
 				}
 				
-				Zotero.OAuth.createItem(payload, itemKey, callback, false);
+				Zotero.API.createItem(payload, itemKey, callback, false);
 			});
 		};
 		

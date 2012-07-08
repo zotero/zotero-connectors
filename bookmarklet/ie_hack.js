@@ -25,8 +25,9 @@ window.onmessage = function() {
 		}
 	};
 	xhr.setRequestHeader("Content-Type", "application/json");
-	xhr.setRequestHeader("X-Zotero-Version", "2.999.1");
+	xhr.setRequestHeader("X-Zotero-Version", "3.1");
 	xhr.setRequestHeader("X-Zotero-Connector-API-Version", 2);
+	xhr.setRequestHeader("X-Zotero-Bookmarklet", 1);
 	xhr.send(payload);
 }
 

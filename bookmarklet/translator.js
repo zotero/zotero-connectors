@@ -278,10 +278,8 @@ Zotero.Translators = new function() {
 				"for(var $3_zForEachIndex in $3_zForEachSubject)$5{ "+
 				"$2$3 = $3_zForEachSubject[$3_zForEachIndex];", code);
 			if(Zotero.isIE) {
-				code = code.replace(/([\s\r\n])const([\s\r\n])/g, "$1var$2");
-				if(!Array.prototype.indexOf) {
-					code = code.replace(/((?:[\w.]|\[[^\]]*\])+)\.indexOf\(([^()]*(?:\([^()]*\([^()]*(?:[^()]*)?[^()]*\)?[^()]*\))?[^()]*)\)/g, "indexOf($1, $2)");
-				}
+				code = code.replace(/([\s\r\n])const([\s\r\n])/g, "$1var$2")
+					.replace(/((?:[\w.]|\[[^\]]*\])+)\.indexOf\(([^()]*(?:\([^()]*\([^()]*(?:[^()]*)?[^()]*\)?[^()]*\))?[^()]*)\)/g, "indexOf($1, $2)");
 			}
 		}
 		return code;

@@ -149,7 +149,7 @@ var MESSAGES = {
 		{
 			"sendMessage":false
 		},
-	"OAuth":
+	"API":
 		{
 			"authorize":true,
 			"onAuthorizationComplete":false,

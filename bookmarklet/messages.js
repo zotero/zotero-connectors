@@ -81,7 +81,7 @@ const MESSAGES = {
 			"checkIsOnline":true,
 			"callMethod":true
 		},
-	"OAuth":
+	"API":
 		{
 			"createItem":true,
 			"uploadAttachment":false

@@ -152,7 +152,7 @@ BOOKMARKLET_COMMON_INCLUDE=("$SRCDIR/common/zotero.js" \
 	"$SRCDIR/bookmarklet/messages.js")
 
 BOOKMARKLET_INJECT_TEST_INCLUDE=( \
-	"$EXTENSIONDIR/chrome/content/zotero/tools/testTranslators/translatorTester.js" \
+	"$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators/translatorTester.js" \
 	"$SRCDIR/bookmarklet/translator.js" \
 	"$SRCDIR/bookmarklet/test.js")
 	
@@ -261,7 +261,7 @@ for browser in "chrome" "safari"; do
 	
 	if [ "$1" == "debug" ]; then
 		cp "$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.js \
-			"$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.css
+			"$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.css \
 			"$browser_builddir/tools/testTranslators"
 	else
 		rm -rf "$browser_builddir/tools"

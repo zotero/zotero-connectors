@@ -63,30 +63,7 @@
 		<dict>
 			<key>End</key>
 			<array>
-				<string>zotero.js</string>
-				<string>zotero_config.js</string>
-				<string>zotero/cachedTypes.js</string>
-				<string>zotero/date.js</string>
-				<string>zotero/debug.js</string>
-				<string>zotero/http.js</string>
-				<string>zotero/inject/http.js</string>
-				<string>zotero/inject/progressWindow.js</string>
-				<string>zotero/inject/translator.js</string>
-				<string>zotero/openurl.js</string>
-				<string>zotero/rdf/init.js</string>
-				<string>zotero/rdf/uri.js</string>
-				<string>zotero/rdf/term.js</string>
-				<string>zotero/rdf/identity.js</string>
-				<string>zotero/rdf/match.js</string>
-				<string>zotero/rdf/rdfparser.js</string>
-				<string>zotero/translate.js</string>
-				<string>zotero/translate_item.js</string>
-				<string>zotero/inject/translate_inject.js</string>
-				<string>zotero/utilities.js</string>
-				<string>zotero/utilities_translate.js</string>
-				<string>zotero/messages.js</string>
-				<string>messaging_inject.js</string>
-				<string>zotero/inject/inject.js</string>
+				<!--SCRIPTS-->
 			</array>
 		</dict>
 	</dict>

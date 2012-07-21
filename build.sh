@@ -207,6 +207,8 @@ rm -rf "$BUILDDIR/chrome/images"
 mkdir "$BUILDDIR/chrome/images"
 cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/chrome/images"
 
+globalScripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${GLOBAL_INCLUDE[@]}")
+
 # Copy translation-related resources for Chrome/Safari
 for browser in "chrome" "safari"; do
 	if [ "$browser" == "safari" ]; then
@@ -215,9 +217,6 @@ for browser in "chrome" "safari"; do
 		browser_builddir="$BUILDDIR/$browser"
 	fi
 	browser_srcdir="$SRCDIR/$browser"
-	
-	# Update global scripts
-	perl -000 -pe "s/<!--SCRIPTS-->/\\n$escapedScripts/s" "$browser_srcdir/global.html" > "$browser_builddir/global.html"
 	
 	# Copy common files
 	pushd "$SRCDIR/common" > /dev/null
@@ -230,6 +229,9 @@ for browser in "chrome" "safari"; do
 	find . -not \( -name ".?*" -prune \) -not -name "." -type d -exec mkdir -p "$browser_builddir/"{} \;
 	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$browser_builddir/"{} \;
 	popd > /dev/null
+	
+	# Update global scripts
+	perl -000 -pe "s|<!--SCRIPTS-->|\\n$globalScripts|s" "$browser_srcdir/global.html" > "$browser_builddir/global.html"
 
 	if [ "$1" == "debug" ]; then
 		perl -000 -pi -e 's/<!--BEGIN DEBUG(\s.*?\s)END DEBUG-->/<!--BEGIN DEBUG-->$1<!--END DEBUG-->/sg' "$browser_builddir/preferences/preferences.html"
@@ -261,18 +263,13 @@ for browser in "chrome" "safari"; do
 	fi
 done
 
-scripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${GLOBAL_INCLUDE[@]}")
-escapedScripts=$(echo "$scripts" | sed -e 's/\//\\\//g')
-
 # Update Chrome manifest.json
 scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${INJECT_INCLUDE[@]}")
-escapedScripts=$(echo "${scripts:8:$((${#scripts}-11))}" | sed -e 's/\//\\\//g')
-perl -000 -pe 's/\/\*SCRIPTS\*\//'"$escapedScripts/s" "$SRCDIR/chrome/manifest.json" > "$BUILDDIR/chrome/manifest.json"
+perl -000 -pe 's|/\*SCRIPTS\*/|'"${scripts:8:$((${#scripts}-11))}|s" "$SRCDIR/chrome/manifest.json" > "$BUILDDIR/chrome/manifest.json"
 
 # Update Safari Info.plist
 scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${INJECT_INCLUDE[@]}")
-escapedScripts=$(echo "${scripts:8:$((${#scripts}-10))}" | sed -e 's/\//\\\//g')
-perl -000 -pe "s/<!--SCRIPTS-->/$escapedScripts/s" "$SRCDIR/safari/Info.plist" > "$BUILDDIR/safari.safariextension/Info.plist"
+perl -000 -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/Info.plist" > "$BUILDDIR/safari.safariextension/Info.plist"
 
 echo "done"
 

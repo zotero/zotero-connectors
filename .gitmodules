@@ -1,6 +1,3 @@
-[submodule "modules/zotero"]
-	path = modules/zotero
-	url = git://github.com/zotero/zotero.git
 [submodule "src/zotero"]
 	path = src/zotero
 	url = git://github.com/zotero/zotero.git

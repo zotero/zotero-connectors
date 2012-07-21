@@ -39,7 +39,7 @@ Zotero.HTTP = new function() {
 		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
 			if(Zotero.isBookmarklet) {
 				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
-			} else {
+			} else if(Zotero.isSafari) {
 				Zotero.COHTTP.doGet(url, onDone);
 				return;
 			}
@@ -85,7 +85,7 @@ Zotero.HTTP = new function() {
 		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
 			if(Zotero.isBookmarklet) {
 				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
-			} else {
+			} else if(Zotero.isSafari) {
 				Zotero.COHTTP.doPost(url, body, onDone, headers);
 				return;
 			}

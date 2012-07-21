@@ -57,7 +57,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onSelect = function(items, callback, tab) {
 		var newTab = safari.application.openBrowserWindow().activeTab;
-		newTab.url = safari.extension.baseURI+"itemSelector.html#"+encodeURIComponent(JSON.stringify([tab.id, items]));
+		newTab.url = safari.extension.baseURI+"itemSelector/itemSelector.html#"+encodeURIComponent(JSON.stringify([tab.id, items]));
 		_selectCallbacksForTabIDs[tab.id] = callback;
 	}
 	

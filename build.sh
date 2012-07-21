@@ -51,13 +51,10 @@ PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-ad
 # Scripts to be included in inject scripts
 INJECT_INCLUDE=('zotero.js' \
 	'zotero_config.js' \
-	'zotero/cachedTypes.js' \
+	'http.js' \
+	'zotero/connector/cachedTypes.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
-	'zotero/http.js' \
-	'zotero/inject/http.js' \
-	'zotero/inject/progressWindow.js' \
-	'zotero/inject/translator.js' \
 	'zotero/openurl.js' \
 	'zotero/rdf/init.js' \
 	'zotero/rdf/uri.js' \
@@ -65,43 +62,46 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/rdf/identity.js' \
 	'zotero/rdf/match.js' \
 	'zotero/rdf/rdfparser.js' \
-	'zotero/translate.js' \
-	'zotero/translate_item.js' \
-	'zotero/inject/translate_inject.js'\
+	'zotero/translation/translate.js' \
+	'zotero/connector/translate_item.js' \
 	'zotero/utilities.js' \
 	'zotero/utilities_translate.js' \
-	'zotero/messages.js' \
+	'inject/http.js' \
+	'inject/progressWindow.js' \
+	'inject/translator.js' \
+	'inject/translate_inject.js'\
+	'messages.js' \
 	'messaging_inject.js')
 if [ "$1" == "debug" ]; then
 	INJECT_INCLUDE=("${INJECT_INCLUDE[@]}" \
 		'tools/testTranslators/translatorTester_messages.js' \
 		'tools/testTranslators/translatorTester.js' \
-		'zotero/inject/inject.js' \
+		'inject/inject.js' \
 		'tools/testTranslators/translatorTester_inject.js')
 else
 	INJECT_INCLUDE=("${INJECT_INCLUDE[@]}" \
-	'zotero/inject/inject.js')
+	'inject/inject.js')
 fi
 
 # Scripts to be included in background page
 GLOBAL_INCLUDE=('zotero.js' \
 	'zotero_config.js' \
-	'zotero/connector.js' \
-	'zotero/cachedTypes.js' \
+	'errors_webkit.js' \
+	'api.js' \
+	'http.js' \
+	'oauthsimple.js' \
+	'zotero/connector/connector.js' \
+	'zotero/connector/cachedTypes.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
-	'zotero/errors_webkit.js' \
-	'zotero/api.js' \
-	'zotero/oauthsimple.js' \
 	'zotero/openurl.js' \
-	'zotero/http.js' \
-	'zotero/repo.js' \
-	'zotero/tlds.js' \
-	'zotero/translator.js' \
-	'zotero/typeSchemaData.js' \
+	'zotero/connector/repo.js' \
+	'zotero/translation/tlds.js' \
+	'zotero/connector/translator.js' \
+	'zotero/connector/typeSchemaData.js' \
 	'zotero/utilities.js' \
-	'zotero/messages.js' \
-	'zotero/messaging.js')
+	'messages.js' \
+	'messaging.js')
 if [ "$1" == "debug" ]; then
 	GLOBAL_INCLUDE=("${GLOBAL_INCLUDE[@]}" \
 		'tools/testTranslators/translatorTester_messages.js' \
@@ -119,9 +119,9 @@ GLOBAL_END='<!--END GLOBAL SCRIPTS-->'
 # Scripts to be included in bookmarklet
 BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
 	"$EXTENSION_XPCOM_DIR/date.js" \
-	"$SRCDIR/common/zotero/inject/http.js" \
+	"$SRCDIR/common/inject/http.js" \
 	"$EXTENSION_XPCOM_DIR/openurl.js" \
-	"$SRCDIR/common/zotero/inject/progressWindow.js" \
+	"$SRCDIR/common/inject/progressWindow.js" \
 	"$EXTENSION_XPCOM_DIR/rdf/init.js" \
 	"$EXTENSION_XPCOM_DIR/rdf/uri.js" \
 	"$EXTENSION_XPCOM_DIR/rdf/term.js" \
@@ -130,8 +130,8 @@ BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
 	"$EXTENSION_XPCOM_DIR/rdf/rdfparser.js" \
 	"$EXTENSION_XPCOM_DIR/translation/translate.js" \
 	"$EXTENSION_XPCOM_DIR/connector/translate_item.js" \
-	"$SRCDIR/common/zotero/inject/translate_inject.js" \
-	"$SRCDIR/common/zotero/inject/translator.js" \
+	"$SRCDIR/common/inject/translate_inject.js" \
+	"$SRCDIR/common/inject/translator.js" \
 	"$EXTENSION_XPCOM_DIR/connector/typeSchemaData.js" \
 	"$EXTENSION_XPCOM_DIR/utilities_translate.js" \
 	"$SRCDIR/bookmarklet/messaging_inject.js" \
@@ -140,14 +140,14 @@ BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
 BOOKMARKLET_IFRAME_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/connector.js" \
 	"$EXTENSION_XPCOM_DIR/translation/tlds.js" \
 	"$SRCDIR/bookmarklet/translator.js" \
-	"$SRCDIR/common/zotero/messaging.js" \
+	"$SRCDIR/common/messaging.js" \
 	"$SRCDIR/bookmarklet/iframe_base.js")
 
 BOOKMARKLET_COMMON_INCLUDE=("$SRCDIR/common/zotero.js" \
 	"$SRCDIR/bookmarklet/zotero_config.js" \
 	"$EXTENSION_XPCOM_DIR/debug.js" \
-	"$SRCDIR/common/zotero/errors_webkit.js" \
-	"$SRCDIR/common/zotero/http.js" \
+	"$SRCDIR/common/errors_webkit.js" \
+	"$SRCDIR/common/http.js" \
 	"$EXTENSION_XPCOM_DIR/utilities.js" \
 	"$SRCDIR/bookmarklet/messages.js")
 
@@ -159,11 +159,14 @@ BOOKMARKLET_INJECT_TEST_INCLUDE=( \
 BOOKMARKLET_AUXILIARY_JS=( \
 	"$SRCDIR/bookmarklet/loader.js" \
 	"$SRCDIR/bookmarklet/ie_hack.js" \
-	"$SRCDIR/bookmarklet/itemSelector_browserSpecific.js" \
+	"$SRCDIR/bookmarklet/itemSelector/itemSelector_browserSpecific.js" \
 	"$SRCDIR/bookmarklet/upload.js" )
 
 # Remove log file
 rm -f "$LOG"
+
+# Remove old build directories
+rm -rf "$BUILDDIR/chrome" "$BUILDDIR/safari.safariextension" "$BUILDDIR/bookmarklet"
 
 # Make directories if they don't exist
 for dir in "$DISTDIR" \
@@ -198,25 +201,11 @@ else
 	cp $ICONS "$BUILDDIR/safari.safariextension/images/toolbar"
 	cp $IMAGES $PREFS_IMAGES "$BUILDDIR/safari.safariextension/images"
 fi
-cp "$SRCDIR/safari/zotero-z-16px-offline.png" "$BUILDDIR/safari.safariextension/images"
 
 # Copy images for Chrome
 rm -rf "$BUILDDIR/chrome/images"
 mkdir "$BUILDDIR/chrome/images"
 cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/chrome/images"
-
-# Update Chrome manifest.json
-scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${INJECT_INCLUDE[@]}")
-escapedScripts=$(echo "${scripts:8:$((${#scripts}-11))}" | sed -e 's/\//\\\//g')
-perl -000 -pe 's/\/\*SCRIPTS\*\//'"$escapedScripts/s" "$SRCDIR/chrome/manifest.json" > "$BUILDDIR/chrome/manifest.json"
-
-# Update Safari Info.plist
-scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${INJECT_INCLUDE[@]}")
-escapedScripts=$(echo "${scripts:8:$((${#scripts}-10))}" | sed -e 's/\//\\\//g')
-perl -000 -pe "s/<!--SCRIPTS-->/$escapedScripts/s" "$SRCDIR/safari/Info.plist" > "$BUILDDIR/safari.safariextension/Info.plist"
-
-scripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${GLOBAL_INCLUDE[@]}")
-escapedScripts=$(echo "$scripts" | sed -e 's/\//\\\//g')
 
 # Copy translation-related resources for Chrome/Safari
 for browser in "chrome" "safari"; do
@@ -230,10 +219,15 @@ for browser in "chrome" "safari"; do
 	# Update global scripts
 	perl -000 -pe "s/<!--SCRIPTS-->/\\n$escapedScripts/s" "$browser_srcdir/global.html" > "$browser_builddir/global.html"
 	
-	# Copy files
-	rm -rf "$browser_builddir/zotero" "$browser_builddir/tools" "$browser_builddir/preferences"
+	# Copy common files
 	pushd "$SRCDIR/common" > /dev/null
-	find . -not \( -name ".?*" -prune \) -not -name "." -type d -exec mkdir "$browser_builddir/"{} \;
+	find . -not \( -name ".?*" -prune \) -not -name "." -type d -exec mkdir -p "$browser_builddir/"{} \;
+	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$browser_builddir/"{} \;
+	popd > /dev/null
+	
+	# Copy browser-specific files
+	pushd "$browser_srcdir" > /dev/null
+	find . -not \( -name ".?*" -prune \) -not -name "." -type d -exec mkdir -p "$browser_builddir/"{} \;
 	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$browser_builddir/"{} \;
 	popd > /dev/null
 
@@ -243,21 +237,20 @@ for browser in "chrome" "safari"; do
 		perl -000 -pi -e 's/<!--BEGIN DEBUG-->(.*?)<!--END DEBUG-->//sg' "$browser_builddir/preferences/preferences.html"
 	fi
 	
-	# Copy browser-specific JS
-	cp "$browser_srcdir/itemSelector_browserSpecific.js" \
-		"$browser_srcdir/messaging_inject.js" \
-		"$browser_builddir/"
-	
 	# Copy extension pieces
+	mkdir "$browser_builddir/zotero"
 	cp -r "$EXTENSION_XPCOM_DIR/utilities.js" \
 	   "$EXTENSION_XPCOM_DIR/utilities_translate.js" \
 	   "$EXTENSION_XPCOM_DIR/date.js" \
 	   "$EXTENSION_XPCOM_DIR/debug.js" \
 	   "$EXTENSION_XPCOM_DIR/openurl.js" \
 	   "$EXTENSION_XPCOM_DIR/rdf" \
-	   "$EXTENSION_XPCOM_DIR/translation/translate.js" \
-	   "$EXTENSION_XPCOM_DIR/translation/tlds.js" \
+	   "$EXTENSION_XPCOM_DIR/connector" \
 	   "$browser_builddir/zotero"
+	mkdir "$browser_builddir/zotero/translation"
+	cp "$EXTENSION_XPCOM_DIR/translation/translate.js" \
+	   "$EXTENSION_XPCOM_DIR/translation/tlds.js" \
+	   "$browser_builddir/zotero/translation"
 	
 	if [ "$1" == "debug" ]; then
 		cp "$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.js \
@@ -266,12 +259,20 @@ for browser in "chrome" "safari"; do
 	else
 		rm -rf "$browser_builddir/tools"
 	fi
-	
-	pushd "$EXTENSION_XPCOM_DIR/connector" > /dev/null
-	find . -not \( -name ".?*" -prune \) -not -name "." -type d -exec mkdir "$browser_builddir/zotero/"{} \;
-	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$browser_builddir/zotero/"{} \;
-	popd > /dev/null
 done
+
+scripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${GLOBAL_INCLUDE[@]}")
+escapedScripts=$(echo "$scripts" | sed -e 's/\//\\\//g')
+
+# Update Chrome manifest.json
+scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${INJECT_INCLUDE[@]}")
+escapedScripts=$(echo "${scripts:8:$((${#scripts}-11))}" | sed -e 's/\//\\\//g')
+perl -000 -pe 's/\/\*SCRIPTS\*\//'"$escapedScripts/s" "$SRCDIR/chrome/manifest.json" > "$BUILDDIR/chrome/manifest.json"
+
+# Update Safari Info.plist
+scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${INJECT_INCLUDE[@]}")
+escapedScripts=$(echo "${scripts:8:$((${#scripts}-10))}" | sed -e 's/\//\\\//g')
+perl -000 -pe "s/<!--SCRIPTS-->/$escapedScripts/s" "$SRCDIR/safari/Info.plist" > "$BUILDDIR/safari.safariextension/Info.plist"
 
 echo "done"
 
@@ -409,9 +410,6 @@ do
 	fi
 done
 
-
-cat "$SRCDIR/bookmarklet/ie_compat.js" "$SRCDIR/bookmarklet/ie_hack.js" > "$BUILDDIR/bookmarklet/ie_compat_tmp.js"
-
 # Copy/uglify auxiliary JS
 if [ "$1" == "debug" ]; then
 	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BUILDDIR/bookmarklet"
@@ -422,20 +420,13 @@ else
 	done
 fi
 
-#echo -n '<p><a href="javascript:' > "$SRCDIR/bookmarklet/dist/bookmarklet.html"
-#echo -n "`uglifyjs \"$SRCDIR/bookmarklet/bookmarklet.js\" | sed 's/&/\&amp;/g' | sed 's/\"/\&quot;/g'`" >> "$SRCDIR/bookmarklet/dist/bookmarklet.html"
-#echo -n '">Save to Zotero</a></p>' >> "$SRCDIR/bookmarklet/dist/bookmarklet.html"
-#echo -n '<p><textarea>' >> "$SRCDIR/bookmarklet/dist/bookmarklet.html"
-#echo -n "javascript:`uglifyjs \"$SRCDIR/bookmarklet/bookmarklet.js\" | sed 's/&/\&amp;/g' | sed 's/\"/\&quot;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g'`" >> "$SRCDIR/bookmarklet/dist/bookmarklet.html"
-#echo -n '</textarea></p>' >> "$SRCDIR/bookmarklet/dist/bookmarklet.html"
-
 # Copy HTML to dist directory
 cp "$SRCDIR/bookmarklet/bookmarklet.html" \
 	"$SRCDIR/bookmarklet/debug_mode.html" \
 	"$SRCDIR/bookmarklet/iframe.html" \
 	"$SRCDIR/bookmarklet/iframe_ie.html" \
 	"$SRCDIR/bookmarklet/auth_complete.html" \
-	"$SRCDIR/common/itemSelector"* \
+	"$SRCDIR/common/itemSelector/"* \
 	"$BUILDDIR/bookmarklet"
 cp "$SRCDIR/bookmarklet/htaccess" "$BUILDDIR/bookmarklet/.htaccess"
 rm -rf "$BUILDDIR/bookmarklet/images"

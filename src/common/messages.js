@@ -124,27 +124,6 @@ var MESSAGES = {
 			"getErrors":true,
 			"sendErrorReport":true
 		},
-	"COHTTP":
-		{
-			"doGet":{
-					// avoid trying to post responseXML
-					"preSend":function(xhr) {
-						return [{"responseText":xhr.responseText,
-							"status":xhr.status,
-							"statusText":xhr.statusText}];
-					},
-					"callbackArg":1
-				},
-			"doPost":{
-					// avoid trying to post responseXML
-					"preSend":function(xhr) {
-						return [{"responseText":xhr.responseText,
-							"status":xhr.status,
-							"statusText":xhr.statusText}];
-					},
-					"callbackArg":2
-				}
-		},
 	"Messaging":
 		{
 			"sendMessage":false
@@ -154,9 +133,7 @@ var MESSAGES = {
 			"authorize":true,
 			"onAuthorizationComplete":false,
 			"clearCredentials":false,
-			"getUserInfo":true,
-			"createItem":true,
-			"uploadAttachment":false
+			"getUserInfo":true
 		},
 	"Prefs":
 		{
@@ -168,3 +145,29 @@ var MESSAGES = {
 			"update":false
 		}
 };
+
+if(Zotero.isSafari) {
+	MESSAGES["COHTTP"] = {
+		"doGet":{
+				// avoid trying to post responseXML
+				"preSend":function(xhr) {
+					return [{"responseText":xhr.responseText,
+						"status":xhr.status,
+						"statusText":xhr.statusText}];
+				},
+				"callbackArg":1
+			},
+		"doPost":{
+				// avoid trying to post responseXML
+				"preSend":function(xhr) {
+					return [{"responseText":xhr.responseText,
+						"status":xhr.status,
+						"statusText":xhr.statusText}];
+				},
+				"callbackArg":2
+			}
+	};
+	
+	MESSAGES["API"]["createItem"] = true;
+	MESSAGES["API"]["uploadAttachment"] = false;
+}

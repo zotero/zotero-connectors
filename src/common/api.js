@@ -196,12 +196,15 @@ Zotero.API = new function() {
 	 */
 	this.getUserInfo = function(callback) {
 		callback(localStorage.hasOwnProperty("auth-token")
-			? {"username":localStorage["auth-username"], "userID":localStorage["auth-userID"]}
+			? {"username":localStorage["auth-username"],
+			   "userID":localStorage["auth-userID"],
+			   "apiKey":localStorage["auth-token_secret"]}
 			: null);
 	};
 	
 	/**
-	 * Creates a new item
+	 * Creates a new item. In Safari, this runs in the background script. In Chrome, it
+	 * runs in the injected script.
 	 * @param {Object} payload Item(s) to create, in the object format expected by the server.
 	 * @param {String|null} itemKey Parent item key, or null if a top-level item.
 	 * @param {Function} callback Callback to be executed upon request completion. Passed true if
@@ -215,50 +218,54 @@ Zotero.API = new function() {
 			return;
 		}
 		
-		var userID = localStorage["auth-userID"],
-			apiKey = localStorage["auth-token_secret"];
-		
-		if(!userID) {
-			if(askForAuth === false) {
-				callback(403, "Not authorized");
-			} else {
-				Zotero.API.authorize(function(status, msg) {
-					if(!status) {
-						Zotero.logError("Translate: Authentication failed with message "+msg);
-						callback(403, "Authentication failed");
-						return;
-					}
-					
-					Zotero.API.createItem(payload, itemKey, callback, false);
-				});
+		Zotero.API.getUserInfo(function(userInfo) {
+			var userID = localStorage["auth-userID"],
+				apiKey = localStorage["auth-token_secret"];
+			
+			if(!userInfo) {
+				if(askForAuth === false) {
+					callback(403, "Not authorized");
+				} else {
+					Zotero.API.authorize(function(status, msg) {
+						if(!status) {
+							Zotero.logError("Translate: Authentication failed with message "+msg);
+							callback(403, "Authentication failed");
+							return;
+						}
+						
+						Zotero.API.createItem(payload, itemKey, callback, false);
+					});
+				}
+				return;
 			}
-			return;
-		}
-		
-		var url = ZOTERO_CONFIG.API_URL+"users/"+userID+"/items"+(itemKey ? "/"+itemKey+"/children" : "")+"?key="+apiKey;
-		Zotero.HTTP.doPost(url, JSON.stringify(payload), function(xmlhttp) {
-			if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
-				callback(xmlhttp.status, xmlhttp.responseText);
-			} else if(askForAuth && xmlhttp.status === 403) {
-				Zotero.API.authorize(function(status, msg) {
-					if(!status) {
-						Zotero.logError("Translate: Authentication failed with message "+msg);
-						callback(403, "Authentication failed");
-						return;
-					}
-					
-					Zotero.API.createItem(payload, itemKey, callback, false);
-				});
-			} else {
-				var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
-				Zotero.logError("API request failed with "+msg);
-				callback(xmlhttp.status, response);
-			}
-		}, {"Content-Type":"application/json"});
+			
+			var url = ZOTERO_CONFIG.API_URL+"users/"+userInfo.userID+"/items"+
+				(itemKey ? "/"+itemKey+"/children" : "")+"?key="+userInfo.apiKey;
+			Zotero.HTTP.doPost(url, JSON.stringify(payload), function(xmlhttp) {
+				if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
+					callback(xmlhttp.status, xmlhttp.responseText);
+				} else if(askForAuth && xmlhttp.status === 403) {
+					Zotero.API.authorize(function(status, msg) {
+						if(!status) {
+							Zotero.logError("Translate: Authentication failed with message "+msg);
+							callback(403, "Authentication failed");
+							return;
+						}
+						
+						Zotero.API.createItem(payload, itemKey, callback, false);
+					});
+				} else {
+					var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
+					Zotero.logError("API request failed with "+msg);
+					callback(xmlhttp.status, msg);
+				}
+			}, {"Content-Type":"application/json"});
+		});
 	};
 	
 	/**
-	 * Uploads an attachment to the Zotero server
+	 * Uploads an attachment to the Zotero server. In Safari, this runs in the background
+	 * script. In Chrome, it runs in the injected script.
 	 * @param {Object} attachment An attachment object. This object must have the following keys<br>
 	 *     id - a unique identifier for the attachment used to identifiy it in subsequent progress
 	 *          messages<br>
@@ -268,10 +275,16 @@ Zotero.API = new function() {
 	 *     md5 - the MD5 hash of the attachment contents<br>
 	 *     mimeType - the attachment MIME type
 	 */
-	this.uploadAttachment = function(attachment, tab) {
+	this.uploadAttachment = function(attachment, callbackOrTab) {
 		var _dispatchAttachmentCallback = function(id, status, error) {
-			Zotero.Messaging.sendMessage("attachmentCallback",
-				(error ? [id, status, error.toString()] : [id, status]), tab);
+			if(Zotero.isChrome && !Zotero.isBookmarklet) {
+				// In Chrome, we don't use messaging for Zotero.API.uploadAttachment, 
+				// since we can't pass ArrayBuffers to the background page
+				callbackOrTab(status, error);
+			} else {
+				Zotero.Messaging.sendMessage("attachmentCallback",
+					(error ? [id, status, error.toString()] : [id, status]), callbackOrTab);
+			}
 			if(error) throw error;
 		};
 		
@@ -303,11 +316,17 @@ Zotero.API = new function() {
 		}
 		data = dataString.join("&");
 		
-		var userID = localStorage["auth-userID"],
-			apiKey = localStorage["auth-token_secret"];
-		var url = ZOTERO_CONFIG.API_URL+"users/"+userID+"/items/"+attachment.key+"/file?key="+apiKey;
-		Zotero.HTTP.doPost(url, data,
-			function(xmlhttp) {
+		Zotero.API.getUserInfo(function(userInfo) {
+			if(!userInfo) {
+				// We should always have authorization credentials, since an item needs to
+				// be created before we can upload data. Thus, this code is probably
+				// unreachable, but it's here just in case.
+				_dispatchAttachmentCallback(attachment.id, false, "No authorization credentials available");
+				return;
+			}
+			
+			var url = ZOTERO_CONFIG.API_URL+"users/"+userInfo.userID+"/items/"+attachment.key+"/file?key="+userInfo.apiKey;
+			Zotero.HTTP.doPost(url, data, function(xmlhttp) {
 				if(xmlhttp.status !== 200) {
 					var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
 					_dispatchAttachmentCallback(attachment.id, false, msg);
@@ -367,11 +386,13 @@ Zotero.API = new function() {
 					if(event.loaded == event.total) return;
 					_dispatchAttachmentCallback(attachment.id, event.loaded/event.total*100);
 				};
+				xhr.setRequestHeader("Content-Type", response.contentType);
 				xhr.send(uploadData.buffer);
 			},
 			{
 				"Content-Type":"application/x-www-form-urlencoded",
 				"If-None-Match":"*"
 			});
+		});
 	};
 }

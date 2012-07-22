@@ -72,15 +72,18 @@ INJECT_INCLUDE=('zotero.js' \
 	'inject/translate_inject.js'\
 	'messages.js' \
 	'messaging_inject.js')
+
+# Scripts to be included in one browser only
+INJECT_INCLUDE_CHROME=('api.js')
+INJECT_INCLUDE_SAFARI=()
+
 if [ "$1" == "debug" ]; then
-	INJECT_INCLUDE=("${INJECT_INCLUDE[@]}" \
-		'tools/testTranslators/translatorTester_messages.js' \
+	INJECT_INCLUDE_LAST=('tools/testTranslators/translatorTester_messages.js' \
 		'tools/testTranslators/translatorTester.js' \
 		'inject/inject.js' \
 		'tools/testTranslators/translatorTester_inject.js')
 else
-	INJECT_INCLUDE=("${INJECT_INCLUDE[@]}" \
-	'inject/inject.js')
+	INJECT_INCLUDE_LAST=('inject/inject.js')
 fi
 
 # Scripts to be included in background page
@@ -264,11 +267,13 @@ for browser in "chrome" "safari"; do
 done
 
 # Update Chrome manifest.json
-scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${INJECT_INCLUDE[@]}")
+inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_CHROME[@]}" "${INJECT_INCLUDE_LAST[@]}")
+scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${inject_scripts[@]}")
 perl -000 -pe 's|/\*SCRIPTS\*/|'"${scripts:8:$((${#scripts}-11))}|s" "$SRCDIR/chrome/manifest.json" > "$BUILDDIR/chrome/manifest.json"
 
 # Update Safari Info.plist
-scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${INJECT_INCLUDE[@]}")
+inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_SAFARI[@]}" "${INJECT_INCLUDE_LAST[@]}")
+scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${inject_scripts[@]}")
 perl -000 -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/Info.plist" > "$BUILDDIR/safari.safariextension/Info.plist"
 
 echo "done"

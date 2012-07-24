@@ -9,3 +9,5 @@ XAR_EXECUTABLE=/usr/local/bin/xar
 SAFARI_PRIVATE_KEY="$CWD/../zotero_safari.pem"
 SAFARI_AUX_CERTIFICATE1="$CWD/../zotero_safari_aux1.der"
 SAFARI_AUX_CERTIFICATE2="$CWD/../zotero_safari_aux2.der"
+
+DEFAULT_VERSION="3.0.999"

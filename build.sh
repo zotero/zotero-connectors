@@ -146,8 +146,7 @@ BOOKMARKLET_IFRAME_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/connector.js" \
 	"$SRCDIR/common/messaging.js" \
 	"$SRCDIR/bookmarklet/iframe_base.js")
 
-BOOKMARKLET_COMMON_INCLUDE=("$SRCDIR/common/zotero.js" \
-	"$SRCDIR/bookmarklet/zotero_config.js" \
+BOOKMARKLET_COMMON_INCLUDE=("$SRCDIR/bookmarklet/zotero_config.js" \
 	"$EXTENSION_XPCOM_DIR/debug.js" \
 	"$SRCDIR/common/errors_webkit.js" \
 	"$SRCDIR/common/http.js" \
@@ -164,6 +163,42 @@ BOOKMARKLET_AUXILIARY_JS=( \
 	"$SRCDIR/bookmarklet/ie_hack.js" \
 	"$SRCDIR/bookmarklet/itemSelector/itemSelector_browserSpecific.js" \
 	"$SRCDIR/bookmarklet/upload.js" )
+
+function usage {
+	cat >&2 <<DONE
+Usage: $0 [-v VERSION] [-d]
+Options
+ -v VERSION          use version VERSION
+ -d                  build for debugging (enable translator tester, don't minify)
+DONE
+	exit 1
+}
+
+while getopts "v:d" opt; do
+	case $opt in
+		v)
+			VERSION="$OPTARG"
+			;;
+		d)
+			DEBUG=1
+			;;
+		*)
+			usage
+			;;
+	esac
+	shift $((OPTIND-1)); OPTIND=1
+done
+
+if [ ! -z $1 ]; then
+	usage
+fi
+
+if [ -z $VERSION ]; then
+	pushd "$CWD" > /dev/null
+	REV=`git log -n 1 --pretty='format:%h'`
+	VERSION="$DEFAULT_VERSION"
+	popd
+fi
 
 # Remove log file
 rm -f "$LOG"
@@ -235,12 +270,16 @@ for browser in "chrome" "safari"; do
 	
 	# Update global scripts
 	perl -000 -pe "s|<!--SCRIPTS-->|\\n$globalScripts|s" "$browser_srcdir/global.html" > "$browser_builddir/global.html"
-
-	if [ "$1" == "debug" ]; then
+	
+	# Comment/uncomment debug code in preferences
+	if [ ! -z $DEBUG ]; then
 		perl -000 -pi -e 's/<!--BEGIN DEBUG(\s.*?\s)END DEBUG-->/<!--BEGIN DEBUG-->$1<!--END DEBUG-->/sg' "$browser_builddir/preferences/preferences.html"
 	else
 		perl -000 -pi -e 's/<!--BEGIN DEBUG-->(.*?)<!--END DEBUG-->//sg' "$browser_builddir/preferences/preferences.html"
 	fi
+	
+	# Set version
+	perl -pi -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$browser_builddir/zotero.js"
 	
 	# Copy extension pieces
 	mkdir "$browser_builddir/zotero"
@@ -257,7 +296,7 @@ for browser in "chrome" "safari"; do
 	   "$EXTENSION_XPCOM_DIR/translation/tlds.js" \
 	   "$browser_builddir/zotero/translation"
 	
-	if [ "$1" == "debug" ]; then
+	if [ ! -z $DEBUG ]; then
 		cp "$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.js \
 			"$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.css \
 			"$browser_builddir/tools/testTranslators"
@@ -269,12 +308,16 @@ done
 # Update Chrome manifest.json
 inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_CHROME[@]}" "${INJECT_INCLUDE_LAST[@]}")
 scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${inject_scripts[@]}")
-perl -000 -pe 's|/\*SCRIPTS\*/|'"${scripts:8:$((${#scripts}-11))}|s" "$SRCDIR/chrome/manifest.json" > "$BUILDDIR/chrome/manifest.json"
+perl -pe 's|/\*SCRIPTS\*/|'"${scripts:8:$((${#scripts}-11))}|s" "$SRCDIR/chrome/manifest.json" \
+| perl -p -e 's|("version":\s*)"[^"]*"|$1"'"$VERSION"'"|' \
+> "$BUILDDIR/chrome/manifest.json"
 
 # Update Safari Info.plist
 inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_SAFARI[@]}" "${INJECT_INCLUDE_LAST[@]}")
 scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${inject_scripts[@]}")
-perl -000 -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/Info.plist" > "$BUILDDIR/safari.safariextension/Info.plist"
+perl -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/Info.plist" \
+| perl -000 -p -e 's|(<key>(?:CFBundleShortVersionString\|CFBundleVersion)</key>\s*)<string>[^<]*</string>|$1<string>'"$VERSION"'</string>|sg' \
+> "$BUILDDIR/safari.safariextension/Info.plist"
 
 echo "done"
 
@@ -347,6 +390,11 @@ do
 		files=("${BOOKMARKLET_INJECT_INCLUDE[@]}")
 	fi
 	
+	echo "/******** BEGIN zotero.js ********/" >> "$tmpScript"
+	perl -p -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$SRCDIR/common/zotero.js" | LC_CTYPE=C tr -d '\r' >> "$tmpScript"
+	echo "" >> "$tmpScript"
+	echo "/******** END zotero.js ********/" >> "$tmpScript"
+	
 	# Bundle scripts
 	for f in "${files[@]}"
 	do
@@ -363,7 +411,7 @@ do
 	ieBuiltScript="$BUILDDIR/bookmarklet/${scpt}_ie.js"
 	
 	if [ "$scpt" == "inject" ]; then
-		if [ "$1" == "debug" ]; then
+		if [ ! -z $DEBUG ]; then
 			# Make test scripts
 			if [ ! -d "$BUILDDIR/bookmarklet/tests" ]; then
 				mkdir "$BUILDDIR/bookmarklet/tests"
@@ -397,7 +445,7 @@ do
 	fi
 	
 	# Minify if not in debug mode
-	if [ "$1" == "debug" ]; then
+	if [ ! -z $DEBUG ]; then
 		mv "$tmpScript" "$builtScript"
 		mv "$ieTmpScript" "$ieBuiltScript"
 	else
@@ -413,7 +461,7 @@ do
 done
 
 # Copy/uglify auxiliary JS
-if [ "$1" == "debug" ]; then
+	if [ ! -z $DEBUG ]; then
 	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BUILDDIR/bookmarklet"
 else	
 	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"

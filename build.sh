@@ -388,14 +388,14 @@ do
 		files=("${BOOKMARKLET_IFRAME_INCLUDE[@]}")
 	elif [ "$scpt" == "common" ]; then
 		files=("${BOOKMARKLET_COMMON_INCLUDE[@]}")
+		
+		echo "/******** BEGIN zotero.js ********/" >> "$tmpScript"
+		perl -p -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$SRCDIR/common/zotero.js" | LC_CTYPE=C tr -d '\r' >> "$tmpScript"
+		echo "" >> "$tmpScript"
+		echo "/******** END zotero.js ********/" >> "$tmpScript"
 	elif [ "$scpt" == "inject" ]; then
 		files=("${BOOKMARKLET_INJECT_INCLUDE[@]}")
 	fi
-	
-	echo "/******** BEGIN zotero.js ********/" >> "$tmpScript"
-	perl -p -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$SRCDIR/common/zotero.js" | LC_CTYPE=C tr -d '\r' >> "$tmpScript"
-	echo "" >> "$tmpScript"
-	echo "/******** END zotero.js ********/" >> "$tmpScript"
 	
 	# Bundle scripts
 	for f in "${files[@]}"

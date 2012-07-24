@@ -239,11 +239,13 @@ else
 	cp $ICONS "$BUILDDIR/safari.safariextension/images/toolbar"
 	cp $IMAGES $PREFS_IMAGES "$BUILDDIR/safari.safariextension/images"
 fi
+cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$BUILDDIR/safari.safariextension"
 
 # Copy images for Chrome
 rm -rf "$BUILDDIR/chrome/images"
 mkdir "$BUILDDIR/chrome/images"
 cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/chrome/images"
+cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILDDIR/chrome"
 
 globalScripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${GLOBAL_INCLUDE[@]}")
 

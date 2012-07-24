@@ -1,5 +1,5 @@
 {
-	"name": "Zotero Connector for Chrome",
+	"name": "Zotero Connector",
 	"version": "3.0.3",
 	"description": "Saves references to Zotero from Chrome",
 	"page_action": {
@@ -18,6 +18,11 @@
 			"all_frames": true
 		}
 	],
+	"icons": {
+		"16": "Icon-16.png",
+		"48": "Icon-48.png",
+		"128": "Icon-128.png"
+	},
 	"options_page": "preferences/preferences.html",
 	"update_url": "https://www.zotero.org/download/everywhere/chrome/update.xml"
 }

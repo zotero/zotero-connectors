@@ -65,6 +65,12 @@ function onLoad() {
 	Zotero.Prefs.getCallback("debug.log", function(status) {
 		document.getElementById('advanced-checkbox-show-in-console').checked = status ? true : false;
 	});
+	Zotero.Prefs.getCallback("downloadAssociatedFiles", function(status) {
+		document.getElementById('general-checkbox-downloadAssociatedFiles').checked = status ? true : false;
+	});
+	Zotero.Prefs.getCallback("automaticSnapshots", function(status) {
+		document.getElementById('general-checkbox-automaticSnapshots').checked = status ? true : false;
+	});
 	Zotero.API.getUserInfo(updateAuthorization);
 	
 	refreshData();

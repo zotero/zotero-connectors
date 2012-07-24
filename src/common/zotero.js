@@ -157,8 +157,8 @@ Zotero.Prefs = new function() {
 		"debug.store.limit":750000,
 		"debug.level":5,
 		"debug.time":false,
-		"downloadAssociatedFiles":false,
-		"automaticSnapshots":false,
+		"downloadAssociatedFiles":true,
+		"automaticSnapshots":true,
 		"connector.repo.lastCheck.localTime":0,
 		"connector.repo.lastCheck.repoTime":0,
 		"capitalizeTitles":false
@@ -171,7 +171,15 @@ Zotero.Prefs = new function() {
 	};
 	
 	this.getCallback = function(pref, callback) {
-		callback(Zotero.Prefs.get(pref));
+		if(typeof pref === "object") {
+			var prefData = {};
+			for(var i=0; i<pref.length; i++) {
+				prefData[pref[i]] = Zotero.Prefs.get(pref[i]);
+			}
+			callback(prefData);
+		} else {
+			callback(Zotero.Prefs.get(pref));
+		}
 	};
 	
 	this.set = function(pref, value) {

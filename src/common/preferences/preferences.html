@@ -53,17 +53,21 @@
 				</div>
 			</div>
 			<div class="group">
-				<div class="group-title">Authorization</div>
+				<div class="group-title">Save via Server</div>
 				<div class="group-content">
 					<div id="general-authorization-not-authorized">
-						<p>Zotero Connector must be authorized in order to save items when Zotero Standalone is not open.</p>
+						<p>Zotero Connector must be authorized in order to save items to zotero.org when Zotero Standalone is not open.</p>
 						<p><input type="button" value="Authorize" onclick="authorize()"/></p>
 					</div>
 					<div id="general-authorization-authorized" style="display:none">
-						<p>Zotero Connector is authorized as <span id="general-span-authorization-username"></span>.</p>
+						<p>Zotero Connector will save items to zotero.org as <span id="general-span-authorization-username"></span> when Zotero Standalone is not open.</p>
 						<p>
 							<input type="button" value="Reauthorize" onclick="authorize()"/>
 							<input type="button" value="Clear Credentials" onclick="clearCredentials()"/>
+						</p>
+						<p>
+							<input type="checkbox" id="general-checkbox-automaticSnapshots" onchange="Zotero.Prefs.set('automaticSnapshots', this.checked);"/>&nbsp;Automatically take snapshots when saving items<br/>
+							<input type="checkbox" id="general-checkbox-downloadAssociatedFiles" onchange="Zotero.Prefs.set('downloadAssociatedFiles', this.checked);"/>&nbsp;Automatically download associated PDFs and other files when saving items<br/>
 						</p>
 					</div>
 				</div>

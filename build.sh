@@ -30,6 +30,42 @@ function explorerify {
 		"$TO"
 }
 
+function usage {
+	cat >&2 <<DONE
+Usage: $0 [-v VERSION] [-d]
+Options
+ -v VERSION          use version VERSION
+ -d                  build for debugging (enable translator tester, don't minify)
+DONE
+	exit 1
+}
+
+while getopts "v:d" opt; do
+	case $opt in
+		v)
+			VERSION="$OPTARG"
+			;;
+		d)
+			DEBUG=1
+			;;
+		*)
+			usage
+			;;
+	esac
+	shift $((OPTIND-1)); OPTIND=1
+done
+
+if [ ! -z $1 ]; then
+	usage
+fi
+
+if [ -z $VERSION ]; then
+	pushd "$CWD" > /dev/null
+	REV=`git log -n 1 --pretty='format:%h'`
+	VERSION="$DEFAULT_VERSION"
+	popd
+fi
+
 CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . "$CWD/config.sh"
 
@@ -105,7 +141,7 @@ GLOBAL_INCLUDE=('zotero.js' \
 	'zotero/utilities.js' \
 	'messages.js' \
 	'messaging.js')
-if [ "$1" == "debug" ]; then
+if [ ! -z $DEBUG ]; then
 	GLOBAL_INCLUDE=("${GLOBAL_INCLUDE[@]}" \
 		'tools/testTranslators/translatorTester_messages.js' \
 		'tools/testTranslators/translatorTester.js' \
@@ -163,42 +199,6 @@ BOOKMARKLET_AUXILIARY_JS=( \
 	"$SRCDIR/bookmarklet/ie_hack.js" \
 	"$SRCDIR/bookmarklet/itemSelector/itemSelector_browserSpecific.js" \
 	"$SRCDIR/bookmarklet/upload.js" )
-
-function usage {
-	cat >&2 <<DONE
-Usage: $0 [-v VERSION] [-d]
-Options
- -v VERSION          use version VERSION
- -d                  build for debugging (enable translator tester, don't minify)
-DONE
-	exit 1
-}
-
-while getopts "v:d" opt; do
-	case $opt in
-		v)
-			VERSION="$OPTARG"
-			;;
-		d)
-			DEBUG=1
-			;;
-		*)
-			usage
-			;;
-	esac
-	shift $((OPTIND-1)); OPTIND=1
-done
-
-if [ ! -z $1 ]; then
-	usage
-fi
-
-if [ -z $VERSION ]; then
-	pushd "$CWD" > /dev/null
-	REV=`git log -n 1 --pretty='format:%h'`
-	VERSION="$DEFAULT_VERSION"
-	popd
-fi
 
 # Remove log file
 rm -f "$LOG"

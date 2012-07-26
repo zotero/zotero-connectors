@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. "$CWD/config.sh"
+
 function explorerify {
 	FROM="$1"
 	TO="$2"
@@ -65,9 +68,6 @@ if [ -z $VERSION ]; then
 	VERSION="$DEFAULT_VERSION"
 	popd
 fi
-
-CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-. "$CWD/config.sh"
 
 SRCDIR="$CWD/src"
 BUILDDIR="$CWD/build"

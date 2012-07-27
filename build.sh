@@ -113,7 +113,7 @@ INJECT_INCLUDE=('zotero.js' \
 INJECT_INCLUDE_CHROME=('api.js')
 INJECT_INCLUDE_SAFARI=()
 
-if [ "$1" == "debug" ]; then
+if [ ! -z $DEBUG ]; then
 	INJECT_INCLUDE_LAST=('tools/testTranslators/translatorTester_messages.js' \
 		'tools/testTranslators/translatorTester.js' \
 		'inject/inject.js' \

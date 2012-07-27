@@ -43,9 +43,8 @@ Zotero.API = new function() {
 		iframe.style.height = "100%";
 		iframe.onload = function() {
 			var win = iframe.contentWindow;
-			if(win.location.href !== ZOTERO_CONFIG.LOGIN_URL
-					&& win.location.href !== "about:blank") {
-			
+			if(win.location.href === ZOTERO_CONFIG.AUTH_COMPLETE_URL) {
+				Zotero.debug(win.location.href);
 				// Authorization should be done
 				var c = _getCredentials(win.document ? win.document : document),
 					userID = c[0], sessionToken = c[1];

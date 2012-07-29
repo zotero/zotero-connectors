@@ -77,8 +77,8 @@ LOG="$CWD/build.log"
 EXTENSION_XPCOM_DIR="$SRCDIR/zotero/chrome/content/zotero/xpcom"
 EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 
-SAFARI_EXT="$DISTDIR/Zotero_Connector.safariextz"
-CHROME_EXT="$DISTDIR/Zotero_Connector.crx"
+SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
+CHROME_EXT="$DISTDIR/Zotero_Connector-$VERSION.crx"
 
 ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-z-16px.png"
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
@@ -239,7 +239,8 @@ else
 	cp $ICONS "$BUILDDIR/safari.safariextension/images/toolbar"
 	cp $IMAGES $PREFS_IMAGES "$BUILDDIR/safari.safariextension/images"
 fi
-cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$BUILDDIR/safari.safariextension"
+cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
+	"$BUILDDIR/safari.safariextension"
 
 # Copy images for Chrome
 rm -rf "$BUILDDIR/chrome/images"

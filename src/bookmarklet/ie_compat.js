@@ -35,13 +35,12 @@ function indexOf(obj, member, startAt) {
 	}
 }
 
-if(typeof DOMParser == "undefined") {
-	DOMParser = function () {};
-	DOMParser.prototype.parseFromString = function (str, contentType) {
-		var d = new ActiveXObject("MSXML.DomDocument");
-		d.loadXML(str);
-		return d;
-	}
+var DOMParser = function () {};
+DOMParser.prototype.parseFromString = function (str, contentType) {
+	var d = new ActiveXObject("MSXML2.DomDocument");
+	d.loadXML(str);
+	d.setProperty("SelectionLanguage", "XPath");
+	return d;
 }
 
 /*

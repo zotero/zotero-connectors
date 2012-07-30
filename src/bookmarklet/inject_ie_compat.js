@@ -27,6 +27,13 @@ if(!String.prototype.trim) {
 	String.prototype.trim = function() { return this.replace(/^\s+|\s+$/, ''); };
 }
 
+function getTextContent(el) {
+	return "textContent" in el ? el.textContent
+		: "innerText" in el ? el.innerText 
+		: "text" in el ? el.text
+		: el.nodeValue;
+}
+
 var XMLHttpRequest = window.parent.XMLHttpRequest;
 
 /*  JavaScript-XPath 0.1.12
@@ -2856,4 +2863,3 @@ if (!config.hasNative || !config.useNative) {
 })();
 
 // Thanks for reading this source code. We love JavaScript.
-

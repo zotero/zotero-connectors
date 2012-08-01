@@ -439,12 +439,11 @@ do
 		fi
 	fi
 	
-	
 	explorerify "$tmpScript" "$ieTmpScript"
 	if [ "$scpt" == "common" ]; then
-		cp "$ieTmpScript" "$ieBuiltScript"
-		cat "$SRCDIR/bookmarklet/ie_compat.js" "$ieBuiltScript" > "$ieTmpScript"
-		rm "$ieBuiltScript"
+		cat "$SRCDIR/bookmarklet/ie_compat.js" >> "$ieTmpScript"
+	elif [ "$scpt" == "inject" ]; then
+		cat "$SRCDIR/bookmarklet/inject_ie_compat.js" >> "$ieTmpScript";
 	fi
 	
 	# Minify if not in debug mode
@@ -455,11 +454,6 @@ do
 		uglifyjs "$tmpScript" > "$builtScript"
 		uglifyjs "$ieTmpScript" > "$ieBuiltScript"
 		rm "$tmpScript" "$ieTmpScript"
-	fi
-	
-	if [ "$scpt" == "inject" ]; then
-		# Currently this part can't be minified
-		cat "$SRCDIR/bookmarklet/inject_ie_compat.js" >> "$ieBuiltScript";
 	fi
 done
 

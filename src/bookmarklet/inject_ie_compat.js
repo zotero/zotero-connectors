@@ -150,58 +150,12 @@ var uai = new function() {
 		}
 	}
 	else {
-
-		/* for Trident/Tasman */
-		/*@cc_on
-		@if (@_jscript)
-			function jscriptVersion() {
-				switch (@_jscript_version) {
-					case 3.0:  return "4.0";
-					case 5.0:  return "5.0";
-					case 5.1:  return "5.01";
-					case 5.5:  return "5.5";
-					case 5.6:
-						if ("XMLHttpRequest" in window) return "7.0";
-						return "6.0";
-					case 5.7:
-						return "7.0";
-					default:   return true;
-				}
-			}
-			if (@_win16 || @_win32 || @_win64) {
-				this.windows = true;
-				this.trident = jscriptVersion();
-			} else if (@_mac || navigator.platform.indexOf("Mac") >= 0) {
-				// '@_mac' may be 'NaN' even if the platform is Mac,
-				// so we check 'navigator.platform', too.
-				this.mac = true;
-				this.tasman = jscriptVersion();
-			}
-			if (/MSIE (\d+\.\d+)b?;/.test(ua)) {
-				this.ie = RegExp.$1;
-				this['ie' + RegExp.$1.charAt(0)] = true;
-			}
-		@else @*/
-
-		/* for AppleWebKit */
-		if (/AppleWebKit\/(\d+(?:\.\d+)*)/.test(ua)) {
-			this.applewebkit = RegExp.$1;
-			if (RegExp.$1.charAt(0) == 4) {
-				this.applewebkit2 = true;
-			}
-			else {
-				this.applewebkit3 = true;
-			}
+		this.windows = true;
+		this.trident = "7.0";
+		if (/MSIE (\d+\.\d+)b?;/.test(ua)) {
+			this.ie = RegExp.$1;
+			this['ie' + RegExp.$1.charAt(0)] = true;
 		}
-
-		/* for Gecko */
-		else if (typeof Components == "object" &&
-				 (/Gecko\/(\d{8})/.test(ua) ||
-				  navigator.product == "Gecko" && /^(\d{8})$/.test(navigator.productSub))) {
-			this.gecko = RegExp.$1;
-		}
-
-		/*@end @*/
 
 		if (typeof(opera) == "object" && typeof(opera.version) == "function") {
 			this.opera = opera.version();
@@ -974,13 +928,10 @@ NodeUtil = {
 			t = (t == undefined || t == null) ? '' : t;
 		}
 		if (typeof t != 'string') {
-/*@cc_on
 			if (type == 1 && node.nodeName.toLowerCase() == 'title') {
 				t = node.text;
 			}
-			else
-@*/
-			if (type == 9 || type == 1) {
+			else if (type == 9 || type == 1) {
 				if (type == 9) {
 					node =  node.documentElement;
 				}
@@ -992,11 +943,9 @@ NodeUtil = {
 						if (node.nodeType != 1) {
 							t += node.nodeValue;
 						}
-/*@cc_on
 						else if (node.nodeName.toLowerCase() == 'title') {
 							t += node.text;
 						}
-@*/
 						stack[i++] = node; // push
 					} while (node = node.firstChild);
 					while (i && !(node = stack[--i].nextSibling)) {}
@@ -1024,7 +973,6 @@ NodeUtil = {
 		title: 'title'
 	},
 	attrMatch: function(node, attrName, attrValue) {
-/*@cc_on @if (@_jscript)
 		var propName = NodeUtil.attrPropMap[attrName];
 		if (!attrName ||
 			attrValue == null && (
@@ -1035,11 +983,6 @@ NodeUtil = {
 				propName && node[propName] == attrValue ||
 				!propName && node.getAttribute && node.getAttribute(attrName, 2) == attrValue
 			)) {
-@else @*/
-		if (!attrName ||
-			attrValue == null && node.hasAttribute && node.hasAttribute(attrName) ||
-			attrValue != null && node.getAttribute && node.getAttribute(attrName) == attrValue) {
-/*@end @*/
 			return true;
 		}
 		else {
@@ -1050,7 +993,6 @@ NodeUtil = {
 		if (prevNodeset) {
 			prevNodeset.delDescendant(node, prevIndex);
 		}
-/*@cc_on
 		try {
 			if (!test.notOnlyElement || test.type == 8 || (attrName && test.type == 0)) {
 
@@ -1116,7 +1058,6 @@ NodeUtil = {
 			return nodeset;
 		}
 		catch(e) {
-@*/
 		if (attrValue && attrName == 'id' && node.getElementById) {
 			node = node.getElementById(attrValue);
 			if (node && test.match(node)) {
@@ -1165,14 +1106,10 @@ NodeUtil = {
 			}
 		}
 		return nodeset;
-/*@cc_on
 		}
-@*/
 	},
 
 	getChildNodes: function(test, node, nodeset, attrName, attrValue) {
-
-/*@cc_on
 		try {
 			var children;
 
@@ -1229,20 +1166,16 @@ NodeUtil = {
 
 			return nodeset;
 		} catch(e) {
-@*/
 		for (var node = node.firstChild; node; node = node.nextSibling) {
 			if (NodeUtil.attrMatch(node, attrName, attrValue)) {
 				if (test.match(node)) nodeset.push(node);
 			}
 		}
 		return nodeset;
-/*@cc_on
 		}
-@*/
 	}
 };
 
-/*@cc_on
 var AttributeWrapper = function(node, parent, sourceIndex) {
 	this.node = node;
 	this.nodeType = 2;
@@ -1252,8 +1185,6 @@ var AttributeWrapper = function(node, parent, sourceIndex) {
 	this.ownerElement = parent;
 	this.parentSourceIndex = sourceIndex;
 };
-
-@*/
 
 
 /**
@@ -1297,29 +1228,18 @@ Step.axises = {
 	attribute: [false, function(test, node, nodeset) {
 		var attrs = node.attributes;
 		if (attrs) {
-/*@cc_on
 			var sourceIndex = node.sourceIndex;
-@*/
 			if ((test.notOnlyElement && test.type == 0) || test.name == '*') {
 				for (var i = 0, attr; attr = attrs[i]; i ++) {
-/*@cc_on @if (@_jscript)
 					if (attr.nodeValue) {
 						nodeset.push(new AttributeWrapper(attr, node, sourceIndex));
 					}
-@else @*/
-					nodeset.push(attr);
-/*@end @*/
 				}
 			}
 			else {
 				var attr = attrs.getNamedItem(test.name);
-				
-/*@cc_on @if (@_jscript)
 				if (attr && attr.nodeValue) {
-					attr = new AttributeWrapper(attr, node, sourceIndex);;
-@else @*/
-				if (attr) {
-/*@end @*/
+					attr = new AttributeWrapper(attr, node, sourceIndex);
 					nodeset.push(attr);
 				}
 			}
@@ -1573,11 +1493,7 @@ Step.prototype.predicate = function(predicate) {
 
 	if (this._quickAttr && this.predicates.length == 1 && predicate.quickAttr) {
 		var attrName = predicate.attrName;
-/*@cc_on @if (@_jscript)
 		this.attrName = attrName.toLowerCase();
-@else @*/
-		this.attrName = attrName;
-/*@end @*/
 		this.attrValueExpr = predicate.attrValueExpr;
 		this.quickAttr = true;
 	}
@@ -1891,16 +1807,12 @@ FunctionCall.funcs = {
 			doc = ctxn;
 		else
 			doc = ctxn.ownerDocument;
-/*@cc_on
 		all = doc.all;
-@*/
 		s = s.string(this);
 		ids = s.split(/\s+/);
 		ns = new NodeSet();
 		for (i = 0, l = ids.length; i < l; i ++) {
 			id = ids[i];
-
-/*@cc_on @if (@_jscript)
 			elm = all[id];
 			if (elm) {
 				if ((!elm.length || elm.nodeType) && id == elm.id) {
@@ -1917,22 +1829,6 @@ FunctionCall.funcs = {
 					}
 				}
 			}
-@else @*/
-			elm = doc.getElementById(id);
-			if (uai.opera && elm && elm.id != id) {
-				var elms = doc.getElementsByName(id);
-				for (var j = 0, l0 = elms.length; j < l0; j ++) {
-					elm = elms[j];
-					if (elm.id == id) {
-						ns.push(elm);
-					}
-				}
-			}
-			else {
-				if (elm) ns.push(elm)
-			}
-/*@end @*/
-
 		}
 		ns.isSorted = false;
 		return ns;
@@ -2257,7 +2153,6 @@ FunctionCall.prototype.show = function(indent) {
 };
 
 
-/*@cc_on @if (@_jscript)
 var NodeWrapper = function(node, sourceIndex, subIndex, attributeName) {
 	this.node = node;
 	this.nodeType = node.nodeType;
@@ -2270,14 +2165,6 @@ var NodeWrapper = function(node, sourceIndex, subIndex, attributeName) {
 NodeWrapper.prototype.toString = function() {
 	return this.order;
 };
-@else @*/
-var NodeID = {
-	uuid: 1,
-	get: function(node) {
-		return node.__jsxpath_id__ || (node.__jsxpath_id__ = this.uuid++);
-	}
-};
-/*@end @*/
 
 if (!window.NodeSet && window.defaultConfig)
 	window.NodeSet = null;
@@ -2292,10 +2179,7 @@ NodeSet = function() {
 
 NodeSet.prototype.isNodeSet = true;
 NodeSet.prototype.isSorted = true;
-
-/*@_cc_on
 NodeSet.prototype.shortcut = true;
-@*/
 
 NodeSet.prototype.merge = function(nodeset) {
 	this.isSorted = false;
@@ -2324,7 +2208,6 @@ NodeSet.prototype.sort = function() {
 		this.isSorted = true;
 		this.idIndexMap = null;
 
-/*@cc_on
 		if (this.shortcut) {
 			this.nodes.sort();
 		}
@@ -2339,7 +2222,6 @@ NodeSet.prototype.sort = function() {
 			});
 		}
 		return;
-@*/
 		var nodes = this.nodes;
 		nodes.sort(function(a, b) {
 			if (a == b) return 0;
@@ -2381,7 +2263,6 @@ NodeSet.prototype.sort = function() {
 };
 
 
-/*@cc_on @if (@_jscript)
 NodeSet.prototype.sourceOffset = 1;
 NodeSet.prototype.subOffset = 2;
 NodeSet.prototype.createWrapper = function(node) {
@@ -2449,31 +2330,11 @@ NodeSet.prototype.reserveDelBySourceIndexAndSubIndex = function(sourceIndex, sub
 		}
 	}
 };
-@else @*/
-NodeSet.prototype.reserveDelByNodeID = function(id, offset, reverse) {
-	var map = this.createIdIndexMap();
-	var index;
-	if (index = map[id]) {
-		if (reverse && (this.length - offset - 1) > index || !reverse && offset < index) {
-			var obj = {
-				value: index,
-				order: String.fromCharCode(index),
-				toString: function() { return this.order },
-				valueOf: function() { return this.value }
-			};
-			this.reserveDels.push(obj);
-		}
-	}
-};
-/*@end @*/
+
 
 NodeSet.prototype.reserveDelByNode = function(node, offset, reverse) {
-/*@cc_on @if (@_jscript)
 	node = this.createWrapper(node);
 	this.reserveDelBySourceIndexAndSubIndex(node.sourceIndex, node.subIndex, offset, reverse);
-@else @*/
-	this.reserveDelByNodeID(NodeID.get(node), offset, reverse);
-/*@end @*/
 };
 
 NodeSet.prototype.doDel = function() {
@@ -2501,15 +2362,10 @@ NodeSet.prototype.createIdIndexMap = function() {
 		var nodes = this.nodes;
 		for (var i = 0, l = nodes.length; i < l; i ++) {
 			var node = nodes[i];
-/*@cc_on @if (@_jscript)
 			var sourceIndex = node.sourceIndex;
 			var subIndex = node.subIndex;
 			if (!map[sourceIndex]) map[sourceIndex] = {};
 			map[sourceIndex][subIndex] = i;
-@else @*/
-			var id = NodeID.get(node);
-			map[id] = i;
-/*@end @*/
 		}
 		return map;
 	}
@@ -2529,11 +2385,7 @@ NodeSet.prototype.del = function(index) {
 			delete this._firstSubIndex;
 		}
 
-/*@cc_on @if (@_jscript)
 		delete this.seen[node.sourceIndex][node.subIndex];
-@else @*/
-		delete this.seen[NodeID.get(node)];
-/*@end @*/
 	}
 };
 
@@ -2567,11 +2419,7 @@ NodeSet.prototype.delDescendant = function(elm, offset) {
 	var nodes = this.nodes;
 	for (var i = offset + 1; i < nodes.length; i ++) {
 
-/*@cc_on @if (@_jscript)
 		if (nodes[i].node.nodeType == 1 && elm.contains(nodes[i].node)) {
-@else @*/
-		if (elm.contains(nodes[i])) {
-/*@end @*/
 			this.del(i);
 			i --;
 		}
@@ -2579,9 +2427,6 @@ NodeSet.prototype.delDescendant = function(elm, offset) {
 };
 
 NodeSet.prototype._add = function(node, reverse) {
-
-/*@cc_on @if (@_jscript)
-
 	var first, firstSourceIndex, firstSubIndex, sourceIndex, subIndex, attributeName;
 
 	sourceIndex = node.sourceIndex;
@@ -2622,15 +2467,6 @@ NodeSet.prototype._add = function(node, reverse) {
 		}
 	}
 
-@else @*/
-
-	var seen = this.seen;
-	var id = NodeID.get(node);
-	if (seen[id]) return true;
-	seen[id] = true;
-
-/*@end @*/
-
 	this.length++;
 	if (reverse) 
 		this.nodes.unshift(node);
@@ -2651,9 +2487,7 @@ NodeSet.prototype.unshift = function(node) {
 		this.unshift(only);
 		this.length --;
 	}
-/*@cc_on
 	node = this.createWrapper(node);
-@*/
 	return this._add(node, true);
 };
 
@@ -2670,20 +2504,16 @@ NodeSet.prototype.push = function(node) {
 		this.push(only);
 		this.length --;
 	}
-/*@cc_on
 	node = this.createWrapper(node);
-@*/
 	return this._add(node);
 };
 
 NodeSet.prototype.first = function() {
 	if (this.only) return this.only;
-/*@cc_on
 	if (this._first) return this._first.node;
 	if (this.nodes.length > 1) this.sort();
 	var node = this.nodes[0];
 	return node ? node.node : undefined;
-@*/
 	if (this.nodes.length > 1) this.sort();
 	return this.nodes[0];
 };
@@ -2691,7 +2521,6 @@ NodeSet.prototype.first = function() {
 NodeSet.prototype.list = function() {
 	if (this.only) return [this.only];
 	this.sort();
-/*@cc_on
 	var i, l, nodes, results;
 	nodes = this.nodes;
 	results = [];
@@ -2699,8 +2528,6 @@ NodeSet.prototype.list = function() {
 		results.push(nodes[i].node);
 	}
 	return results;
-@*/
-	return this.nodes;
 };
 
 NodeSet.prototype.string = function() {
@@ -2724,13 +2551,9 @@ NodeSet.prototype.iterator = function(reverse) {
 		var count = 0;
 		return function() {
 			if (nodeset.only && count++ == 0) return nodeset.only;
-/*@cc_on @if(@_jscript)
 			var wrapper = nodeset.nodes[count++];
 			if (wrapper) return wrapper.node;
 			return undefined;
-@else @*/
-			return nodeset.nodes[count++];
-/*@end @*/
 		};
 	}
 	else {
@@ -2738,13 +2561,9 @@ NodeSet.prototype.iterator = function(reverse) {
 		return function() {
 			var index = nodeset.length - (count++) - 1;
 			if (nodeset.only && index == 0) return nodeset.only;
-/*@cc_on @if(@_jscript)
 			var wrapper = nodeset.nodes[index];
 			if (wrapper) return wrapper.node;
 			return undefined;
-@else @*/
-			return nodeset.nodes[index];
-/*@end @*/
 		};
 	}
 };

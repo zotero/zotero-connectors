@@ -442,6 +442,8 @@ do
 	explorerify "$tmpScript" "$ieTmpScript"
 	if [ "$scpt" == "common" ]; then
 		cat "$SRCDIR/bookmarklet/ie_compat.js" >> "$ieTmpScript"
+	elif [ "$scpt" == "iframe" ]; then
+		cat "$SRCDIR/bookmarklet/iframe_ie_compat.js" >> "$ieTmpScript"
 	elif [ "$scpt" == "inject" ]; then
 		cat "$SRCDIR/bookmarklet/inject_ie_compat.js" >> "$ieTmpScript";
 	fi

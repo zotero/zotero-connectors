@@ -2,8 +2,8 @@
     ***** BEGIN LICENSE BLOCK *****
     
     Copyright © 2011 Center for History and New Media
-                     George Mason University, Fairfax, Virginia, USA
-                     http://zotero.org
+		     George Mason University, Fairfax, Virginia, USA
+		     http://zotero.org
     
     This file is part of Zotero.
     
@@ -27,7 +27,11 @@ if(!String.prototype.trim) {
 	String.prototype.trim = function() { return this.replace(/^\s+|\s+$/, ''); };
 }
 
-function getTextContent(el) {
+/**
+ * Provides textContent property in IE. explorerify, below, rewrites the AST to replace
+ * the textContent property with a function call to this.
+ */
+function textContent(el) {
 	return "textContent" in el ? el.textContent
 		: "innerText" in el ? el.innerText 
 		: "text" in el ? el.text

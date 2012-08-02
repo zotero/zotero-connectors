@@ -123,21 +123,14 @@ new function() {
 		div.appendChild(document.createTextNode(arg));
 		a.appendChild(div);
 	};
-	var f = document.createElement('iframe');
-	f.id = 'zotero-iframe';
-	f.style.visibility = 'hidden';
-	f.setAttribute('frameborder', '0');
-	a.appendChild(f);
-	var init = function() {
-		var d = f.contentWindow.document, s = d.createElement('script');
-		s.src = "http://127.0.0.1:31330/";
-		(d.body ? d.body : d.documentElement).appendChild(s);
-	}
-	if(f.contentWindow.document.readyState === 'complete') {
-		init();
-	} else {
-		f.onload = init;
-	}
+	var iframe = document.createElement("iframe"),
+		tag = document.body || document.documentElement;
+	iframe.id = "zotero-iframe"
+	iframe.style.display = "none";
+	iframe.style.borderStyle = "none";
+	iframe.setAttribute("frameborder", "0");
+	iframe.src = 'javascript:(function(){document.open();try{window.parent.document;}catch(e){document.domain="' + document.domain.replace(/[\\\"]/g, "\\$0")+'";}document.write(\'<!DOCTYPE html><html><head><script src="http://127.0.0.1:31330/"></script></head><body></body></html>\');document.close();})()';
+	tag.appendChild(iframe);
 }
 EOS
 

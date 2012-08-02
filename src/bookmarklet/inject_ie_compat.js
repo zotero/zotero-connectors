@@ -1184,6 +1184,7 @@ var AttributeWrapper = function(node, parent, sourceIndex) {
 	this.node = node;
 	this.nodeType = 2;
 	this.nodeValue = node.nodeValue;
+	this.value = this.nodeValue;
 	this.nodeName = node.nodeName;
 	this.parentNode = parent;
 	this.ownerElement = parent;

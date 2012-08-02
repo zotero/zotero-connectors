@@ -28,14 +28,26 @@ if(!String.prototype.trim) {
 }
 
 /**
- * Provides textContent property in IE. explorerify, below, rewrites the AST to replace
- * the textContent property with a function call to this.
+ * Provides textContent property in IE. explorerify rewrites the AST to replace the
+ * textContent property with a function call to this.
+ * @param {Object} el
+ * @return {String}
  */
 function textContent(el) {
 	return "textContent" in el ? el.textContent
 		: "innerText" in el ? el.innerText 
 		: "text" in el ? el.text
 		: el.nodeValue;
+}
+
+/**
+ * Provides defaultView property in IE. explorerify rewrites the AST to replace the
+ * defaultView property with a function call to this.
+ * @param {Object} doc
+ * @return {Window}
+ */
+function defaultView(doc) {
+	return "defaultView" in doc ? doc.defaultView : doc.parentWindow;
 }
 
 var XMLHttpRequest = window.parent.XMLHttpRequest;

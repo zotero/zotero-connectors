@@ -35,6 +35,9 @@ function explorerify(code) {
 			if(name === "textContent") {
 				return [ "call", [ "name", "textContent" ], [ walk(expr) ] ];
 			}
+			if(name === "defaultView") {
+				return [ "call", [ "name", "defaultView" ], [ walk(expr) ] ];
+			}
 			return [ "dot", walk(expr), name ];
 		},
 		"call": function(expr, args) {

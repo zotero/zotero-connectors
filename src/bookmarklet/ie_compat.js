@@ -37,7 +37,17 @@ function indexOf(obj, member, startAt) {
 
 var DOMParser = function () {};
 DOMParser.prototype.parseFromString = function (str, contentType) {
-	var d = new ActiveXObject("MSXML2.DomDocument");
+	// See https://blogs.msdn.com/b/xmlteam/archive/2006/10/23/using-the-right-version-of-msxml-in-internet-explorer.aspx?Redirected=true
+	var d;
+	try {
+		d = new ActiveXObject("Msxml2.DOMDocument.6.0");
+	} catch(e) {
+		try {
+			d = new ActiveXObject("Msxml2.DOMDocument.3.0");
+		} catch(e) {
+			throw "MSXML2.DOMDocument not available";
+		}
+	};
 	d.loadXML(str);
 	d.setProperty("SelectionLanguage", "XPath");
 	return d;

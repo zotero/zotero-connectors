@@ -434,7 +434,10 @@ do
 			
 			# Make inject_ie_test.js
 			explorerify "$testScript" "$ieBuiltScript"
-			cat "$SRCDIR/bookmarklet/ie_compat.js" "$ieBuiltScript" "$SRCDIR/bookmarklet/inject_ie_compat.js" > "$ieTestScript"
+			cat "$SRCDIR/bookmarklet/ie_compat.js" \
+				"$SRCDIR/bookmarklet/iframe_ie_compat.js" \
+				"$ieBuiltScript" \
+				"$SRCDIR/bookmarklet/inject_ie_compat.js" > "$ieTestScript"
 			rm "$ieBuiltScript"
 		fi
 	fi

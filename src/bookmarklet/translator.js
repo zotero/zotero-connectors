@@ -284,7 +284,11 @@ Zotero.Translators = new function() {
 				var info = infoRe.exec(code);
 				if(info) {
 					info = info[0];
-					code = info+explorerify(code.substr(info.length));
+					try {
+						code = info+explorerify(code.substr(info.length));
+					} catch(e) {
+						Zotero.debug("Could not explorerify: "+e.toString());
+					}
 				}
 			}
 		}

@@ -281,8 +281,11 @@ Zotero.Translators = new function() {
 				"for(var $3_zForEachIndex in $3_zForEachSubject)$5{ "+
 				"$2$3 = $3_zForEachSubject[$3_zForEachIndex];", code);
 			if(Zotero.isIE) {
-				var info = infoRe.exec(code)[0];
-				code = info+explorerify(code.substr(info.length));
+				var info = infoRe.exec(code);
+				if(info) {
+					info = info[0];
+					code = info+explorerify(code.substr(info.length));
+				}
 			}
 		}
 		return code;

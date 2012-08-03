@@ -72,6 +72,7 @@ def run_tests(browser, translator_path)
 		end
 		
 		print test_output['output']+"\n\n"
+		$stdout.flush
 		test_result['output'] << test_output['output']+"\n\n"
 		test_result[test_output['status']] << test
 		
@@ -128,7 +129,7 @@ new function() {
 	iframe.style.display = "none";
 	iframe.style.borderStyle = "none";
 	iframe.setAttribute("frameborder", "0");
-	iframe.src = 'javascript:(function(){document.open();try{window.parent.document;}catch(e){document.domain="'+document.domain.replace(/[\\\"]/g, "\\$0")+'";}document.write(\'<!DOCTYPE html><html><head><script src="http://127.0.0.1:31330/"></script></head><body></body></html>\');document.close();})()';
+	iframe.src = 'javascript:(function(){document.open();try{window.parent.document;}catch(e){document.domain="'+document.domain.replace(/[\\\\\\"]/g, "\\\\$0")+'";}document.write(\'<!DOCTYPE html><html><head><script src="http://127.0.0.1:31330/"></script></head><body></body></html>\');document.close();})()';
 	tag.appendChild(iframe);
 }
 undefined;

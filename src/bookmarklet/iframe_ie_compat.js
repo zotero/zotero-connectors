@@ -29,22 +29,32 @@
  * indexOf(), and const expressions with var expressions.
  */
 function explorerify(code) {
+	var rewritePropertiesToFunctionCalls = {
+		"textContent":"textContent",
+		"defaultView":"defaultView"
+	};
+	var rewriteMethodsToFunctionCalls = {
+		"indexOf":"indexOf",
+		"filter":"arrayFilter",
+		"map":"arrayMap"
+	};
 	var w = uglifyjs.ast_walker(), walk = w.walk, MAP = uglifyjs.MAP;
-	return uglifyjs.gen_code(w.with_walkers({
+	var newCode = uglifyjs.gen_code(w.with_walkers({
 		"dot": function(expr, name) {
-			if(name === "textContent") {
-				return [ "call", [ "name", "textContent" ], [ walk(expr) ] ];
-			}
-			if(name === "defaultView") {
-				return [ "call", [ "name", "defaultView" ], [ walk(expr) ] ];
+			var rewriteTo;
+			if(rewritePropertiesToFunctionCalls.hasOwnProperty(name)) {
+				return [ "call", [ "name", rewritePropertiesToFunctionCalls[name] ], [ walk(expr) ] ];
 			}
 			return [ "dot", walk(expr), name ];
 		},
 		"call": function(expr, args) {
-			if(expr[0] === "dot" && expr[2] === "indexOf") {
-				var args = MAP(args, walk);
-				args.unshift(expr[1]);
-				return [ "call", [ "name", "indexOf" ], args ];
+			if(expr[0] === "dot") {
+				var rewriteTo;
+				if(rewriteMethodsToFunctionCalls.hasOwnProperty(expr[2])) {
+					var args = MAP(args, walk);
+					args.unshift(expr[1]);
+					return [ "call", [ "name", rewriteMethodsToFunctionCalls[expr[2]] ], args ];
+				}
 			}
 			return [ this[0], walk(expr), MAP(args, walk) ];
 		},
@@ -59,6 +69,8 @@ function explorerify(code) {
 	}, function() {
 		return walk(jsp.parse(code));
 	}));
+	Zotero.debug(newCode);
+	return newCode;
 };
 
 /***********************************************************************

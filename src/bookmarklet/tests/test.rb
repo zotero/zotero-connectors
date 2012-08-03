@@ -126,8 +126,6 @@ new function() {
 	};
 	var iframe = document.createElement("iframe")
 	iframe.id = "zotero-iframe"
-	iframe.style.display = "none";
-	iframe.style.borderStyle = "none";
 	iframe.style.visibility = "hidden";
 	iframe.setAttribute("frameborder", "0");
 	iframe.src = 'javascript:(function(){document.open();try{window.parent.document;}catch(e){document.domain="'+document.domain.replace(/[\\\\\\"]/g, "\\\\$0")+'";}document.write(\\'<!DOCTYPE html><html><head><script src="http://127.0.0.1:31330/"></script></head><body></body></html>\\');document.close();})()';

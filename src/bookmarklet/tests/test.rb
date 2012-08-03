@@ -116,22 +116,22 @@ $config = JSON.parse(File.read(config_file))
 # Set up inject string
 $inject_string = <<EOS
 new function() {
-	var a = (document.body ? document.body : document.documentElement);
+	var tag = document.body || document.documentElement;
 	window.zoteroSeleniumCallback = function(arg) {
 		var div = document.createElement("div");
 		div.id = "zoteroWatirResult";
 		div.appendChild(document.createTextNode(arg));
-		a.appendChild(div);
+		tag.appendChild(div);
 	};
-	var iframe = document.createElement("iframe"),
-		tag = document.body || document.documentElement;
+	var iframe = document.createElement("iframe")
 	iframe.id = "zotero-iframe"
 	iframe.style.display = "none";
 	iframe.style.borderStyle = "none";
 	iframe.setAttribute("frameborder", "0");
-	iframe.src = 'javascript:(function(){document.open();try{window.parent.document;}catch(e){document.domain="' + document.domain.replace(/[\\\"]/g, "\\$0")+'";}document.write(\'<!DOCTYPE html><html><head><script src="http://127.0.0.1:31330/"></script></head><body></body></html>\');document.close();})()';
+	iframe.src = 'javascript:(function(){document.open();try{window.parent.document;}catch(e){document.domain="'+document.domain.replace(/[\\\"]/g, "\\$0")+'";}document.write(\'<!DOCTYPE html><html><head><script src="http://127.0.0.1:31330/"></script></head><body></body></html>\');document.close();})()';
 	tag.appendChild(iframe);
 }
+undefined;
 EOS
 
 # Hack for Ruby Unicode path brokenness on Windows

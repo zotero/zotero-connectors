@@ -60,7 +60,7 @@ function defaultView(doc) {
 function arrayFilter(array, fun, thisp) {
 	if("filter" in array) {
 		var args = [];
-		for(var i=0; i<arguments.length; i++) args.push(arguments[i]);
+		for(var i=1; i<arguments.length; i++) args.push(arguments[i]);
 		return array.filter.apply(array, args);
 	}
 
@@ -89,7 +89,7 @@ function arrayFilter(array, fun, thisp) {
 function arrayMap(array, callback, thisArg) {	
 	if("map" in array) {
 		var args = [];
-		for(var i=0; i<arguments.length; i++) args.push(arguments[i]);
+		for(var i=1; i<arguments.length; i++) args.push(arguments[i]);
 		return array.map.apply(array, args);
 	}
 

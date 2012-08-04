@@ -34,7 +34,7 @@ if(!String.prototype.trim) {
  * @return {String}
  */
 function textContent(el) {
-	if(typeof doc !== "object" || doc === null) return el.defaultView;
+	if(typeof el !== "object" || el === null) return el.textContent;
 	return "textContent" in el ? el.textContent
 		: "innerText" in el ? el.innerText 
 		: "text" in el ? el.text

@@ -36,7 +36,8 @@ function explorerify(code) {
 	var rewriteMethodsToFunctionCalls = {
 		"indexOf":"indexOf",
 		"filter":"arrayFilter",
-		"map":"arrayMap"
+		"map":"arrayMap",
+		"forEach":"arrayForEach"
 	};
 	var w = uglifyjs.ast_walker(), walk = w.walk, MAP = uglifyjs.MAP;
 	var newCode = uglifyjs.gen_code(w.with_walkers({

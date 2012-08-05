@@ -60,7 +60,7 @@ Zotero.HTTP = new function() {
 			if(onDone) {
 				window.setTimeout(function() {
 					try {
-						onDone({"status":0});
+						onDone({"status":0, "responseText":""});
 					} catch(e) {
 						Zotero.logError(e);
 						return;
@@ -121,7 +121,7 @@ Zotero.HTTP = new function() {
 			if(onDone) {
 				window.setTimeout(function() {
 					try {
-						onDone({"status":0});
+						onDone({"status":0, "responseText":""});
 					} catch(e) {
 						Zotero.logError(e);
 						return;

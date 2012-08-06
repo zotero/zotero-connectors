@@ -2819,18 +2819,7 @@ var install = function(win) {
 		}
 	};
 	
-	win.XPathResult.prototype.iterateNext = function() {
-		var node = this.nodes[this.index++];
-		if(!node) return undefined;
-		if(!("textContent" in node)) {
-			if("innerText" in node) {
-				node.textContent = node.innerText;
-			} else if("nodeValue" in node) {
-				node.textContent = node.nodeValue;
-			}
-		}
-		return node;
-	};
+	win.XPathResult.prototype.iterateNext = function() { return this.nodes[this.index++] };
 	win.XPathResult.prototype.snapshotItem = function(i) { return this.nodes[i] };
 	
 	win.XPathResult.ANY_TYPE = 0;

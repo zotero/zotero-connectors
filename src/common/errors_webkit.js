@@ -56,20 +56,20 @@ Zotero.Errors = new function() {
 	 * Sends an error report to the server
 	 */
 	this.sendErrorReport = function(callback) {
-		var parts = {
-			error: "true",
-			errorData: _output.join('\n'),
-			extraData: '',
-			diagnostic: Zotero.getSystemInfo()
-		};
-		
-		var body = '';
-		for (var key in parts) {
-			body += key + '=' + encodeURIComponent(parts[key]) + '&';
-		}
-		body = body.substr(0, body.length - 1);
-		Zotero.HTTP.doPost("http://www.zotero.org/repo/report", body,
-			function(xmlhttp) {
+		Zotero.getSystemInfo(function(info) {
+			var parts = {
+				error: "true",
+				errorData: _output.join('\n'),
+				extraData: '',
+				diagnostic: info
+			};
+			
+			var body = '';
+			for (var key in parts) {
+				body += key + '=' + encodeURIComponent(parts[key]) + '&';
+			}
+			body = body.substr(0, body.length - 1);
+			Zotero.HTTP.doPost("http://www.zotero.org/repo/report", body, function(xmlhttp) {
 				if(!xmlhttp.responseXML){
 					try {
 						if (xmlhttp.status>1000){
@@ -93,5 +93,6 @@ Zotero.Errors = new function() {
 				
 				callback(true, reported[0].getAttribute('reportID'));
 			});
+		});
 	}
 }

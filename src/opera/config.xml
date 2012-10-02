@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" id="zotero">
+
+  <name>Zotero Connector</name>
+
+  <author>Martin Haaß</author>
+  <description>Connects to Zotero Standalone >=3.0 </description>
+  <icon src="Icon-64.png"/>
+
+
+  <access origin="http://my.opera.com/" subdomains="true"/>
+  <access origin="https://repo.zotero.org/" subdomains="true" />
+  <access origin="http://127.0.0.1:23119/" subdomains="true" />
+</widget>

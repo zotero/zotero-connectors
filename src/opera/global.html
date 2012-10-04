@@ -22,7 +22,7 @@
 	
 	***** END LICENSE BLOCK *****
 -->
-    <!-- this is the opera connector. only opera specific stuff here, functionality is shared between browsers -->
+<!-- this is the opera connector. only opera specific stuff here, functionality is shared between browsers -->
 <html><head>
 <!--SCRIPTS-->
 <script type="text/javascript" src="zotero.js"></script>
@@ -181,28 +181,28 @@ Zotero.Connector_Browser = new function() {
 	
 }
 
+// initialize
+Zotero.initGlobal();
+
  // register handlers
 //response to safari main toolbar button clicked
 opera.addEventListener("command", Zotero.Connector_Browser.onPerformCommand, false);
 opera.addEventListener("validate", Zotero.Connector_Browser.onValidateCommand, false);
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
 
-function addButtons() {
-	const ToolbarItems = [
-		{ title : "Save to Zotero",
-		  onclick:function(event){ event.command = "zotero-saveSnapshot";Zotero.Connector_Browser.onPerformCommand(event);},
-		  icon: "images/toolbar/zotero-z-16px.png"},
-	];
+const ToolbarItems = [
+    { title : "Save to Zotero",
+      onclick:function(event){ event.command = "zotero-saveSnapshot";Zotero.Connector_Browser.onPerformCommand(event);},
+      // if button pressed dispatch 
+      icon: "Icon-32.png"},
+];
 	
-	for (var i =0; i < ToolbarItems.length; i++) {
-		var mumpf = opera.contexts.toolbar.createItem( ToolbarItems[i] );
-		opera.contexts.toolbar.addItem( mumpf );
+for (var i =0; i < ToolbarItems.length; i++) {
+    var mumpf = opera.contexts.toolbar.createItem( ToolbarItems[i] );
+    opera.contexts.toolbar.addItem( mumpf );
 	}
-}
-addButtons();
 
-// initialize
-Zotero.initGlobal();
+
 
 
 </script></head></html>

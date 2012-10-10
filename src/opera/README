@@ -1,0 +1,30 @@
+
+Zotero 3.x Opera connector
+
+Basic functionality is there ( I mainly save to zotero standalone & don't use the server storage). The unavailable/broken features mostly depend on functions which are not provided by Opera
+
+=== What's working ===
+* Icon in navigation bar
+* saving to standalone zotero
+* progress window
+* loading of translators
+* preferences page
+ - update status
+ - update translators
+ - reset Translators
+
+=== TODO ===
+* local/session storage does not work -> preferences cannot be saved
+* test server mode
+* preferences page
+  - save via server: not tested
+  - open translator test: not working: Opera does not support accessing background URL's from injected scripts
+  - debug: not tested
+* include icons in data: URI's. Opera does not support accessing background URL's from injected scripts
+* context menu not (yet) supported in mainline Opera
+
+=== Why things are the way they are ===
+* include files start with numbers?
+ - Opera does not have a JS tag in their config xml
+ - Opera loads the injected script in alphabetical sort order *duh*
+ -> http://stackoverflow.com/questions/10677996/injection-order-in-opera-extensions

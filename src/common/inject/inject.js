@@ -71,7 +71,8 @@ if(isTopWindow) {
 	Zotero.Messaging.addMessageListener("saveDialog_close", Zotero.ProgressWindow.close);
 	Zotero.Messaging.addMessageListener("saveDialog_done", function(returnValue) {
 		if(returnValue) {
-			Zotero.ProgressWindow.startCloseTimer(2500);
+		        Zotero.ProgressWindow.startCloseTimer(2500);
+			;
 		} else {
 			new Zotero.ProgressWindow.ErrorMessage("translationError");
 			Zotero.ProgressWindow.startCloseTimer(8000);

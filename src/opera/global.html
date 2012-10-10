@@ -22,7 +22,11 @@
 	
 	***** END LICENSE BLOCK *****
 -->
-<!-- this is the opera connector. only opera specific stuff here, functionality is shared between browsers -->
+<!-- this is the opera connector. only opera specific stuff here, functionality is shared between browsers 
+     Opera uses same icon instance in every tab/window, so it is created disabled once at startup.
+     icon is enabled same as for chrome -> onTranslators()
+     icon is disabled every time window/tab loses focus. state
+-->
 <html><head>
 <!--SCRIPTS-->
 <script type="text/javascript" src="zotero.js"></script>
@@ -53,12 +57,13 @@ Zotero.Connector_Browser = new function() {
     var _toolBarButton;
 
     //init
-    _toolBarButton = opera.contexts.toolbar.createItem(
-	{ title : "Zotero",
-	  onclick:function(event){doCommand(event);},
-	  icon: "Icon-32.png",
-	  disabled:true,}
-    );
+    _toolBarButton = opera.contexts.toolbar.createItem({ 
+	    title : "Zotero",
+	    onclick:function(event){ Zotero.Connector_Browser.onPageActionClicked(opera.extension.tabs.getFocused()); },
+	    icon: "Icon-32.png",
+	    disabled:true,
+    });
+
     opera.contexts.toolbar.addItem(_toolBarButton);
     
 	/**
@@ -78,15 +83,8 @@ Zotero.Connector_Browser = new function() {
 			translatorName += " via Zotero Standalone";
 		}
 	    //placement of chrome pageActionButton / Opera toolBarButton
-	    // create toolbar button 
-	    _toolBarButton = opera.contexts.toolbar.createItem(
-		{ title : "Save to Zotero ("+translatorName+")",
-		  onclick:function(event){doCommand(event);},
-		  icon: (itemType === "multiple"
-					? "images/treesource-collection.png"
-					: Zotero.ItemTypes.getImageSrc(itemType))}
-	    );
-	    opera.contexts.toolbar.addItem(_toolBarButton);
+	    _toolBarButton.disabled=false;
+	    _toolBarButton.title="save to Zotero ("+translatorName+")";
 	}
 	
 	/**
@@ -121,8 +119,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onPageActionClicked = function(tab) {
 	    Zotero.Debug.log("onPageActionClicked",1);
-		chrome.tabs.sendRequest(tab.id, ["translate",
-				[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
+		tab.postMessage( ["translate",	[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]]);
 	}
 	
 	/**
@@ -144,9 +141,8 @@ Zotero.Connector_Browser = new function() {
 	 * Called if Zotero version is determined to be incompatible with Standalone
 	 */
 	this.onIncompatibleStandaloneVersion = function(zoteroVersion, standaloneVersion) {
-	    	    Zotero.Debug.log("onIncompatibleStandalone",1);
 		if(_incompatibleVersionMessageShown) return;
-		alert('Zotero Connector for Chrome '+zoteroVersion+' is incompatible with the running '+
+		alert('Zotero Connector for Opera '+zoteroVersion+' is incompatible with the running '+
 			'version of Zotero Standalone'+(standaloneVersion ? " ("+standaloneVersion+")" : "")+
 			'. Zotero Connector will continue to operate, but functionality that relies upon '+
 			'Zotero Standalone may be unavaliable.\n\n'+
@@ -154,7 +150,14 @@ Zotero.Connector_Browser = new function() {
 			'http://www.zotero.org/support/standalone for more details.');
 		_incompatibleVersionMessageShown = true;
 	}
-	
+
+	/**
+	  *  Opera only uses one instance for the button so with every focus change we have to update the button state
+	  */
+	this.onFocus = function() {
+		_toolBarButton.disabled = _translatorsForTabIDs[opera.extension.tabs.getSelected().id] ? false : true;
+	}
+
 	/**
 	 * Removes information about a specific tab
 	 */
@@ -165,20 +168,11 @@ Zotero.Connector_Browser = new function() {
 	}
 }
 
-function doCommand(event) {
-    var tab = opera.extension.tabs.getFocused();
-    
-    if (!tab || !tab.port)
-	window.console.log("tab or port is null");
-    else 
-	window.console.log("port is:" +tab.port);
-    Zotero.Connector_Browser.onPageActionClicked(event);
-}
-
-
 //register handlers
 // chrome.pageAction.onClicked.addListener not needed here. is set together with button in "ontranslators()"
 opera.extension.ondisconnect=Zotero.Connector_Browser.onTabRemoved;
+opera.extension.tabs.onfocus = Zotero.Connector_Browser.onFocus;
+opera.extension.windows.onfocus = Zotero.Connector_Browser.onFocus;
 Zotero.initGlobal();
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
 </script></head></html>

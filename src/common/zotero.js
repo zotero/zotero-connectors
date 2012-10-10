@@ -147,7 +147,7 @@ var Zotero = new function() {
 		if(fileName && lineNumber) {
 			console.error(err+" at "+fileName+":"+lineNumber);
 		} else {
-			console.error(err);
+			console.error("zotero.js:159:"+err);
 		}
 		
 		Zotero.Errors.log(err.message ? err.message : err.toString(), fileName, lineNumber);

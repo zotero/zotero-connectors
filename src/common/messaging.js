@@ -98,6 +98,7 @@ Zotero.Messaging = new function() {
 		} else if(Zotero.isSafari) {
 			tab.page.dispatchMessage(messageName, args);
 		} else if(Zotero.isOpera) {
+		    Zotero.debug("BG: postMessage in this.sendMessage:"+messageName);
 		    tab.postMessage([messageName, args]);
 		}
 	}
@@ -156,12 +157,18 @@ Zotero.Messaging = new function() {
 		    opera.extension.onmessage = function(event){
 			var request = event.data;
 			//request->[0]:eventName, [1]:callback, [2]:args
-			Zotero.debug("BG on message:"+request[0]+":"+request[2]);
+			var tab = opera.extension.tabs.getSelected();
+			//Maybe compare (tab.port == event.source) && iterate over opera.extension.tabs
 			Zotero.Messaging.receiveMessage(request[0], request[2], 
 							function(data) {
-							    event.source.postMessage(event.name+MESSAGE_SEPARATOR+"Response",
-										     [request[1], data]);
-							}, event.source);
+							    //Zotero.debug("BG: postMessage in onMessage:"+request[0]);
+							    //somehow the event.source.onmessage is always NULL
+							    // I stand corrected. seems to work
+							    //opera.extension.tabs.getSelected().port.postMessage(
+							    //opera.extension.broadcastMessage(
+							    event.source.postMessage(
+								[request[0]+MESSAGE_SEPARATOR+"Response", request[1], data]);
+							}, tab);
 		    }
 		}
 	}

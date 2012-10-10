@@ -25,11 +25,18 @@
 /*
  * this is Opera specific, uses same mechanics as safari (copy&paste)
  */
-
+var XPathResult = window.XPathResult;
+var XMLHttpRequest = XMLHttpRequest;
 /**
  * @namespace
  * See messages.js for an overview of the message handling process.
  */
+
+//dummy for testing
+opera.extension.ondisconnect=function(event) {
+    Zotero.Errors.log("FG: we got disconnected "+event.data[0]);
+}
+
 Zotero.Messaging = new function() {
 	var _callbacks = {};
 	var _messageListeners = {};
@@ -93,29 +100,30 @@ Zotero.Messaging = new function() {
 
 	    opera.extension.onmessage=function(event) {
 			try {
-				//Zotero.debug("Received message "+event.name);
-				
-				// first see if there is a message listener
-				if(_messageListeners[event.name]) {
-					_messageListeners[event.name](event.message);
+			        //OPERA:   request->[0]:eventName, [1]:callback, [2]:args
+			        //Zotero.debug("FG Received message "+event.data[0]);
+			    
+			        // first see if there is a message listener
+				if(_messageListeners[event.data[0]]) {
+					_messageListeners[event.data[0]](event.data[1]);
 					return;
 				}
 				
 				// next determine original function name
-				var messageParts = event.name.split(MESSAGE_SEPARATOR);
+				var messageParts = event.data[0].split(MESSAGE_SEPARATOR);
 				// if no function matching, message must have been for another instance in this tab
 				if(messageParts.length !== 3 || messageParts[2] !== "Response") return;
 				
 				var ns = messageParts[0];
 				var meth = messageParts[1];
 				
-				var callback = _callbacks[event.message[0]];
+				var callback = _callbacks[event.data[1]];
 				// if no function matching, message must have been for another instance in this tab
 				if(!callback) return;
-				delete _callbacks[event.message[0]];
+				delete _callbacks[event.data[1]];
 				
 				// run postReceive function
-				var response = event.message[1];
+				var response = event.data[2];
 				var messageConfig = MESSAGES[ns][meth];
 				if(messageConfig.postReceive) {
 					response = messageConfig.postReceive.apply(null, response);

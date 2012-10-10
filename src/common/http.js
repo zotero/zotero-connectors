@@ -46,8 +46,12 @@ Zotero.HTTP = new function() {
 		}
 		
 		Zotero.debug("HTTP GET " + url);
-		
+
+	    if (XMLHttpRequest == undefined) // or: if (Zoter.isOpera)
+		var xmlhttp = new window.XMLHttpRequest();
+	    else
 		var xmlhttp = new XMLHttpRequest();
+
 		try {
 			xmlhttp.open('GET', url, true);
 			/** @ignore */
@@ -97,6 +101,9 @@ Zotero.HTTP = new function() {
 				bodyStart + '... (' + body.length + ' chars)' : bodyStart)
 			+ " to " + url);
 		
+	    if (XMLHttpRequest == undefined) // or: if (Zoter.isOpera)
+		var xmlhttp = new window.XMLHttpRequest();
+	    else
 		var xmlhttp = new XMLHttpRequest();
 		try {
 			xmlhttp.open('POST', url, true);

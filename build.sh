@@ -515,8 +515,17 @@ build_opera(){
 	cp $file includes/$new_name
 	((i++))
       done
-    popd  >/dev/null
+    popd >/dev/null
+    
     rm -r $browser_builddir/inject
+    
+    #pack the extension
+    pushd $browser_builddir
+      rm $OPERA_EXT
+      echo `pwd`
+      echo $OPERA_EXT
+      zip -r $OPERA_EXT *
+    popd  >/dev/null
 }
 
 build_opera

@@ -34,7 +34,7 @@ var XMLHttpRequest = XMLHttpRequest;
 
 //dummy for testing
 opera.extension.ondisconnect=function(event) {
-    Zotero.Errors.log("FG: we got disconnected "+event.data[0]);
+    Zotero.Error.log("FG: we got disconnected "+event.data[0]);
 }
 
 Zotero.Messaging = new function() {

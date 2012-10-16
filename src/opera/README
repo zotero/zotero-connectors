@@ -1,5 +1,7 @@
 
 Zotero 3.x Opera connector
+Center for History and New Media
+Opera Connector Martin Haaß <haass@ira.uka.de>
 
 Basic functionality is there ( I mainly save to zotero standalone & don't use the server storage). The unavailable/broken features mostly depend on functions which are not provided by Opera
 

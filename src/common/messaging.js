@@ -77,7 +77,7 @@ Zotero.Messaging = new function() {
 				}
 			}
 			args.push(tab);
-			
+
 			var fn = Zotero[messageParts[0]][messageParts[1]];
 			if(!fn) throw new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
 			fn.apply(Zotero[messageParts[0]], args);
@@ -97,6 +97,9 @@ Zotero.Messaging = new function() {
 			chrome.tabs.sendRequest(tab.id, [messageName, args]);
 		} else if(Zotero.isSafari) {
 			tab.page.dispatchMessage(messageName, args);
+		} else if(Zotero.isOpera) {
+		    Zotero.debug("BG: postMessage in this.sendMessage:"+messageName);
+		    tab.postMessage([messageName, args]);
 		}
 	}
 	
@@ -104,6 +107,7 @@ Zotero.Messaging = new function() {
 	 * Adds messaging listener
 	 */
 	this.init = function() {
+	    Zotero.debug("DB add listener for:");
 		if(Zotero.isBookmarklet) {
 			var listener = function(event) {
 				var data = event.data, source = event.source;
@@ -149,6 +153,23 @@ Zotero.Messaging = new function() {
 							[event.message[0], data], tab);
 				}, tab);
 			}, false);
+		} else if(Zotero.isOpera) {
+		    opera.extension.onmessage = function(event){
+			var request = event.data;
+			//request->[0]:eventName, [1]:callback, [2]:args
+			var tab = opera.extension.tabs.getSelected();
+			//Maybe compare (tab.port == event.source) && iterate over opera.extension.tabs
+			Zotero.Messaging.receiveMessage(request[0], request[2], 
+							function(data) {
+							    //Zotero.debug("BG: postMessage in onMessage:"+request[0]);
+							    //somehow the event.source.onmessage is always NULL
+							    // I stand corrected. seems to work
+							    //opera.extension.tabs.getSelected().port.postMessage(
+							    //opera.extension.broadcastMessage(
+							    event.source.postMessage(
+								[request[0]+MESSAGE_SEPARATOR+"Response", request[1], data]);
+							}, tab);
+		    }
 		}
 	}
 	

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" id="zotero">
+  <name>Zotero Connector</name>
+  <author>Center for History and New Media</author>
+  <description>Allows to save Documents to Zotero. Connects to Zotero Standalone >=3.0 </description>
+  
+  <content src="global.html"/>
+
+  <feature name="opera:contextmenus"/>
+
+  <icon src="Icon-64.png"/>
+
+  <access origin="https://repo.zotero.org/" subdomains="true" />
+  <access origin="http://127.0.0.1:23119/" subdomains="true" />
+</widget>

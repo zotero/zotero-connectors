@@ -31,6 +31,8 @@
  *
  * If the value in the JSON below is not false, then the function accepts a callback.
  *
+ * In Opera we follow the Safari scheme but replace tabID with MessagePort Object atm. 
+ *
  * In Chrome, the message passing takes place according to the following sequence:
  *  1. Injected script calls Zotero.NAMESPACE.METHOD(ARGS, CALLBACK)
  *  2. Injected script sends [NAMESPACE+MESSAGE_SEPARATOR+METHOD, [ARGS]]

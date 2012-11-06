@@ -30,6 +30,8 @@ var Zotero = new function() {
 	this.isSafari = window.navigator.userAgent.indexOf("Safari/") !== -1 && !this.isChrome;
 	this.isWebKit = window.navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
 	this.isIE = window.navigator.appName === "Microsoft Internet Explorer";
+    this.isOpera = window.opera !== undefined;
+
 	this.version = "3.0.4";
 	
 	if(this.isFx) {
@@ -116,11 +118,14 @@ var Zotero = new function() {
 		// Chrome only gives a stack
 		if(!fileName && !lineNumber && err.stack) {
 			const stackRe = /^\s+at (?:[^(\n]* \()?([^\n]*):([0-9]+):([0-9]+)\)?$/m;
+		    const stackReOpera = /@(.*):([0-9]+)$/m;
 			var m = stackRe.exec(err.stack);
-			if(m) {
+		    if(!m)  //Opera? slightly different stack format
+			m = stackReOpera.exec(err.stack);
+		    if(m) {
 				fileName = m[1];
 				lineNumber = m[2];
-			}
+			} 
 		}
 		
 		if(!fileName && !lineNumber && Zotero.isIE && typeof err === "object") {
@@ -142,7 +147,7 @@ var Zotero = new function() {
 		if(fileName && lineNumber) {
 			console.error(err+" at "+fileName+":"+lineNumber);
 		} else {
-			console.error(err);
+			console.error("zotero.js:159:"+err);
 		}
 		
 		Zotero.Errors.log(err.message ? err.message : err.toString(), fileName, lineNumber);
@@ -165,6 +170,10 @@ Zotero.Prefs = new function() {
 	};
 	
 	this.get = function(pref) {
+	    if ( typeof localStorage === "undefined") {
+		Zotero.debug("Zotero.Prefs: no localStorage. using defaults. Opera Problem FIX ME");
+		return DEFAULTS[pref];
+	    }
 		if(localStorage["pref-"+pref]) return JSON.parse(localStorage["pref-"+pref]);
 		if(DEFAULTS.hasOwnProperty(pref)) return DEFAULTS[pref];
 		throw "Zotero.Prefs: Invalid preference "+pref;

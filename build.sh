@@ -79,7 +79,8 @@ EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 
 SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
 CHROME_EXT="$DISTDIR/Zotero_Connector-$VERSION.crx"
-
+OPERA_EXT=""$DISTDIR/Zotero_Connector-$VERSION.oex"
+"
 ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-z-16px.png"
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png"
@@ -112,6 +113,9 @@ INJECT_INCLUDE=('zotero.js' \
 # Scripts to be included in one browser only
 INJECT_INCLUDE_CHROME=('api.js')
 INJECT_INCLUDE_SAFARI=()
+# OPERA FIX ME: is it needed?
+INJECT_INCLUDE_OPERA=('inject_opera.js' \
+    'api.js')
 
 if [ ! -z $DEBUG ]; then
 	INJECT_INCLUDE_LAST=('tools/testTranslators/translatorTester_messages.js' \
@@ -204,14 +208,15 @@ BOOKMARKLET_AUXILIARY_JS=( \
 rm -f "$LOG"
 
 # Remove old build directories
-rm -rf "$BUILDDIR/chrome" "$BUILDDIR/safari.safariextension" "$BUILDDIR/bookmarklet"
+rm -rf "$BUILDDIR/chrome" "$BUILDDIR/safari.safariextension" "$BUILDDIR/bookmarklet" "$BUILDDIR/opera"
 
 # Make directories if they don't exist
 for dir in "$DISTDIR" \
 	"$BUILDDIR" \
 	"$BUILDDIR/safari.safariextension" \
 	"$BUILDDIR/chrome" \
-	"$BUILDDIR/bookmarklet"; do
+	"$BUILDDIR/bookmarklet" \
+        "$BUILDDIR/opera"  ; do
 	if [ ! -d "$dir" ]; then
 		mkdir "$dir"
 	fi
@@ -242,16 +247,17 @@ fi
 cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
 	"$BUILDDIR/safari.safariextension"
 
-# Copy images for Chrome
-rm -rf "$BUILDDIR/chrome/images"
-mkdir "$BUILDDIR/chrome/images"
-cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/chrome/images"
-cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILDDIR/chrome"
-
+# Copy images for Opera & Chrome
+for browser in "chrome" "opera"; do
+    rm -rf "$BUILDDIR/$browser/images"
+    mkdir "$BUILDDIR/$browser/images"
+    cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/$browser/images"
+    cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILDDIR/$browser"
+done
 globalScripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${GLOBAL_INCLUDE[@]}")
 
-# Copy translation-related resources for Chrome/Safari
-for browser in "chrome" "safari"; do
+# Copy translation-related resources for Opera/Chrome/Safari
+for browser in "chrome" "safari" "opera"; do
 	if [ "$browser" == "safari" ]; then
 		browser_builddir="$BUILDDIR/safari.safariextension"
 	else
@@ -378,8 +384,9 @@ else
 	echo "No Safari certificate found; not building Safari extension"
 fi
 
-echo -n "Building bookmarklet..."
 
+build_bookmarklet() {
+echo -n "Building bookmarklet..."
 # Make bookmarklet
 for scpt in "iframe" "common" "inject"
 do
@@ -485,3 +492,44 @@ rm -rf "$BUILDDIR/bookmarklet/images"
 mkdir "$BUILDDIR/bookmarklet/images"
 cp $ICONS $IMAGES "$BUILDDIR/bookmarklet/images"
 echo "done"
+}
+
+
+#build_bookmarklet
+
+build_opera(){
+    echo "Building Opera Extension"
+    browser_builddir="$BUILDDIR/opera"
+    
+    #Fixups for Opera
+
+    #for development scripts are hardcoded - remove those
+    sed -i  '{/<!--DEVELOP-->/,/<!--DEVELOP END-->/d}' "$browser_builddir/global.html"
+
+    # preferences is called options
+    pushd $browser_builddir >/dev/null
+      mv preferences/* .
+      mv preferences.html options.html
+      rm -r preferences/
+
+      #inject scripts are loaded in alphabetical order *duh* from ./includes 
+      i=0
+      for file in ${INJECT_INCLUDE[@]} ${INJECT_INCLUDE_LAST[@]}; do
+	new_name=`printf "%02d" $i`.${file//\//.}
+	cp $file includes/$new_name
+	((i++))
+      done
+    popd >/dev/null
+    
+    rm -r $browser_builddir/inject
+    
+    #pack the extension
+    pushd $browser_builddir
+      rm $OPERA_EXT
+      echo `pwd`
+      echo $OPERA_EXT
+      zip -r $OPERA_EXT *
+    popd  >/dev/null
+}
+
+build_opera

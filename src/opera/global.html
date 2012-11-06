@@ -1,0 +1,214 @@
+﻿<!--
+	***** BEGIN LICENSE BLOCK *****
+	
+	Copyright © 2010 Center for History and New Media
+					 George Mason University, Fairfax, Virginia, USA
+					 http://zotero.org
+	
+	This file is part of Zotero.
+	
+	Zotero is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+	
+	Zotero is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+	
+	You should have received a copy of the GNU General Public License
+	along with Zotero.  If not, see <http://www.gnu.org/licenses/>.
+	
+	***** END LICENSE BLOCK *****
+-->
+<!-- this is the opera connector. only opera specific stuff here, functionality is shared between browsers 
+     Opera uses same icon instance in every tab/window, so it is created disabled once at startup.
+     icon is enabled same as for chrome -> onTranslators()
+     icon is disabled every time window/tab loses focus. state
+-->
+<html><head>
+<!--SCRIPTS-->
+<!--DEVELOP-->
+<script type="text/javascript" src="zotero.js"></script>
+<script type="text/javascript" src="zotero_config.js"></script>
+<script type="text/javascript" src="errors_webkit.js"></script>
+<script type="text/javascript" src="api.js"></script>
+<script type="text/javascript" src="http.js"></script>
+<script type="text/javascript" src="oauthsimple.js"></script>
+<script type="text/javascript" src="zotero/connector/connector.js"></script>
+<script type="text/javascript" src="zotero/connector/cachedTypes.js"></script>
+<script type="text/javascript" src="zotero/date.js"></script>
+<script type="text/javascript" src="zotero/debug.js"></script>
+<script type="text/javascript" src="zotero/openurl.js"></script>
+<script type="text/javascript" src="zotero/connector/repo.js"></script>
+<script type="text/javascript" src="zotero/translation/tlds.js"></script>
+<script type="text/javascript" src="zotero/connector/translator.js"></script>
+<script type="text/javascript" src="zotero/connector/typeSchemaData.js"></script>
+<script type="text/javascript" src="zotero/utilities.js"></script>
+<script type="text/javascript" src="messages.js"></script>
+<script type="text/javascript" src="messaging.js"></script>
+<!--DEVELOP END-->
+<script type="text/javascript">
+Zotero.Connector_Browser = new function() {
+	var _translatorsForTabIDs = {};
+	var _instanceIDsForTabs = {};
+	var _selectCallbacksForTabIDs = {};
+	var _incompatibleVersionMessageShown;
+	var _toolBarButton;
+	var _standaloneRecheckTimer = 5000;
+
+	//init
+	_toolBarButton = opera.contexts.toolbar.createItem({ 
+	    title : "Zotero",
+		onclick:function(event){ Zotero.Connector_Browser.onPageActionClicked(opera.extension.tabs.getFocused()); },
+		icon: "Icon-48.png",
+		disabled:false,
+	});
+	opera.contexts.toolbar.addItem(_toolBarButton);
+
+        if (opera.contexts.menu) {
+                //create main menu entry
+                var main = opera.contexts.menu.createItem({
+                        title: 'Zotero',
+                        type: 'folder',
+                });
+                // Create context menu button
+                var context_button = opera.contexts.menu.createItem({
+                        title: 'Save Zotero Snapshot from Current Page',
+                        onclick: function(event) {
+                                var tab = opera.extension.tabs.getSelected();
+                                tab.postMessage( ["saveSnapshot", null] );
+                        }
+                });
+
+                main.addItem(context_button);
+                opera.contexts.menu.addItem(main);
+        }
+
+	/**
+	 * Called when translators are available for a given page
+	 */
+	this.onTranslators = function(translators, instanceID, tab) {
+		Zotero.Debug.log("onTranslators",1);
+		//generic code
+		var oldTranslators = _translatorsForTabIDs[tab.id];
+		if(oldTranslators && oldTranslators.length
+		   && (!translators.length || oldTranslators[0].priority <= translators[0].priority)) return;
+		_translatorsForTabIDs[tab.id] = translators;
+		_instanceIDsForTabs[tab.id] = instanceID;
+		_updateToolbarButton(translators);
+	}
+
+	/**
+	 * Called to display select items dialog
+	 */
+	this.onSelect = function(items, callback, tab) {
+	    Zotero.Debug.log("onSelect",1);
+		window.open(chrome.extension.getURL("itemSelector/itemSelector.html")+"#"+encodeURIComponent(JSON.stringify([tab.id, items])), '',
+		'height=325,width=500,location=no,toolbar=no,menubar=no,status=no');
+		_selectCallbacksForTabIDs[tab.id] = callback;
+	}
+	
+	/**
+	 * Called when select items dialog is closed to pass data back to injected script
+	 */
+	this.onSelectDone = function(data) {
+	    Zotero.Debug.log("onSelectDone",1);
+		_selectCallbacksForTabIDs[data[0]](data[1]);
+	}
+	
+	/**
+	 * Called when a tab is removed or the URL has changed
+	 */
+	this.onTabRemoved = _clearInfoForTab;
+	this.onPageLoad = function(tab) {
+	    Zotero.Debug.log("onPageLoad",1);
+		_clearInfoForTab(tab.id);
+	}
+	
+	/**
+	 * Called when the page action button has been clicked
+	 */
+	this.onPageActionClicked = function(tab) {
+	    Zotero.Debug.log("onPageActionClicked",1);
+		tab.postMessage( ["translate",	[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]]);
+	}
+	
+	/**
+	 * Called when Zotero goes online or offline
+	 */
+	this.onStateChange = function() {
+	    Zotero.Debug.log("onStateChange",1);
+	    /*
+	    if(!Zotero.Connector.isOnline) {
+		_toolBarButton.disabled = true;
+		_toolBarButton.title = _toolBarButton.title +" offline";
+		//start timer to recheck zotero state
+		var _state;
+		setTimeout(function() {
+		    Zotero.Connector.checkIsOnline(function(state){_state=state;});
+		},_standaloneRecheckTimer);
+	    } else {
+		_toolBarButton.disabled = false;
+		_toolBarButton.title = _toolBarButton.title.replace(" offline","");
+	    }
+	    */
+	}
+	
+	/**
+	 * Called if Zotero version is determined to be incompatible with Standalone
+	 */
+	this.onIncompatibleStandaloneVersion = function(zoteroVersion, standaloneVersion) {
+		if(_incompatibleVersionMessageShown) return;
+		alert('Zotero Connector for Opera '+zoteroVersion+' is incompatible with the running '+
+			'version of Zotero Standalone'+(standaloneVersion ? " ("+standaloneVersion+")" : "")+
+			'. Zotero Connector will continue to operate, but functionality that relies upon '+
+			'Zotero Standalone may be unavaliable.\n\n'+
+			'Please ensure that you have installed the latest version of these components. See '+
+			'http://www.zotero.org/support/standalone for more details.');
+		_incompatibleVersionMessageShown = true;
+	}
+
+	/**
+	  *  Opera only uses one instance for the button so with every focus change we have to update the button state
+	  */
+	this.onFocus = function() {
+		_translators = _translatorsForTabIDs[opera.extension.tabs.getSelected().id];
+		_updateToolbarButton(_translators);
+	}
+
+	function _updateToolbarButton(translators) {
+		if ( translators == null) {
+			_toolBarButton.disabled=false;
+			_toolBarButton.title="no translator";
+		} else {
+			var itemType = translators[0].itemType;
+			var translatorName = translators[0].label;
+			if(translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
+				translatorName += " via Zotero Standalone";
+			}
+			//update Opera toolBarButton
+			_toolBarButton.disabled=false;
+			_toolBarButton.title="save to Zotero ("+translatorName+")";
+		}
+	}
+
+	/**
+	 * Removes information about a specific tab
+	 */
+	function _clearInfoForTab(tabID) {
+		delete _translatorsForTabIDs[tabID];
+		delete _instanceIDsForTabs[tabID];
+		delete _selectCallbacksForTabIDs[tabID];
+	}
+}
+
+//register handlers
+// chrome.pageAction.onClicked.addListener not needed here. is set together with button in "ontranslators()"
+opera.extension.ondisconnect=Zotero.Connector_Browser.onTabRemoved;
+opera.extension.tabs.onfocus = Zotero.Connector_Browser.onFocus;
+opera.extension.windows.onfocus = Zotero.Connector_Browser.onFocus;
+Zotero.initGlobal();
+Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
+</script></head></html>

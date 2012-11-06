@@ -6,7 +6,7 @@
   
   <content src="global.html"/>
   <icon src="Icon-64.png"/>
-  
+
   <access origin="https://repo.zotero.org/" subdomains="true" />
   <access origin="http://127.0.0.1:23119/" subdomains="true" />
 </widget>

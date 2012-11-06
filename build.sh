@@ -502,6 +502,10 @@ build_opera(){
     browser_builddir="$BUILDDIR/opera"
     
     #Fixups for Opera
+
+    #for development scripts are hardcoded - remove those
+    sed -i  '{/<!--DEVELOP-->/,/<!--DEVELOP END-->/d}' "$browser_builddir/global.html"
+
     # preferences is called options
     pushd $browser_builddir >/dev/null
       mv preferences/* .

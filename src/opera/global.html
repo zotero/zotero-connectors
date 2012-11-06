@@ -29,46 +29,59 @@
 -->
 <html><head>
 <!--SCRIPTS-->
-
+<!--DEVELOP-->
+<script type="text/javascript" src="zotero.js"></script>
+<script type="text/javascript" src="zotero_config.js"></script>
+<script type="text/javascript" src="errors_webkit.js"></script>
+<script type="text/javascript" src="api.js"></script>
+<script type="text/javascript" src="http.js"></script>
+<script type="text/javascript" src="oauthsimple.js"></script>
+<script type="text/javascript" src="zotero/connector/connector.js"></script>
+<script type="text/javascript" src="zotero/connector/cachedTypes.js"></script>
+<script type="text/javascript" src="zotero/date.js"></script>
+<script type="text/javascript" src="zotero/debug.js"></script>
+<script type="text/javascript" src="zotero/openurl.js"></script>
+<script type="text/javascript" src="zotero/connector/repo.js"></script>
+<script type="text/javascript" src="zotero/translation/tlds.js"></script>
+<script type="text/javascript" src="zotero/connector/translator.js"></script>
+<script type="text/javascript" src="zotero/connector/typeSchemaData.js"></script>
+<script type="text/javascript" src="zotero/utilities.js"></script>
+<script type="text/javascript" src="messages.js"></script>
+<script type="text/javascript" src="messaging.js"></script>
+<!--DEVELOP END-->
 <script type="text/javascript">
 Zotero.Connector_Browser = new function() {
-    var _translatorsForTabIDs = {};
-    var _instanceIDsForTabs = {};
-    var _selectCallbacksForTabIDs = {};
-    var _incompatibleVersionMessageShown;
-    var _toolBarButton;
+	var _translatorsForTabIDs = {};
+	var _instanceIDsForTabs = {};
+	var _selectCallbacksForTabIDs = {};
+	var _incompatibleVersionMessageShown;
+	var _toolBarButton;
+	var _standaloneRecheckTimer = 5000;
 
-    //init
-    _toolBarButton = opera.contexts.toolbar.createItem({ 
+	//init
+	_toolBarButton = opera.contexts.toolbar.createItem({ 
 	    title : "Zotero",
-	    onclick:function(event){ Zotero.Connector_Browser.onPageActionClicked(opera.extension.tabs.getFocused()); },
-	    icon: "Icon-48.png",
-	    disabled:true,
-    });
+		onclick:function(event){ Zotero.Connector_Browser.onPageActionClicked(opera.extension.tabs.getFocused()); },
+		icon: "Icon-48.png",
+		disabled:false,
+	});
+	opera.contexts.toolbar.addItem(_toolBarButton);
+	
 
-    opera.contexts.toolbar.addItem(_toolBarButton);
-    
 	/**
 	 * Called when translators are available for a given page
 	 */
 	this.onTranslators = function(translators, instanceID, tab) {
-	    Zotero.Debug.log("onTranslators",1);
-	    //generic code
+		Zotero.Debug.log("onTranslators",1);
+		//generic code
 		var oldTranslators = _translatorsForTabIDs[tab.id];
 		if(oldTranslators && oldTranslators.length
-			&& (!translators.length || oldTranslators[0].priority <= translators[0].priority)) return;
+		   && (!translators.length || oldTranslators[0].priority <= translators[0].priority)) return;
 		_translatorsForTabIDs[tab.id] = translators;
 		_instanceIDsForTabs[tab.id] = instanceID;
-		var itemType = translators[0].itemType;
-		var translatorName = translators[0].label;
-		if(translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
-			translatorName += " via Zotero Standalone";
-		}
-	    //placement of chrome pageActionButton / Opera toolBarButton
-	    _toolBarButton.disabled=false;
-	    _toolBarButton.title="save to Zotero ("+translatorName+")";
+		_updateToolbarButton(translators);
 	}
-	
+
 	/**
 	 * Called to display select items dialog
 	 */
@@ -109,14 +122,20 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onStateChange = function() {
 	    Zotero.Debug.log("onStateChange",1);
-		if(!Zotero.Connector.isOnline) {
-		    _toolBarButton.disabled = true;
-		    _toolBarButton.title = _toolBarButton.title +" offline";
-		    
-		} else {
-		    _toolBarButton.disabled = false;
-		    _toolBarButton.title = _toolBarButton.title.replace(" offline","");
-		}
+	    /*
+	    if(!Zotero.Connector.isOnline) {
+		_toolBarButton.disabled = true;
+		_toolBarButton.title = _toolBarButton.title +" offline";
+		//start timer to recheck zotero state
+		var _state;
+		setTimeout(function() {
+		    Zotero.Connector.checkIsOnline(function(state){_state=state;});
+		},_standaloneRecheckTimer);
+	    } else {
+		_toolBarButton.disabled = false;
+		_toolBarButton.title = _toolBarButton.title.replace(" offline","");
+	    }
+	    */
 	}
 	
 	/**
@@ -137,7 +156,24 @@ Zotero.Connector_Browser = new function() {
 	  *  Opera only uses one instance for the button so with every focus change we have to update the button state
 	  */
 	this.onFocus = function() {
-		_toolBarButton.disabled = _translatorsForTabIDs[opera.extension.tabs.getSelected().id] ? false : true;
+		_translators = _translatorsForTabIDs[opera.extension.tabs.getSelected().id];
+		_updateToolbarButton(_translators);
+	}
+
+	function _updateToolbarButton(translators) {
+		if ( translators == null) {
+			_toolBarButton.disabled=false;
+			_toolBarButton.title="no translator";
+		} else {
+			var itemType = translators[0].itemType;
+			var translatorName = translators[0].label;
+			if(translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
+				translatorName += " via Zotero Standalone";
+			}
+			//update Opera toolBarButton
+			_toolBarButton.disabled=false;
+			_toolBarButton.title="save to Zotero ("+translatorName+")";
+		}
 	}
 
 	/**

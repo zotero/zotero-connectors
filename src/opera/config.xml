@@ -5,6 +5,9 @@
   <description>Allows to save Documents to Zotero. Connects to Zotero Standalone >=3.0 </description>
   
   <content src="global.html"/>
+
+  <feature name="opera:contextmenus"/>
+
   <icon src="Icon-64.png"/>
 
   <access origin="https://repo.zotero.org/" subdomains="true" />

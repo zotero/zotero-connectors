@@ -66,7 +66,25 @@ Zotero.Connector_Browser = new function() {
 		disabled:false,
 	});
 	opera.contexts.toolbar.addItem(_toolBarButton);
-	
+
+        if (opera.contexts.menu) {
+                //create main menu entry
+                var main = opera.contexts.menu.createItem({
+                        title: 'Zotero',
+                        type: 'folder',
+                });
+                // Create context menu button
+                var context_button = opera.contexts.menu.createItem({
+                        title: 'Save Zotero Snapshot from Current Page',
+                        onclick: function(event) {
+                                var tab = opera.extension.tabs.getSelected();
+                                tab.postMessage( ["saveSnapshot", null] );
+                        }
+                });
+
+                main.addItem(context_button);
+                opera.contexts.menu.addItem(main);
+        }
 
 	/**
 	 * Called when translators are available for a given page

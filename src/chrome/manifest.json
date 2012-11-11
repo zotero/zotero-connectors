@@ -1,23 +1,35 @@
 {
 	"name": "Zotero Connector",
+	"manifest_version": 2,
 	"version": "3.0.3",
 	"description": "Saves references to Zotero from Chrome",
 	"page_action": {
 		"default_icon": "images/zotero-z-16px.png",
 		"default_title": "Save to Zotero"
 	},
-	"background_page": "global.html",
 	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus"],
+	"background": {
+		"scripts": [
+			/*BACKGROUND SCRIPTS*/
+			"background.js"
+		],
+		"persistent": true
+	},
 	"content_scripts": [
 		{
 			"matches": ["http://*/*", "https://*/*"],
 			"js": [
-				/*SCRIPTS*/
+				/*INJECT SCRIPTS*/
 			],
 			"run_at": "document_idle",
 			"all_frames": true
 		}
 	],
+	"web_accessible_resources": [
+		/*WEB ACCESSIBLE RESOURCES*/
+	],
+	"content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+	"homepage_url": "http://www.zotero.org/",
 	"icons": {
 		"16": "Icon-16.png",
 		"48": "Icon-48.png",

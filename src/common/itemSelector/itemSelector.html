@@ -26,25 +26,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
 		<link rel="stylesheet" type="text/css" media="screen" href="itemSelector.css" />
+		<title>Zotero Item Selector</title>
+	</head>
+	<body>
+		<div id="label">Select which items you'd like to add to your library:</div>
+		<div id="item-selector"></div>
+		<div id="buttons">
+			<div id="select-deselect">
+				<input type="submit" id="select" value="Select All"/>
+				<input type="submit" id="deselect" value="Deselect All"/>
+			</div>
+			<div id="cancel-ok">
+				<input type="submit" value="Cancel" id="cancel"/>
+				<input type="submit" value="OK" id="ok"/>
+			</div>
+		</div>
 		<script type="text/javascript" src="itemSelector_browserSpecific.js"></script>
 		<script type="text/javascript" src="itemSelector.js"></script>
 		<!--[if IE]>
 		<script type="text/javascript" src="ie_compat.js"></script>
 		<![endif]-->
-		<title>Zotero Item Selector</title>
-	</head>
-	<body onload="load()" onbeforeunload="cancel()">
-		<div id="label">Select which items you'd like to add to your library:</div>
-		<div id="item-selector"></div>
-		<div id="buttons">
-			<div id="select-deselect">
-				<input type="submit" id="select" value="Select All" onclick="setAllCheckStates(true)"/>
-				<input type="submit" id="deselect" value="Deselect All" onclick="setAllCheckStates(false)"/>
-			</div>
-			<div id="cancel-ok">
-				<input type="submit" value="Cancel" id="cancel" onclick="cancel()"/>
-				<input type="submit" value="OK" id="accept" onclick="ok()"/>
-			</div>
-		</div>
 	</body>
 </html>

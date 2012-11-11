@@ -261,4 +261,29 @@ function openTranslatorTester() {
 	}
 }
 
+document.getElementById("general-button-update-standalone-status").onclick = updateStandaloneStatus;
+document.getElementById("general-button-authorize").onclick = 
+	document.getElementById("general-button-reauthorize").onclick = authorize;
+document.getElementById("general-button-clear-credentials").onclick = clearCredentials;
+document.getElementById("general-checkbox-automaticSnapshots").onchange =
+	function() { Zotero.Prefs.set('automaticSnapshots', this.checked) };
+document.getElementById("general-checkbox-downloadAssociatedFiles").onchange =
+	function() { Zotero.Prefs.set('downloadAssociatedFiles', this.checked) };
+document.getElementById("general-button-report-errors").onclick = submitErrors;
+
+document.getElementById("advanced-checkbox-enable-logging").onchange =
+	function() { Zotero.Debug.setStore(this.checked); };
+document.getElementById("advanced-checkbox-enable-at-startup").onchange =
+	function() { Zotero.Prefs.set('debug.store', this.checked); };
+document.getElementById("advanced-checkbox-show-in-console").onchange =
+	function() { Zotero.Prefs.set('debug.log', this.checked); };
+document.getElementById("advanced-button-view-output").onclick = viewDebugOutput;
+document.getElementById("advanced-button-clear-output").onclick = clearDebugOutput;
+document.getElementById("advanced-button-submit-output").onclick = submitDebugOutput;
+document.getElementById("advanced-button-update-translators").onclick = function() { Zotero.Repo.update(false) };
+document.getElementById("advanced-button-reset-translators").onclick = function() { Zotero.Repo.update(true) };
+
+var openTranslatorTester = document.getElementById("advanced-button-open-translator-tester");
+if(openTranslatorTester) openTranslatorTester.onclick = openTranslatorTester;
+
 window.addEventListener("load", onLoad, false);

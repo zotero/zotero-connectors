@@ -31,7 +31,7 @@ var responseSent = false;
 /**
  * Called when item selector is loaded
  */
-function load(event) {
+function load() {
 	// decode JSON-ized data regading items to save
 	var queryArg = window.location.hash.substr(1);
 	var data = JSON.parse(decodeURIComponent(queryArg));
@@ -62,6 +62,8 @@ function load(event) {
 		
 		itemSelector.appendChild(item);
 	}
+	
+	window.onbeforeunload = cancel;
 }
 
 /**
@@ -101,3 +103,10 @@ function setAllCheckStates(state) {
 function makeClickHandler(checkbox) {
 	return function() { checkbox.checked = !checkbox.checked };
 }
+
+// "Inline JavaScript will not be executed." Thanks, Google, for this mess.
+document.getElementById("select").onclick = function() { setAllCheckStates(true) };
+document.getElementById("deselect").onclick = function() { setAllCheckStates(true) };
+document.getElementById("ok").onclick = ok;
+document.getElementById("cancel").onclick = cancel;
+load();

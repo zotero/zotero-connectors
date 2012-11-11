@@ -123,7 +123,7 @@ else
 fi
 
 # Scripts to be included in background page
-GLOBAL_INCLUDE=('zotero.js' \
+BACKGROUND_INCLUDE=('zotero.js' \
 	'zotero_config.js' \
 	'errors_webkit.js' \
 	'api.js' \
@@ -142,7 +142,7 @@ GLOBAL_INCLUDE=('zotero.js' \
 	'messages.js' \
 	'messaging.js')
 if [ ! -z $DEBUG ]; then
-	GLOBAL_INCLUDE=("${GLOBAL_INCLUDE[@]}" \
+	BACKGROUND_INCLUDE=("${BACKGROUND_INCLUDE[@]}" \
 		'tools/testTranslators/translatorTester_messages.js' \
 		'tools/testTranslators/translatorTester.js' \
 		'tools/testTranslators/translatorTester_global.js')
@@ -151,9 +151,6 @@ fi
 INJECT_END_CHROME='\t\t\t\],'
 INJECT_BEGIN_SAFARI='<key>Scripts<\/key>\n\t\t<dict>\n\t\t\t<key>End<\/key>\n\t\t\t<array>'
 INJECT_END_SAFARI='\t\t\t<\/array>'
-
-GLOBAL_BEGIN='<!--BEGIN GLOBAL SCRIPTS-->'
-GLOBAL_END='<!--END GLOBAL SCRIPTS-->'
 
 # Scripts to be included in bookmarklet
 BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
@@ -248,7 +245,6 @@ mkdir "$BUILDDIR/chrome/images"
 cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/chrome/images"
 cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILDDIR/chrome"
 
-globalScripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${GLOBAL_INCLUDE[@]}")
 
 # Copy translation-related resources for Chrome/Safari
 for browser in "chrome" "safari"; do
@@ -270,9 +266,6 @@ for browser in "chrome" "safari"; do
 	find . -not \( -name ".?*" -prune \) -not -name "." -type d -exec mkdir -p "$browser_builddir/"{} \;
 	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$browser_builddir/"{} \;
 	popd > /dev/null
-	
-	# Update global scripts
-	perl -000 -pe "s|<!--SCRIPTS-->|\\n$globalScripts|s" "$browser_srcdir/global.html" > "$browser_builddir/global.html"
 	
 	# Comment/uncomment debug code in preferences
 	if [ ! -z $DEBUG ]; then
@@ -307,15 +300,23 @@ for browser in "chrome" "safari"; do
 		rm -rf "$browser_builddir/tools"
 	fi
 done
+	
+# Update Safari global scripts
 
 # Update Chrome manifest.json
 inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_CHROME[@]}" "${INJECT_INCLUDE_LAST[@]}")
-scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${inject_scripts[@]}")
-perl -pe 's|/\*SCRIPTS\*/|'"${scripts:8:$((${#scripts}-11))}|s" "$SRCDIR/chrome/manifest.json" \
-| perl -p -e 's|("version":\s*)"[^"]*"|$1"'"$VERSION"'"|' \
+inject_scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${inject_scripts[@]}")
+background_scripts=$(printf '\\t\\t\\t"%s",\\n' "${BACKGROUND_INCLUDE[@]}")
+web_accessible_resources=$(basename $ICONS $IMAGES | perl -pe 's/\n/",\n\t\t"images\//')
+perl -pe 's|/\*BACKGROUND SCRIPTS\*/|'"${background_scripts:6:$((${#background_scripts}-8))}|s" "$SRCDIR/chrome/manifest.json" \
+| perl -pe 's|/\*INJECT SCRIPTS\*/|'"${inject_scripts:8:$((${#inject_scripts}-11))}|s" \
+| perl -pe 's|("version":\s*)"[^"]*"|$1"'"$VERSION"'"|' \
+| perl -pe 's|/\*WEB ACCESSIBLE RESOURCES\*/|"images/'"${web_accessible_resources:4:$((${#web_accessible_resources}-16))}|s" \
 > "$BUILDDIR/chrome/manifest.json"
 
 # Update Safari Info.plist
+global_scripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${BACKGROUND_INCLUDE[@]}")
+perl -000 -pe "s|<!--SCRIPTS-->|\\n${global_scripts}|s" "$SRCDIR/safari/global.html" > "$BUILDDIR/safari.safariextension/global.html"
 inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_SAFARI[@]}" "${INJECT_INCLUDE_LAST[@]}")
 scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${inject_scripts[@]}")
 perl -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/Info.plist" \

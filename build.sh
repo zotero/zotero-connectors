@@ -307,11 +307,15 @@ done
 inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_CHROME[@]}" "${INJECT_INCLUDE_LAST[@]}")
 inject_scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${inject_scripts[@]}")
 background_scripts=$(printf '\\t\\t\\t"%s",\\n' "${BACKGROUND_INCLUDE[@]}")
-web_accessible_resources=$(basename $ICONS $IMAGES | perl -pe 's/\n/",\n\t\t"images\//')
+web_accessible_resources=''
+for img in $ICONS $IMAGES; do
+	web_accessible_resources="$web_accessible_resources"'		"images/'"`basename \"$img\"`"'",
+'
+done
 perl -pe 's|/\*BACKGROUND SCRIPTS\*/|'"${background_scripts:6:$((${#background_scripts}-8))}|s" "$SRCDIR/chrome/manifest.json" \
 | perl -pe 's|/\*INJECT SCRIPTS\*/|'"${inject_scripts:8:$((${#inject_scripts}-11))}|s" \
 | perl -pe 's|("version":\s*)"[^"]*"|$1"'"$VERSION"'"|' \
-| perl -pe 's|/\*WEB ACCESSIBLE RESOURCES\*/|"images/'"${web_accessible_resources:4:$((${#web_accessible_resources}-16))}|s" \
+| perl -pe 's|/\*WEB ACCESSIBLE RESOURCES\*/|'"${web_accessible_resources:2:$((${#web_accessible_resources}-4))}|s" \
 > "$BUILDDIR/chrome/manifest.json"
 
 # Update Safari Info.plist

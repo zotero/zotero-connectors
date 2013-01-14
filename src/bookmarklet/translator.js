@@ -344,7 +344,7 @@ Zotero.Translators.CodeGetter.prototype.getCodeFor = function(i) {
 var TRANSLATOR_REQUIRED_PROPERTIES = ["translatorID", "translatorType", "label", "creator", "target",
 		"priority", "lastUpdated"];
 var TRANSLATOR_PASSING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["displayOptions", "configOptions",
-		"browserSupport", "code", "runMode"]);
+		"hiddenPrefs", "browserSupport", "code", "runMode"]);
 var TRANSLATOR_SAVE_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["browserSupport"]);
 /**
  * @class Represents an individual translator
@@ -362,8 +362,11 @@ var TRANSLATOR_SAVE_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["browser
  *     c = Google Chrome (WebKit & V8)
  *     s = Safari (WebKit & Nitro/Squirrelfish Extreme)
  *     i = Internet Explorer
+ *     b = Bookmarklet
+ *     v = Server (requires server translation when using a bookmarklet)
  * @property {Object} configOptions Configuration options for import/export
  * @property {Object} displayOptions Display options for export
+ * @property {Object} hiddenPrefs Hidden preferences configurable through about:config
  * @property {Boolean} inRepository Whether the translator may be found in the repository
  * @property {String} lastUpdated SQL-style date and time of translator's last update
  * @property {String} code The executable JavaScript for the translator
@@ -400,7 +403,16 @@ Zotero.Translator.prototype.init = function(info) {
 	
 	this.configOptions = info["configOptions"] ? info["configOptions"] : {};
 	this.displayOptions = info["displayOptions"] ? info["displayOptions"] : {};
-	
+	if(info.hiddenPrefs) {
+		//check for key
+		if(typeof(info.hiddenPrefs.prefs) == "object" && !info.hiddenPrefs.key) {
+			throw(new Error("'key' must be defined when declaring hiddenPrefs in " + info.label));
+		}
+		this._hiddenPrefs = info.hiddenPrefs;
+	} else {
+		this._hiddenPrefs = {};
+	}
+
 	if(this.translatorType & TRANSLATOR_TYPES["import"]) {
 		// compile import regexp to match only file extension
 		this.importRegexp = this.target ? new RegExp("\\."+this.target+"$", "i") : null;

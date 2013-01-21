@@ -56,7 +56,7 @@ function load() {
 		
 		var checkbox = document.createElement('input');
 		checkbox.setAttribute('type', 'checkbox');
-		checkbox.setAttribute('checked', checked);
+		if(checked) checkbox.setAttribute('checked', 1);
 		item.appendChild(checkbox);
 		checkboxes[i] = checkbox;
 		

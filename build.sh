@@ -92,6 +92,12 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
 	'zotero/openurl.js' \
+	"zotero/xregexp/xregexp.js" \
+	"zotero/xregexp/addons/build.js" \
+	"zotero/xregexp/addons/matchrecursive.js" \
+	"zotero/xregexp/addons/unicode/unicode-base.js" \
+	"zotero/xregexp/addons/unicode/unicode-categories.js" \
+	"zotero/xregexp/addons/unicode/unicode-zotero.js" \
 	'zotero/rdf/init.js' \
 	'zotero/rdf/uri.js' \
 	'zotero/rdf/term.js' \
@@ -133,6 +139,12 @@ BACKGROUND_INCLUDE=('zotero.js' \
 	'zotero/connector/cachedTypes.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
+	"zotero/xregexp/xregexp.js" \
+	"zotero/xregexp/addons/build.js" \
+	"zotero/xregexp/addons/matchrecursive.js" \
+	"zotero/xregexp/addons/unicode/unicode-base.js" \
+	"zotero/xregexp/addons/unicode/unicode-categories.js" \
+	"zotero/xregexp/addons/unicode/unicode-zotero.js" \
 	'zotero/openurl.js' \
 	'zotero/connector/repo.js' \
 	'zotero/translation/tlds.js' \
@@ -183,6 +195,12 @@ BOOKMARKLET_COMMON_INCLUDE=("$SRCDIR/bookmarklet/zotero_config.js" \
 	"$EXTENSION_XPCOM_DIR/debug.js" \
 	"$SRCDIR/common/errors_webkit.js" \
 	"$SRCDIR/common/http.js" \
+	"$EXTENSION_XPCOM_DIR/xregexp/xregexp.js" \
+	"$EXTENSION_XPCOM_DIR/xregexp/addons/build.js" \
+	"$EXTENSION_XPCOM_DIR/xregexp/addons/matchrecursive.js" \
+	"$EXTENSION_XPCOM_DIR/xregexp/addons/unicode/unicode-base.js" \
+	"$EXTENSION_XPCOM_DIR/xregexp/addons/unicode/unicode-categories.js" \
+	"$EXTENSION_XPCOM_DIR/xregexp/addons/unicode/unicode-zotero.js" \
 	"$EXTENSION_XPCOM_DIR/utilities.js" \
 	"$SRCDIR/bookmarklet/messages.js")
 
@@ -284,8 +302,9 @@ for browser in "chrome" "safari"; do
 	   "$EXTENSION_XPCOM_DIR/date.js" \
 	   "$EXTENSION_XPCOM_DIR/debug.js" \
 	   "$EXTENSION_XPCOM_DIR/openurl.js" \
-	   "$EXTENSION_XPCOM_DIR/rdf" \
 	   "$EXTENSION_XPCOM_DIR/connector" \
+	   "$EXTENSION_XPCOM_DIR/rdf" \
+	   "$EXTENSION_XPCOM_DIR/xregexp" \
 	   "$browser_builddir/zotero"
 	mkdir "$browser_builddir/zotero/translation"
 	cp "$EXTENSION_XPCOM_DIR/translation/translate.js" \

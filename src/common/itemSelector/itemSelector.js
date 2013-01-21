@@ -42,17 +42,26 @@ function load() {
 	
 	// add checkboxes to selector
 	for(var i in items) {
+		var title, checked = false;
+		if(items[i] && typeof(items[i]) == "object" && items[i].title !== undefined) {
+			title = items[i].title;
+			checked = !!items[i].checked;
+		} else {
+			title = items[i];
+		}
+
 		var item = document.createElement('div');
 		item.setAttribute('class', 'item-description');
 		item.setAttribute('class', 'item');
 		
 		var checkbox = document.createElement('input');
 		checkbox.setAttribute('type', 'checkbox');
+		checkbox.setAttribute('checked', checked);
 		item.appendChild(checkbox);
 		checkboxes[i] = checkbox;
 		
 		var span = document.createElement('span');
-		span.appendChild(document.createTextNode(items[i]));
+		span.appendChild(document.createTextNode(title));
 		if(span.addEventListener) {
 			span.addEventListener("click", makeClickHandler(checkbox), false);
 		} else {

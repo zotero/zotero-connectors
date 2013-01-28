@@ -343,8 +343,7 @@ Zotero.Translators.CodeGetter.prototype.getCodeFor = function(i) {
 
 var TRANSLATOR_REQUIRED_PROPERTIES = ["translatorID", "translatorType", "label", "creator", "target",
 		"priority", "lastUpdated"];
-var TRANSLATOR_PASSING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["displayOptions", "configOptions",
-		"browserSupport", "code", "runMode"]);
+var TRANSLATOR_PASSING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["browserSupport", "code", "runMode"]);
 var TRANSLATOR_SAVE_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["browserSupport"]);
 /**
  * @class Represents an individual translator
@@ -362,6 +361,8 @@ var TRANSLATOR_SAVE_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["browser
  *     c = Google Chrome (WebKit & V8)
  *     s = Safari (WebKit & Nitro/Squirrelfish Extreme)
  *     i = Internet Explorer
+ *     b = Bookmarklet
+ *     v = Server
  * @property {Object} configOptions Configuration options for import/export
  * @property {Object} displayOptions Display options for export
  * @property {Boolean} inRepository Whether the translator may be found in the repository
@@ -397,9 +398,6 @@ Zotero.Translator.prototype.init = function(info) {
 	} else {
 		this.runMode = Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE;
 	}
-	
-	this.configOptions = info["configOptions"] ? info["configOptions"] : {};
-	this.displayOptions = info["displayOptions"] ? info["displayOptions"] : {};
 	
 	if(this.translatorType & TRANSLATOR_TYPES["import"]) {
 		// compile import regexp to match only file extension

@@ -224,14 +224,32 @@ if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.p
 	// Send page load event to clear current save icon/data
 	if(isTopWindow) Zotero.Connector_Browser.onPageLoad();
 	
-	// wait until load is finished, then run detection
+	var attachListeners = function() {
+		var pageModified = function() {
+			Zotero.Connector_Browser.onPageLoad();
+			Zotero.Inject.translators = [];
+			Zotero.Inject.detect();
+		};
+		
+		document.addEventListener("ZoteroItemUpdated", function() {
+				Zotero.debug("Connector: ZoteroItemUpdated event received");
+				pageModified();
+		}, false);
+	
+		Zotero.Messaging.addMessageListener("pageModified", function() {
+			Zotero.debug("Connector: pageModified message received");
+			pageModified();
+		});
+	};
+
 	if(document.readyState !== "complete") {
 		window.addEventListener("load", function(e) {
-			if(e.target !== document) return;
-			Zotero.Inject.detect();
-		}, false);
-	} else {
+				if(e.target !== document) return;
+				Zotero.Inject.detect();
+				attachListeners();
+			}, false);
+	} else {	
 		Zotero.Inject.detect();
+		attachListeners();
 	}
-	document.addEventListener("ZoteroItemUpdated", function() { Zotero.Inject.detect() }, false);
 }

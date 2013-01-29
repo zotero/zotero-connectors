@@ -205,6 +205,19 @@ Zotero.Inject = new function() {
 	};
 };
 
+//Inject detect code once the page is done loading
+function detectWeb() {
+	// wait until load is finished, then run detection
+	if(document.readyState !== "complete") {
+		window.addEventListener("load", function(e) {
+			if(e.target !== document) return;
+			Zotero.Inject.detect();
+		}, false);
+	} else {
+		Zotero.Inject.detect();
+	}
+}
+
 // check whether this is a hidden browser window being used for scraping
 var isHiddenIFrame = false;
 try {
@@ -224,14 +237,17 @@ if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.p
 	// Send page load event to clear current save icon/data
 	if(isTopWindow) Zotero.Connector_Browser.onPageLoad();
 	
-	// wait until load is finished, then run detection
-	if(document.readyState !== "complete") {
-		window.addEventListener("load", function(e) {
-			if(e.target !== document) return;
-			Zotero.Inject.detect();
+	detectWeb();
+	
+	document.addEventListener("ZoteroItemUpdated", function() {
+			Zotero.Connector_Browser.onPageLoad();
+			Zotero.Inject.translators = [];
+			detectWeb();
 		}, false);
-	} else {
-		Zotero.Inject.detect();
-	}
-	document.addEventListener("ZoteroItemUpdated", function() { Zotero.Inject.detect() }, false);
+
+	Zotero.Messaging.addMessageListener("pageModified", function() {
+		var ev = document.createEvent('HTMLEvents');
+		ev.initEvent('ZoteroItemUpdated', true, true);
+		document.dispatchEvent(ev);
+	});
 }

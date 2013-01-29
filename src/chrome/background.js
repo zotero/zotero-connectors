@@ -133,6 +133,11 @@ Zotero.Connector_Browser = new function() {
 
 // register handlers
 chrome.tabs.onRemoved.addListener(Zotero.Connector_Browser.onTabRemoved);
+//watch for URL changes because those clear the URL bar icon
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+	if(!changeInfo.url) return;
+	chrome.tabs.sendRequest(tabId, ["pageModified"], null);
+});
 chrome.pageAction.onClicked.addListener(Zotero.Connector_Browser.onPageActionClicked);
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
 

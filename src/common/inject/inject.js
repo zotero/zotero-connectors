@@ -78,29 +78,24 @@ if(isTopWindow) {
 		}
 	});
 	Zotero.Messaging.addMessageListener("saveSnapshot", function() {
-		Zotero.Connector_Types.getSchema(function(schema) {
-			Zotero.Connector_Types.schema = schema;
-			Zotero.Connector_Types.init();
-			
-			var html = document.documentElement.innerHTML;
-			var progress = new Zotero.ProgressWindow.ItemProgress(
-				Zotero.ItemTypes.getImageSrc("webpage"), document.title);
-			Zotero.Connector.callMethod("saveSnapshot", {"url":document.location.toString(),
-					"cookie":document.cookie, "html":html},
-				function(returnValue, status) {
-					if(returnValue === false) {
-						if(status === 0) {
-							new Zotero.ProgressWindow.ErrorMessage("standaloneRequired");
-						} else {
-							new Zotero.ProgressWindow.ErrorMessage("translationError");
-						}
-						Zotero.ProgressWindow.startCloseTimer(8000);
+		var html = document.documentElement.innerHTML;
+		var progress = new Zotero.ProgressWindow.ItemProgress(
+			Zotero.ItemTypes.getImageSrc("webpage"), document.title);
+		Zotero.Connector.callMethod("saveSnapshot", {"url":document.location.toString(),
+				"cookie":document.cookie, "html":html},
+			function(returnValue, status) {
+				if(returnValue === false) {
+					if(status === 0) {
+						new Zotero.ProgressWindow.ErrorMessage("standaloneRequired");
 					} else {
-						progress.setProgress(100);
-						Zotero.ProgressWindow.startCloseTimer(2500);
+						new Zotero.ProgressWindow.ErrorMessage("translationError");
 					}
-				});
-		});
+					Zotero.ProgressWindow.startCloseTimer(8000);
+				} else {
+					progress.setProgress(100);
+					Zotero.ProgressWindow.startCloseTimer(2500);
+				}
+			});
 	});
 }
 
@@ -126,13 +121,9 @@ Zotero.Inject = new function() {
 	 */
 	this.translate = function(translator) {
 		// this relays an item from this tab to the top level of the window
-		Zotero.Connector_Types.getSchema(function(schema) {
-			Zotero.Messaging.sendMessage("saveDialog_show", null);
-			Zotero.Connector_Types.schema = schema;
-			Zotero.Connector_Types.init();
-			_translate.setTranslator(translator);
-			_translate.translate();
-		});
+		Zotero.Messaging.sendMessage("saveDialog_show", null);
+		_translate.setTranslator(translator);
+		_translate.translate();
 	};
 	
 	/**

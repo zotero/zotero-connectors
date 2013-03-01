@@ -106,6 +106,7 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/rdf/rdfparser.js' \
 	'zotero/translation/translate.js' \
 	'zotero/connector/translate_item.js' \
+	'zotero/connector/typeSchemaData.js' \
 	'zotero/utilities.js' \
 	'zotero/utilities_translate.js' \
 	'inject/http.js' \

@@ -60,6 +60,7 @@ var Zotero = new function() {
 		Zotero.isInject = true;
 		Zotero.Debug.init();
 		Zotero.Messaging.init();
+		Zotero.Connector_Types.init();
 	};
 	
 	

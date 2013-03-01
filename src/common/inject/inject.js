@@ -120,16 +120,21 @@ Zotero.Inject = new function() {
 							? "attachment-pdf" : "attachment-snapshot");
 	}
 	
+	this._initItemTypes = function(callback) {
+		Zotero.Connector_Types.getSchema(function(schema) {
+			Zotero.Connector_Types.schema = schema;
+			Zotero.Connector_Types.init();
+			callback();
+		});
+	}
+	
 	/**
 	 * Translates this page. First, retrieves schema and preferences from global script, then
 	 * passes them off to _haveSchemaAndPrefs
 	 */
 	this.translate = function(translator) {
 		// this relays an item from this tab to the top level of the window
-		Zotero.Connector_Types.getSchema(function(schema) {
-			Zotero.Messaging.sendMessage("saveDialog_show", null);
-			Zotero.Connector_Types.schema = schema;
-			Zotero.Connector_Types.init();
+		this._initItemTypes(function() {
 			_translate.setTranslator(translator);
 			_translate.translate();
 		});
@@ -138,7 +143,7 @@ Zotero.Inject = new function() {
 	/**
 	 * Initializes the translate machinery and determines whether this page can be translated
 	 */
-	this.detect = function() {	
+	this.detect = function() {
 		// On OAuth completion, close window and call completion listener
 		if(document.location.href.substr(0, ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH_CALLBACK_URL+"?") {
 			Zotero.API.onAuthorizationComplete(document.location.href.substr(ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1));
@@ -154,55 +159,60 @@ Zotero.Inject = new function() {
 			if(document.location == "about:blank") return;
 			
 			var me = this;
-			var cancelled = false;
-			_translate = new Zotero.Translate.Web();
-			_translate.setDocument(document);
-			_translate.setHandler("translators", function(obj, translators) {
-				if(translators.length && !me.translators.length) {
-					me.translators = translators;
-					Zotero.Connector_Browser.onTranslators(translators, instanceID);
-				}
-			});
-			_translate.setHandler("select", function(obj, items, callback) {
-				Zotero.Connector_Browser.onSelect(items, function(returnItems) {
-					// if no items selected, close save dialog immediately
-					if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
-						cancelled = true;
-						Zotero.Messaging.sendMessage("saveDialog_close", null);
-					}
-					callback(returnItems);
-				});
-			});
-			_translate.setHandler("itemSaving", function(obj, item) {
-				// this relays an item from this tab to the top level of the window
-				Zotero.Messaging.sendMessage("saveDialog_itemSaving",
-					[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id]);
-			});
-			_translate.setHandler("itemDone", function(obj, dbItem, item) {
-				// this relays an item from this tab to the top level of the window
-				Zotero.Messaging.sendMessage("saveDialog_itemProgress",
-					[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id, 100]);
-				for(var i=0; i<item.attachments.length; i++) {
-					var attachment = item.attachments[i];
-					Zotero.Messaging.sendMessage("saveDialog_itemSaving",
-						[determineAttachmentIcon(attachment), attachment.title, attachment.id,
-							item.id]);
-				}
-			});
-			_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
-				// this relays an item from this tab to the top level of the window
-				if(progress === 0) return;
-				Zotero.Messaging.sendMessage("saveDialog_itemProgress",
-					[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
-			});
-			_translate.setHandler("done", function(obj, status) {
-				Zotero.Messaging.sendMessage("saveDialog_done", status);
-			});
-			_translate.getTranslators();
+			this._initItemTypes(function() { me._detect() });
 		} catch(e) {
 			Zotero.logError(e);
 		}
 	};
+	
+	this._detect = function() {
+		var me = this;
+		var cancelled = false;
+		_translate = new Zotero.Translate.Web();
+		_translate.setDocument(document);
+		_translate.setHandler("translators", function(obj, translators) {
+			if(translators.length && !me.translators.length) {
+				me.translators = translators;
+				Zotero.Connector_Browser.onTranslators(translators, instanceID);
+			}
+		});
+		_translate.setHandler("select", function(obj, items, callback) {
+			Zotero.Connector_Browser.onSelect(items, function(returnItems) {
+				// if no items selected, close save dialog immediately
+				if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
+					cancelled = true;
+					Zotero.Messaging.sendMessage("saveDialog_close", null);
+				}
+				callback(returnItems);
+			});
+		});
+		_translate.setHandler("itemSaving", function(obj, item) {
+			// this relays an item from this tab to the top level of the window
+			Zotero.Messaging.sendMessage("saveDialog_itemSaving",
+				[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id]);
+		});
+		_translate.setHandler("itemDone", function(obj, dbItem, item) {
+			// this relays an item from this tab to the top level of the window
+			Zotero.Messaging.sendMessage("saveDialog_itemProgress",
+				[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id, 100]);
+			for(var i=0; i<item.attachments.length; i++) {
+				var attachment = item.attachments[i];
+				Zotero.Messaging.sendMessage("saveDialog_itemSaving",
+					[determineAttachmentIcon(attachment), attachment.title, attachment.id,
+						item.id]);
+			}
+		});
+		_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
+			// this relays an item from this tab to the top level of the window
+			if(progress === 0) return;
+			Zotero.Messaging.sendMessage("saveDialog_itemProgress",
+				[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
+		});
+		_translate.setHandler("done", function(obj, status) {
+			Zotero.Messaging.sendMessage("saveDialog_done", status);
+		});
+		_translate.getTranslators();
+	}
 };
 
 // check whether this is a hidden browser window being used for scraping

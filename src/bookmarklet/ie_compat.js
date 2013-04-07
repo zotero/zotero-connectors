@@ -23,7 +23,7 @@
     ***** END LICENSE BLOCK *****
 */
 
-function indexOf(obj, member, startAt) {
+function zindexOf(obj, member, startAt) {
 	if(Array.prototype.indexOf || typeof obj === "string") {
 		if(startAt !== undefined) return obj.indexOf(member, startAt);
 		return obj.indexOf(member);

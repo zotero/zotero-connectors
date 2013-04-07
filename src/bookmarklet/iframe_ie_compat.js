@@ -34,7 +34,7 @@ function explorerify(code) {
 		"defaultView":"defaultView"
 	};
 	var rewriteMethodsToFunctionCalls = {
-		"indexOf":"indexOf",
+		"indexOf":"zindexOf",
 		"filter":"arrayFilter",
 		"map":"arrayMap",
 		"forEach":"arrayForEach"

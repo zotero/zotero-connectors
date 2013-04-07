@@ -91,7 +91,7 @@ def get_browser()
 	end
 	
 	if $config["browser"] == "i"
-		browser = Watir::IE.new
+		browser = Watir::Browser.new
 	elsif $config["browser"] == "g"
 		browser = Watir::Browser.new(Selenium::WebDriver.for(:firefox))
 	elsif $config["browser"] == "c"

@@ -115,6 +115,7 @@ end
 
 $config = JSON.parse(File.read(config_file))
 # Set up inject string
+inject_script = "http://127.0.0.1:21139/provo/bookmarklet/tests/inject" + ($config["browser"] == "i" ? "_ie" : "") + "_test.js"
 $inject_string = <<EOS
 new function() {
 	var tag = document.body || document.documentElement;
@@ -128,7 +129,7 @@ new function() {
 	iframe.id = "zotero-iframe"
 	iframe.style.visibility = "hidden";
 	iframe.setAttribute("frameborder", "0");
-	iframe.src = 'javascript:(function(){document.open();try{window.parent.document;}catch(e){document.domain="'+document.domain.replace(/[\\\\\\"]/g, "\\\\$0")+'";}document.write(\\'<!DOCTYPE html><html><head><script src="http://127.0.0.1:31330/"></script></head><body></body></html>\\');document.close();})()';
+	iframe.src = 'javascript:(function(){document.open();try{window.parent.document;}catch(e){document.domain="'+document.domain.replace(/[\\\\\\"]/g, "\\\\$0")+'";}document.write(\\'<!DOCTYPE html><html><head><script src="#{inject_script}"></script></head><body></body></html>\\');document.close();})()';
 	tag.appendChild(iframe);
 }
 undefined;

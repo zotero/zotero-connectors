@@ -1,5 +1,5 @@
 window.onmessage = function() {
-	if((event.origin !== "https://www.zotero.org" && event.origin !== "http://www.zotero.org")
+	if(zindexOf(ZOTERO_CONFIG.BOOKMARKLET_ORIGINS, event.origin) === -1
 			|| event.source != window.parent) {
 		throw "ie_hack.js received an invalid message";
 	}
@@ -21,7 +21,7 @@ window.onmessage = function() {
 			}
 			
 			window.parent.postMessage(JSON.stringify([requestID, xhr.status, xhr.responseText, headers]),
-				"http://www.zotero.org/bookmarklet/iframe_ie.html");
+				ZOTERO_CONFIG.HTTP_BOOKMARKLET_URL+"iframe_ie.html");
 		}
 	};
 	xhr.setRequestHeader("Content-Type", "application/json");
@@ -31,4 +31,4 @@ window.onmessage = function() {
 	xhr.send(payload);
 }
 
-window.parent.postMessage('standaloneLoaded', "http://www.zotero.org/bookmarklet/iframe_ie.html");
+window.parent.postMessage('standaloneLoaded', ZOTERO_CONFIG.HTTP_BOOKMARKLET_URL+"iframe_ie.html");

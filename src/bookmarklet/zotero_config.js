@@ -32,7 +32,9 @@ const ZOTERO_CONFIG = {
 	WWW_BASE_URL: 'http://www.zotero.org/',
 	API_URL: 'https://www.zotero.org/api/',
 	LOGIN_URL: 'https://www.zotero.org/user/login/?bm=1',
+	BOOKMARKLET_ORIGINS : ['https://www.zotero.org', 'http://www.zotero.org'],
 	BOOKMARKLET_URL: 'https://www.zotero.org/bookmarklet/',
+	HTTP_BOOKMARKLET_URL: 'http://www.zotero.org/bookmarklet/',
 	AUTH_COMPLETE_URL: 'https://www.zotero.org/bookmarklet/auth_complete.html',
 	S3_URL: 'https://zoterofilestorage.s3.amazonaws.com/'
 };

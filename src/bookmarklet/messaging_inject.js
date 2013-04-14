@@ -93,8 +93,8 @@ Zotero.Messaging = new function() {
 		var listener = function(event) {
 			try {
 				var data = event.data, origin = event.origin;
-				if(event.origin !== "https://www.zotero.org"
-						&& (!Zotero.isIE || event.origin !== "http://www.zotero.org")) {
+				if(event.origin !== ZOTERO_CONFIG.BOOKMARKLET_ORIGIN
+						&& (!Zotero.isIE || event.origin !== ZOTERO_CONFIG.HTTP_BOOKMARKLET_ORIGIN)) {
 					throw "Received message from invalid origin";
 				}
 				

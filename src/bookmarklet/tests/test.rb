@@ -115,7 +115,7 @@ end
 
 $config = JSON.parse(File.read(config_file))
 # Set up inject string
-inject_script = "http://127.0.0.1:21139/provo/bookmarklet/tests/inject" + ($config["browser"] == "i" ? "_ie" : "") + "_test.js"
+inject_script = "http://127.0.0.1:23119/provo/bookmarklet/tests/inject" + ($config["browser"] == "i" ? "_ie" : "") + "_test.js"
 $inject_string = <<EOS
 new function() {
 	var tag = document.body || document.documentElement;

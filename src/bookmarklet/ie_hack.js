@@ -1,5 +1,5 @@
 window.onmessage = function() {
-	if((event.origin != ZOTERO_CONFIG.BOOKMARKLET_ORIGIN \
+	if((event.origin != ZOTERO_CONFIG.BOOKMARKLET_ORIGIN
 			&& event.origin != ZOTERO_CONFIG.HTTP_BOOKMARKLET_ORIGIN)
 			|| event.source != window.parent) {
 		throw "ie_hack.js received an invalid message";

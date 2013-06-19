@@ -122,16 +122,16 @@ Zotero.Connector_Browser = new function() {
 
 	chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 		if(!changeInfo.url) return;
-		chrome.tabs.sendRequest(tabId, ["pageModified"], null);
+		chrome.tabs.sendMessage(tabId, ["pageModified"], null);
 	});
 
 	chrome.pageAction.onClicked.addListener(function(tab) {
-		chrome.tabs.sendRequest(tab.id, ["translate",
+		chrome.tabs.sendMessage(tab.id, ["translate",
 				[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
 	});
 
 	chrome.contextMenus.create({"title":"Save Zotero Snapshot from Current Page", "onclick":function(info, tab) {
-		chrome.tabs.sendRequest(tab.id, ["saveSnapshot"], null);
+		chrome.tabs.sendMessage(tab.id, ["saveSnapshot"], null);
 	}});
 }
 

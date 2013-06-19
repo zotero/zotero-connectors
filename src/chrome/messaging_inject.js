@@ -70,7 +70,7 @@ Zotero.Messaging = new function() {
 						}
 						
 						// send message
-						chrome.extension.sendRequest([messageName, newArgs], function(response) {
+						chrome.runtime.sendMessage([messageName, newArgs], function(response) {
 								try {
 									if(messageConfig.postReceive) {
 										response = messageConfig.postReceive.apply(null, response);
@@ -86,7 +86,7 @@ Zotero.Messaging = new function() {
 			}
 		}
 				
-		chrome.extension.onRequest.addListener(function(request, sender, sendResponseCallback) {
+		chrome.runtime.onMessage.addListener(function(request, sender, sendResponseCallback) {
 			if(typeof request !== "object" || !request.length || !_messageListeners[request[0]]) return;
 			try {
 				//Zotero.debug("Received message "+request[0]);

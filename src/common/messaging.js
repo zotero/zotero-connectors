@@ -58,7 +58,7 @@ Zotero.Messaging = new function() {
 				_messageListeners[messageName](args, tab);
 				return;
 			}
-			
+
 			var messageParts = messageName.split(MESSAGE_SEPARATOR);
 			var messageConfig = MESSAGES[messageParts[0]][messageParts[1]];
 			
@@ -81,6 +81,7 @@ Zotero.Messaging = new function() {
 			var fn = Zotero[messageParts[0]][messageParts[1]];
 			if(!fn) throw new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
 			fn.apply(Zotero[messageParts[0]], args);
+			return true;
 		} catch(e) {
 			Zotero.logError(e);
 		}
@@ -94,7 +95,7 @@ Zotero.Messaging = new function() {
 			window.parent.postMessage((_structuredCloneSupported
 				? [messageName, args] : JSON.stringify([messageName, args])), "*");
 		} else if(Zotero.isChrome) {
-			chrome.tabs.sendRequest(tab.id, [messageName, args]);
+			chrome.tabs.sendMessage(tab.id, [messageName, args]);
 		} else if(Zotero.isSafari) {
 			tab.page.dispatchMessage(messageName, args);
 		}
@@ -137,8 +138,8 @@ Zotero.Messaging = new function() {
 			
 			window.postMessage([null, "structuredCloneTest", null], window.location.href);
 		} else if(Zotero.isChrome) {
-			chrome.extension.onRequest.addListener(function(request, sender, sendResponseCallback) {
-				Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab);
+			chrome.runtime.onMessage.addListener(function(request, sender, sendResponseCallback) {
+				return Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab);
 			});
 		} else if(Zotero.isSafari) {
 			safari.application.addEventListener("message", function(event) {

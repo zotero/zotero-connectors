@@ -66,7 +66,7 @@ Zotero.Messaging = new function() {
 						// copy arguments to newArgs
 						var newArgs = new Array(arguments.length);
 						for(var i=0; i<arguments.length; i++) {
-							if(i !== callbackArg) newArgs[i] = arguments[i];
+							newArgs[i] = i === callbackArg ? undefined : arguments[i];
 						}
 						
 						// send message

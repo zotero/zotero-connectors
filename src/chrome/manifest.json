@@ -2,7 +2,7 @@
 	"name": "Zotero Connector",
 	"manifest_version": 2,
 	"version": "3.0.3",
-	"description": "Saves references to Zotero from Chrome",
+	"description": "Saves references to Zotero from Chrome and Opera",
 	"page_action": {
 		"default_icon": "images/zotero-z-16px.png",
 		"default_title": "Save to Zotero"

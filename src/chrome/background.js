@@ -69,26 +69,10 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	/**
-	 * Called when select items dialog is closed to pass data back to injected script
-	 */
-	this.onSelectDone = function(data) {
-		_selectCallbacksForTabIDs[data[0]](data[1]);
-	}
-	
-	/**
 	 * Called when a tab is removed or the URL has changed
 	 */
-	this.onTabRemoved = _clearInfoForTab;
 	this.onPageLoad = function(tab) {
 		_clearInfoForTab(tab.id);
-	}
-	
-	/**
-	 * Called when the page action button has been clicked
-	 */
-	this.onPageActionClicked = function(tab) {
-		chrome.tabs.sendRequest(tab.id, ["translate",
-				[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
 	}
 	
 	/**
@@ -129,22 +113,26 @@ Zotero.Connector_Browser = new function() {
 		delete _instanceIDsForTabs[tabID];
 		delete _selectCallbacksForTabIDs[tabID];
 	}
+
+	Zotero.Messaging.addMessageListener("selectDone", function(data) {
+		_selectCallbacksForTabIDs[data[0]](data[1]);
+	});
+
+	chrome.tabs.onRemoved.addListener(_clearInfoForTab);
+
+	chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+		if(!changeInfo.url) return;
+		chrome.tabs.sendRequest(tabId, ["pageModified"], null);
+	});
+
+	chrome.pageAction.onClicked.addListener(function(tab) {
+		chrome.tabs.sendRequest(tab.id, ["translate",
+				[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
+	});
+
+	chrome.contextMenus.create({"title":"Save Zotero Snapshot from Current Page", "onclick":function(info, tab) {
+		chrome.tabs.sendRequest(tab.id, ["saveSnapshot"], null);
+	}});
 }
 
-// register handlers
-chrome.tabs.onRemoved.addListener(Zotero.Connector_Browser.onTabRemoved);
-//watch for URL changes because those clear the URL bar icon
-chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-	if(!changeInfo.url) return;
-	chrome.tabs.sendRequest(tabId, ["pageModified"], null);
-});
-chrome.pageAction.onClicked.addListener(Zotero.Connector_Browser.onPageActionClicked);
-Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
-
-// create context menu item
-chrome.contextMenus.create({"title":"Save Zotero Snapshot from Current Page", "onclick":function(info, tab) {
-	chrome.tabs.sendRequest(tab.id, ["saveSnapshot"], null);
-}})
-
-// initialize
 Zotero.initGlobal();

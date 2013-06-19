@@ -114,10 +114,6 @@ var MESSAGES = {
 			"count":true,
 			"submitReport":true
 		},
-	"Connector_Types":
-		{
-			"getSchema":true
-		},
 	"Errors":
 		{
 			"log":false,

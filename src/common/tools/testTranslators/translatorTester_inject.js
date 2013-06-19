@@ -38,16 +38,11 @@ if(isTopWindow) {
 			
 			// get schema and preferences
 			var runTest = function() {
-				Zotero.Connector_Types.getSchema(function(schema) {
-					Zotero.Connector_Types.schema = schema;
-					Zotero.Connector_Types.init();
-					
-					// run tests
-					var translatorTester = new Zotero_TranslatorTester(translator, type, function(obj, msg, level) {
-						Zotero.TranslatorTester.debug(null, msg, level);
-					});
-					translatorTester.runTest(test, document, Zotero.TranslatorTester.testComplete);
+				// run tests
+				var translatorTester = new Zotero_TranslatorTester(translator, type, function(obj, msg, level) {
+					Zotero.TranslatorTester.debug(null, msg, level);
 				});
+				translatorTester.runTest(test, document, Zotero.TranslatorTester.testComplete);
 			};
 			
 			if(test.defer) {

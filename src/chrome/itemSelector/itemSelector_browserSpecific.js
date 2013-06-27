@@ -29,6 +29,6 @@
 function sendMessage() {
 	if(responseSent) return;
 	responseSent = true;
-	chrome.runtime.sendMessage(["selectDone", [tabID, items]]);
+	chrome.extension.sendRequest(["selectDone", [tabID, items]]);
 	window.close();
 }

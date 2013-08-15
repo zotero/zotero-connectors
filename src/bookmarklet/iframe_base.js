@@ -79,12 +79,7 @@ Zotero.API = new function() {
 	 * @param {Boolean} [askForAuth] If askForAuth === false, don't ask for authorization if not 
 	 *     already authorized.
 	 */
-	this.createItem = function(payload, itemKey, callback, askForAuth) {
-		if(itemKey && /[^a-zA-Z0-9]/.test(itemKey)) {
-			callback(500, 'Item key is invalid');
-			return;
-		}
-		
+	this.createItem = function(payload, callback, askForAuth) {
 		var c = _getCredentials(document), userID = c[0], sessionToken = c[1],
 			reauthorize = function() {
 			Zotero.API.authorize(function(status, msg) {
@@ -94,7 +89,7 @@ Zotero.API = new function() {
 					return;
 				}
 				
-				Zotero.API.createItem(payload, itemKey, callback, false);
+				Zotero.API.createItem(payload, callback, false);
 			});
 		};
 		
@@ -107,8 +102,7 @@ Zotero.API = new function() {
 			}
 		}
 		
-		var url = ZOTERO_CONFIG.API_URL+"users/"+userID+"/items"+(itemKey ? "/"+itemKey+"/children" : "")+"?session="+sessionToken;
-		
+		var url = ZOTERO_CONFIG.API_URL+"users/"+userInfo.userID+"/items?key="+userInfo.apiKey;
 		Zotero.HTTP.doPost(url, JSON.stringify(payload), function(xmlhttp) {
 			if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
 				callback(xmlhttp.status, xmlhttp.responseText);
@@ -120,7 +114,10 @@ Zotero.API = new function() {
 				Zotero.logError("API request failed with "+msg);
 				callback(xmlhttp.status, xmlhttp.responseText);
 			}
-		}, {"Content-Type": "application/json"});
+		}, {
+			"Content-Type": "application/json",
+			"Zotero-API-Version":"2"
+		});
 	};
 	
 	/**
@@ -219,7 +216,8 @@ Zotero.API = new function() {
 			},
 			{
 				"Content-Type":"application/x-www-form-urlencoded",
-				"If-None-Match":"*"
+				"If-None-Match":"*",
+				"Zotero-API-Version":"2"
 			});
 		Uploader.init();
 	};

@@ -23,20 +23,23 @@
     ***** END LICENSE BLOCK *****
 */
 
+/*global window, navigator, console, localStorage */
 var Zotero = new function() {
+    'use strict';
+
     this.isConnector = true;
-    this.isFx = window.navigator.userAgent.indexOf("Netscape") !== -1;
+    this.isFx = navigator.userAgent.indexOf("Netscape") !== -1;
     this.isChrome = !!window.chrome;
-    this.isSafari = window.navigator.userAgent.indexOf("Safari/") !== -1 && !this.isChrome;
-    this.isWebKit = window.navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
-    this.isIE = window.navigator.appName === "Microsoft Internet Explorer";
+    this.isSafari = navigator.userAgent.indexOf("Safari/") !== -1 && !this.isChrome;
+    this.isWebKit = navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
+    this.isIE = navigator.appName === "Microsoft Internet Explorer";
     this.version = "3.0.4";
 
-    if(this.isFx) {
+    if (this.isFx) {
         this.browser = "g";
-    } else if(this.isSafari) {
+    } else if (this.isSafari) {
         this.browser = "s";
-    } else if(this.isIE) {
+    } else if (this.isIE) {
         this.browser = "i";
     } else {
         this.browser = "c";
@@ -78,20 +81,27 @@ var Zotero = new function() {
             appVersion: navigator.appVersion
         };
 
-        if(this.isChrome) {
+        if (this.isChrome) {
             info.appName = "Chrome";
-        } else if(this.isSafari) {
+        } else if (this.isSafari) {
             info.appName = "Safari";
-        } else if(this.isIE) {
+        } else if (this.isIE) {
             info.appName = "Internet Explorer";
         } else {
-            info.appName = window.navigator.appName;
+            info.appName = navigator.appName;
         }
 
-        var str = '';
-        for (var key in info) {
+        var str = Object.keys(info).reduce(
+            function(prev, key) {
+                return prev + key + ' => ' + info[key] + ', ';
+            },
+            ""
+        );
+        // Replaced code
+        /*var key;
+        for (key in info) {
             str += key + ' => ' + info[key] + ', ';
-        }
+        }*/
         str = str.substr(0, str.length - 2);
         callback(str);
     };
@@ -104,34 +114,34 @@ var Zotero = new function() {
     };
 
     this.logError = function(err) {
-        if(!window.console) return;
+        if (!window.console) { return; }
 
         // Firefox uses this
         var fileName = (err.fileName ? err.fileName : null);
         var lineNumber = (err.lineNumber ? err.lineNumber : null);
 
         // Safari uses this
-        if(!fileName && err.sourceURL) fileName = err.sourceURL;
-        if(!lineNumber && err.line) lineNumber = err.line;
+        if (!fileName && err.sourceURL) { fileName = err.sourceURL; }
+        if (!lineNumber && err.line) { lineNumber = err.line; }
 
         // Chrome only gives a stack
-        if(!fileName && !lineNumber && err.stack) {
-            const stackRe = /^\s+at (?:[^(\n]* \()?([^\n]*):([0-9]+):([0-9]+)\)?$/m;
+        if (!fileName && !lineNumber && err.stack) {
+            var stackRe = /^\s+at (?:[^(\n]* \()?([^\n]*):([0-9]+):([0-9]+)\)?$/m;
             var m = stackRe.exec(err.stack);
-            if(m) {
+            if (m) {
                 fileName = m[1];
                 lineNumber = m[2];
             }
         }
 
-        if(!fileName && !lineNumber && Zotero.isIE && typeof err === "object") {
+        if (!fileName && !lineNumber && Zotero.isIE && typeof err === "object") {
             // IE can give us a line number if we re-throw the exception, but we wrap this in a
             // setTimeout call so that we won't throw in the middle of a function
             window.setTimeout(function() {
                 window.onerror = function(errmsg, fileName, lineNumber) {
                     try {
                         Zotero.Errors.log("message" in err ? err.message : err.toString(), fileName, lineNumber);
-                    } catch(e) {};
+                    } catch (e) {}
                     return true;
                 };
                 throw err;
@@ -140,41 +150,44 @@ var Zotero = new function() {
             return;
         }
 
-        if(fileName && lineNumber) {
-            console.error(err+" at "+fileName+":"+lineNumber);
+        if (fileName && lineNumber) {
+            console.error(err + " at " + fileName + ":" + lineNumber);
         } else {
             console.error(err);
         }
 
         Zotero.Errors.log(err.message ? err.message : err.toString(), fileName, lineNumber);
     };
-}
+};
 
 Zotero.Prefs = new function() {
-    const DEFAULTS = {
-        "debug.log":true,
-        "debug.stackTrace":false,
-        "debug.store":false,
-        "debug.store.limit":750000,
-        "debug.level":5,
-        "debug.time":false,
-        "downloadAssociatedFiles":true,
-        "automaticSnapshots":true,
-        "connector.repo.lastCheck.localTime":0,
-        "connector.repo.lastCheck.repoTime":0,
-        "capitalizeTitles":false
+    'use strict';
+
+    var DEFAULTS = {
+        "debug.log": true,
+        "debug.stackTrace": false,
+        "debug.store": false,
+        "debug.store.limit": 750000,
+        "debug.level": 5,
+        "debug.time": false,
+        "downloadAssociatedFiles": true,
+        "automaticSnapshots": true,
+        "connector.repo.lastCheck.localTime": 0,
+        "connector.repo.lastCheck.repoTime": 0,
+        "capitalizeTitles": false
     };
 
     this.get = function(pref) {
-        if(localStorage["pref-"+pref]) return JSON.parse(localStorage["pref-"+pref]);
-        if(DEFAULTS.hasOwnProperty(pref)) return DEFAULTS[pref];
-        throw "Zotero.Prefs: Invalid preference "+pref;
+        if (localStorage["pref-" + pref]) { return JSON.parse(localStorage["pref-" + pref]); }
+        if (DEFAULTS.hasOwnProperty(pref)) { return DEFAULTS[pref]; }
+        throw "Zotero.Prefs: Invalid preference " + pref;
     };
 
     this.getCallback = function(pref, callback) {
-        if(typeof pref === "object") {
-            var prefData = {};
-            for(var i=0; i<pref.length; i++) {
+        if (typeof pref === "object") {
+            var prefData = {},
+                i;
+            for (i = 0; i < pref.length; i += 1) {
                 prefData[pref[i]] = Zotero.Prefs.get(pref[i]);
             }
             callback(prefData);
@@ -184,7 +197,7 @@ Zotero.Prefs = new function() {
     };
 
     this.set = function(pref, value) {
-        Zotero.debug("Setting "+pref+" to "+JSON.stringify(value));
-        localStorage["pref-"+pref] = JSON.stringify(value);
+        Zotero.debug("Setting " + pref + " to " + JSON.stringify(value));
+        localStorage["pref-" + pref] = JSON.stringify(value);
     };
-}
+};

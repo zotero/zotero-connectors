@@ -141,7 +141,7 @@ var Zotero = new function() {
                 window.onerror = function(errmsg, fileName, lineNumber) {
                     try {
                         Zotero.Errors.log("message" in err ? err.message : err.toString(), fileName, lineNumber);
-                    } catch (e) {}
+                    } catch (ignore) {}
                     return true;
                 };
                 throw err;
@@ -178,7 +178,11 @@ Zotero.Prefs = new function() {
     };
 
     this.get = function(pref) {
-        if (localStorage["pref-" + pref]) { return JSON.parse(localStorage["pref-" + pref]); }
+        try {
+            if (localStorage["pref-" + pref]) {
+                return JSON.parse(localStorage["pref-" + pref]);
+            }
+        } catch (ignore) {}
         if (DEFAULTS.hasOwnProperty(pref)) { return DEFAULTS[pref]; }
         throw "Zotero.Prefs: Invalid preference " + pref;
     };

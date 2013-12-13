@@ -35,12 +35,12 @@ Zotero.HTTP = new function() {
 	* @param {Function} 		onDone			Callback to be executed upon request completion
 	* @return {Boolean} True if the request was sent, or false if the browser is offline
 	*/
-	this.doGet = function(url, onDone) {
+	this.doGet = function(url, onDone, responseCharset) {
 		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
 			if(Zotero.isBookmarklet) {
 				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
 			} else if(Zotero.isSafari) {
-				Zotero.COHTTP.doGet(url, onDone);
+				Zotero.COHTTP.doGet(url, onDone, responseCharset);
 				return;
 			}
 		}
@@ -50,6 +50,11 @@ Zotero.HTTP = new function() {
 		var xmlhttp = new XMLHttpRequest();
 		try {
 			xmlhttp.open('GET', url, true);
+			
+			if(xmlhttp.overrideMimeType && responseCharset) {
+				xmlhttp.overrideMimeType("text/plain; charset=" + responseCharset);
+			}
+			
 			/** @ignore */
 			xmlhttp.onreadystatechange = function() {
 				_stateChange(xmlhttp, onDone);
@@ -81,12 +86,12 @@ Zotero.HTTP = new function() {
 	* @param {String} headers Request HTTP headers
 	* @return {Boolean} True if the request was sent, or false if the browser is offline
 	*/
-	this.doPost = function(url, body, onDone, headers) {
+	this.doPost = function(url, body, onDone, headers, responseCharset) {
 		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
 			if(Zotero.isBookmarklet) {
 				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
 			} else if(Zotero.isSafari) {
-				Zotero.COHTTP.doPost(url, body, onDone, headers);
+				Zotero.COHTTP.doPost(url, body, onDone, headers, responseCharset);
 				return;
 			}
 		}
@@ -108,6 +113,10 @@ Zotero.HTTP = new function() {
 			
 			for (var header in headers) {
 				xmlhttp.setRequestHeader(header, headers[header]);
+			}
+			
+			if(xmlhttp.overrideMimeType && responseCharset) {
+				xmlhttp.overrideMimeType("text/plain; charset=" + responseCharset);
 			}
 			
 			/** @ignore */

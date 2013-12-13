@@ -154,6 +154,9 @@ Zotero.Inject = new function() {
 					Zotero.Connector_Browser.onTranslators(translators, instanceID);
 				}
 			});
+			_translate.setHandler("pageModified", function(translate, doc) {
+				Zotero.Messaging.sendMessage("pageModified", null)
+			});
 			_translate.setHandler("select", function(obj, items, callback) {
 				Zotero.Connector_Browser.onSelect(items, function(returnItems) {
 					// if no items selected, close save dialog immediately

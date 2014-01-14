@@ -112,6 +112,7 @@ Zotero.Connector_Browser = new function() {
 		delete _translatorsForTabIDs[tabID];
 		delete _instanceIDsForTabs[tabID];
 		delete _selectCallbacksForTabIDs[tabID];
+		chrome.pageAction.hide(tabID);
 	}
 
 	Zotero.Messaging.addMessageListener("selectDone", function(data) {
@@ -120,9 +121,12 @@ Zotero.Connector_Browser = new function() {
 
 	chrome.tabs.onRemoved.addListener(_clearInfoForTab);
 
-	chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+	chrome.tabs.onUpdated.addListener(function(tabID, changeInfo, tab) {
+		// Rerun translation if a tab's URL changes
 		if(!changeInfo.url) return;
-		chrome.tabs.sendRequest(tabId, ["pageModified"], null);
+		Zotero.debug("Connector_Browser: URL changed for tab");
+		_clearInfoForTab(tabID);
+		chrome.tabs.sendRequest(tabID, ["pageModified"], null);
 	});
 
 	chrome.pageAction.onClicked.addListener(function(tab) {

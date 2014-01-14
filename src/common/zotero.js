@@ -166,7 +166,9 @@ Zotero.Prefs = new function() {
 	};
 	
 	this.get = function(pref) {
-		if(localStorage["pref-"+pref]) return JSON.parse(localStorage["pref-"+pref]);
+		try {
+			if(localStorage["pref-"+pref]) return JSON.parse(localStorage["pref-"+pref]);
+		} catch(e) {}
 		if(DEFAULTS.hasOwnProperty(pref)) return DEFAULTS[pref];
 		throw "Zotero.Prefs: Invalid preference "+pref;
 	};

@@ -238,7 +238,6 @@ Zotero.Browser = {
 		if(!Zotero.isBookmarklet) {
 			hiddenBrowser.style.display = "none";
 		}
-		hiddenBrowser.sandbox = "allow-same-origin allow-forms allow-scripts";
 		document.body.appendChild(hiddenBrowser);
 		return hiddenBrowser;
 	},

@@ -38,7 +38,7 @@ Zotero.HTTP.isSameOrigin = function(url) {
 	if(!m) {
 		return true;
 	} else {
-		var location = Zotero.isConnector ? window.parent.location : window.location;
+		var location = Zotero.isBookmarklet ? window.parent.location : window.location;
 		return m[1].toLowerCase() === location.protocol.toLowerCase() &&
 			m[2].toLowerCase() === location.host.toLowerCase();
 	}

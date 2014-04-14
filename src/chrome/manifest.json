@@ -36,5 +36,12 @@
 		"128": "Icon-128.png"
 	},
 	"options_page": "preferences/preferences.html",
-	"update_url": "https://www.zotero.org/download/everywhere/chrome/update.xml"
+	"update_url": "https://www.zotero.org/download/everywhere/chrome/update.xml",
+	"commands": {
+		"_execute_page_action": {
+			"suggested_key": {
+				"default": "Ctrl+Shift+S"
+			}
+		}
+	}
 }

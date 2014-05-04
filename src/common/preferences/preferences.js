@@ -219,7 +219,9 @@ function submitErrors() {
  */
 function viewDebugOutput() {
 	Zotero.Connector_Debug.get(function(log) {
-		window.open('data:text/plain;charset=utf-8,'+encodeURIComponent(log), 'debugLog');
+		textarea = document.getElementById("advanced-textarea-debug");
+		textarea.textContent = log;
+		textarea.style.display = "";
 	});
 }
 

@@ -219,7 +219,7 @@ function submitErrors() {
  */
 function viewDebugOutput() {
 	Zotero.Connector_Debug.get(function(log) {
-		textarea = document.getElementById("advanced-textarea-debug");
+		var textarea = document.getElementById("advanced-textarea-debug");
 		textarea.textContent = log;
 		textarea.style.display = "";
 	});

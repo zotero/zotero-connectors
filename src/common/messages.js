@@ -143,6 +143,34 @@ var MESSAGES = {
 };
 
 var backgroundHttpInstructions = {
+	"doHead":{
+		// avoid trying to post responseXML
+		"preSend":function(xhr) {
+			return [{
+				"responseUrl":xhr.responseUrl,
+				"status":xhr.status,
+				"statusText":xhr.statusText,
+				"_headers": {
+					'Allow': xhr.getResponseHeader('Allow'),
+					'Content-Encoding': xhr.getResponseHeader('Content-Encoding'),
+					'Content-Language': xhr.getResponseHeader('Content-Language'),
+					'Content-Length': xhr.getResponseHeader('Content-Length'),
+					'Content-Disposition': xhr.getResponseHeader('Content-Disposition'),
+					'Content-Type': xhr.getResponseHeader('Content-Type'),
+					'Last-Modified': xhr.getResponseHeader('Last-Modified'),
+					'Warning': xhr.getResponseHeader('Warning')
+				}
+			}];
+		},
+		"postReceive":function(xhr) {
+			//simulate getResponseHeader so this works nicely with Firefox
+			xhr.getResponseHeader = function(header) {
+				return xhr._headers[header];
+			};
+			return [xhr];
+		},
+		"callbackArg":1
+	},
 	"doGet":{
 		// avoid trying to post responseXML
 		"preSend":function(xhr) {

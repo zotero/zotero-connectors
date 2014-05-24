@@ -87,7 +87,6 @@ PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-ad
 # Scripts to be included in inject scripts
 INJECT_INCLUDE=('zotero.js' \
 	'zotero_config.js' \
-	'http.js' \
 	'zotero/connector/cachedTypes.js' \
 	'zotero/date.js' \
 	'zotero/debug.js' \
@@ -118,7 +117,7 @@ INJECT_INCLUDE=('zotero.js' \
 
 # Scripts to be included in one browser only
 INJECT_INCLUDE_CHROME=('api.js')
-INJECT_INCLUDE_SAFARI=()
+INJECT_INCLUDE_SAFARI=('http.js')
 
 if [ ! -z $DEBUG ]; then
 	INJECT_INCLUDE_LAST=('tools/testTranslators/translatorTester_messages.js' \

@@ -42,7 +42,7 @@
  *  7. Global script sends CALLBACKDATA to injected script as message response
  *  8. Injected script receives message
  *  9. If MESSAGES[NAMESPACE][METHOD] has a postReceive function, this gets passed CALLBACKDATA
- *     and returns some result, which is used as the CALLBACKDATA below
+ *     and returns some result as an array of arguments to be used as the CALLBACKDATA below
  *  10. Injected script calls CALLBACK(CALLBACKDATA)
  *
  * In Safari, the following takes place:
@@ -61,7 +61,7 @@
  *     [REQUESTID, CALLBACKDATA]
  *  9. Injected script receives message
  *  10. If MESSAGES[NAMESPACE][METHOD] has a postReceive function, this gets passed CALLBACKDATA
- *     and returns some result, which is used as the CALLBACKDATA below
+ *     and returns some result as an array of arguments to be used as the CALLBACKDATA below
  *  11. Injected script calls _safariCallbacks[REQUESTID](CALLBACKDATA)
  *
  * See other messaging scripts for more details.
@@ -142,27 +142,38 @@ var MESSAGES = {
 		}
 };
 
+var backgroundHttpInstructions = {
+	"doGet":{
+		// avoid trying to post responseXML
+		"preSend":function(xhr) {
+			return [{"responseText":xhr.responseText,
+				"status":xhr.status,
+				"statusText":xhr.statusText}];
+		},
+		"callbackArg":1
+	},
+	"doPost":{
+		// avoid trying to post responseXML
+		"preSend":function(xhr) {
+			return [{"responseText":xhr.responseText,
+				"status":xhr.status,
+				"statusText":xhr.statusText}];
+		},
+		"callbackArg":2
+	}
+};
+
+// No downside in doing all of the HTTP.do* requests from the background page
+// in Chrome, since we _need_ to do doHead in the background page anyway
+// In Safari, cookies are not sent from background page, so we only use
+// background requests when we have to
+
+if(Zotero.isChrome) {
+	MESSAGES["HTTP"] = backgroundHttpInstructions;
+}
+
 if(Zotero.isSafari) {
-	MESSAGES["COHTTP"] = {
-		"doGet":{
-				// avoid trying to post responseXML
-				"preSend":function(xhr) {
-					return [{"responseText":xhr.responseText,
-						"status":xhr.status,
-						"statusText":xhr.statusText}];
-				},
-				"callbackArg":1
-			},
-		"doPost":{
-				// avoid trying to post responseXML
-				"preSend":function(xhr) {
-					return [{"responseText":xhr.responseText,
-						"status":xhr.status,
-						"statusText":xhr.statusText}];
-				},
-				"callbackArg":2
-			}
-	};
+	MESSAGES["COHTTP"] = backgroundHttpInstructions;
 	
 	MESSAGES["API"]["createItem"] = true;
 	MESSAGES["API"]["uploadAttachment"] = false;

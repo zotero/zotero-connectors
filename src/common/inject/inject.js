@@ -157,6 +157,11 @@ Zotero.Inject = new function() {
 				_translate.setHandler("translators", function(obj, translators) {
 					if(translators.length) {
 						me.translators = translators;
+						for(var i=0; i<translators.length; i++) {
+							if(translators[i].properToProxy) {
+								delete translators[i].properToProxy;
+							}
+						}
 						Zotero.Connector_Browser.onTranslators(translators, instanceID);
 					}
 				});

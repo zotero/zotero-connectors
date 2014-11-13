@@ -134,7 +134,7 @@ Zotero.Connector_Browser = new function() {
 				[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
 	});
 
-	chrome.contextMenus.create({"title":"Save Zotero Snapshot from Current Page", "onclick":function(info, tab) {
+	chrome.contextMenus.create({"title":"Save Page to Zotero", "onclick":function(info, tab) {
 		chrome.tabs.sendRequest(tab.id, ["saveSnapshot"], null);
 	}});
 }

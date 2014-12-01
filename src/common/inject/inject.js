@@ -153,7 +153,6 @@ Zotero.Inject = new function() {
 			if(!_translate) {
 				var me = this;
 				_translate = new Zotero.Translate.Web();
-				_translate.setDocument(document);
 				_translate.setHandler("translators", function(obj, translators) {
 					if(translators.length) {
 						me.translators = translators;
@@ -209,6 +208,7 @@ Zotero.Inject = new function() {
 					Zotero.Messaging.sendMessage("pageModified", null);
 				}, false);
 			}
+			_translate.setDocument(document);
 			_translate.getTranslators();
 		} catch(e) {
 			Zotero.logError(e);

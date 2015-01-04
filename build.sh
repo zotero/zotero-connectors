@@ -31,6 +31,11 @@ function explorerify {
 	# a.indexOf(b) -> indexOf(a,b)
 	perl -000 -pi -e 's/((?:[\w.]+|\[[^\]]*\])+)\.indexOf(\((((?>[^()]+)|(?2))*)\))/zindexOf($1, $3)/gs' \
 		"$TO"
+	
+	# automatic unlinking of backup files is broken in Cygwin, so remove manually
+	if [ -e "$TO.bak" ]; then
+		rm "$TO.bak"
+	fi
 }
 
 function minify {

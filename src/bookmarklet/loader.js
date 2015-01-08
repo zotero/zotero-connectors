@@ -6,7 +6,7 @@ new function() {
 	};
 	
 	var baseURL = "https://www.zotero.org/bookmarklet/",
-		ie = (navigator.appName === "Microsoft Internet Explorer" ? "_ie" : ""),
+		ie = (!document.evaluate ? "_ie" : ""),
 		common = baseURL+"common"+ie+".js",
 		inject = baseURL+"inject"+ie+".js";
 	

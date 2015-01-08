@@ -29,7 +29,7 @@ var Zotero = new function() {
 	this.isChrome = !!window.chrome;
 	this.isSafari = window.navigator.userAgent.indexOf("Safari/") !== -1 && !this.isChrome;
 	this.isWebKit = window.navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
-	this.isIE = window.navigator.appName === "Microsoft Internet Explorer";
+	this.isIE = document && !document.evaluate;
 	this.version = "3.0.4";
 	
 	if(this.isFx) {

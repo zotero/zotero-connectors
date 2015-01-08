@@ -229,7 +229,7 @@ function startTranslation() {
 	
 	zoteroIFrame = document.createElement("iframe");
 	zoteroIFrame.id = "zotero-privileged-iframe";
-	zoteroIFrame.src = ZOTERO_CONFIG.BOOKMARKLET_URL+"iframe"+(navigator.appName === "Microsoft Internet Explorer" ? "_ie" : "")+".html";
+	zoteroIFrame.src = ZOTERO_CONFIG.BOOKMARKLET_URL+"iframe"+(Zotero.isIE ? "_ie" : "")+".html";
 	zoteroIFrame.style.display = "none";
 	document.body.appendChild(zoteroIFrame);
 	document.body.style.overflow = "hidden";

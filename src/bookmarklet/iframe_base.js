@@ -102,7 +102,7 @@ Zotero.API = new function() {
 			}
 		}
 		
-		var url = ZOTERO_CONFIG.API_URL+"users/"+userInfo.userID+"/items?key="+userInfo.apiKey;
+		var url = ZOTERO_CONFIG.API_URL+"users/"+userID+"/items?session="+sessionToken;
 		Zotero.HTTP.doPost(url, JSON.stringify(payload), function(xmlhttp) {
 			if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
 				callback(xmlhttp.status, xmlhttp.responseText);

@@ -31,6 +31,24 @@ function explorerify {
 	# a.indexOf(b) -> indexOf(a,b)
 	perl -000 -pi -e 's/((?:[\w.]+|\[[^\]]*\])+)\.indexOf(\((((?>[^()]+)|(?2))*)\))/zindexOf($1, $3)/gs' \
 		"$TO"
+	
+	# automatic unlinking of backup files is broken in Cygwin, so remove manually
+	if [ -e "$TO.bak" ]; then
+		rm "$TO.bak"
+	fi
+}
+
+function minify {
+	FROM="$1"
+	TO="$2"
+	
+	# Get system path if running in Cygwin so that uglifyjs can access it
+	if [ "`uname -o`" == "Cygwin" ]; then
+		FROM="`cygpath -w \"$FROM\"`"
+	fi
+	
+	uglifyjs "$FROM" > "$TO"
+	
 }
 
 function usage {
@@ -432,8 +450,6 @@ do
 		echo ""
 		echo "/******** END `basename $f` ********/"
 	done >> "$tmpScript"
-
-	tmpScript="$BUILDDIR/bookmarklet/${scpt}_tmp.js"
 	builtScript="$BUILDDIR/bookmarklet/${scpt}.js"
 	ieTmpScript="$BUILDDIR/bookmarklet/${scpt}_ie_tmp.js"
 	ieBuiltScript="$BUILDDIR/bookmarklet/${scpt}_ie.js"
@@ -481,19 +497,19 @@ do
 		mv "$tmpScript" "$builtScript"
 		mv "$ieTmpScript" "$ieBuiltScript"
 	else
-		uglifyjs "$tmpScript" > "$builtScript"
-		uglifyjs "$ieTmpScript" > "$ieBuiltScript"
+		minify "$tmpScript" "$builtScript"
+		minify "$ieTmpScript" "$ieBuiltScript"
 		rm "$tmpScript" "$ieTmpScript"
 	fi
 done
 
-# Copy/uglify auxiliary JS
+# Copy/minify auxiliary JS
 	if [ ! -z $DEBUG ]; then
 	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BUILDDIR/bookmarklet"
 else	
 	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
 	do
-		uglifyjs "$scpt" > "$BUILDDIR/bookmarklet/`basename \"$scpt\"`"
+		minify "$scpt" "$BUILDDIR/bookmarklet/`basename \"$scpt\"`"
 	done
 fi
 

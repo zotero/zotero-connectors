@@ -7,7 +7,7 @@
 		"default_icon": "images/zotero-z-16px.png",
 		"default_title": "Save to Zotero"
 	},
-	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus"],
+	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "webRequest"],
 	"background": {
 		"scripts": [
 			/*BACKGROUND SCRIPTS*/

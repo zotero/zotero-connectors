@@ -29,10 +29,83 @@
  */
 Zotero.HTTP = new function() {
 	/**
+	* Send an HTTP HEAD request via XMLHTTPRequest
+	* 
+	* @param {nsIURI|String}	url				URL to request
+	* @param {Function} 		onDone			Callback to be executed upon request completion
+	* @return {Boolean} True if the request was sent, or false if the browser is offline
+	*/
+	this.doHead = function(url, onDone, headers) {
+		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
+			if(Zotero.isBookmarklet) {
+				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
+			} else if(Zotero.isSafari) {
+				Zotero.COHTTP.doHead(url, onDone);
+				return;
+			}
+		}
+		
+		Zotero.debug("HTTP HEAD " + url);
+		
+		var xmlhttp = new XMLHttpRequest();
+		try {
+			xmlhttp.open('HEAD', url, true);
+			
+			if (!headers) headers = {};
+			for (var header in headers) {
+				xmlhttp.setRequestHeader(header, headers[header]);
+			}
+			
+			// Keep track of URL during redirects, so we know where the response ends up coming from
+			xmlhttp.responseUrl = url;
+			if(Zotero.isChrome) {
+				var modifyResponseUrl = function(details) {
+					if(xmlhttp.responseUrl == details.url) {
+						xmlhttp.responseUrl = details.redirectUrl;
+					}
+				};
+				chrome.webRequest.onBeforeRedirect.addListener(
+					modifyResponseUrl,
+					{
+						urls: [url],
+						types: ["xmlhttprequest"]
+					}
+				);
+			}
+			
+			/** @ignore */
+			xmlhttp.onreadystatechange = function() {
+				_stateChange(xmlhttp, function(xmlhttp) {
+					if(Zotero.isChrome) {
+						chrome.webRequest.onBeforeRedirect.removeListener(modifyResponseUrl);
+					}
+					onDone(xmlhttp);
+				});
+			};
+			xmlhttp.send(null);
+		} catch(e) {
+			Zotero.logError(e);
+			if(onDone) {
+				window.setTimeout(function() {
+					try {
+						onDone({"status":0, "responseText":""});
+					} catch(e) {
+						Zotero.logError(e);
+						return;
+					}
+				}, 0);
+			}
+		}
+		
+		return xmlhttp;
+	}
+	
+	/**
 	* Send an HTTP GET request via XMLHTTPRequest
 	* 
 	* @param {nsIURI|String}	url				URL to request
 	* @param {Function} 		onDone			Callback to be executed upon request completion
+	* @param {String} [responseCharset] Character set to force on the response
 	* @return {Boolean} True if the request was sent, or false if the browser is offline
 	*/
 	this.doGet = function(url, onDone, responseCharset) {
@@ -84,6 +157,7 @@ Zotero.HTTP = new function() {
 	* @param {String} body Request body
 	* @param {Function} onDone Callback to be executed upon request completion
 	* @param {String} headers Request HTTP headers
+	* @param {String} [responseCharset] Character set to force on the response
 	* @return {Boolean} True if the request was sent, or false if the browser is offline
 	*/
 	this.doPost = function(url, body, onDone, headers, responseCharset) {
@@ -180,6 +254,7 @@ Zotero.HTTP = new function() {
 
 // Alias as COHTTP = Cross-origin HTTP; this is how we will call it from children
 Zotero.COHTTP = {
+	"doHead":Zotero.HTTP.doHead,
 	"doGet":Zotero.HTTP.doGet,
 	"doPost":Zotero.HTTP.doPost
 };

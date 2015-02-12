@@ -26,7 +26,7 @@
 				<key>Identifier</key>
 				<string>zotero-saveSnapshot</string>
 				<key>Title</key>
-				<string>Save Zotero Snapshot from Current Page</string>
+				<string>Save Page to Zotero</string>
 			</dict>
 			<dict>
 				<key>Command</key>

@@ -143,28 +143,28 @@ var MESSAGES = {
 		}
 };
 
-if(Zotero.isSafari) {
-	MESSAGES["COHTTP"] = {
-		"doGet":{
-				// avoid trying to post responseXML
-				"preSend":function(xhr) {
-					return [{"responseText":xhr.responseText,
-						"status":xhr.status,
-						"statusText":xhr.statusText}];
-				},
-				"callbackArg":1
+MESSAGES["COHTTP"] = {
+	"doGet":{
+			// avoid trying to post responseXML
+			"preSend":function(xhr) {
+				return [{"responseText":xhr.responseText,
+					"status":xhr.status,
+					"statusText":xhr.statusText}];
 			},
-		"doPost":{
-				// avoid trying to post responseXML
-				"preSend":function(xhr) {
-					return [{"responseText":xhr.responseText,
-						"status":xhr.status,
-						"statusText":xhr.statusText}];
-				},
-				"callbackArg":2
-			}
-	};
-	
+			"callbackArg":1
+		},
+	"doPost":{
+			// avoid trying to post responseXML
+			"preSend":function(xhr) {
+				return [{"responseText":xhr.responseText,
+					"status":xhr.status,
+					"statusText":xhr.statusText}];
+			},
+			"callbackArg":2
+		}
+};
+
+if(Zotero.isSafari) {
 	MESSAGES["API"]["createItem"] = true;
 	MESSAGES["API"]["uploadAttachment"] = false;
 }

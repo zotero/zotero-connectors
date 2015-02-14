@@ -39,7 +39,7 @@ Zotero.HTTP = new function() {
 		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
 			if(Zotero.isBookmarklet) {
 				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
-			} else if(Zotero.isSafari) {
+			} else if(Zotero.isSafari || Zotero.HTTP.isLessSecure(url)) {
 				Zotero.COHTTP.doGet(url, onDone, responseCharset);
 				return;
 			}
@@ -90,7 +90,7 @@ Zotero.HTTP = new function() {
 		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
 			if(Zotero.isBookmarklet) {
 				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
-			} else if(Zotero.isSafari) {
+			} else if(Zotero.isSafari || Zotero.HTTP.isLessSecure(url)) {
 				Zotero.COHTTP.doPost(url, body, onDone, headers, responseCharset);
 				return;
 			}
@@ -179,6 +179,7 @@ Zotero.HTTP = new function() {
 }
 
 // Alias as COHTTP = Cross-origin HTTP; this is how we will call it from children
+// For injected scripts, this get overwritten in messaging.js (see messages.js)
 Zotero.COHTTP = {
 	"doGet":Zotero.HTTP.doGet,
 	"doPost":Zotero.HTTP.doPost

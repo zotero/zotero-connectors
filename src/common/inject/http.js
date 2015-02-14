@@ -43,6 +43,16 @@ Zotero.HTTP.isSameOrigin = function(url) {
 			m[2].toLowerCase() === location.host.toLowerCase();
 	}
 }
+
+/**
+ * Determing if trying to load non-HTTPs URLs from HTTPS pages
+ */
+Zotero.HTTP.isLessSecure = function(url) {
+	if (url.substr(0,8).toLowerCase() == 'https://') return false;
+	
+	var location = Zotero.isBookmarklet ? window.parent.location : window.location;
+	return location.protocol.toLowerCase() == 'https:';
+}
  
 /**
  * Load one or more documents in a hidden iframe

@@ -19,6 +19,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+case "$(uname -s)" in
+   CYGWIN*) IS_CYGWIN=1 ;;
+esac
 . "$CWD/config.sh"
 
 function explorerify {
@@ -43,7 +46,7 @@ function minify {
 	TO="$2"
 	
 	# Get system path if running in Cygwin so that uglifyjs can access it
-	if [ "`uname -o`" == "Cygwin" ]; then
+	if [ ! -z $IS_CYGWIN ]; then
 		FROM="`cygpath -w \"$FROM\"`"
 	fi
 	

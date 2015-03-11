@@ -3,7 +3,6 @@ CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 CHROME_EXECUTABLE="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 CHROME_CERTIFICATE="`dirname $CWD`/zotero_chrome.pem"
-echo $CHROME_CERTIFICATE
 
 # This must be xar from https://code.google.com/p/xar/issues/detail?id=76
 XAR_EXECUTABLE=/usr/local/bin/xar

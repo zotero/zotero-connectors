@@ -137,10 +137,12 @@ Zotero.API = new function() {
 			var data = _decodeFormData(xmlhttp.responseText);
 			Zotero.HTTP.doGet(ZOTERO_CONFIG.API_URL+"users/"+encodeURI(data.userID)
 					+"/keys/"+encodeURI(data.oauth_token_secret), function(xmlhttp) {
-				var access;
-				if(!("responseXML" in xmlhttp) || !xmlhttp.responseXML
-						|| !("getElementsByTagName" in xmlhttp.responseXML)
-						|| !(access = xmlhttp.responseXML.getElementsByTagName("access")).length) {
+				try {
+					var json = JSON.parse(xmlhttp.responseText),
+					    access = json.access;
+				} catch(e) {};
+
+				if(!access || !access.user) {
 					Zotero.logError("Key verification failed with "+xmlhttp.status+'; response was '+xmlhttp.responseText);
 					try {
 						_callback(false, "API key could not be verified");
@@ -150,9 +152,7 @@ Zotero.API = new function() {
 					}
 				}
 				
-				access = access[0];
-				
-				if(access.getAttribute("library") != "1" || access.getAttribute("write") != "1") {
+				if(!access.user.library || !access.user.write) {
 					Zotero.logError("Generated key had inadequate permissions; response was "+xmlhttp.responseText);
 					try {
 						_callback(false, "The key you have generated does not have adequate "+
@@ -175,7 +175,10 @@ Zotero.API = new function() {
 					_callback = undefined;
 				}
 			});
-		}, {"Authorization":oauthSimple.getHeaderString()});
+		}, {
+			"Authorization":oauthSimple.getHeaderString(),
+			"Zotero-API-Version":"3"
+		});
 		_tokenSecret = undefined;
 	};
 	

@@ -35,7 +35,8 @@ Zotero.API = new function() {
 		for(var i in splitData) {
 			var variable = splitData[i];
 			var splitIndex = variable.indexOf("=");
-			decodedData[decodeURIComponent(variable.substr(0, splitIndex))] = decodeURIComponent(variable.substr(splitIndex+1));
+			decodedData[decodeURIComponent(variable.substr(0, splitIndex))] =
+				decodeURIComponent(variable.substr(splitIndex+1).replace(/\+/g, "%20"));
 		}
 		return decodedData;
 	}

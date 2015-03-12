@@ -135,8 +135,11 @@ Zotero.API = new function() {
 			}
 			
 			var data = _decodeFormData(xmlhttp.responseText);
-			Zotero.HTTP.doGet(ZOTERO_CONFIG.API_URL+"users/"+encodeURI(data.userID)
-					+"/keys/"+encodeURI(data.oauth_token_secret), function(xmlhttp) {
+			var xmlhttp = new XMLHttpRequest();
+			xmlhttp.open("GET", ZOTERO_CONFIG.API_URL+"users/"+encodeURI(data.userID)+
+					"/keys/"+encodeURI(data.oauth_token_secret), true);
+			xmlhttp.onreadystatechange = function() {
+				if(xmlhttp.readyState != 4) return;
 				try {
 					var json = JSON.parse(xmlhttp.responseText),
 					    access = json.access;
@@ -174,10 +177,11 @@ Zotero.API = new function() {
 				} finally {
 					_callback = undefined;
 				}
-			});
+			};
+			xmlhttp.setRequestHeader("Zotero-API-Version", "3");
+			xmlhttp.send();
 		}, {
-			"Authorization":oauthSimple.getHeaderString(),
-			"Zotero-API-Version":"3"
+			"Authorization":oauthSimple.getHeaderString()
 		});
 		_tokenSecret = undefined;
 	};

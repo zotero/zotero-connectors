@@ -263,7 +263,7 @@ mkdir "$BUILDDIR/safari.safariextension/images/itemTypes"
 mkdir "$BUILDDIR/safari.safariextension/images/toolbar"
 convert -version > /dev/null 2>&1
 if [ $? == 0 ]; then
-	cp $ICONS "$BUILDDIR/safari.safariextension/images/itemTypes"
+	cp $ICONS "$BUILDDIR/safari.safariextension/images"
 	cp $IMAGES $PREFS_IMAGES "$BUILDDIR/safari.safariextension/images"
 	for f in $ICONS
 	do
@@ -272,7 +272,7 @@ if [ $? == 0 ]; then
 	done
 else
 	echo "ImageMagick not installed; not creating monochrome Safari icons"
-	cp $ICONS "$BUILDDIR/safari.safariextension/images/itemTypes"
+	cp $ICONS "$BUILDDIR/safari.safariextension/images"
 	cp $ICONS "$BUILDDIR/safari.safariextension/images/toolbar"
 	cp $IMAGES $PREFS_IMAGES "$BUILDDIR/safari.safariextension/images"
 fi

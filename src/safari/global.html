@@ -118,7 +118,7 @@ Zotero.Connector_Browser = new function() {
 			var itemType = tab.translators[0].itemType;
 			_zoteroButton.image = (itemType === "multiple"
 					? safari.extension.baseURI+"images/toolbar/treesource-collection.png"
-					: Zotero.ItemTypes.getImageSrc(itemType).replace("/itemTypes/", "/toolbar/"));
+					: Zotero.ItemTypes.getImageSrc(itemType).replace("/treeitem", "/toolbar/treeitem"));
 			_zoteroButton.disabled = false;
 			
 			var translatorName = tab.translators[0].label;

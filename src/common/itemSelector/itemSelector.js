@@ -93,7 +93,7 @@ function ok() {
  * Called when the "Cancel" button is pressed
  */
 function cancel() {
-	items = {};
+	items = false;
 	sendMessage();
 }
 

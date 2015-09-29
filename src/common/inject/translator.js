@@ -35,7 +35,7 @@ Zotero.Translators = {
 				converterFunctions[i] = null;
 			} else {
 				converterFunctions[i] = new function() {
-					var re = new RegExp('^https?://(?:[^/]\\.)?'+Zotero.Utilities.quotemeta(converterDataArray[i][0]), "gi");
+					var re = new RegExp('^https?://(?:[^/]\\.)?'+Zotero.Utilities.quotemeta(converterDataArray[i][0]) + '(?=/)', "gi");
 					var proxyHost = converterDataArray[i][1].replace(/\$/g, "$$$$");
 					return function(uri) { return uri.replace(re, "$&."+proxyHost) };
 				};

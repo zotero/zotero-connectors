@@ -285,7 +285,7 @@ document.getElementById("advanced-button-submit-output").onclick = submitDebugOu
 document.getElementById("advanced-button-update-translators").onclick = function() { Zotero.Repo.update(false) };
 document.getElementById("advanced-button-reset-translators").onclick = function() { Zotero.Repo.update(true) };
 
-var openTranslatorTester = document.getElementById("advanced-button-open-translator-tester");
-if(openTranslatorTester) openTranslatorTester.onclick = openTranslatorTester;
+var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
+if(openTranslatorTesterButton) openTranslatorTesterButton.onclick = openTranslatorTester;
 
 window.addEventListener("load", onLoad, false);

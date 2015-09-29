@@ -36,9 +36,10 @@ Zotero.TranslatorTester.runTests = function(translator, type, instanceID, tab) {
 	}
 	
 	var translatorTester = new Zotero_TranslatorTester(translator, type, debug);
-	translatorTester.runTests(function() {
+	translatorTester.runTests(function(obj) {
 		var args = new Array(arguments.length);
-		for(var i=0; i<arguments.length; i++) args[i] = arguments[i];
+		args[0] = JSON.parse(JSON.stringify(obj));
+		for(var i=1; i<arguments.length; i++) args[i] = arguments[i];
 		Zotero.Messaging.sendMessage("translatorTester_testDone", [instanceID, args], tab);
 	});
 }

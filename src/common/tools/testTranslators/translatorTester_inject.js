@@ -42,7 +42,10 @@ if(isTopWindow) {
 				var translatorTester = new Zotero_TranslatorTester(translator, type, function(obj, msg, level) {
 					Zotero.TranslatorTester.debug(null, msg, level);
 				});
-				translatorTester.runTest(test, document, Zotero.TranslatorTester.testComplete);
+				translatorTester.runTest(test, document, function(obj, test, status, message) {
+					delete test.translator;
+					Zotero.TranslatorTester.testComplete(null, test, status, message)
+				});
 			};
 			
 			if(test.defer) {

@@ -79,13 +79,15 @@ function load() {
  * Called when the "OK" button is pressed to save selected items
  */
 function ok() {
-	var newItems = {};
+	var newItems = {},
+		selected = false;
 	for(var i in checkboxes) {
 		if(checkboxes[i].checked) {
+			selected = true;
 			newItems[i] = items[i];
 		}
 	}
-	items = newItems;
+	items = selected && newItems;
 	sendMessage();
 }
 
@@ -93,7 +95,7 @@ function ok() {
  * Called when the "Cancel" button is pressed
  */
 function cancel() {
-	items = {};
+	items = false;
 	sendMessage();
 }
 

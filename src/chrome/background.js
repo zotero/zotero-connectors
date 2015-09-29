@@ -34,8 +34,25 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onTranslators = function(translators, instanceID, tab) {
 		var oldTranslators = _translatorsForTabIDs[tab.id];
-		if(oldTranslators && oldTranslators.length
-			&& (!translators.length || oldTranslators[0].priority <= translators[0].priority)) return;
+		if(//we already have a translator for part of this page
+			oldTranslators && oldTranslators.length //&& oldTranslators.targetURL copied from Firefox, but I don't think it's relevant
+			//and the page is still there (not as easy to check in Chrome/Safari)
+			//&& this.page.document.defaultView && !this.page.document.defaultView.closed
+			//this set of translators is not targeting the same URL as a previous set of translators,
+			// because otherwise we want to use the newer set
+			&& oldTranslators.targetURL != translators.targetURL
+				//the best translator we had was of higher priority than the new set
+			&& (oldTranslators.bestPriority < translators.bestPriority
+				//or the priority was the same, but...
+				|| (oldTranslators.bestPriority == translators.bestPriority
+					//the previous set of translators targets the top frame or the current one does not either
+					&& (oldTranslators.targetsTopFrame || !translators.targetsTopFrame)
+				)
+			)
+		) {
+			return; //keep what we had
+		}
+		
 		_translatorsForTabIDs[tab.id] = translators;
 		_instanceIDsForTabs[tab.id] = instanceID;
 		var itemType = translators[0].itemType;

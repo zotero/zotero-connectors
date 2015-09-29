@@ -157,7 +157,12 @@ Zotero.Inject = new function() {
 				_translate.setHandler("translators", function(obj, translators) {
 					if(translators.length) {
 						me.translators = translators;
+						translators.targetURL = document.location.href;
+						translators.targetsTopFrame = isTopWindow;
 						for(var i=0; i<translators.length; i++) {
+							translators.bestPriority = translators[0].priority;
+							
+							// Safari has issues cloning functions, so strip them off
 							if(translators[i].properToProxy) {
 								delete translators[i].properToProxy;
 							}

@@ -81,6 +81,8 @@
 			<string>All</string>
 		</dict>
 	</dict>
+	<key>Update From Gallery</key>
+	<true/>
 	<key>Update Manifest URL</key>
 	<string>https://www.zotero.org/download/everywhere/safari/update.plist</string>
 	<key>Website</key>

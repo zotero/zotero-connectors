@@ -259,7 +259,6 @@ echo -n "Building connectors..."
 # Make alpha images for Safari
 rm -rf "$BUILDDIR/safari.safariextension/images"
 mkdir "$BUILDDIR/safari.safariextension/images"
-mkdir "$BUILDDIR/safari.safariextension/images/itemTypes"
 mkdir "$BUILDDIR/safari.safariextension/images/toolbar"
 convert -version > /dev/null 2>&1
 if [ $? == 0 ]; then

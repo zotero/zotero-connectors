@@ -153,7 +153,6 @@ Zotero.Inject = new function() {
 			if(!_translate) {
 				var me = this;
 				_translate = new Zotero.Translate.Web();
-				_translate.setDocument(document);
 				_translate.setHandler("translators", function(obj, translators) {
 					if(translators.length) {
 						me.translators = translators;
@@ -163,6 +162,7 @@ Zotero.Inject = new function() {
 							}
 						}
 						Zotero.Connector_Browser.onTranslators(translators, instanceID);
+						if (me.rerunPromise) me.rerunPromise.resolve();
 					}
 				});
 				_translate.setHandler("select", function(obj, items, callback) {
@@ -209,9 +209,48 @@ Zotero.Inject = new function() {
 					Zotero.Messaging.sendMessage("pageModified", null);
 				}, false);
 			}
+			_translate.setDocument(document);
 			_translate.getTranslators();
 		} catch(e) {
 			Zotero.logError(e);
+		}
+	};
+
+	this.rerunDetect = function() {
+		if (this.rerunPromise) {
+			return; // Already scheduled
+		}
+		
+		if (_translate && _translate._currentState == 'detect') {
+			// Detection already running, let it finish and rerun later
+			var deferred = {};
+			deferred.promise = new Promise(function(resolve, reject) {
+				deferred.resolve = resolve;
+				deferred.reject = reject;
+			});
+
+			this.rerunPromise = deferred;
+			var me = this;
+
+			deferred.promise.then(function() {
+				// Delay rerunning detection to prevent possible spam from DOM events
+				window.setTimeout(function() {
+						delete me.rerunPromise;
+						me.rerunDetect();
+					},
+					500
+				);
+			})
+		} else {
+			// Cancel all observers
+			Zotero.debug("Clearing observers");
+			var observers = _translate._registeredDOMObservers.observers;
+			while (observers.length) {
+				observers.pop().disconnect();
+			}
+			delete _translate._registeredDOMObservers.targets;
+			
+			this.detect(true);
 		}
 	};
 };
@@ -231,7 +270,7 @@ if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.p
 	});
 	// add listener to rerun detection on page modifications
 	Zotero.Messaging.addMessageListener("pageModified", function() {
-		Zotero.Inject.detect(true);
+		Zotero.Inject.rerunDetect();
 	});
 	// initialize
 	Zotero.initInject();

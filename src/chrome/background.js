@@ -56,6 +56,8 @@ Zotero.Connector_Browser = new function() {
 			title:"Save to Zotero ("+translatorName+")"
 		});
 		
+		Zotero.debug("Translate: Using " + translatorName + " (" + itemType + ")");
+		
 		chrome.pageAction.show(tab.id);
 	}
 	

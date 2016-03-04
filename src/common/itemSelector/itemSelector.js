@@ -73,6 +73,15 @@ function load() {
 	}
 	
 	window.onbeforeunload = cancel;
+	
+	// OK on Return, Cancel on Esc
+	window.addEventListener("keydown", function (event) {
+		if (event.keyCode == 13 || event.keyCode == 14) {
+			ok();
+		} else if (event.keyCode == 27) {
+			cancel();
+		}
+	});
 }
 
 /**

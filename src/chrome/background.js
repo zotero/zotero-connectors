@@ -115,7 +115,7 @@ Zotero.Connector_Browser = new function() {
 			'. Zotero Connector will continue to operate, but functionality that relies upon '+
 			'Zotero Standalone may be unavaliable.\n\n'+
 			'Please ensure that you have installed the latest version of these components. See '+
-			'http://www.zotero.org/support/standalone for more details.');
+			'https://www.zotero.org/download for more details.');
 		_incompatibleVersionMessageShown = true;
 	}
 	

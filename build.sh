@@ -101,7 +101,7 @@ EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
 CHROME_EXT="$DISTDIR/Zotero_Connector-$VERSION.crx"
 
-ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-z-16px.png"
+ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-new-z-16px.png"
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png"
 
@@ -282,6 +282,10 @@ cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
 rm -rf "$BUILDDIR/chrome/images"
 mkdir "$BUILDDIR/chrome/images"
 cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/chrome/images"
+for img in "$BUILDDIR"/chrome/images/*2x.png; do
+	mv $img `echo $img | sed 's/@2x//'`
+done
+
 cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILDDIR/chrome"
 
 

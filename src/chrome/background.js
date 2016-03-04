@@ -61,9 +61,24 @@ Zotero.Connector_Browser = new function() {
 	 * Called to display select items dialog
 	 */
 	this.onSelect = function(items, callback, tab) {
-		window.open(chrome.extension.getURL("itemSelector/itemSelector.html")+"#"+encodeURIComponent(JSON.stringify([tab.id, items])), '',
-		'height=325,width=500,location=no,toolbar=no,menubar=no,status=no');
-		_selectCallbacksForTabIDs[tab.id] = callback;
+		chrome.windows.get(tab.windowId, null, function (win) {
+			var width = 600;
+			var height = 325;
+			var left = Math.floor(win.left + (win.width / 2) - (width / 2));
+			var top = Math.floor(win.top + (win.height / 2) - (height / 2));
+			
+			win = window.open(chrome.extension.getURL("itemSelector/itemSelector.html")+"#"+encodeURIComponent(JSON.stringify([tab.id, items])), '',
+			'height=' + height + ',width=' + width + ',top=' + top + ',left=' + left + 'location=no,'
+				+ 'toolbar=no,menubar=no,status=no');
+			// Fix positioning when window is on second monitor
+			// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
+			if (win.screenX < left) {
+				chrome.windows.getLastFocused(null, function (win) {
+					chrome.windows.update(win.id, { left: left });
+				});
+			}
+			_selectCallbacksForTabIDs[tab.id] = callback;
+		});
 	}
 	
 	/**

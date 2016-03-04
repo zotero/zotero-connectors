@@ -3,8 +3,8 @@
 	"manifest_version": 2,
 	"version": "3.0.3",
 	"description": "Saves references to Zotero from Chrome and Opera",
-	"page_action": {
-		"default_icon": "images/zotero-z-16px.png",
+	"browser_action": {
+		"default_icon": "images/treeitem-webpage.png",
 		"default_title": "Save to Zotero"
 	},
 	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies"],
@@ -37,7 +37,7 @@
 	},
 	"options_page": "preferences/preferences.html",
 	"commands": {
-		"_execute_page_action": {
+		"_execute_browser_action": {
 			"suggested_key": {
 				"default": "Ctrl+Shift+S"
 			}

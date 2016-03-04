@@ -155,15 +155,13 @@ Zotero.Inject = new function() {
 				_translate = new Zotero.Translate.Web();
 				_translate.setDocument(document);
 				_translate.setHandler("translators", function(obj, translators) {
-					if(translators.length) {
-						me.translators = translators;
-						for(var i=0; i<translators.length; i++) {
-							if(translators[i].properToProxy) {
-								delete translators[i].properToProxy;
-							}
+					me.translators = translators;
+					for(var i=0; i<translators.length; i++) {
+						if(translators[i].properToProxy) {
+							delete translators[i].properToProxy;
 						}
-						Zotero.Connector_Browser.onTranslators(translators, instanceID);
 					}
+					Zotero.Connector_Browser.onTranslators(translators, instanceID);
 				});
 				_translate.setHandler("select", function(obj, items, callback) {
 					Zotero.Connector_Browser.onSelect(items, function(returnItems) {

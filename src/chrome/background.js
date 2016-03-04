@@ -33,30 +33,28 @@ Zotero.Connector_Browser = new function() {
 	 * Called when translators are available for a given page
 	 */
 	this.onTranslators = function(translators, instanceID, tab) {
+		if(_isDisabledForURL(tab.url)) {
+			_clearInfoForTab(tab.id);
+			_disableForTab(tab.id);
+			return;
+		}
+		
+		_enableForTab(tab.id);
+		
 		var oldTranslators = _translatorsForTabIDs[tab.id];
-		if(oldTranslators && oldTranslators.length
-			&& (!translators.length || oldTranslators[0].priority <= translators[0].priority)) return;
+		if (oldTranslators) {
+			if ((oldTranslators.length
+					&& (!translators.length || oldTranslators[0].priority <= translators[0].priority))
+				|| (!oldTranslators.length && !translators.length)) return;
+		}
 		_translatorsForTabIDs[tab.id] = translators;
 		_instanceIDsForTabs[tab.id] = instanceID;
-		var itemType = translators[0].itemType;
 		
-		chrome.pageAction.setIcon({
-			tabId:tab.id,
-			path:(itemType === "multiple"
-					? "images/treesource-collection.png"
-					: Zotero.ItemTypes.getImageSrc(itemType))
-		});
-		
-		var translatorName = translators[0].label;
-		if(translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
-			translatorName += " via Zotero Standalone";
+		if(translators.length) {
+			_showTranslatorIcon(tab, translators[0]);
+		} else {
+			_showWebpageIcon(tab);
 		}
-		chrome.pageAction.setTitle({
-			tabId:tab.id,
-			title:"Save to Zotero ("+translatorName+")"
-		});
-		
-		chrome.pageAction.show(tab.id);
 	}
 	
 	/**
@@ -84,7 +82,8 @@ Zotero.Connector_Browser = new function() {
 				if(_translatorsForTabIDs[i] && _translatorsForTabIDs[i].length
 						&& _translatorsForTabIDs[i][0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
 					try {
-						chrome.pageAction.hide(i);
+						Zotero.debug("Falling back to webpage saving for tab " + i);
+						_showWebpageIcon(i);
 					} catch(e) {}
 				}
 			}
@@ -112,9 +111,62 @@ Zotero.Connector_Browser = new function() {
 		delete _translatorsForTabIDs[tabID];
 		delete _instanceIDsForTabs[tabID];
 		delete _selectCallbacksForTabIDs[tabID];
-		chrome.pageAction.hide(tabID);
 	}
-
+	
+	function _isDisabledForURL(url) {
+		return url.indexOf('chrome://') == 0;
+	}
+	
+	function _disableForTab(tabID) {
+		chrome.browserAction.disable(tabID);
+		chrome.contextMenus.update("zotero-context-menu-save", { enabled: false });
+	}
+	
+	function _enableForTab(tabID) {
+		chrome.browserAction.enable(tabID);
+		chrome.contextMenus.update("zotero-context-menu-save", { enabled: true });
+	}
+	
+	function _showTranslatorIcon(tab, translator) {
+		var itemType = translator.itemType;
+		
+		chrome.browserAction.setIcon({
+			tabId:tab.id,
+			path:(itemType === "multiple"
+					? "images/treesource-collection.png"
+					: Zotero.ItemTypes.getImageSrc(itemType))
+		});
+		
+		var translatorName = translator.label;
+		if(translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
+			translatorName += " via Zotero Standalone";
+		}
+		chrome.browserAction.setTitle({
+			tabId:tab.id,
+			title:"Save to Zotero ("+translatorName+")"
+		});
+	}
+	
+	function _showWebpageIcon(tab) {
+		chrome.browserAction.setIcon({
+			tabId:tab.id,
+			path:Zotero.ItemTypes.getImageSrc("webpage")
+		});
+		chrome.browserAction.setTitle({
+			tabId:tab.id,
+			title:"Save to Zotero (Web Page)"
+		});
+	}
+	
+	function _saveFromPage(tab) {
+		if(_translatorsForTabIDs[tab.id].length) {
+			chrome.tabs.sendRequest(tab.id, ["translate",
+					[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
+		} else {
+			chrome.tabs.sendRequest(tab.id, ["saveSnapshot"], null);
+		}
+	}
+	
 	Zotero.Messaging.addMessageListener("selectDone", function(data) {
 		_selectCallbacksForTabIDs[data[0]](data[1]);
 	});
@@ -129,14 +181,17 @@ Zotero.Connector_Browser = new function() {
 		chrome.tabs.sendRequest(tabID, ["pageModified"], null);
 	});
 
-	chrome.pageAction.onClicked.addListener(function(tab) {
-		chrome.tabs.sendRequest(tab.id, ["translate",
-				[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
+	chrome.browserAction.onClicked.addListener(function(tab) {
+		_saveFromPage(tab);
 	});
 
-	chrome.contextMenus.create({"title":"Save Page to Zotero", "onclick":function(info, tab) {
-		chrome.tabs.sendRequest(tab.id, ["saveSnapshot"], null);
-	}});
+	chrome.contextMenus.create({
+		"id":"zotero-context-menu-save",
+		"title":"Save Page to Zotero",
+		"onclick":function(info, tab) {
+			_saveFromPage(tab);
+		}
+	});
 }
 
 Zotero.initGlobal();

@@ -222,27 +222,40 @@ try {
 
 // don't try to scrape on hidden frames
 if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.protocol === "https:")) {
-	// add listener for translate message from extension
-	Zotero.Messaging.addMessageListener("translate", function(data) {
-		if(data[0] !== instanceID) return;
-		Zotero.Inject.translate(data[1]);
-	});
-	// add listener to rerun detection on page modifications
-	Zotero.Messaging.addMessageListener("pageModified", function() {
-		Zotero.Inject.detect(true);
-	});
-	// initialize
-	Zotero.initInject();
+	var doInject = function () {
+		// add listener for translate message from extension
+		Zotero.Messaging.addMessageListener("translate", function(data) {
+			if(data[0] !== instanceID) return;
+			Zotero.Inject.translate(data[1]);
+		});
+		// add listener to rerun detection on page modifications
+		Zotero.Messaging.addMessageListener("pageModified", function() {
+			Zotero.Inject.detect(true);
+		});
+		// initialize
+		Zotero.initInject();
+		
+		// Send page load event to clear current save icon/data
+		if(isTopWindow) Zotero.Connector_Browser.onPageLoad();
 	
-	// Send page load event to clear current save icon/data
-	if(isTopWindow) Zotero.Connector_Browser.onPageLoad();
-
-	if(document.readyState !== "complete") {
-		window.addEventListener("load", function(e) {
+		if(document.readyState !== "complete") {
+			window.addEventListener("load", function(e) {
 				if(e.target !== document) return;
 				Zotero.Inject.detect();
 			}, false);
-	} else {	
-		Zotero.Inject.detect();
+		} else {	
+			Zotero.Inject.detect();
+		}
+	};
+	
+	// Wait until pages in prerender state become visible before injecting
+	if (document.visibilityState == 'prerender') {
+		var handler = function() {
+			doInject();
+			document.removeEventListener("visibilitychange", handler);
+		};
+		document.addEventListener("visibilitychange", handler);
+	} else {
+		doInject();
 	}
 }

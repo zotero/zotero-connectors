@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Copyright (c) 2012  Zotero
 #                     Center for History and New Media
@@ -282,6 +282,7 @@ cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
 rm -rf "$BUILDDIR/chrome/images"
 mkdir "$BUILDDIR/chrome/images"
 cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/chrome/images"
+# Use 2x images, since Chrome actually wants 19px icons
 for img in "$BUILDDIR"/chrome/images/*2x.png; do
 	mv $img `echo $img | sed 's/@2x//'`
 done

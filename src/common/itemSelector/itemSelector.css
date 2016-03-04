@@ -38,6 +38,7 @@ body {
 	font-size: 9pt;
 	white-space: nowrap;
 	min-height: 14pt;
+	cursor: default;
 }
 
 #select-deselect {

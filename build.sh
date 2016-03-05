@@ -260,8 +260,11 @@ echo -n "Building connectors..."
 rm -rf "$BUILDDIR/safari.safariextension/images"
 mkdir "$BUILDDIR/safari.safariextension/images"
 mkdir "$BUILDDIR/safari.safariextension/images/toolbar"
+set +e
 convert -version > /dev/null 2>&1
-if [ $? == 0 ]; then
+RETVAL=$?
+set -e
+if [ $RETVAL == 0 ]; then
 	cp $ICONS "$BUILDDIR/safari.safariextension/images"
 	cp $IMAGES $PREFS_IMAGES "$BUILDDIR/safari.safariextension/images"
 	for f in $ICONS
@@ -270,6 +273,7 @@ if [ $? == 0 ]; then
 				Opacity -contrast-stretch 50 "$BUILDDIR/safari.safariextension/images/toolbar/"`basename $f`
 	done
 else
+	echo
 	echo "ImageMagick not installed; not creating monochrome Safari icons"
 	cp $ICONS "$BUILDDIR/safari.safariextension/images"
 	cp $ICONS "$BUILDDIR/safari.safariextension/images/toolbar"

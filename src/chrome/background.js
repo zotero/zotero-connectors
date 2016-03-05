@@ -32,7 +32,7 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Called when translators are available for a given page
 	 */
-	this.onTranslators = function(translators, instanceID, tab) {
+	this.onTranslators = function(translators, instanceID, contentType, tab) {
 		if(_isDisabledForURL(tab.url)) {
 			_clearInfoForTab(tab.id);
 			_disableForTab(tab.id);
@@ -50,8 +50,10 @@ Zotero.Connector_Browser = new function() {
 		_translatorsForTabIDs[tab.id] = translators;
 		_instanceIDsForTabs[tab.id] = instanceID;
 		
-		if(translators.length) {
+		if (translators.length) {
 			_showTranslatorIcon(tab, translators[0]);
+		} else if (contentType == 'application/pdf') {
+			_showPDFIcon(tab);
 		} else {
 			_showWebpageIcon(tab);
 		}
@@ -173,12 +175,23 @@ Zotero.Connector_Browser = new function() {
 		});
 	}
 	
+	function _showPDFIcon(tab) {
+		chrome.browserAction.setIcon({
+			tabId:tab.id,
+			path:Zotero.ItemTypes.getImageSrc("webpage")
+		});
+		chrome.browserAction.setTitle({
+			tabId:tab.id,
+			title:"Save to Zotero (PDF)"
+		});
+	}
+	
 	function _saveFromPage(tab) {
 		if(_translatorsForTabIDs[tab.id].length) {
 			chrome.tabs.sendRequest(tab.id, ["translate",
 					[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
 		} else {
-			chrome.tabs.sendRequest(tab.id, ["saveSnapshot"], null);
+			chrome.tabs.sendRequest(tab.id, ["saveSnapshot", tab.title], null);
 		}
 	}
 	

@@ -77,12 +77,26 @@ if(isTopWindow) {
 			Zotero.ProgressWindow.startCloseTimer(8000);
 		}
 	});
-	Zotero.Messaging.addMessageListener("saveSnapshot", function() {
+	Zotero.Messaging.addMessageListener("saveSnapshot", function (title) {
 		var html = document.documentElement.innerHTML;
+		
+		var data = {
+			"url": document.location.toString(),
+			"cookie": document.cookie,
+			"html": html
+		};
+		
+		if (document.contentType == 'application/pdf') {
+			data.pdf = true;
+			var image = "attachment-pdf";
+		} else {
+			var image = "webpage";
+		}
+		
 		var progress = new Zotero.ProgressWindow.ItemProgress(
-			Zotero.ItemTypes.getImageSrc("webpage"), document.title);
-		Zotero.Connector.callMethod("saveSnapshot", {"url":document.location.toString(),
-				"cookie":document.cookie, "html":html},
+			Zotero.ItemTypes.getImageSrc(image), title || document.title
+		);
+		Zotero.Connector.callMethod("saveSnapshot", data,
 			function(returnValue, status) {
 				if(returnValue === false) {
 					if(status === 0) {
@@ -161,7 +175,7 @@ Zotero.Inject = new function() {
 							delete translators[i].properToProxy;
 						}
 					}
-					Zotero.Connector_Browser.onTranslators(translators, instanceID);
+					Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
 				});
 				_translate.setHandler("select", function(obj, items, callback) {
 					Zotero.Connector_Browser.onSelect(items, function(returnItems) {

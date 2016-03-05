@@ -4,7 +4,7 @@
 	"version": "3.0.3",
 	"description": "Saves references to Zotero from Chrome and Opera",
 	"browser_action": {
-		"default_icon": "images/treeitem-webpage.png",
+		"default_icon": "images/treeitem-webpage-gray.png",
 		"default_title": "Save to Zotero"
 	},
 	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies"],

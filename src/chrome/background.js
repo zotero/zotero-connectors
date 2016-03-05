@@ -167,7 +167,7 @@ Zotero.Connector_Browser = new function() {
 	function _showWebpageIcon(tab) {
 		chrome.browserAction.setIcon({
 			tabId:tab.id,
-			path:Zotero.ItemTypes.getImageSrc("webpage")
+			path:Zotero.ItemTypes.getImageSrc("webpage-gray")
 		});
 		chrome.browserAction.setTitle({
 			tabId:tab.id,
@@ -178,7 +178,7 @@ Zotero.Connector_Browser = new function() {
 	function _showPDFIcon(tab) {
 		chrome.browserAction.setIcon({
 			tabId:tab.id,
-			path:Zotero.ItemTypes.getImageSrc("webpage")
+			path:Zotero.ItemTypes.getImageSrc("webpage-gray")
 		});
 		chrome.browserAction.setTitle({
 			tabId:tab.id,

@@ -282,9 +282,14 @@ cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
 rm -rf "$BUILDDIR/chrome/images"
 mkdir "$BUILDDIR/chrome/images"
 cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/chrome/images"
-# Use 2x images, since Chrome actually wants 19px icons
+# Use larger icons where available, since Chrome actually wants 19px icons
+# 2x
 for img in "$BUILDDIR"/chrome/images/*2x.png; do
 	mv $img `echo $img | sed 's/@2x//'`
+done
+## 2.5x
+for img in "$BUILDDIR"/chrome/images/*48px.png; do
+	mv $img `echo $img | sed 's/@48px//'`
 done
 
 cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILDDIR/chrome"

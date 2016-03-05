@@ -87,7 +87,7 @@ if [ -z $VERSION ]; then
 	pushd "$CWD" > /dev/null
 	REV=`git log -n 1 --pretty='format:%h'`
 	VERSION="$DEFAULT_VERSION"
-	popd
+	popd > /dev/null
 fi
 
 SRCDIR="$CWD/src"

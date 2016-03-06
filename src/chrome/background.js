@@ -50,12 +50,22 @@ Zotero.Connector_Browser = new function() {
 		_translatorsForTabIDs[tab.id] = translators;
 		_instanceIDsForTabs[tab.id] = instanceID;
 		
+		var isPDF = contentType == 'application/pdf';
+		chrome.contextMenus.removeAll();
+		
 		if (translators.length) {
 			_showTranslatorIcon(tab, translators[0]);
-		} else if (contentType == 'application/pdf') {
+			_showTranslatorContextMenuItem(translators[0]);
+		} else if (isPDF) {
 			_showPDFIcon(tab);
 		} else {
 			_showWebpageIcon(tab);
+		}
+		
+		if (isPDF) {
+			_showPDFContextMenuItem();
+		} else {
+			_showWebpageContextMenuItem();
 		}
 	}
 	
@@ -136,12 +146,11 @@ Zotero.Connector_Browser = new function() {
 	
 	function _disableForTab(tabID) {
 		chrome.browserAction.disable(tabID);
-		chrome.contextMenus.update("zotero-context-menu-save", { enabled: false });
+		chrome.contextMenus.removeAll();
 	}
 	
 	function _enableForTab(tabID) {
 		chrome.browserAction.enable(tabID);
-		chrome.contextMenus.update("zotero-context-menu-save", { enabled: true });
 	}
 	
 	function _showTranslatorIcon(tab, translator) {
@@ -154,13 +163,9 @@ Zotero.Connector_Browser = new function() {
 					: Zotero.ItemTypes.getImageSrc(itemType))
 		});
 		
-		var translatorName = translator.label;
-		if(translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
-			translatorName += " via Zotero Standalone";
-		}
 		chrome.browserAction.setTitle({
 			tabId:tab.id,
-			title:"Save to Zotero ("+translatorName+")"
+			title: _getTranslatorLabel(translator)
 		});
 	}
 	
@@ -186,13 +191,83 @@ Zotero.Connector_Browser = new function() {
 		});
 	}
 	
-	function _saveFromPage(tab) {
+	function _showTranslatorContextMenuItem(translator) {
+		chrome.contextMenus.create({
+			id: "zotero-context-menu-translator-save",
+			title: _getTranslatorLabel(translator),
+			onclick: function (info, tab) {
+				_saveWithTranslator(tab);
+			}
+		});
+	}
+	
+	function _showWebpageContextMenuItem() {
+		chrome.contextMenus.create({
+			id: "zotero-context-menu-webpage-save",
+			title: "Save to Zotero (Web Page)",
+			onclick: function (info, tab) {
+				_saveAsWebpage(tab);
+			}
+		});
+	}
+	
+	function _showPDFContextMenuItem() {
+		chrome.contextMenus.create({
+			id: "zotero-context-menu-pdf-save",
+			title: "Save to Zotero (PDF)",
+			onclick: function (info, tab) {
+				_saveAsWebpage(tab);
+			}
+		});
+	}
+	
+	function _save(tab) {
 		if(_translatorsForTabIDs[tab.id].length) {
-			chrome.tabs.sendRequest(tab.id, ["translate",
-					[_instanceIDsForTabs[tab.id], _translatorsForTabIDs[tab.id][0]]], null);
+			_saveWithTranslator(tab);
 		} else {
+			_saveAsWebpage(tab);
+		}
+	}
+	
+	function _saveWithTranslator(tab) {
+		chrome.tabs.sendRequest(
+			tab.id,
+			[
+				"translate",
+				[
+					_instanceIDsForTabs[tab.id],
+					_translatorsForTabIDs[tab.id][0]
+				]
+			],
+			null
+		);
+	}
+	
+	function _saveAsWebpage(tab) {
+		if (tab.id != -1) {
 			chrome.tabs.sendRequest(tab.id, ["saveSnapshot", tab.title], null);
 		}
+		// Handle right-click on PDF overlay, which exists in a weird non-tab state
+		else {
+			chrome.tabs.query(
+				{
+					lastFocusedWindow: true,
+					active: true
+				},
+				function (tabs) {
+					chrome.tabs.sendRequest(tabs[0].id, ["saveSnapshot", tab.title], null);
+				}
+			);
+		}
+	}
+	
+	function _getTranslatorLabel(translator) {
+		var translatorName = translator.label;
+		if(translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
+			translatorName += " via Zotero Standalone";
+		}
+		
+		return "Save to Zotero (" + translatorName + ")";
 	}
 	
 	Zotero.Messaging.addMessageListener("selectDone", function(data) {
@@ -210,15 +285,7 @@ Zotero.Connector_Browser = new function() {
 	});
 
 	chrome.browserAction.onClicked.addListener(function(tab) {
-		_saveFromPage(tab);
-	});
-
-	chrome.contextMenus.create({
-		"id":"zotero-context-menu-save",
-		"title":"Save Page to Zotero",
-		"onclick":function(info, tab) {
-			_saveFromPage(tab);
-		}
+		_save(tab);
 	});
 }
 

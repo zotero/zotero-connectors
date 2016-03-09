@@ -55,7 +55,7 @@ Zotero.Connector_Browser = new function() {
 		
 		if (translators.length) {
 			_showTranslatorIcon(tab, translators[0]);
-			_showTranslatorContextMenuItem(translators[0]);
+			_showTranslatorContextMenuItem(translators);
 		} else if (isPDF) {
 			_showPDFIcon(tab);
 		} else {
@@ -191,15 +191,17 @@ Zotero.Connector_Browser = new function() {
 		});
 	}
 	
-	function _showTranslatorContextMenuItem(translator) {
-		chrome.contextMenus.create({
-			id: "zotero-context-menu-translator-save",
-			title: _getTranslatorLabel(translator),
-			onclick: function (info, tab) {
-				_saveWithTranslator(tab);
-			},
-			contexts: ['page', 'browser_action']
-		});
+	function _showTranslatorContextMenuItem(translators) {
+		for (let i = 0; i < translators.length; i++) {
+			chrome.contextMenus.create({
+				id: "zotero-context-menu-translator-save" + i,
+				title: _getTranslatorLabel(translators[i]),
+				onclick: function (info, tab) {
+					_saveWithTranslator(tab, i);
+				},
+				contexts: ['page', 'browser_action']
+			});
+		}
 	}
 	
 	function _showWebpageContextMenuItem() {
@@ -226,20 +228,20 @@ Zotero.Connector_Browser = new function() {
 	
 	function _save(tab) {
 		if(_translatorsForTabIDs[tab.id].length) {
-			_saveWithTranslator(tab);
+			_saveWithTranslator(tab, 0);
 		} else {
 			_saveAsWebpage(tab);
 		}
 	}
 	
-	function _saveWithTranslator(tab) {
+	function _saveWithTranslator(tab, i) {
 		chrome.tabs.sendRequest(
 			tab.id,
 			[
 				"translate",
 				[
 					_instanceIDsForTabs[tab.id],
-					_translatorsForTabIDs[tab.id][0]
+					_translatorsForTabIDs[tab.id][i]
 				]
 			],
 			null

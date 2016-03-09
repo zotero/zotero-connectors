@@ -221,7 +221,7 @@ Zotero.Inject = new function() {
 					Zotero.Messaging.sendMessage("pageModified", null);
 				}, false);
 			}
-			_translate.getTranslators();
+			_translate.getTranslators(true);
 		} catch(e) {
 			Zotero.logError(e);
 		}

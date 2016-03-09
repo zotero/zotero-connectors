@@ -197,7 +197,8 @@ Zotero.Connector_Browser = new function() {
 			title: _getTranslatorLabel(translator),
 			onclick: function (info, tab) {
 				_saveWithTranslator(tab);
-			}
+			},
+			contexts: ['page', 'browser_action']
 		});
 	}
 	
@@ -207,7 +208,8 @@ Zotero.Connector_Browser = new function() {
 			title: "Save to Zotero (Web Page)",
 			onclick: function (info, tab) {
 				_saveAsWebpage(tab);
-			}
+			},
+			contexts: ['page', 'browser_action']
 		});
 	}
 	
@@ -217,7 +219,8 @@ Zotero.Connector_Browser = new function() {
 			title: "Save to Zotero (PDF)",
 			onclick: function (info, tab) {
 				_saveAsWebpage(tab);
-			}
+			},
+			contexts: ['page', 'browser_action']
 		});
 	}
 	

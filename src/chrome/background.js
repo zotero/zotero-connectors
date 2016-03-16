@@ -192,7 +192,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _showTranslatorContextMenuItem(translators) {
-		for (let i = 0; i < translators.length; i++) {
+		for (var i = 0; i < translators.length; i++) {
 			chrome.contextMenus.create({
 				id: "zotero-context-menu-translator-save" + i,
 				title: _getTranslatorLabel(translators[i]),

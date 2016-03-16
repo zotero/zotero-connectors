@@ -196,9 +196,11 @@ Zotero.Connector_Browser = new function() {
 			chrome.contextMenus.create({
 				id: "zotero-context-menu-translator-save" + i,
 				title: _getTranslatorLabel(translators[i]),
-				onclick: function (info, tab) {
-					_saveWithTranslator(tab, i);
-				},
+				onclick: (function (i) {
+					return function (info, tab) {
+						_saveWithTranslator(tab, i);
+					};
+				})(i),
 				contexts: ['page', 'browser_action']
 			});
 		}

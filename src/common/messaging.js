@@ -94,7 +94,7 @@ Zotero.Messaging = new function() {
 			window.parent.postMessage((_structuredCloneSupported
 				? [messageName, args] : JSON.stringify([messageName, args])), "*");
 		} else if(Zotero.isChrome) {
-			chrome.tabs.sendRequest(tab.id, [messageName, args]);
+			chrome.tabs.sendMessage(tab.id, [messageName, args]);
 		} else if(Zotero.isSafari) {
 			tab.page.dispatchMessage(messageName, args);
 		}
@@ -137,7 +137,7 @@ Zotero.Messaging = new function() {
 			
 			window.postMessage([null, "structuredCloneTest", null], window.location.href);
 		} else if(Zotero.isChrome) {
-			chrome.extension.onRequest.addListener(function(request, sender, sendResponseCallback) {
+			chrome.runtime.onMessage.addListener(function(request, sender, sendResponseCallback) {
 				Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab);
 			});
 		} else if(Zotero.isSafari) {

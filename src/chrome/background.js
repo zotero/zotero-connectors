@@ -235,7 +235,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _saveWithTranslator(tab, i) {
-		chrome.tabs.sendRequest(
+		chrome.tabs.sendMessage(
 			tab.id,
 			[
 				"translate",
@@ -250,7 +250,7 @@ Zotero.Connector_Browser = new function() {
 	
 	function _saveAsWebpage(tab) {
 		if (tab.id != -1) {
-			chrome.tabs.sendRequest(tab.id, ["saveSnapshot", tab.title], null);
+			chrome.tabs.sendMessage(tab.id, ["saveSnapshot", tab.title], null);
 		}
 		// Handle right-click on PDF overlay, which exists in a weird non-tab state
 		else {
@@ -260,7 +260,7 @@ Zotero.Connector_Browser = new function() {
 					active: true
 				},
 				function (tabs) {
-					chrome.tabs.sendRequest(tabs[0].id, ["saveSnapshot", tab.title], null);
+					chrome.tabs.sendMessage(tabs[0].id, ["saveSnapshot", tab.title], null);
 				}
 			);
 		}
@@ -286,7 +286,7 @@ Zotero.Connector_Browser = new function() {
 		if(!changeInfo.url) return;
 		Zotero.debug("Connector_Browser: URL changed for tab");
 		_clearInfoForTab(tabID);
-		chrome.tabs.sendRequest(tabID, ["pageModified"], null);
+		chrome.tabs.sendMessage(tabID, ["pageModified"], null);
 	});
 
 	chrome.browserAction.onClicked.addListener(function(tab) {

@@ -79,17 +79,27 @@ Zotero.Connector_Browser = new function() {
 			var left = Math.floor(win.left + (win.width / 2) - (width / 2));
 			var top = Math.floor(win.top + (win.height / 2) - (height / 2));
 			
-			win = window.open(chrome.extension.getURL("itemSelector/itemSelector.html")+"#"+encodeURIComponent(JSON.stringify([tab.id, items])), '',
-			'height=' + height + ',width=' + width + ',top=' + top + ',left=' + left + 'location=no,'
-				+ 'toolbar=no,menubar=no,status=no');
-			// Fix positioning when window is on second monitor
-			// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
-			if (win.screenX < left) {
-				chrome.windows.getLastFocused(null, function (win) {
-					chrome.windows.update(win.id, { left: left });
-				});
-			}
-			_selectCallbacksForTabIDs[tab.id] = callback;
+			chrome.windows.create(
+				{
+					url: chrome.extension.getURL("itemSelector/itemSelector.html")
+						+ "#" + encodeURIComponent(JSON.stringify([tab.id, items]))
+						// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
+						.replace(/%3A/g, 'ZOTEROCOLON'),
+					height: height,
+					width: width,
+					top: top,
+					left: left,
+					type: 'popup'
+				},
+				function (win) {
+					// Fix positioning in Chrome when window is on second monitor
+					// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
+					if (Zotero.isReallyChrome && win.left < left) {
+						chrome.windows.update(win.id, { left: left });
+					}
+					_selectCallbacksForTabIDs[tab.id] = callback;
+				}
+			);
 		});
 	}
 	

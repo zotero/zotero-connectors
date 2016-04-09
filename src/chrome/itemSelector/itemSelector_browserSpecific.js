@@ -30,5 +30,7 @@ function sendMessage() {
 	if(responseSent) return;
 	responseSent = true;
 	chrome.runtime.sendMessage(["selectDone", [tabID, items]]);
-	window.close();
+	chrome.windows.getCurrent(function (win) {
+		chrome.windows.remove(win.id);
+	});
 }

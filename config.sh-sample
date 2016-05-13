@@ -1,6 +1,8 @@
 #!/bin/sh
 CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+BUILD_DIR=""
+
 CHROME_EXECUTABLE="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 CHROME_CERTIFICATE="`dirname $CWD`/zotero_chrome.pem"
 

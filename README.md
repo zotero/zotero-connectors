@@ -3,6 +3,7 @@
 ## Build Requirements
 
 * Perl 5.12
+* Copy `config.sh-sample` to `config.sh` and modify as necessary
 
 ### Requirements for packaging extensions from the command line
 

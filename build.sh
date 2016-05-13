@@ -90,8 +90,17 @@ if [ -z $VERSION ]; then
 	popd > /dev/null
 fi
 
+if [ -z "$BUILD_DIR" ]; then
+	BUILD_DIR="$CWD/build"
+	mkdir -p "$BUILD_DIR"
+fi
+
+if [ ! -d "$BUILD_DIR" ]; then
+	echo "$BUILD_DIR is not a directory"
+	exit 1
+fi
+
 SRCDIR="$CWD/src"
-BUILDDIR="$CWD/build"
 DISTDIR="$CWD/dist"
 LOG="$CWD/build.log"
 
@@ -241,14 +250,13 @@ BOOKMARKLET_AUXILIARY_JS=( \
 rm -f "$LOG"
 
 # Remove old build directories
-rm -rf "$BUILDDIR/chrome" "$BUILDDIR/safari.safariextension" "$BUILDDIR/bookmarklet"
+rm -rf "$BUILD_DIR/chrome" "$BUILD_DIR/safari.safariextension" "$BUILD_DIR/bookmarklet"
 
 # Make directories if they don't exist
 for dir in "$DISTDIR" \
-	"$BUILDDIR" \
-	"$BUILDDIR/safari.safariextension" \
-	"$BUILDDIR/chrome" \
-	"$BUILDDIR/bookmarklet"; do
+	"$BUILD_DIR/safari.safariextension" \
+	"$BUILD_DIR/chrome" \
+	"$BUILD_DIR/bookmarklet"; do
 	if [ ! -d "$dir" ]; then
 		mkdir "$dir"
 	fi
@@ -257,54 +265,54 @@ done
 echo -n "Building connectors..."
 
 # Make alpha images for Safari
-rm -rf "$BUILDDIR/safari.safariextension/images"
-mkdir "$BUILDDIR/safari.safariextension/images"
-mkdir "$BUILDDIR/safari.safariextension/images/toolbar"
+rm -rf "$BUILD_DIR/safari.safariextension/images"
+mkdir "$BUILD_DIR/safari.safariextension/images"
+mkdir "$BUILD_DIR/safari.safariextension/images/toolbar"
 set +e
 convert -version > /dev/null 2>&1
 RETVAL=$?
 set -e
 if [ $RETVAL == 0 ]; then
-	cp $ICONS "$BUILDDIR/safari.safariextension/images"
-	cp $IMAGES $PREFS_IMAGES "$BUILDDIR/safari.safariextension/images"
+	cp $ICONS "$BUILD_DIR/safari.safariextension/images"
+	cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari.safariextension/images"
 	for f in $ICONS
 	do
 		convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
-				Opacity -contrast-stretch 50 "$BUILDDIR/safari.safariextension/images/toolbar/"`basename $f`
+				Opacity -contrast-stretch 50 "$BUILD_DIR/safari.safariextension/images/toolbar/"`basename $f`
 	done
 else
 	echo
 	echo "ImageMagick not installed; not creating monochrome Safari icons"
-	cp $ICONS "$BUILDDIR/safari.safariextension/images"
-	cp $ICONS "$BUILDDIR/safari.safariextension/images/toolbar"
-	cp $IMAGES $PREFS_IMAGES "$BUILDDIR/safari.safariextension/images"
+	cp $ICONS "$BUILD_DIR/safari.safariextension/images"
+	cp $ICONS "$BUILD_DIR/safari.safariextension/images/toolbar"
+	cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari.safariextension/images"
 fi
 cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
-	"$BUILDDIR/safari.safariextension"
+	"$BUILD_DIR/safari.safariextension"
 
 # Copy images for Chrome
-rm -rf "$BUILDDIR/chrome/images"
-mkdir "$BUILDDIR/chrome/images"
-cp $ICONS $IMAGES $PREFS_IMAGES "$BUILDDIR/chrome/images"
+rm -rf "$BUILD_DIR/chrome/images"
+mkdir "$BUILD_DIR/chrome/images"
+cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/chrome/images"
 # Use larger icons where available, since Chrome actually wants 19px icons
 # 2x
-for img in "$BUILDDIR"/chrome/images/*2x.png; do
+for img in "$BUILD_DIR"/chrome/images/*2x.png; do
 	mv $img `echo $img | sed 's/@2x//'`
 done
 ## 2.5x
-for img in "$BUILDDIR"/chrome/images/*48px.png; do
+for img in "$BUILD_DIR"/chrome/images/*48px.png; do
 	mv $img `echo $img | sed 's/@48px//'`
 done
 
-cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILDDIR/chrome"
+cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/chrome"
 
 
 # Copy translation-related resources for Chrome/Safari
 for browser in "chrome" "safari"; do
 	if [ "$browser" == "safari" ]; then
-		browser_builddir="$BUILDDIR/safari.safariextension"
+		browser_builddir="$BUILD_DIR/safari.safariextension"
 	else
-		browser_builddir="$BUILDDIR/$browser"
+		browser_builddir="$BUILD_DIR/$browser"
 	fi
 	browser_srcdir="$SRCDIR/$browser"
 	
@@ -370,26 +378,26 @@ perl -pe 's|/\*BACKGROUND SCRIPTS\*/|'"${background_scripts:6:$((${#background_s
 | perl -pe 's|/\*INJECT SCRIPTS\*/|'"${inject_scripts:8:$((${#inject_scripts}-11))}|s" \
 | perl -pe 's|("version":\s*)"[^"]*"|$1"'"$VERSION"'"|' \
 | perl -pe 's|/\*WEB ACCESSIBLE RESOURCES\*/|'"${web_accessible_resources:2:$((${#web_accessible_resources}-4))}|s" \
-> "$BUILDDIR/chrome/manifest.json"
+> "$BUILD_DIR/chrome/manifest.json"
 
 # Update Safari Info.plist
 global_scripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${BACKGROUND_INCLUDE[@]}")
-perl -000 -pe "s|<!--SCRIPTS-->|\\n${global_scripts}|s" "$SRCDIR/safari/global.html" > "$BUILDDIR/safari.safariextension/global.html"
+perl -000 -pe "s|<!--SCRIPTS-->|\\n${global_scripts}|s" "$SRCDIR/safari/global.html" > "$BUILD_DIR/safari.safariextension/global.html"
 inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_SAFARI[@]}" "${INJECT_INCLUDE_LAST[@]}")
 scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${inject_scripts[@]}")
 perl -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/Info.plist" \
 | perl -000 -p -e 's|(<key>(?:CFBundleShortVersionString\|CFBundleVersion)</key>\s*)<string>[^<]*</string>|$1<string>'"$VERSION"'</string>|sg' \
-> "$BUILDDIR/safari.safariextension/Info.plist"
+> "$BUILD_DIR/safari.safariextension/Info.plist"
 
 echo "done"
 
 # Build Chrome extension
 if [ -e "$CHROME_CERTIFICATE" -a -e "$CHROME_EXECUTABLE" ]; then
 	echo -n "Building Chrome extension..."
-	if "$CHROME_EXECUTABLE" --pack-extension="$BUILDDIR/chrome" --pack-extension-key="$CHROME_CERTIFICATE" >> "$LOG" 2>&1
+	if "$CHROME_EXECUTABLE" --pack-extension="$BUILD_DIR/chrome" --pack-extension-key="$CHROME_CERTIFICATE" >> "$LOG" 2>&1
 	then
 		echo "succeeded"
-		mv "$BUILDDIR/chrome.crx" "$CHROME_EXT"
+		mv "$BUILD_DIR/chrome.crx" "$CHROME_EXT"
 	else
 		echo "failed"
 	fi
@@ -411,8 +419,8 @@ if [ -e "$SAFARI_PRIVATE_KEY" -a -e "$XAR_EXECUTABLE" ]; then
 	SIGSIZE=`: | openssl dgst -sign "$SAFARI_PRIVATE_KEY" -binary | wc -c`
 	
 	# Make XAR
-	pushd "$BUILDDIR" > /dev/null
-	if "$XAR_EXECUTABLE" -cf "$SAFARI_EXT" --distribution "`basename \"$BUILDDIR/safari.safariextension\"`" &&
+	pushd "$BUILD_DIR" > /dev/null
+	if "$XAR_EXECUTABLE" -cf "$SAFARI_EXT" --distribution "`basename \"$BUILD_DIR/safari.safariextension\"`" &&
 		popd > /dev/null &&
 		# Convert pem certificate to der
 		openssl x509 -outform der -in "$SAFARI_PRIVATE_KEY" -out "$TMP_BUILD_DIR/safari_key.der" >> "$LOG" && 
@@ -442,7 +450,7 @@ echo -n "Building bookmarklet..."
 # Make bookmarklet
 for scpt in "iframe" "common" "inject"
 do
-	tmpScript="$BUILDDIR/bookmarklet/${scpt}_tmp.js"
+	tmpScript="$BUILD_DIR/bookmarklet/${scpt}_tmp.js"
 	
 	if [ "$scpt" == "iframe" ]; then
 		files=("${BOOKMARKLET_IFRAME_INCLUDE[@]}")
@@ -466,21 +474,21 @@ do
 		echo ""
 		echo "/******** END `basename $f` ********/"
 	done >> "$tmpScript"
-	builtScript="$BUILDDIR/bookmarklet/${scpt}.js"
-	ieTmpScript="$BUILDDIR/bookmarklet/${scpt}_ie_tmp.js"
-	ieBuiltScript="$BUILDDIR/bookmarklet/${scpt}_ie.js"
+	builtScript="$BUILD_DIR/bookmarklet/${scpt}.js"
+	ieTmpScript="$BUILD_DIR/bookmarklet/${scpt}_ie_tmp.js"
+	ieBuiltScript="$BUILD_DIR/bookmarklet/${scpt}_ie.js"
 	
 	if [ "$scpt" == "inject" ]; then
 		if [ ! -z $DEBUG ]; then
 			# Make test scripts
-			if [ ! -d "$BUILDDIR/bookmarklet/tests" ]; then
-				mkdir "$BUILDDIR/bookmarklet/tests"
+			if [ ! -d "$BUILD_DIR/bookmarklet/tests" ]; then
+				mkdir "$BUILD_DIR/bookmarklet/tests"
 			fi
-			testScript="$BUILDDIR/bookmarklet/tests/inject_test.js"
-			ieTestScript="$BUILDDIR/bookmarklet/tests/inject_ie_test.js"
+			testScript="$BUILD_DIR/bookmarklet/tests/inject_test.js"
+			ieTestScript="$BUILD_DIR/bookmarklet/tests/inject_ie_test.js"
 			
 			# Make inject_test.js
-			cat "$BUILDDIR/bookmarklet/common.js" "$tmpScript" > "$testScript"
+			cat "$BUILD_DIR/bookmarklet/common.js" "$tmpScript" > "$testScript"
 			for f in "${BOOKMARKLET_INJECT_TEST_INCLUDE[@]}"
 			do
 				echo "/******** BEGIN `basename $f` ********/"
@@ -521,11 +529,11 @@ done
 
 # Copy/minify auxiliary JS
 	if [ ! -z $DEBUG ]; then
-	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BUILDDIR/bookmarklet"
+	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BUILD_DIR/bookmarklet"
 else	
 	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
 	do
-		minify "$scpt" "$BUILDDIR/bookmarklet/`basename \"$scpt\"`"
+		minify "$scpt" "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`"
 	done
 fi
 
@@ -536,9 +544,9 @@ cp "$SRCDIR/bookmarklet/bookmarklet.html" \
 	"$SRCDIR/bookmarklet/iframe_ie.html" \
 	"$SRCDIR/bookmarklet/auth_complete.html" \
 	"$SRCDIR/common/itemSelector/"* \
-	"$BUILDDIR/bookmarklet"
-cp "$SRCDIR/bookmarklet/htaccess" "$BUILDDIR/bookmarklet/.htaccess"
-rm -rf "$BUILDDIR/bookmarklet/images"
-mkdir "$BUILDDIR/bookmarklet/images"
-cp $ICONS $IMAGES "$BUILDDIR/bookmarklet/images"
+	"$BUILD_DIR/bookmarklet"
+cp "$SRCDIR/bookmarklet/htaccess" "$BUILD_DIR/bookmarklet/.htaccess"
+rm -rf "$BUILD_DIR/bookmarklet/images"
+mkdir "$BUILD_DIR/bookmarklet/images"
+cp $ICONS $IMAGES "$BUILD_DIR/bookmarklet/images"
 echo "done"

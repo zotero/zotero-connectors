@@ -56,7 +56,8 @@ Zotero.Messaging = new function() {
 			// first see if there is a message listener
 			if(_messageListeners[messageName]) {
 				_messageListeners[messageName](args, tab);
-				return;
+				// return false, indicating that `sendResponseCallback won't be called
+				return false;
 			}
 			
 			var messageParts = messageName.split(MESSAGE_SEPARATOR);
@@ -84,6 +85,8 @@ Zotero.Messaging = new function() {
 		} catch(e) {
 			Zotero.logError(e);
 		}
+		// Return a value, indicating whether `sendResponseCallback` will be called
+		return !!messageConfig;
 	}
 	
 	/**
@@ -138,7 +141,9 @@ Zotero.Messaging = new function() {
 			window.postMessage([null, "structuredCloneTest", null], window.location.href);
 		} else if(Zotero.isChrome) {
 			chrome.runtime.onMessage.addListener(function(request, sender, sendResponseCallback) {
-				Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab);
+				// See `sendResponse` notes for return value
+				// https://developer.chrome.com/extensions/runtime#event-onMessage
+				return Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab);
 			});
 		} else if(Zotero.isSafari) {
 			safari.application.addEventListener("message", function(event) {

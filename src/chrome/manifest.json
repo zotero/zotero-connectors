@@ -12,8 +12,7 @@
 		"scripts": [
 			/*BACKGROUND SCRIPTS*/
 			"background.js"
-		],
-		"persistent": true
+		]
 	},
 	"content_scripts": [
 		{

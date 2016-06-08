@@ -1,0 +1,9 @@
+{
+  "name": "zotero-connectors",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-shell": "^1.3.0",
+    "load-grunt-tasks": "^3.5.0"
+  }
+}

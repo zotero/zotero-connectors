@@ -25,8 +25,10 @@
 
 var Zotero = new function() {
 	this.isConnector = true;
-	this.isFx = window.navigator.userAgent.indexOf("Netscape") !== -1;
+	this.isFx = false;
+	this.isReallyFx = window.navigator.userAgent.indexOf("Firefox") !== -1;
 	this.isChrome = !!window.chrome;
+	this.isReallyChrome = window.navigator.userAgent.indexOf("Chrome") !== -1;
 	this.isSafari = window.navigator.userAgent.indexOf("Safari/") !== -1 && !this.isChrome;
 	this.isWebKit = window.navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
 	this.isIE = document && !document.evaluate;

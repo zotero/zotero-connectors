@@ -79,17 +79,27 @@ Zotero.Connector_Browser = new function() {
 			var left = Math.floor(win.left + (win.width / 2) - (width / 2));
 			var top = Math.floor(win.top + (win.height / 2) - (height / 2));
 			
-			win = window.open(chrome.extension.getURL("itemSelector/itemSelector.html")+"#"+encodeURIComponent(JSON.stringify([tab.id, items])), '',
-			'height=' + height + ',width=' + width + ',top=' + top + ',left=' + left + 'location=no,'
-				+ 'toolbar=no,menubar=no,status=no');
-			// Fix positioning when window is on second monitor
-			// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
-			if (win.screenX < left) {
-				chrome.windows.getLastFocused(null, function (win) {
-					chrome.windows.update(win.id, { left: left });
-				});
-			}
-			_selectCallbacksForTabIDs[tab.id] = callback;
+			chrome.windows.create(
+				{
+					url: chrome.extension.getURL("itemSelector/itemSelector.html")
+						+ "#" + encodeURIComponent(JSON.stringify([tab.id, items]))
+						// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
+						.replace(/%3A/g, 'ZOTEROCOLON'),
+					height: height,
+					width: width,
+					top: top,
+					left: left,
+					type: 'popup'
+				},
+				function (win) {
+					// Fix positioning in Chrome when window is on second monitor
+					// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
+					if (Zotero.isReallyChrome && win.left < left) {
+						chrome.windows.update(win.id, { left: left });
+					}
+					_selectCallbacksForTabIDs[tab.id] = callback;
+				}
+			);
 		});
 	}
 	
@@ -237,7 +247,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _saveWithTranslator(tab, i) {
-		chrome.tabs.sendRequest(
+		chrome.tabs.sendMessage(
 			tab.id,
 			[
 				"translate",
@@ -252,7 +262,7 @@ Zotero.Connector_Browser = new function() {
 	
 	function _saveAsWebpage(tab) {
 		if (tab.id != -1) {
-			chrome.tabs.sendRequest(tab.id, ["saveSnapshot", tab.title], null);
+			chrome.tabs.sendMessage(tab.id, ["saveSnapshot", tab.title], null);
 		}
 		// Handle right-click on PDF overlay, which exists in a weird non-tab state
 		else {
@@ -262,7 +272,7 @@ Zotero.Connector_Browser = new function() {
 					active: true
 				},
 				function (tabs) {
-					chrome.tabs.sendRequest(tabs[0].id, ["saveSnapshot", tab.title], null);
+					chrome.tabs.sendMessage(tabs[0].id, ["saveSnapshot", tab.title], null);
 				}
 			);
 		}
@@ -288,7 +298,7 @@ Zotero.Connector_Browser = new function() {
 		if(!changeInfo.url) return;
 		Zotero.debug("Connector_Browser: URL changed for tab");
 		_clearInfoForTab(tabID);
-		chrome.tabs.sendRequest(tabID, ["pageModified"], null);
+		chrome.tabs.sendMessage(tabID, ["pageModified"], null);
 	});
 
 	chrome.browserAction.onClicked.addListener(function(tab) {

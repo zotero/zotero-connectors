@@ -22,7 +22,9 @@ CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 case "$(uname -s)" in
    CYGWIN*) IS_CYGWIN=1 ;;
 esac
-. "$CWD/config.sh"
+if [ -f "$CWD/config.sh" ]; then
+	. "$CWD/config.sh"
+fi
 
 function explorerify {
 	FROM="$1"

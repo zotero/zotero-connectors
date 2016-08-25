@@ -23,6 +23,9 @@
     ***** END LICENSE BLOCK *****
 */
 
+// Enumeration of types of translators
+const TRANSLATOR_TYPES = {"import":1, "export":2, "web":4, "search":8};
+
 Zotero.Translators = {
 	/**
 	 * Add proper to proxy converter function to translator data sent back via IPC for
@@ -44,8 +47,3 @@ Zotero.Translators = {
 		return converterFunctions;
 	}
 }
-
-Zotero.Translator = function() {};
-Zotero.Translator.RUN_MODE_IN_BROWSER = 1;
-Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE = 2;
-Zotero.Translator.RUN_MODE_ZOTERO_SERVER = 4;

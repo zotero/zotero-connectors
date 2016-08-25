@@ -1,7 +1,7 @@
 {
 	"name": "Zotero Connector",
 	"manifest_version": 2,
-	"version": "3.0.3",
+	"version": "AUTOFILLED",
 	"description": "Saves references to Zotero from Chrome and Opera",
 	"browser_action": {
 		"default_icon": "images/treeitem-webpage-gray.png",
@@ -32,9 +32,13 @@
 	"icons": {
 		"16": "Icon-16.png",
 		"48": "Icon-48.png",
+		"96": "Icon-96.png",
 		"128": "Icon-128.png"
 	},
-	"options_page": "preferences/preferences.html",
+	"options_ui": {
+		"page": "preferences/preferences.html",
+		"open_in_tab": true
+	},
 	"commands": {
 		"_execute_browser_action": {
 			"suggested_key": {

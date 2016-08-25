@@ -90,8 +90,7 @@ Zotero.API = new function() {
 			
 			// open
 			if(Zotero.isChrome) {
-				window.open(url, 'ZoteroAuthenticate',
-					'height=600,width=900,location,toolbar=no,menubar=no,status=no');
+				chrome.windows.create({ url: url, height: 600, width: 900, type: 'popup' });
 			} else if(Zotero.isSafari) {
 				var newTab = safari.application.openBrowserWindow().activeTab;
 				newTab.url = url;
@@ -282,7 +281,7 @@ Zotero.API = new function() {
 	 */
 	this.uploadAttachment = function(attachment, callbackOrTab) {
 		var _dispatchAttachmentCallback = function(id, status, error) {
-			if(Zotero.isChrome && !Zotero.isBookmarklet) {
+			if(Zotero.isWebExtension && !Zotero.isBookmarklet) {
 				// In Chrome, we don't use messaging for Zotero.API.uploadAttachment, 
 				// since we can't pass ArrayBuffers to the background page
 				callbackOrTab(status, error);

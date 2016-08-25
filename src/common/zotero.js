@@ -29,6 +29,7 @@ var Zotero = new function() {
 	this.isReallyFx = window.navigator.userAgent.indexOf("Firefox") !== -1;
 	this.isChrome = !!window.chrome;
 	this.isReallyChrome = window.navigator.userAgent.indexOf("Chrome") !== -1;
+	this.isWebExtension = this.isReallyFx || this.isReallyChrome || this.isChrome;
 	this.isSafari = window.navigator.userAgent.indexOf("Safari/") !== -1 && !this.isChrome;
 	this.isWebKit = window.navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
 	this.isIE = document && !document.evaluate;
@@ -43,6 +44,8 @@ var Zotero = new function() {
 	} else {
 		this.browser = "c";
 	}
+	
+	this.Promise = window.Promise;
 	
 	/**
 	 * Initializes Zotero services for the global page in Chrome or Safari

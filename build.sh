@@ -117,7 +117,9 @@ IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXT
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png"
 
 # Scripts to be included in inject scripts
-INJECT_INCLUDE=('zotero.js' \
+INJECT_INCLUDE=( \
+	'lib/bluebird.js' \
+	'zotero.js' \
 	'zotero_config.js' \
 	'http.js' \
 	'zotero/connector/cachedTypes.js' \
@@ -137,6 +139,7 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/rdf/match.js' \
 	'zotero/rdf/rdfparser.js' \
 	'zotero/translation/translate.js' \
+	'zotero/translation/translator.js' \
 	'zotero/connector/translate_item.js' \
 	'zotero/connector/typeSchemaData.js' \
 	'zotero/utilities.js' \
@@ -162,7 +165,9 @@ else
 fi
 
 # Scripts to be included in background page
-BACKGROUND_INCLUDE=('zotero.js' \
+BACKGROUND_INCLUDE=( \
+	'lib/bluebird.js' \
+	'zotero.js' \
 	'zotero_config.js' \
 	'errors_webkit.js' \
 	'api.js' \
@@ -306,7 +311,7 @@ for img in "$BUILD_DIR"/chrome/images/*48px.png; do
 	mv $img `echo $img | sed 's/@48px//'`
 done
 
-cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/chrome"
+cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/chrome"
 
 
 # Copy translation-related resources for Chrome/Safari
@@ -353,6 +358,7 @@ for browser in "chrome" "safari"; do
 	   "$browser_builddir/zotero"
 	mkdir "$browser_builddir/zotero/translation"
 	cp "$EXTENSION_XPCOM_DIR/translation/translate.js" \
+	   "$EXTENSION_XPCOM_DIR/translation/translator.js" \
 	   "$EXTENSION_XPCOM_DIR/translation/tlds.js" \
 	   "$browser_builddir/zotero/translation"
 	

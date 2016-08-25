@@ -221,7 +221,7 @@ Zotero.Inject = new function() {
 					Zotero.Messaging.sendMessage("pageModified", null);
 				}, false);
 			}
-			_translate.getTranslators(true);
+			return _translate.getTranslators(true);
 		} catch(e) {
 			Zotero.logError(e);
 		}
@@ -240,7 +240,7 @@ if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.p
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {
 			if(data[0] !== instanceID) return;
-			Zotero.Inject.translate(data[1]);
+			Zotero.Inject.translate(new Zotero.Translator(data[1]));
 		});
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {

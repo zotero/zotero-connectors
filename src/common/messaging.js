@@ -64,9 +64,14 @@ Zotero.Messaging = new function() {
 			var messageConfig = MESSAGES[messageParts[0]][messageParts[1]];
 			
 			if(messageConfig) {
-				callbackArg = (messageConfig.callbackArg
-					? messageConfig.callbackArg : args.length-1);
-				// if function accepts a callback, pass one in
+				var callbackArg = (messageConfig.callbackArg ? messageConfig.callbackArg : args.length-1);
+
+				if(args[callbackArg] !== null && args[callbackArg] !== undefined) {
+					// Just append the callback if it is not there as is the case for promisified functions
+					!messageConfig.callbackArg && args.push(0);
+					callbackArg = (messageConfig.callbackArg ? messageConfig.callbackArg : args.length-1); 
+				}
+				// add a response passthrough callback for the message
 				args[callbackArg] = function() {
 					var newArgs = new Array(arguments.length);
 					for(var i=0; i<arguments.length; i++) {
@@ -96,7 +101,7 @@ Zotero.Messaging = new function() {
 		if(Zotero.isBookmarklet) {
 			window.parent.postMessage((_structuredCloneSupported
 				? [messageName, args] : JSON.stringify([messageName, args])), "*");
-		} else if(Zotero.isChrome) {
+		} else if(Zotero.isWebExtension) {
 			chrome.tabs.sendMessage(tab.id, [messageName, args]);
 		} else if(Zotero.isSafari) {
 			tab.page.dispatchMessage(messageName, args);

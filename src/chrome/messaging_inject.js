@@ -51,15 +51,15 @@ Zotero.Messaging = new function() {
 					var messageName = ns+MESSAGE_SEPARATOR+meth;
 					var messageConfig = MESSAGES[ns][meth];
 					return function() {
-						// make sure last argument is a callback
-						var callback, callbackArg;
+						// see if last argument is a callback
+						var callback, callbackArg = null;
 						if(messageConfig) {
 							callbackArg = (messageConfig.callbackArg
 								? messageConfig.callbackArg : arguments.length-1);
 							callback = arguments[callbackArg];
 							if(typeof callback !== "function") {
-								Zotero.logError(new Error("Zotero: "+messageName+" must be called with a callback"));
-								return;
+								Zotero.debug("Message `"+messageName+"` has no callback arg. It should use the returned promise");
+								callbackArg = null;
 							}
 						}
 						
@@ -70,17 +70,20 @@ Zotero.Messaging = new function() {
 						}
 						
 						// send message
-						chrome.runtime.sendMessage([messageName, newArgs], function(response) {
+						return new Zotero.Promise(function(resolve, reject) {
+							chrome.runtime.sendMessage([messageName, newArgs], function(response) {
 								try {
 									if(messageConfig.postReceive) {
 										response = messageConfig.postReceive.apply(null, response);
 									}
-									if (callback) callback.apply(null, response);
+									if (callbackArg !== null) callback.apply(null, response);
+									resolve.apply(null, response);
 								} catch(e) {
 									Zotero.logError(e);
+									reject(e);
 								}
-							}
-						);
+							});
+						});
 					};
 				};
 			}

@@ -49,7 +49,7 @@ Zotero.ProgressWindow = new function() {
 		
 	if(Zotero.isBookmarklet) {
 		var imageBase = ZOTERO_CONFIG.BOOKMARKLET_URL+"images/";
-	} else if(Zotero.isWebExtension) {
+	} else if(Zotero.isBrowserExt) {
 		var imageBase =  chrome.extension.getURL("images/");
 	} else if(Zotero.isSafari) {
 		var imageBase = safari.extension.baseURI+"images/";

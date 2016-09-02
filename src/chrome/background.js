@@ -94,7 +94,7 @@ Zotero.Connector_Browser = new function() {
 				function (win) {
 					// Fix positioning in Chrome when window is on second monitor
 					// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
-					if (Zotero.isReallyChrome && win.left < left) {
+					if (Zotero.isChrome && win.left < left) {
 						chrome.windows.update(win.id, { left: left });
 					}
 					_selectCallbacksForTabIDs[tab.id] = callback;

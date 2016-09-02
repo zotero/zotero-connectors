@@ -24,18 +24,25 @@
 */
 
 var Zotero = new function() {
+	this.version = "3.0.4";
 	this.isConnector = true;
 	this.isFx = false;
-	this.isReallyFx = window.navigator.userAgent.indexOf("Firefox") !== -1;
-	this.isChrome = !!window.chrome;
-	this.isReallyChrome = window.navigator.userAgent.indexOf("Chrome") !== -1;
-	this.isWebExtension = this.isReallyFx || this.isReallyChrome || this.isChrome;
-	this.isSafari = window.navigator.userAgent.indexOf("Safari/") !== -1 && !this.isChrome;
-	this.isWebKit = window.navigator.userAgent.toLowerCase().indexOf("webkit") !== -1;
-	this.isIE = document && !document.evaluate;
-	this.version = "3.0.4";
-	
-	if(this.isFx) {
+
+	// Browser check adopted from:
+	// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+	// Firefox 1.0+
+	this.isFirefox = typeof InstallTrigger !== 'undefined';
+	// At least Safari 3+: "[object HTMLElementConstructor]"
+	this.isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+	// Internet Explorer 6-11
+	this.isIE = /*@cc_on!@*/false || !!document.documentMode;
+	// Edge 20+
+	this.isEdge = !this.isIE && !!window.StyleMedia;
+	// Chrome 13+ A deprecated extension function
+	this.isChrome = window.navigator.userAgent.indexOf("Chrome") !== -1 || window.navigator.userAgent.indexOf("Chromium") !== -1;
+	this.isBrowserExt = this.isFirefox || this.isEdge || this.isChrome;
+
+	if(this.isFirefox) {
 		this.browser = "g";
 	} else if(this.isSafari) {
 		this.browser = "s";

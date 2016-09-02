@@ -101,7 +101,7 @@ Zotero.Messaging = new function() {
 		if(Zotero.isBookmarklet) {
 			window.parent.postMessage((_structuredCloneSupported
 				? [messageName, args] : JSON.stringify([messageName, args])), "*");
-		} else if(Zotero.isWebExtension) {
+		} else if(Zotero.isBrowserExt) {
 			chrome.tabs.sendMessage(tab.id, [messageName, args]);
 		} else if(Zotero.isSafari) {
 			tab.page.dispatchMessage(messageName, args);

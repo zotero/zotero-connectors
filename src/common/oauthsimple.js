@@ -309,6 +309,7 @@ if (OAuthSimple === undefined)
                     result += pName + '="'+this._oauthEscape(this._parameters[pName])+'" ';
                 }
             }
+            result = result.trim();
             return result;
         };
 

@@ -52,15 +52,15 @@ Zotero.Messaging = new function() {
 					var messageName = ns+MESSAGE_SEPARATOR+meth;
 					var messageConfig = MESSAGES[ns][meth];
 					return function() {
-						// make sure last argument is a callback
-						var callback, callbackArg;
+						// see if last argument is a callback
+						var callback, callbackArg = null;
 						if(messageConfig) {
 							callbackArg = (messageConfig.callbackArg
 								? messageConfig.callbackArg : arguments.length-1);
 							callback = arguments[callbackArg];
 							if(typeof callback !== "function") {
-								Zotero.logError(new Error("Zotero: "+messageName+" must be called with a callback"));
-								return;
+								Zotero.debug("Message `"+messageName+"` has no callback arg. It should use the returned promise");
+								callbackArg = null;
 							}
 						}
 						
@@ -70,14 +70,28 @@ Zotero.Messaging = new function() {
 							newArgs[i] = (i === callbackArg ? null : arguments[i]);
 						}
 					
-						// set up a request ID and save the callback
-						if(callback) {
-							var requestID = Math.floor(Math.random()*1e12);
-							_callbacks[requestID] = callback;
-						}
-						
-						// send message
-						safari.self.tab.dispatchMessage(messageName, [requestID, newArgs]);
+						return new Zotero.Promise(function(resolve, reject) {
+							// set up a request ID and save the callback
+							if (messageConfig) {
+								var requestID = Math.floor(Math.random() * 1e12);
+								_callbacks[requestID] = function (response) {
+									try {
+										if (messageConfig.postReceive) {
+											response = messageConfig.postReceive.apply(null, response);
+										}
+										if (callbackArg !== null) callback.apply(null, response);
+										resolve.apply(null, response);
+									} catch (e) {
+										Zotero.logError(e);
+										reject(e);
+									}
+								}
+							}
+
+							// send message
+							safari.self.tab.dispatchMessage(messageName, [requestID, newArgs]);
+						});
+
 					};
 				};
 			}
@@ -99,23 +113,13 @@ Zotero.Messaging = new function() {
 				// if no function matching, message must have been for another instance in this tab
 				if(messageParts.length !== 3 || messageParts[2] !== "Response") return;
 				
-				var ns = messageParts[0];
-				var meth = messageParts[1];
-				
 				var callback = _callbacks[event.message[0]];
 				// if no function matching, message must have been for another instance in this tab
 				if(!callback) return;
 				delete _callbacks[event.message[0]];
-				
-				// run postReceive function
-				var response = event.message[1];
-				var messageConfig = MESSAGES[ns][meth];
-				if(messageConfig.postReceive) {
-					response = messageConfig.postReceive.apply(null, response);
-				}
-				
+
 				// run callback
-				callback.apply(null, response);
+				callback(event.message[1]);
 			} catch(e) {
 				Zotero.logError(e);
 			}

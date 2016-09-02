@@ -118,9 +118,9 @@ PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-ad
 
 # Scripts to be included in inject scripts
 INJECT_INCLUDE=( \
-	'lib/bluebird.js' \
 	'zotero.js' \
 	'zotero_config.js' \
+	'promise.js' \
 	'http.js' \
 	'zotero/connector/cachedTypes.js' \
 	'zotero/date.js' \
@@ -166,9 +166,9 @@ fi
 
 # Scripts to be included in background page
 BACKGROUND_INCLUDE=( \
-	'lib/bluebird.js' \
 	'zotero.js' \
 	'zotero_config.js' \
+	'promise.js' \
 	'errors_webkit.js' \
 	'api.js' \
 	'http.js' \

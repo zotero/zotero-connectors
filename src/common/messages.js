@@ -87,7 +87,6 @@ var MESSAGES = {
 				"preSend":function(translators) {
 					return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
 				},
-				"callbackArg":1,
 				"postReceive": function(translators) {
 					return [translators.map(function(translator) {return new Zotero.Translator(translator)})];
 				}

@@ -86,7 +86,12 @@ Zotero.Messaging = new function() {
 			
 			var fn = Zotero[messageParts[0]][messageParts[1]];
 			if(!fn) throw new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
-			fn.apply(Zotero[messageParts[0]], args);
+			var maybePromise = fn.apply(Zotero[messageParts[0]], args);
+			// If you thought the message passing system wasn't complicated enough as it were,
+			// now background page functions can return promises too 👍
+			if (maybePromise && maybePromise.then) {
+				maybePromise.then(args[callbackArg]);
+			}
 		} catch(e) {
 			Zotero.logError(e);
 		}

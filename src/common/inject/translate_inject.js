@@ -49,7 +49,7 @@ Zotero.Translate.SandboxManager.prototype = {
 		with(this.sandbox) {
 			eval(code);
 		}
-		// import inner functions (what a mess)
+		// import inner functions (what a mess)	
 		for(var i in functions) {
 			try {
 				this.sandbox[functions[i]] = eval(functions[i]);

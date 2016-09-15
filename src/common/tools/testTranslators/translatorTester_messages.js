@@ -24,7 +24,20 @@
 */
 
 MESSAGES["TranslatorTester"] = {
-	"onLoad":true,
+	"onLoad": {
+		"preSend":function(data) {
+			if (data) {
+				data[0] = Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES)
+			}
+			return [data];
+		},
+		"postReceive":function(data) {
+			if (data) {
+				data[0] = new Zotero.Translator(data[0]);
+			}
+			return [data];
+		}
+	},
 	"debug":false,
 	"runTests":false,
 	"testComplete":false,

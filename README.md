@@ -6,7 +6,7 @@
 1. `cd zotero-connectors`
 1. `./build.sh -d`
 
-The connectors are built in `build/` by default. To use a different directory, copy `config.sh-sample` to `config.sh` and modify `BUILD_DIR`.
+The connectors are built in `build/`.
 
 ## Running from the build directory
 
@@ -40,6 +40,3 @@ As files are changed, the connectors will be rebuilt automatically. On OS X, if 
 * [Google Chrome](https://www.google.com/intl/en/chrome/browser/) or [Chromium](http://www.chromium.org/)
 * xar with [patch for building Safari extensions](https://code.google.com/p/xar/issues/detail?id=76)
 
-## Requirements for bookmarklet
-
-* [UglifyJS](https://github.com/mishoo/UglifyJS/) (unless debug is passed at the command line)

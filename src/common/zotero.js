@@ -38,7 +38,7 @@ var Zotero = new function() {
 	this.isIE = /*@cc_on!@*/false || !!document.documentMode;
 	// Edge 20+
 	this.isEdge = !this.isIE && !!window.StyleMedia;
-	// Chrome 13+ A deprecated extension function
+	// Chrome and Chromium
 	this.isChrome = window.navigator.userAgent.indexOf("Chrome") !== -1 || window.navigator.userAgent.indexOf("Chromium") !== -1;
 	this.isBrowserExt = this.isFirefox || this.isEdge || this.isChrome;
 

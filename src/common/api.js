@@ -81,15 +81,19 @@ Zotero.API = new function() {
 			var signature = oauthSimple.sign();
 			
 			// add parameters
-			var url = signature.signed_url+"&library_access=1&notes_access=0&write_access=1&name=";
-			if(Zotero.isChrome) {
-				url += "Zotero Connector for Chrome";
+			var url = signature.signed_url+"&library_access=1&notes_access=0&write_access=1&name=Zotero Connector for ";
+			if (Zotero.isChrome) {
+				url += "Chrome";
 			} else if(Zotero.isSafari) {
-				url += "Zotero Connector for Safari";
+				url += "Safari";
+			} else if (Zotero.isFirefox) {
+				url += "Firefox";
+			} else if (Zotero.isEdge) {
+				url += "Edge";
 			}
 			
 			// open
-			if(Zotero.isChrome) {
+			if(Zotero.isBrowserExt) {
 				chrome.windows.create({ url: url, height: 600, width: 900, type: 'popup' });
 			} else if(Zotero.isSafari) {
 				var newTab = safari.application.openBrowserWindow().activeTab;
@@ -106,7 +110,7 @@ Zotero.API = new function() {
 	 */
 	this.onAuthorizationComplete = function(data, tab) {
 		// close auth window
-		if(Zotero.isChrome) {
+		if(Zotero.isBrowserExt) {
 			chrome.tabs.remove(tab.id);
 		} else if(Zotero.isSafari) {
 			tab.close();

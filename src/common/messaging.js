@@ -149,7 +149,7 @@ Zotero.Messaging = new function() {
 			}
 			
 			window.postMessage([null, "structuredCloneTest", null], window.location.href);
-		} else if(Zotero.isChrome) {
+		} else if(Zotero.isBrowserExt) {
 			chrome.runtime.onMessage.addListener(function(request, sender, sendResponseCallback) {
 				// See `sendResponse` notes for return value
 				// https://developer.chrome.com/extensions/runtime#event-onMessage

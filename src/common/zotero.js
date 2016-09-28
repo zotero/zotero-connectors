@@ -96,6 +96,10 @@ var Zotero = new function() {
 			info.appName = "Safari";
 		} else if(this.isIE) {
 			info.appName = "Internet Explorer";
+		} else if(this.isFirefox) {
+			info.appName = "Firefox Connector";
+		} else if(this.isEdge) {
+			info.appName = "Edge";
 		} else {
 			info.appName = window.navigator.appName;
 		}

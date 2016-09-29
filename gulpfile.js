@@ -26,76 +26,73 @@
 'use strict';
 
 const exec = require('child_process').exec;
-const spawn = require('child_process').spawn;
+const through = require('through2');
 const gulp = require('gulp');
-const plumber = require('gulp-plumber');
-const babel = require('gulp-babel');
-const buffer = require('vinyl-buffer');
-
-function onError(err) {
-    console.warn(err);
-}
+const babel = require('babel-core');
 
 function reloadChromeExtensionsTab(cb) {
-    console.log("Reloading Chrome extensions tab");
+	console.log("Reloading Chrome extensions tab");
 
 
-    exec('chrome-cli list tabs', function(err, stdout) {
-        if (err) cb(err);
+	exec('chrome-cli list tabs', function (err, stdout) {
+		if (err) cb(err);
 
-        var extensionsTabMatches = stdout.match(/\[\d{1,5}:(\d{1,5})\] Extensions/);
-        if (extensionsTabMatches) {
-            var extensionsTabID = extensionsTabMatches[1];
+		var extensionsTabMatches = stdout.match(/\[\d{1,5}:(\d{1,5})\] Extensions/);
+		if (extensionsTabMatches) {
+			var extensionsTabID = extensionsTabMatches[1];
 
-            exec('chrome-cli reload -t ' + extensionsTabID, function (err, stdout, stderr) {
-                if (err) return cb(err);
-                cb();
-            });
-        }
-        else {
-            exec('chrome-cli open chrome://extensions && chrome-cli reload', function (err, stdout, stderr) {
-                if (err) return cb(err);
-                cb();
-            });
-        }
-    });
+			exec('chrome-cli reload -t ' + extensionsTabID)
+		}
+		else {
+			exec('chrome-cli open chrome://extensions && chrome-cli reload')
+		}
+	});
 }
 
-function safarify() {
-    return gulp.src('./build/safari.safariextension/zotero/**/*.js')
-        .pipe(buffer())
-        .pipe(plumber({errorHandler: onError}))
-        .pipe(babel({
-            presets: ['es2015']
-        }))
-        .pipe(gulp.dest('./build/safari.safariextension/zotero/'));
+var processFile = function() {
+	return through.obj(function(file, enc, cb) {
+		console.log(file.path.slice(file.cwd.length));
+		var parts = file.path.split('/');
+		for (var i = parts.length-1; i > 0; i--) {
+			if ('src' === parts[i]) {
+				i++;
+				break;
+			}
+		}
+		var type = parts[i];
+		if (type === 'common' || type === 'chrome') {
+			var f = file.clone({contents: false});
+			f.path = parts.slice(0, i-1).join('/') + '/build/chrome/' + parts.slice(i+1).join('/');
+			console.log(`-> ${f.path.slice(f.cwd.length)}`);
+			this.push(f);
+		}
+		if (type === 'common' || type === 'safari') {
+			f = file.clone({contents: false});
+			f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/' + parts.slice(i+1).join('/');
+			f.contents = new Buffer(babel.transform(f.contents, {presets: ['es2015']}).code);
+			console.log(`-> ${f.path.slice(f.cwd.length)}`);
+			this.push(f);
+		}
+		cb();
+	});
 }
 
-gulp.task('watch', function() {
-    gulp.watch(['./src/chrome/**', './src/common/**', './src/safari/**'], ['build-dev']);
+gulp.task('watch', function () {
+	var watcher = gulp.watch(['./src/chrome/**', './src/common/**', './src/safari/**']);
+	watcher.on('change', function(event) {
+		gulp.src(event.path)
+			.pipe(processFile())
+			.pipe(gulp.dest((data) => data.base));
+	});
 });
 
-gulp.task('watch-chrome', function() {
-    gulp.watch(['./src/chrome/**', './src/common/**', './src/safari/**'], ['build-dev', 'reloadChromeExtensionsTab']);
+gulp.task('watch-chrome', function () {
+	var watcher = gulp.watch(['./src/chrome/**', './src/common/**', './src/safari/**']);
+	watcher.on('change', function(event) {
+		gulp.src(event.path)
+			.pipe(processFile())
+			.on('close', reloadChromeExtensionsTab);
+	});
 });
 
-gulp.task('reloadChromeExtensionsTab', ['build-dev', 'safarify'], reloadChromeExtensionsTab);
-
-gulp.task('build-sh-dev', function(cb) {
-    var proc = spawn('./build.sh', ['-d'], {cwd: process.cwd()});
-    proc.stdout.on('data', function(data) {
-        process.stdout.write(data);
-    });
-    proc.stderr.on('data', function(data) {
-        process.stderr.write(data);
-    });
-    proc.on('close', function(code) {
-        cb(code)
-    })
-});
-
-gulp.task('safarify', ['build-sh-dev'], safarify);
-
-gulp.task('build-dev', ['build-sh-dev', 'safarify']);
-
-gulp.task('default', ['build-dev']);
+gulp.task('default', ['watch']);

@@ -43,19 +43,6 @@ function explorerify {
 	fi
 }
 
-function minify {
-	FROM="$1"
-	TO="$2"
-	
-	# Get system path if running in Cygwin so that uglifyjs can access it
-	if [ ! -z $IS_CYGWIN ]; then
-		FROM="`cygpath -w \"$FROM\"`"
-	fi
-	
-	uglifyjs "$FROM" > "$TO"
-	
-}
-
 function usage {
 	cat >&2 <<DONE
 Usage: $0 [-v VERSION] [-d]
@@ -397,6 +384,11 @@ perl -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/I
 | perl -000 -p -e 's|(<key>(?:CFBundleShortVersionString\|CFBundleVersion)</key>\s*)<string>[^<]*</string>|$1<string>'"$VERSION"'</string>|sg' \
 > "$BUILD_DIR/safari.safariextension/Info.plist"
 
+# Transpile Safari JS for Safari 10.0<
+echo "Transpiling Safari JS..." >> "$LOG";
+./node_modules/babel-cli/bin/babel.js "$BUILD_DIR/safari.safariextension/" --out-dir "$BUILD_DIR/safari.safariextension/" --presets es2015 >> "$LOG" 2>&1
+echo "Transpiled" >> "$LOG";
+
 echo "done"
 
 # Build Chrome extension
@@ -524,13 +516,14 @@ do
 		cat "$SRCDIR/bookmarklet/inject_ie_compat.js" >> "$ieTmpScript";
 	fi
 	
-	# Minify if not in debug mode
+	# Transpile. Minify if not in debug mode
 	if [ ! -z $DEBUG ]; then
-		mv "$tmpScript" "$builtScript"
-		mv "$ieTmpScript" "$ieBuiltScript"
+		./node_modules/babel-cli/bin/babel.js "$tmpScript" --out-file "$builtScript" --presets es2015
+		./node_modules/babel-cli/bin/babel.js "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015
+		rm "$tmpScript" "$ieTmpScript"
 	else
-		minify "$tmpScript" "$builtScript"
-		minify "$ieTmpScript" "$ieBuiltScript"
+		./node_modules/babel-cli/bin/babel.js "$tmpScript" --out-file "$builtScript" --presets es2015 babili
+		./node_modules/babel-cli/bin/babel.js "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015 babili
 		rm "$tmpScript" "$ieTmpScript"
 	fi
 done
@@ -541,7 +534,7 @@ done
 else	
 	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
 	do
-		minify "$scpt" "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`"
+		./node_modules/babel-cli/bin/babel.js "$scpt" --out-file "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`" --presets es2015 babili
 	done
 fi
 

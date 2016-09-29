@@ -4,7 +4,7 @@
 
 1. `git clone --recursive https://github.com/zotero/zotero-connectors.git`
 1. `cd zotero-connectors`
-1. `./build.sh -D`
+1. `./build.sh -d`
 
 The connectors are built in `build/` by default. To use a different directory, copy `config.sh-sample` to `config.sh` and modify `BUILD_DIR`.
 
@@ -28,6 +28,7 @@ The connectors are built in `build/` by default. To use a different directory, c
 1. `npm install -g gulp`
 1. `cd` to project root
 1. `npm install`
+1. `build.sh -d`
 1. `gulp watch` or `gulp watch-chrome`
 
 As files are changed, the connectors will be rebuilt automatically. On OS X, if `chrome-cli` is installed, the Chrome extension will be automatically reloaded.

@@ -152,7 +152,7 @@ Zotero.Connector_Browser = new function() {
 	 * @param tab
 	 * @param frameId
 	 */
-	this.frameLoaded = function(args, tab, frameId) {
+	this.onFrameLoaded = function(args, tab, frameId) {
 		var url = args[0];
 		var rootUrl = args[1];
 		Zotero.Translators.getWebTranslatorsForLocation(url, rootUrl).then(function(translators) {
@@ -317,7 +317,7 @@ Zotero.Connector_Browser = new function() {
 		_selectCallbacksForTabIDs[data[0]](data[1]);
 	});
 	
-	Zotero.Messaging.addMessageListener("frameLoaded", this.frameLoaded);
+	Zotero.Messaging.addMessageListener("frameLoaded", this.onFrameLoaded);
 
 	chrome.tabs.onRemoved.addListener(_clearInfoForTab);
 
@@ -329,9 +329,7 @@ Zotero.Connector_Browser = new function() {
 		chrome.tabs.sendMessage(tabID, ["pageModified"], null);
 	});
 
-	chrome.browserAction.onClicked.addListener(function(tab) {
-		_save(tab);
-	});
+	chrome.browserAction.onClicked.addListener(_save);
 }
 
 Zotero.initGlobal();

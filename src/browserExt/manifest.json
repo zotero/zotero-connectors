@@ -10,7 +10,7 @@
 	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies"],
 	"background": {
 		"scripts": [
-			/*BACKGROUND SCRIPTS*/
+			/*BACKGROUND SCRIPTS*/,
 			"background.js"
 		]
 	},

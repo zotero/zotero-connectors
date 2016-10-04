@@ -386,7 +386,7 @@ perl -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/I
 
 # Transpile Safari JS for Safari 10.0<
 echo "Transpiling Safari JS..." >> "$LOG";
-./node_modules/babel-cli/bin/babel.js "$BUILD_DIR/safari.safariextension/" --out-dir "$BUILD_DIR/safari.safariextension/" --presets es2015 -q >> "$LOG" 2>&1
+"$CWD/node_modules/babel-cli/bin/babel.js" "$BUILD_DIR/safari.safariextension/" --out-dir "$BUILD_DIR/safari.safariextension/" --presets es2015 -q >> "$LOG" 2>&1
 echo "Transpiled" >> "$LOG";
 
 echo "done"
@@ -518,12 +518,12 @@ do
 	
 	# Transpile. Minify if not in debug mode
 	if [ ! -z $DEBUG ]; then
-		./node_modules/babel-cli/bin/babel.js "$tmpScript" --out-file "$builtScript" --presets es2015 -q >> "$LOG" 2>&1
-		./node_modules/babel-cli/bin/babel.js "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015 -q >> "$LOG" 2>&1
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015 -q >> "$LOG" 2>&1
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015 -q >> "$LOG" 2>&1
 		rm "$tmpScript" "$ieTmpScript"
 	else
-		./node_modules/babel-cli/bin/babel.js "$tmpScript" --out-file "$builtScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
-		./node_modules/babel-cli/bin/babel.js "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
 		rm "$tmpScript" "$ieTmpScript"
 	fi
 done
@@ -534,7 +534,7 @@ done
 else	
 	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
 	do
-		./node_modules/babel-cli/bin/babel.js "$scpt" --out-file "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$scpt" --out-file "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
 	done
 fi
 

@@ -43,19 +43,6 @@ function explorerify {
 	fi
 }
 
-function minify {
-	FROM="$1"
-	TO="$2"
-	
-	# Get system path if running in Cygwin so that uglifyjs can access it
-	if [ ! -z $IS_CYGWIN ]; then
-		FROM="`cygpath -w \"$FROM\"`"
-	fi
-	
-	uglifyjs "$FROM" > "$TO"
-	
-}
-
 function usage {
 	cat >&2 <<DONE
 Usage: $0 [-v VERSION] [-d]
@@ -117,8 +104,10 @@ IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXT
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png"
 
 # Scripts to be included in inject scripts
-INJECT_INCLUDE=('zotero.js' \
+INJECT_INCLUDE=( \
+	'zotero.js' \
 	'zotero_config.js' \
+	'promise.js' \
 	'http.js' \
 	'zotero/connector/cachedTypes.js' \
 	'zotero/date.js' \
@@ -137,6 +126,7 @@ INJECT_INCLUDE=('zotero.js' \
 	'zotero/rdf/match.js' \
 	'zotero/rdf/rdfparser.js' \
 	'zotero/translation/translate.js' \
+	'zotero/translation/translator.js' \
 	'zotero/connector/translate_item.js' \
 	'zotero/connector/typeSchemaData.js' \
 	'zotero/utilities.js' \
@@ -162,8 +152,10 @@ else
 fi
 
 # Scripts to be included in background page
-BACKGROUND_INCLUDE=('zotero.js' \
+BACKGROUND_INCLUDE=( \
+	'zotero.js' \
 	'zotero_config.js' \
+	'promise.js' \
 	'errors_webkit.js' \
 	'api.js' \
 	'http.js' \
@@ -306,7 +298,7 @@ for img in "$BUILD_DIR"/chrome/images/*48px.png; do
 	mv $img `echo $img | sed 's/@48px//'`
 done
 
-cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/chrome"
+cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/chrome"
 
 
 # Copy translation-related resources for Chrome/Safari
@@ -353,6 +345,7 @@ for browser in "chrome" "safari"; do
 	   "$browser_builddir/zotero"
 	mkdir "$browser_builddir/zotero/translation"
 	cp "$EXTENSION_XPCOM_DIR/translation/translate.js" \
+	   "$EXTENSION_XPCOM_DIR/translation/translator.js" \
 	   "$EXTENSION_XPCOM_DIR/translation/tlds.js" \
 	   "$browser_builddir/zotero/translation"
 	
@@ -390,6 +383,11 @@ scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${inject_scripts[@]}")
 perl -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/Info.plist" \
 | perl -000 -p -e 's|(<key>(?:CFBundleShortVersionString\|CFBundleVersion)</key>\s*)<string>[^<]*</string>|$1<string>'"$VERSION"'</string>|sg' \
 > "$BUILD_DIR/safari.safariextension/Info.plist"
+
+# Transpile Safari JS for Safari 10.0<
+echo "Transpiling Safari JS..." >> "$LOG";
+"$CWD/node_modules/babel-cli/bin/babel.js" "$BUILD_DIR/safari.safariextension/" --out-dir "$BUILD_DIR/safari.safariextension/" --presets es2015 -q >> "$LOG" 2>&1
+echo "Transpiled" >> "$LOG";
 
 echo "done"
 
@@ -518,13 +516,14 @@ do
 		cat "$SRCDIR/bookmarklet/inject_ie_compat.js" >> "$ieTmpScript";
 	fi
 	
-	# Minify if not in debug mode
+	# Transpile. Minify if not in debug mode
 	if [ ! -z $DEBUG ]; then
-		mv "$tmpScript" "$builtScript"
-		mv "$ieTmpScript" "$ieBuiltScript"
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015 -q >> "$LOG" 2>&1
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015 -q >> "$LOG" 2>&1
+		rm "$tmpScript" "$ieTmpScript"
 	else
-		minify "$tmpScript" "$builtScript"
-		minify "$ieTmpScript" "$ieBuiltScript"
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
 		rm "$tmpScript" "$ieTmpScript"
 	fi
 done
@@ -535,7 +534,7 @@ done
 else	
 	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
 	do
-		minify "$scpt" "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`"
+		"$CWD/node_modules/babel-cli/bin/babel.js" "$scpt" --out-file "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
 	done
 fi
 

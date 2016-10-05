@@ -28,6 +28,11 @@
  * METHOD. This sets up messaging so that a call to Zotero.NAMESPACE.METHOD(..., callback) in the 
  * injected script calls the same function on the global script, and when the global script calls
  * callback(data), the injected script calls callback(data).
+ * 
+ * UPDATE Zotero 5.0:
+ * Some shared translation code between connectors and Zotero client has been promisified. 
+ * Thus all Zotero.NAMESPACE.METHOD calls also return a promise, which resolves with
+ * the same value as the callback on the last argument of Zotero.NAMESPACE.METHOD(..., callback)
  *
  * If the value in the JSON below is not false, then the function accepts a callback.
  *
@@ -73,19 +78,26 @@ var MESSAGES = {
 			"get":{
 				"preSend":function(translators) {
 					return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
+				},
+				"postReceive": function(translator) {
+					return [new Zotero.Translator(translator)];
 				}
 			},
 			"getAllForType":{
 				"preSend":function(translators) {
 					return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
 				},
-				"callbackArg":1
+				"postReceive": function(translators) {
+					return [translators.map(function(translator) {return new Zotero.Translator(translator)})];
+				}
 			},
 			"getWebTranslatorsForLocation":{
 				"preSend":function(data) {
 					return [[Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES), data[1]]];
 				},
 				"postReceive":function(data) {
+					// Deserialize to Translator objects
+					data[0] = data[0].map(function(translator) {return new Zotero.Translator(translator)});
 					return [[data[0], Zotero.Translators.getConverterFunctions(data[1])]];
 				}
 			}

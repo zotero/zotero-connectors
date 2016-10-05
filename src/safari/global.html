@@ -43,7 +43,7 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Called when translators are available for a given page
 	 */
-	this.onTranslators = function(translators, instanceID, tab) {
+	this.onTranslators = function(translators, instanceID, contentType, tab) {
 		// if we already have translators for this page, return
 		if(tab.translators && tab.translators.length
 			&& (!translators.length || tab.translators[0].priority <= translators[0].priority)) return;
@@ -127,7 +127,7 @@ Zotero.Connector_Browser = new function() {
 			}
 			_zoteroButton.toolTip = "Save to Zotero ("+translatorName+")";
 		} else if(Zotero.Connector.isOnline) {
-			_zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-z-16px.png";
+			_zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-new-z-16px.png";
 			_zoteroButton.disabled = true;
 			_zoteroButton.toolTip = "Zotero is Online";
 		} else {

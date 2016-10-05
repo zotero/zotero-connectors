@@ -258,7 +258,7 @@ function submitDebugOutput() {
 function openTranslatorTester() {
 	if(Zotero.isSafari) {
 		window.open(safari.extension.baseURI+"tools/testTranslators/testTranslators.html", "translatorTester");
-	} else if(Zotero.isChrome) {
+	} else if(Zotero.isBrowserExt) {
 		window.open(chrome.extension.getURL("tools/testTranslators/testTranslators.html"), "translatorTester");
 	}
 }

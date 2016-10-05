@@ -41,20 +41,27 @@ Zotero.Translate.SandboxManager.prototype = {
 	 */
 	"eval":function(code, functions) {
 		// delete functions to import
-		for(var i in functions) {
+		for (var i in functions) {
 			delete this.sandbox[functions[i]];
 		}
-		
-		// eval in sandbox scope
-		with(this.sandbox) {
-			eval(code);
+
+		// Prepend sandbox properties within eval environment (what a mess (1))
+		for (var prop in this.sandbox) {
+			code = 'var ' + prop + ' = this.sandbox.' + prop + ';' + code;
 		}
-		// import inner functions (what a mess)
-		for(var i in functions) {
+
+		// Import inner functions back into the sandbox
+		for (var i in functions) {
 			try {
-				this.sandbox[functions[i]] = eval(functions[i]);
-			} catch(e) {}
+				code += 'this.sandbox.' + functions[i] + ' = ' + functions[i] + ';';
+			} catch (e) {
+			}
 		}
+
+		// Eval in a closure
+		(function() {
+			eval(code);
+		}).call(this);
 	},
 	
 	/**

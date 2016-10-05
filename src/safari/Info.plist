@@ -47,7 +47,7 @@
 				<key>Identifier</key>
 				<string>zotero-translate</string>
 				<key>Image</key>
-				<string>images/toolbar/zotero-z-16px.png</string>
+				<string>images/toolbar/zotero-new-z-16px.png</string>
 				<key>Label</key>
 				<string>Save to Zotero</string>
 				<key>Palette Label</key>

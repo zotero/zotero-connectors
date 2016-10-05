@@ -36,12 +36,6 @@ Zotero.Connector_Browser = new function() {
 	 * Called when translators are available for a given page
 	 */
 	this.onTranslators = function(translators, instanceID, contentType, tab) {
-		if(_isDisabledForURL(tab.url)) {
-			_clearInfoForTab(tab.id);
-			_disableForTab(tab.id);
-			return;
-		}
-		
 		_enableForTab(tab.id);
 		
 		var oldTranslators = _translatorsForTabIDs[tab.id];
@@ -153,6 +147,11 @@ Zotero.Connector_Browser = new function() {
 	 * @param frameId
 	 */
 	this.onFrameLoaded = function(args, tab, frameId) {
+		if(_isDisabledForURL(tab.url)) {
+			_clearInfoForTab(tab.id);
+			_disableForTab(tab.id);
+			return;
+		}
 		var url = args[0];
 		var rootUrl = args[1];
 		Zotero.Translators.getWebTranslatorsForLocation(url, rootUrl).then(function(translators) {

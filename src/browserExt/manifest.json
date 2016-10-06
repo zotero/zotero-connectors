@@ -10,7 +10,7 @@
 	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies"],
 	"background": {
 		"scripts": [
-			/*BACKGROUND SCRIPTS*/
+			/*BACKGROUND SCRIPTS*/,
 			"background.js"
 		]
 	},
@@ -18,14 +18,14 @@
 		{
 			"matches": ["http://*/*", "https://*/*"],
 			"js": [
-				/*INJECT SCRIPTS*/
+				"injectCheck.js"
 			],
 			"run_at": "document_idle",
 			"all_frames": false
 		}
 	],
 	"web_accessible_resources": [
-		/*WEB ACCESSIBLE RESOURCES*/
+		"images/*"
 	],
 	"content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
 	"homepage_url": "https://www.zotero.org/",

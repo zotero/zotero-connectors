@@ -103,92 +103,6 @@ ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collectio
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png"
 
-# Scripts to be included in inject scripts
-INJECT_INCLUDE=( \
-	'zotero.js' \
-	'zotero_config.js' \
-	'promise.js' \
-	'http.js' \
-	'zotero/connector/cachedTypes.js' \
-	'zotero/date.js' \
-	'zotero/debug.js' \
-	'zotero/openurl.js' \
-	"zotero/xregexp/xregexp.js" \
-	"zotero/xregexp/addons/build.js" \
-	"zotero/xregexp/addons/matchrecursive.js" \
-	"zotero/xregexp/addons/unicode/unicode-base.js" \
-	"zotero/xregexp/addons/unicode/unicode-categories.js" \
-	"zotero/xregexp/addons/unicode/unicode-zotero.js" \
-	'zotero/rdf/init.js' \
-	'zotero/rdf/uri.js' \
-	'zotero/rdf/term.js' \
-	'zotero/rdf/identity.js' \
-	'zotero/rdf/match.js' \
-	'zotero/rdf/rdfparser.js' \
-	'zotero/translation/translate.js' \
-	'zotero/translation/translator.js' \
-	'zotero/connector/translate_item.js' \
-	'zotero/connector/typeSchemaData.js' \
-	'zotero/utilities.js' \
-	'zotero/utilities_translate.js' \
-	'inject/http.js' \
-	'inject/progressWindow.js' \
-	'inject/translator.js' \
-	'inject/translate_inject.js'\
-	'messages.js' \
-	'messaging_inject.js')
-
-# Scripts to be included in one browser only
-INJECT_INCLUDE_CHROME=('api.js')
-INJECT_INCLUDE_SAFARI=()
-
-if [ ! -z $DEBUG ]; then
-	INJECT_INCLUDE_LAST=('tools/testTranslators/translatorTester_messages.js' \
-		'tools/testTranslators/translatorTester.js' \
-		'inject/inject.js' \
-		'tools/testTranslators/translatorTester_inject.js')
-else
-	INJECT_INCLUDE_LAST=('inject/inject.js')
-fi
-
-# Scripts to be included in background page
-BACKGROUND_INCLUDE=( \
-	'zotero.js' \
-	'zotero_config.js' \
-	'promise.js' \
-	'errors_webkit.js' \
-	'api.js' \
-	'http.js' \
-	'oauthsimple.js' \
-	'zotero/connector/connector.js' \
-	'zotero/connector/cachedTypes.js' \
-	'zotero/date.js' \
-	'zotero/debug.js' \
-	"zotero/xregexp/xregexp.js" \
-	"zotero/xregexp/addons/build.js" \
-	"zotero/xregexp/addons/matchrecursive.js" \
-	"zotero/xregexp/addons/unicode/unicode-base.js" \
-	"zotero/xregexp/addons/unicode/unicode-categories.js" \
-	"zotero/xregexp/addons/unicode/unicode-zotero.js" \
-	'zotero/openurl.js' \
-	'zotero/connector/repo.js' \
-	'zotero/translation/tlds.js' \
-	'zotero/connector/translator.js' \
-	'zotero/connector/typeSchemaData.js' \
-	'zotero/utilities.js' \
-	'messages.js' \
-	'messaging.js')
-if [ ! -z $DEBUG ]; then
-	BACKGROUND_INCLUDE=("${BACKGROUND_INCLUDE[@]}" \
-		'tools/testTranslators/translatorTester_messages.js' \
-		'tools/testTranslators/translatorTester.js' \
-		'tools/testTranslators/translatorTester_global.js')
-fi
-
-INJECT_END_CHROME='\t\t\t\],'
-INJECT_BEGIN_SAFARI='<key>Scripts<\/key>\n\t\t<dict>\n\t\t\t<key>End<\/key>\n\t\t\t<array>'
-INJECT_END_SAFARI='\t\t\t<\/array>'
-
 # Scripts to be included in bookmarklet
 BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
 	"$EXTENSION_XPCOM_DIR/date.js" \
@@ -244,12 +158,12 @@ BOOKMARKLET_AUXILIARY_JS=( \
 rm -f "$LOG"
 
 # Remove old build directories
-rm -rf "$BUILD_DIR/chrome" "$BUILD_DIR/safari.safariextension" "$BUILD_DIR/bookmarklet"
+rm -rf "$BUILD_DIR/browserExt" "$BUILD_DIR/safari.safariextension" "$BUILD_DIR/bookmarklet"
 
 # Make directories if they don't exist
 for dir in "$DISTDIR" \
 	"$BUILD_DIR/safari.safariextension" \
-	"$BUILD_DIR/chrome" \
+	"$BUILD_DIR/browserExt" \
 	"$BUILD_DIR/bookmarklet"; do
 	if [ ! -d "$dir" ]; then
 		mkdir "$dir"
@@ -285,24 +199,24 @@ cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
 	"$BUILD_DIR/safari.safariextension"
 
 # Copy images for Chrome
-rm -rf "$BUILD_DIR/chrome/images"
-mkdir "$BUILD_DIR/chrome/images"
-cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/chrome/images"
+rm -rf "$BUILD_DIR/browserExt/images"
+mkdir "$BUILD_DIR/browserExt/images"
+cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/browserExt/images"
 # Use larger icons where available, since Chrome actually wants 19px icons
 # 2x
-for img in "$BUILD_DIR"/chrome/images/*2x.png; do
+for img in "$BUILD_DIR"/browserExt/images/*2x.png; do
 	mv $img `echo $img | sed 's/@2x//'`
 done
 ## 2.5x
-for img in "$BUILD_DIR"/chrome/images/*48px.png; do
+for img in "$BUILD_DIR"/browserExt/images/*48px.png; do
 	mv $img `echo $img | sed 's/@48px//'`
 done
 
-cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/chrome"
+cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
 
 
 # Copy translation-related resources for Chrome/Safari
-for browser in "chrome" "safari"; do
+for browser in "browserExt" "safari"; do
 	if [ "$browser" == "safari" ]; then
 		browser_builddir="$BUILD_DIR/safari.safariextension"
 	else
@@ -358,31 +272,12 @@ for browser in "chrome" "safari"; do
 	fi
 done
 	
-# Update Safari global scripts
-
-# Update Chrome manifest.json
-inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_CHROME[@]}" "${INJECT_INCLUDE_LAST[@]}")
-inject_scripts=$(printf '\\t\\t\\t\\t"%s",\\n' "${inject_scripts[@]}")
-background_scripts=$(printf '\\t\\t\\t"%s",\\n' "${BACKGROUND_INCLUDE[@]}")
-web_accessible_resources=''
-for img in $ICONS $IMAGES; do
-	web_accessible_resources="$web_accessible_resources"'		"images/'"`basename \"$img\"`"'",
-'
-done
-perl -pe 's|/\*BACKGROUND SCRIPTS\*/|'"${background_scripts:6:$((${#background_scripts}-8))}|s" "$SRCDIR/chrome/manifest.json" \
-| perl -pe 's|/\*INJECT SCRIPTS\*/|'"${inject_scripts:8:$((${#inject_scripts}-11))}|s" \
-| perl -pe 's|("version":\s*)"[^"]*"|$1"'"$VERSION"'"|' \
-| perl -pe 's|/\*WEB ACCESSIBLE RESOURCES\*/|'"${web_accessible_resources:2:$((${#web_accessible_resources}-4))}|s" \
-> "$BUILD_DIR/chrome/manifest.json"
-
-# Update Safari Info.plist
-global_scripts=$(printf '<script type="text/javascript" src="%s"></script>\\n' "${BACKGROUND_INCLUDE[@]}")
-perl -000 -pe "s|<!--SCRIPTS-->|\\n${global_scripts}|s" "$SRCDIR/safari/global.html" > "$BUILD_DIR/safari.safariextension/global.html"
-inject_scripts=("${INJECT_INCLUDE[@]}" "${INJECT_INCLUDE_SAFARI[@]}" "${INJECT_INCLUDE_LAST[@]}")
-scripts=$(printf '\\t\\t\\t\\t<string>%s</string>\\n' "${inject_scripts[@]}")
-perl -pe "s|<!--SCRIPTS-->|${scripts:8:$((${#scripts}-10))}|s" "$SRCDIR/safari/Info.plist" \
-| perl -000 -p -e 's|(<key>(?:CFBundleShortVersionString\|CFBundleVersion)</key>\s*)<string>[^<]*</string>|$1<string>'"$VERSION"'</string>|sg' \
-> "$BUILD_DIR/safari.safariextension/Info.plist"
+# Update scripts
+if [ ! -z $DEBUG ]; then
+	gulp inject-scripts --version "$VERSION" > /dev/null 2>&1
+else
+	gulp inject-scripts --version "$VERSION" -p > /dev/null 2>&1
+fi
 
 # Transpile Safari JS for Safari 10.0<
 echo "Transpiling Safari JS..." >> "$LOG";
@@ -394,7 +289,7 @@ echo "done"
 # Build Chrome extension
 if [ -e "$CHROME_CERTIFICATE" -a -e "$CHROME_EXECUTABLE" ]; then
 	echo -n "Building Chrome extension..."
-	if "$CHROME_EXECUTABLE" --pack-extension="$BUILD_DIR/chrome" --pack-extension-key="$CHROME_CERTIFICATE" >> "$LOG" 2>&1
+	if "$CHROME_EXECUTABLE" --pack-extension="$BUILD_DIR/browserExt" --pack-extension-key="$CHROME_CERTIFICATE" >> "$LOG" 2>&1
 	then
 		echo "succeeded"
 		mv "$BUILD_DIR/chrome.crx" "$CHROME_EXT"

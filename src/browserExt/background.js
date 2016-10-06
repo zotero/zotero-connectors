@@ -28,17 +28,14 @@ Zotero.Connector_Browser = new function() {
 	var _instanceIDsForTabs = {};
 	var _selectCallbacksForTabIDs = {};
 	var _incompatibleVersionMessageShown;
+	var _injectScripts = [
+		/*INJECT SCRIPTS*/
+	];
 	
 	/**
 	 * Called when translators are available for a given page
 	 */
 	this.onTranslators = function(translators, instanceID, contentType, tab) {
-		if(_isDisabledForURL(tab.url)) {
-			_clearInfoForTab(tab.id);
-			_disableForTab(tab.id);
-			return;
-		}
-		
 		_enableForTab(tab.id);
 		
 		var oldTranslators = _translatorsForTabIDs[tab.id];
@@ -139,6 +136,34 @@ Zotero.Connector_Browser = new function() {
 			'Please ensure that you have installed the latest version of these components. See '+
 			'https://www.zotero.org/download for more details.');
 		_incompatibleVersionMessageShown = true;
+	}
+
+	/**
+	 * Checks whether a given frame has any matching translators. Injects translation code
+	 * if translators are found.
+	 * 
+	 * @param args [url, rootUrl]
+	 * @param tab
+	 * @param frameId
+	 */
+	this.onFrameLoaded = function(args, tab, frameId) {
+		if(_isDisabledForURL(tab.url)) {
+			_clearInfoForTab(tab.id);
+			_disableForTab(tab.id);
+			return;
+		}
+		var url = args[0];
+		var rootUrl = args[1];
+		Zotero.Translators.getWebTranslatorsForLocation(url, rootUrl).then(function(translators) {
+			if (translators.length == 0) {
+				Zotero.debug("Not injecting. No translators found for [rootUrl, url]: " + rootUrl + " , " + url);
+				return;
+			}
+			Zotero.debug(translators.length+  " translators found. Injecting into [rootUrl, url]: " + rootUrl + " , " + url);
+			for (let script of _injectScripts) {
+				chrome.tabs.executeScript(tab.id, {file: script, frameId});
+			}
+		}.bind(this));
 	}
 	
 	/**
@@ -290,6 +315,8 @@ Zotero.Connector_Browser = new function() {
 	Zotero.Messaging.addMessageListener("selectDone", function(data) {
 		_selectCallbacksForTabIDs[data[0]](data[1]);
 	});
+	
+	Zotero.Messaging.addMessageListener("frameLoaded", this.onFrameLoaded);
 
 	chrome.tabs.onRemoved.addListener(_clearInfoForTab);
 
@@ -301,9 +328,7 @@ Zotero.Connector_Browser = new function() {
 		chrome.tabs.sendMessage(tabID, ["pageModified"], null);
 	});
 
-	chrome.browserAction.onClicked.addListener(function(tab) {
-		_save(tab);
-	});
+	chrome.browserAction.onClicked.addListener(_save);
 }
 
 Zotero.initGlobal();

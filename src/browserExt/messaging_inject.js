@@ -39,9 +39,9 @@ Zotero.Messaging = new function() {
 	
 	/**
 	 * Adds messaging functions to injected script. This adds Zotero.xxx.yyy functions for all
-	 * entries in MESSAGES. These will send a message to the global script and return immediately.
-	 * When a message is received, they will call the callback function, which should be passed
-	 * as the last argument to Zotero.xxx.yyy.
+	 * entries in MESSAGES. These will send a message to the global script and return a promise.
+	 * When a message is received, they will resolve the promise and call the callback function, 
+	 * which can be passed as the last argument to Zotero.xxx.yyy.
 	 */
 	this.init = function() {
 		for(var ns in MESSAGES) {

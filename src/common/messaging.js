@@ -46,16 +46,17 @@ Zotero.Messaging = new function() {
 	 * Handles a message to the global process received from the injected script in Chrome or Safari
 	 * @param {String} messageName The name of the message received
 	 * @param {Array} args Arguments for to be passed to the function corresponding to this message
-	 * @param {Function} responseCallback Callback to be executed when data is available
-	 * @param {String|Number} tabID ID of this tab 
+	 * @param {Function} sendResponseCallback Callback to be executed when data is available
+	 * @param {TabObject} tab 
+	 * @param {Number} frameId not available in safari
 	 */
-	this.receiveMessage = function(messageName, args, sendResponseCallback, tab) {
+	this.receiveMessage = function(messageName, args, sendResponseCallback, tab, frameId) {
 		try {
 			//Zotero.debug("Messaging: Received message: "+messageName);
 			
 			// first see if there is a message listener
 			if(_messageListeners[messageName]) {
-				_messageListeners[messageName](args, tab);
+				_messageListeners[messageName](args, tab, frameId);
 				// return false, indicating that `sendResponseCallback won't be called
 				return false;
 			}
@@ -153,7 +154,7 @@ Zotero.Messaging = new function() {
 			chrome.runtime.onMessage.addListener(function(request, sender, sendResponseCallback) {
 				// See `sendResponse` notes for return value
 				// https://developer.chrome.com/extensions/runtime#event-onMessage
-				return Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab);
+				return Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab, sender.frameId);
 			});
 		} else if(Zotero.isSafari) {
 			safari.application.addEventListener("message", function(event) {

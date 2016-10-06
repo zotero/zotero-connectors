@@ -21,7 +21,7 @@
 				"injectCheck.js"
 			],
 			"run_at": "document_idle",
-			"all_frames": false
+			"all_frames": true
 		}
 	],
 	"web_accessible_resources": [

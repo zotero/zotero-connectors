@@ -32,8 +32,8 @@ var Zotero = new function() {
 	// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
 	// Firefox 1.0+
 	this.isFirefox = typeof InstallTrigger !== 'undefined';
-	// At least Safari 3+: "[object HTMLElementConstructor]"
-	this.isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+	// At least Safari 10+
+	this.isSafari = !!safari;
 	// Internet Explorer 6-11
 	this.isIE = /*@cc_on!@*/false || !!document.documentMode;
 	// Edge 20+

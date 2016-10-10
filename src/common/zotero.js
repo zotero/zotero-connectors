@@ -33,7 +33,7 @@ var Zotero = new function() {
 	// Firefox 1.0+
 	this.isFirefox = typeof InstallTrigger !== 'undefined';
 	// At least Safari 10+
-	this.isSafari = !!safari;
+	this.isSafari = typeof safari !== 'undefined';
 	// Internet Explorer 6-11
 	this.isIE = /*@cc_on!@*/false || !!document.documentMode;
 	// Edge 20+

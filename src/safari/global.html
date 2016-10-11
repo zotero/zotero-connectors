@@ -30,12 +30,14 @@ Zotero.Connector_Browser = new function() {
 	var _incompatibleVersionMessageShown;
 	var _zoteroButton;
 	
+	this.activeTab = null;
+
 	/**
 	 * Called when a new page has been loaded to clear previous translators
 	 */
 	this.onPageLoad = function(tab) {
 		if(tab.translators) {
-			tab.translators = [];
+			tab.translators = null;
 		}
 		_updateButtonStatus();
 	}
@@ -44,12 +46,19 @@ Zotero.Connector_Browser = new function() {
 	 * Called when translators are available for a given page
 	 */
 	this.onTranslators = function(translators, instanceID, contentType, tab) {
-		// if we already have translators for this page, return
-		if(tab.translators && tab.translators.length
-			&& (!translators.length || tab.translators[0].priority <= translators[0].priority)) return;
-		tab.instanceID = instanceID;
+		var oldTranslators = tab.translators;
+		tab.contentType = contentType;
+		if (oldTranslators) {
+			if ((oldTranslators.length
+					&& (!translators.length || oldTranslators[0].priority <= translators[0].priority))
+				|| (!oldTranslators.length && !translators.length)) {
+					_updateButtonStatus();
+					return;
+			}
+		}
 		tab.translators = translators;
-		tab.translatorsForURL = tab.url;
+		tab.instanceID = instanceID;
+
 		_updateButtonStatus();
 	}
 	
@@ -75,17 +84,15 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onPerformCommand = function(event) {
 		var command = event.command;
-		if(command === "zotero-translate") {
-			var tab = safari.application.activeBrowserWindow.activeTab;
-			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("translate",
-					[tab.instanceID, tab.translators[0]]);
-		} else if(command === "zotero-preferences") {
-			var tab = safari.application.activeBrowserWindow.activeTab;
+		var tab = safari.application.activeBrowserWindow.activeTab;
+		if (command === "zotero-button") {
+			if(tab.translators && tab.translators.length) {
+				Zotero.Connector_Browser.saveWithTranslator(0);
+			} else {
+				Zotero.Connector_Browser.saveAsWebpage();
+			}
+		} else if (command === "zotero-preferences") {
 			tab.url = safari.extension.baseURI+"preferences/preferences.html";
-		} else if(command === "zotero-saveSnapshot") {
-			var tab = safari.application.activeBrowserWindow.activeTab;
-			safari.application.activeBrowserWindow.activeTab.page.dispatchMessage("saveSnapshot",
-					null);
 		}
 	}
 	
@@ -93,49 +100,30 @@ Zotero.Connector_Browser = new function() {
 	 * Called to determine if current page can be scraped
 	 */
 	this.onValidateCommand = function(event) {
-		if(event.command === "zotero-translate") {
+		if(event.command === "zotero-button") {
+			Zotero.Connector_Browser.activeTab = safari.application.activeBrowserWindow.activeTab;
 			_zoteroButton = event.target;
 			_updateButtonStatus();
 		}
 	}
-	
+		
 	/**
 	 * Called when Zotero goes online or offline
 	 */
 	this.onStateChange = function() {
-		_updateButtonStatus();
-	}
-	
-	/**
-	 * Update status and tooltip of Zotero button
-	 */
-	function _updateButtonStatus() {
-		if(!_zoteroButton) return;
-		var tab = safari.application.activeBrowserWindow.activeTab;
-		
-		if(tab.translators && tab.translators.length && tab.translatorsForURL == tab.url
-				&& (Zotero.Connector.isOnline || tab.translators[0].runMode !== Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE)) {
-			var itemType = tab.translators[0].itemType;
-			_zoteroButton.image = (itemType === "multiple"
-					? safari.extension.baseURI+"images/toolbar/treesource-collection.png"
-					: Zotero.ItemTypes.getImageSrc(itemType).replace("/treeitem", "/toolbar/treeitem"));
-			_zoteroButton.disabled = false;
-			
-			var translatorName = tab.translators[0].label;
-			if(tab.translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
-				translatorName += " via Zotero Standalone";
+		if (!Zotero.Connector.isOnline) {
+			Zotero.debug("Standalone went offline, invalidating standalone translators");
+			for (let browserWindow of safari.application.browserWindows) {
+				for (let tab of browserWindow.tabs) {
+					if (tab.translators && tab.translators.length) {
+						tab.translators = tab.translators.filter(
+							(t) => t.runMode !== Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE);
+					}
+				}
 			}
-			_zoteroButton.toolTip = "Save to Zotero ("+translatorName+")";
-		} else if(Zotero.Connector.isOnline) {
-			_zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-new-z-16px.png";
-			_zoteroButton.disabled = true;
-			_zoteroButton.toolTip = "Zotero is Online";
-		} else {
-			_zoteroButton.image = safari.extension.baseURI+"images/zotero-z-16px-offline.png";
-			_zoteroButton.disabled = true;
-			_zoteroButton.toolTip = "Zotero is Offline";
+			_updateButtonStatus();
 		}
-	}
+	};
 	
 	/**
 	 * Called if Zotero version is determined to be incompatible with Standalone
@@ -150,9 +138,91 @@ Zotero.Connector_Browser = new function() {
 			'http://www.zotero.org/support/standalone for more details.');
 		_incompatibleVersionMessageShown = true;
 	}
+
+	this.saveWithTranslator = function(i) {
+		var tab = safari.application.activeBrowserWindow.activeTab;
+		tab.page.dispatchMessage("translate",
+				[tab.instanceID, tab.translators[i]]);
+	}
+
+	this.saveAsWebpage = function () {
+		let tab = safari.application.activeBrowserWindow.activeTab;
+		let title = tab.title.split('/');
+		title = title[title.length-1];
+		tab.page.dispatchMessage("saveSnapshot", title);
+	}
+
+	function _isDisabledForURL(url) {
+		return !url || url.indexOf('safari-extension://') == 0 || url.indexOf('file://') == 0;
+	}
+
+	/**
+	 * Update status and tooltip of Zotero button
+	 * 
+	 * Called on changing tabs or when Zotero goes offline
+	 */
+	function _updateButtonStatus() {
+		if( !_zoteroButton) return;
+		var tab = safari.application.activeBrowserWindow.activeTab;
+		if (_isDisabledForURL(tab.url)) {
+			_showZoteroStatus();
+			return;
+		}
+		_zoteroButton.disabled = false;
+		var translators = tab.translators;
+		var isPDF = tab.contentType == 'application/pdf';
+
+		if (translators && translators.length) {
+			_showTranslatorIcon(translators[0]);
+		} else if (isPDF) {
+			_showPDFIcon();
+		} else {
+			_showWebpageIcon();
+		}
+	}
+
+	function _showZoteroStatus() {
+		_zoteroButton.disabled = true;
+		Zotero.Connector.checkIsOnline(function(isOnline) {
+			if (isOnline) {
+				_zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-new-z-16px.png";
+				_zoteroButton.toolTip = "Zotero is Online";
+			} else {
+				_zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-z-16px-offline.png";
+				_zoteroButton.toolTip = "Zotero is Offline";
+			}
+		});
+	}
+
+	function _showTranslatorIcon(translator) {
+		var itemType = translator.itemType;
+		_zoteroButton.image = (itemType === "multiple"
+						? safari.extension.baseURI + "images/toolbar/treesource-collection.png"
+						: Zotero.ItemTypes.getImageSrc(itemType).replace('images/', 'images/toolbar/'));
+		_zoteroButton.toolTip = _getTranslatorLabel(translator);
+	}
+
+	function _showWebpageIcon() {
+		_zoteroButton.image = Zotero.ItemTypes.getImageSrc("webpage-gray").replace('images/', 'images/toolbar/');
+		_zoteroButton.toolTip = "Save to Zotero (Web Page)";
+	}
+
+	function _showPDFIcon() {
+		_zoteroButton.image = Zotero.ItemTypes.getImageSrc("webpage-gray").replace('images/', 'images/toolbar/');
+		_zoteroButton.toolTip = "Save to Zotero (PDF)";
+	}
+
+	function _getTranslatorLabel(translator) {
+		var translatorName = translator.label;
+		if(translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
+			translatorName += " via Zotero Standalone";
+		}
+
+		return "Save to Zotero (" + translatorName + ")";
+	}
 }
 
- // register handlers
+// register handlers
 safari.application.addEventListener("command", Zotero.Connector_Browser.onPerformCommand, false);
 safari.application.addEventListener("validate", Zotero.Connector_Browser.onValidateCommand, false);
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);

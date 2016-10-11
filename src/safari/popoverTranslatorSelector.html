@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<style type="text/css">
+		body {
+			margin: 0;
+			font-family: -apple-system;
+			font-size: 14px;
+		}
+		menu {
+			list-style: none;
+			padding: 0;
+			margin: 4px 0;
+		}
+		li {
+			line-height: 1.5em;
+			padding: 0 20px;
+			white-space: nowrap;
+		}
+		li:hover {
+			background-color: #4397fa;
+			color: #fff;
+		}
+		a {
+			cursor: default;
+			color: inherit;
+			text-decoration: inherit;
+		}
+		hr {
+			border-top: 2px #ddd solid;
+		}
+	</style>
+</head>
+<body>
+<menu>
+	<li><a id="zotero-save-page" href="javascript:void(0)">Save to Zotero (Web Page)</a></li>
+	<hr/>
+	<li><a id="zotero-preferences" onclick="safari.self.hide()">Zotero Preferences</a></li>
+</menu>
+<script>
+	(function () {
+		document.getElementById('zotero-preferences').setAttribute('href', safari.extension.baseURI + "preferences/preferences.html");
+		document.getElementById('zotero-save-page').onclick = function () {
+			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
+			Zotero_Connector_Browser.saveAsWebpage();
+			safari.self.hide();
+		};
+
+		safari.application.addEventListener('popover', function (event) {
+			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
+			setTimeout(function () {
+				safari.self.height = document.documentElement.offsetHeight;
+				let width = 0;
+				let aElems = document.getElementsByTagName('a');
+				for (let i = 0; i < aElems.length; i++) {
+					if (aElems[i].offsetWidth > width) {
+						width = aElems[i].offsetWidth;
+					}
+				}
+				safari.self.width = width + 40;
+			});
+
+			let translatorElems = document.getElementsByClassName('translator');
+			for (let i = translatorElems.length-1; i >= 0; i--) {
+				let li = translatorElems[i];
+				li.parentNode.removeChild(li);
+			}
+
+			document.getElementById('zotero-save-page').textContent = "Save to Zotero " +
+				(Zotero_Connector_Browser.activeTab.contentType == 'application/pdf' ? "(PDF)" : "(Web Page)");
+
+			var translators = Zotero_Connector_Browser.activeTab.translators;
+			if (!translators || event.target.identifier != 'zotero-translatorSelector') return;
+
+			var menu = document.getElementsByTagName('menu')[0];
+			var savePage = menu.firstChild;
+			for (let i = 0; i < translators.length; i++) {
+				let translator = translators[i];
+				let li = document.createElement('li');
+				li.classList.add('translator');
+
+				let a = document.createElement('a');
+				a.setAttribute('href', 'javascript:void(0);');
+				a.textContent = "Save to Zotero (" + translator.label + ")";
+				a.onclick = function () {
+					Zotero_Connector_Browser.saveWithTranslator(i);
+					safari.self.hide();
+				};
+
+				li.appendChild(a);
+				menu.insertBefore(li, savePage);
+			}
+		});
+	})();
+</script>
+</body>
+</html>

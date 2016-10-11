@@ -74,8 +74,11 @@ fi
 
 if [ -z $VERSION ]; then
 	pushd "$CWD" > /dev/null
-	REV=`git log -n 1 --pretty='format:%h'`
-	VERSION="$DEFAULT_VERSION"
+    if [ -z $DEFAULT_VERSION ]; then
+        VERSION="5.0"
+    else
+        VERSION="$DEFAULT_VERSION"
+    fi
 	popd > /dev/null
 fi
 
@@ -99,7 +102,8 @@ EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
 CHROME_EXT="$DISTDIR/Zotero_Connector-$VERSION.crx"
 
-ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-new-z-16px.png"
+ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-new-z-16px.png  \
+    $SRCDIR/common/images/zotero-z-16px-offline.png"
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png"
 
@@ -278,11 +282,6 @@ if [ ! -z $DEBUG ]; then
 else
 	gulp inject-scripts --version "$VERSION" -p > /dev/null 2>&1
 fi
-
-# Transpile Safari JS for Safari 10.0<
-echo "Transpiling Safari JS..." >> "$LOG";
-"$CWD/node_modules/babel-cli/bin/babel.js" "$BUILD_DIR/safari.safariextension/" --out-dir "$BUILD_DIR/safari.safariextension/" --presets es2015 -q >> "$LOG" 2>&1
-echo "Transpiled" >> "$LOG";
 
 echo "done"
 

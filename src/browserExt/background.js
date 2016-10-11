@@ -48,22 +48,7 @@ Zotero.Connector_Browser = new function() {
 		_instanceIDsForTabs[tab.id] = instanceID;
 		
 		var isPDF = contentType == 'application/pdf';
-		chrome.contextMenus.removeAll();
-		
-		if (translators.length) {
-			_showTranslatorIcon(tab, translators[0]);
-			_showTranslatorContextMenuItem(translators);
-		} else if (isPDF) {
-			_showPDFIcon(tab);
-		} else {
-			_showWebpageIcon(tab);
-		}
-		
-		if (isPDF) {
-			_showPDFContextMenuItem();
-		} else {
-			_showWebpageContextMenuItem();
-		}
+		_updateExtensionUI(tab, isPDF);
 	}
 	
 	/**
@@ -111,14 +96,17 @@ Zotero.Connector_Browser = new function() {
 	 * Called when Zotero goes online or offline
 	 */
 	this.onStateChange = function() {
-		if(!Zotero.Connector.isOnline) {
-			for(var i in _translatorsForTabIDs) {
-				if(_translatorsForTabIDs[i] && _translatorsForTabIDs[i].length
-						&& _translatorsForTabIDs[i][0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
-					try {
-						Zotero.debug("Falling back to webpage saving for tab " + i);
-						_showWebpageIcon(i);
-					} catch(e) {}
+		if (!Zotero.Connector.isOnline) {
+			Zotero.debug("Standalone went offline, invalidating standalone translators");
+			for (var i in _translatorsForTabIDs) {
+				if (_translatorsForTabIDs[i] && _translatorsForTabIDs[i].length) {
+					_translatorsForTabIDs[i] = _translatorsForTabIDs[i].filter(
+						(t) => t.runMode !== Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE);
+					
+					chrome.tabs.get(parseInt(i), function(tab) {
+						// If we have translators then the content type is false
+						_updateExtensionUI(tab, false);
+					})
 				}
 			}
 		}
@@ -147,9 +135,9 @@ Zotero.Connector_Browser = new function() {
 	 * @param frameId
 	 */
 	this.onFrameLoaded = function(args, tab, frameId) {
-		if(_isDisabledForURL(tab.url)) {
+		if (_isDisabledForURL(tab.url)) {
 			_clearInfoForTab(tab.id);
-			_disableForTab(tab.id);
+			_showZoteroStatus(tab.id);
 			return;
 		}
 		var url = args[0];
@@ -167,6 +155,34 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	/**
+	 * Update status and tooltip of Zotero button
+	 */
+	function _updateExtensionUI(tab, isPDF) {
+		chrome.contextMenus.removeAll();
+
+		if (_isDisabledForURL(tab.url)) {
+			_showZoteroStatus();
+			return;
+		}
+		
+		var translators = _translatorsForTabIDs[tab.id];
+		if (translators && translators.length) {
+			_showTranslatorIcon(tab, translators[0]);
+			_showTranslatorContextMenuItem(translators);
+		} else if (isPDF) {
+			_showPDFIcon(tab);
+		} else {
+			_showWebpageIcon(tab);
+		}
+		
+		if (isPDF) {
+			_showPDFContextMenuItem();
+		} else {
+			_showWebpageContextMenuItem();
+		}
+	}
+	
+	/**
 	 * Removes information about a specific tab
 	 */
 	function _clearInfoForTab(tabID) {
@@ -179,9 +195,29 @@ Zotero.Connector_Browser = new function() {
 		return url.indexOf('chrome://') == 0;
 	}
 	
-	function _disableForTab(tabID) {
+	function _showZoteroStatus(tabID) {
 		chrome.browserAction.disable(tabID);
 		chrome.contextMenus.removeAll();
+		
+		Zotero.Connector.checkIsOnline(function(isOnline) {
+			var icon, title;
+			if (isOnline) {
+				icon = "images/zotero-new-z-16px.png";
+				title = "Zotero is Online";
+			} else {
+				icon = "images/zotero-z-16px-offline.png";
+				title = "Zotero is Offline";
+			}
+			chrome.browserAction.setIcon({
+				tabId:tabID,
+				path:icon
+			});
+			
+			chrome.browserAction.setTitle({
+				tabId:tabID,
+				title: title
+			});
+		});
 	}
 	
 	function _enableForTab(tabID) {
@@ -325,6 +361,7 @@ Zotero.Connector_Browser = new function() {
 		if(!changeInfo.url) return;
 		Zotero.debug("Connector_Browser: URL changed for tab");
 		_clearInfoForTab(tabID);
+		_showZoteroStatus();
 		chrome.tabs.sendMessage(tabID, ["pageModified"], null);
 	});
 

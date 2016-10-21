@@ -63,6 +63,9 @@ var Zotero = new function() {
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
 		Zotero.Repo.init();
+		if (Zotero.isBrowserExt) {
+			Zotero.Proxies.init();
+		}
 	};
 	
 	/**
@@ -178,7 +181,14 @@ Zotero.Prefs = new function() {
 		"automaticSnapshots":true,
 		"connector.repo.lastCheck.localTime":0,
 		"connector.repo.lastCheck.repoTime":0,
-		"capitalizeTitles":false
+		"capitalizeTitles":false,
+		
+		"proxies.transparent": true,
+		"proxies.autoRecognize": true,
+		"proxies.showRedirectNotification": true,
+		"proxies.disableByDomain": false,
+		"proxies.disableByDomainString": '.edu',
+		"proxies.proxies": []
 	};
 	
 	this.get = function(pref) {

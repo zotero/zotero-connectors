@@ -29,6 +29,7 @@ const exec = require('child_process').exec;
 const through = require('through2');
 const gulp = require('gulp');
 const babel = require('babel-core');
+const browserify = require('browserify');
 const argv = require('yargs')
 	.boolean('p')
 	.alias('p', 'production')
@@ -90,6 +91,7 @@ injectInclude.push.apply(injectInclude, injectIncludeLast);
 injectIncludeBrowserExt.push.apply(injectIncludeBrowserExt, injectIncludeLast);
 
 var backgroundInclude = [
+	'node_modules.js',
 	'zotero.js',
 	'zotero_config.js',
 	'promise.js',
@@ -97,6 +99,7 @@ var backgroundInclude = [
 	'api.js',
 	'http.js',
 	'oauthsimple.js',
+	'proxy.js',
 	'zotero/connector/connector.js',
 	'zotero/connector/cachedTypes.js',
 	'zotero/date.js',
@@ -116,6 +119,8 @@ var backgroundInclude = [
 	'messages.js',
 	'messaging.js'
 ];
+
+var backgroundIncludeBrowserExt = backgroundInclude.concat(['proxy']);
 
 if (!argv.p) {
 	backgroundInclude.push('tools/testTranslators/translatorTester_messages.js',
@@ -161,7 +166,7 @@ function processFile() {
 			case 'manifest.json':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("/*BACKGROUND SCRIPTS*/",
-						backgroundInclude.map((s) => `"${s}"`).join(',\n\t\t\t'))
+						backgroundIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
 					.replace(/"version": "[^"]*"/, '"version": "'+argv.version+'"'));
 				break;
 			case 'background.js':
@@ -181,6 +186,9 @@ function processFile() {
 						injectInclude.map((s) => `<string>${s}</string>`).join('\n\t\t\t\t'))
 					.replace(/(<key>(?:CFBundleShortVersionString|CFBundleVersion)<\/key>\s*)<string>[^<]*<\/string>/g,
 						 '$1<string>'+argv.version+'</string>'));
+				break;
+			case 'node_modules.js':
+				file.contents = browserify(file.path).bundle();
 				break;
 		}
 		
@@ -219,12 +227,13 @@ gulp.task('watch-chrome', function () {
 	});
 });
 
-gulp.task('inject-scripts', function() {
+gulp.task('process-custom-scripts', function() {
 	gulp.src([
 		'./src/browserExt/background.js',
 		'./src/browserExt/manifest.json', 
 		'./src/safari/global.html',
-		'./src/safari/Info.plist'
+		'./src/safari/Info.plist',
+		'./src/common/node_modules.js'
 	]).pipe(processFile())
 		.pipe(gulp.dest((data) => data.base));
 });

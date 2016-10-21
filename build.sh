@@ -278,9 +278,9 @@ done
 	
 # Update scripts
 if [ ! -z $DEBUG ]; then
-	gulp inject-scripts --version "$VERSION" > /dev/null 2>&1
+	gulp process-custom-scripts --version "$VERSION" > /dev/null 2>&1
 else
-	gulp inject-scripts --version "$VERSION" -p > /dev/null 2>&1
+	gulp process-custom-scripts --version "$VERSION" -p > /dev/null 2>&1
 fi
 
 echo "done"

@@ -154,6 +154,7 @@ Zotero.Connector_Browser = new function() {
 		}
 		var url = args[0];
 		var rootUrl = args[1];
+		if (!url || !rootUrl) return;
 		Zotero.Translators.getWebTranslatorsForLocation(url, rootUrl).then(function(translators) {
 			if (translators.length == 0) {
 				Zotero.debug("Not injecting. No translators found for [rootUrl, url]: " + rootUrl + " , " + url);
@@ -161,7 +162,11 @@ Zotero.Connector_Browser = new function() {
 			}
 			Zotero.debug(translators.length+  " translators found. Injecting into [rootUrl, url]: " + rootUrl + " , " + url);
 			for (let script of _injectScripts) {
-				chrome.tabs.executeScript(tab.id, {file: script, frameId});
+				try {
+					chrome.tabs.executeScript(tab.id, {file: script, frameId});
+				} catch (e) {
+					return;
+				}
 			}
 		}.bind(this));
 	}

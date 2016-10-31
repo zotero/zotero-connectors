@@ -7,7 +7,8 @@
 		"default_icon": "images/treeitem-webpage-gray.png",
 		"default_title": "Save to Zotero"
 	},
-	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies", "webRequest", "webRequestBlocking"],
+	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies", 
+		"webRequest", "webRequestBlocking", "notifications"],
 	"background": {
 		"scripts": [
 			/*BACKGROUND SCRIPTS*/,

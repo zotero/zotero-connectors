@@ -155,7 +155,7 @@ Zotero.Proxies = new function() {
 				proxy.hosts.push(host);
 				Zotero.Proxies.save(proxy);
 
-				_showNotification(`Zotero automatically associated this site with a previously defined proxy. Future requests to ${host} will be redirected to ${requestURI.host}.`);
+				_showNotification('New Proxy Host', `${host} was automatically associated with an existing proxy. Future requests will be redirected to ${requestURI.host}`);
 			}
 		} else if (Zotero.Proxies.autoRecognize) {
 			// if autoRecognize enabled, send the request details off to standalone to try and detect a proxy
@@ -176,9 +176,9 @@ Zotero.Proxies = new function() {
 					if (!proxy) continue;
 					Zotero.debug("Proxies: Detected "+detectorName+" proxy "+proxy.scheme+" for "+requestURI.host);
 					
-					_showNotification(
-						`Zotero detected that you are accessing this website through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${requestURI.host}`
-					);
+					// Ideally we would like to ask the user whether they want to add a new proxy on this notification,
+					// but only chrome supports that
+					_showNotification('New Proxy', `Future requests to ${proxy.hosts[proxy.hosts.length-1]} will be automatically redirected through ${requestURI.host}. You can disable automatic proxy detection in Zotero Connector preferences.`);
 					
 					Zotero.Proxies.save(proxy);
 					
@@ -242,8 +242,7 @@ Zotero.Proxies = new function() {
 
 		// Otherwise, redirect.
 		if (Zotero.Proxies.showRedirectNotification) {
-			// TODO: allow disabling notifications
-			_showNotification(`Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxiedURI.host}.`);
+			_showNotification('Proxy Redirection', `${url.parse(details.url).host} was automatically redirected through a proxy at ${proxiedURI.host}`);
 		}
 			
 		return {redirectUrl: proxied};
@@ -397,8 +396,12 @@ Zotero.Proxies = new function() {
 	 * Show a proxy-related notification
 	 * @param {String} label - notification text
 	 */
-	function _showNotification(label) {
-		// Get localized button labels
+	function _showNotification(title, label) {
+		new Notification(title, {
+			badge: 'images/zotero-new-z-16px.png',
+			body: label,
+			icon: 'Icon-128.png'
+		});
 		Zotero.debug(`NOTIFICATION: ${label}`)
 	};
 
@@ -433,7 +436,9 @@ Zotero.Proxy = function (json={}) {
 	this.autoAssociate = !!json.autoAssociate;
 	this.scheme = json.scheme;
 	this.hosts = json.hosts || [];
-	this.compileRegexp();
+	if (this.scheme) {
+		this.compileRegexp();
+	}
 }
 
 /**
@@ -465,11 +470,9 @@ const Zotero_Proxy_schemeParameterRegexps = {
  * and saves it in this.regexp
  */
 Zotero.Proxy.prototype.compileRegexp = function() {
-	var parametersToCheck = Zotero_Proxy_schemeParameters;
-
 	var indices = this.indices = {};
 	this.parameters = [];
-	for (var param in parametersToCheck) {
+	for (var param in Zotero_Proxy_schemeParameters) {
 		var index = this.scheme.indexOf(param);
 
 		// avoid escaped matches
@@ -493,7 +496,7 @@ Zotero.Proxy.prototype.compileRegexp = function() {
 	var re = "^"+Zotero.Utilities.quotemeta(this.scheme)+"$";
 	for(var i=this.parameters.length-1; i>=0; i--) {
 		var param = this.parameters[i];
-		re = re.replace(Zotero_Proxy_schemeParameterRegexps[param], "$1"+parametersToCheck[param]);
+		re = re.replace(Zotero_Proxy_schemeParameterRegexps[param], "$1"+Zotero_Proxy_schemeParameters[param]);
 	}
 
 	this.regexp = new RegExp(re);
@@ -643,16 +646,18 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 	var proxy = false;
 	if (loginURI.hostname == proxiedURI.hostname && (!proxiedURI.port || [loginURI.port, 80, 443].indexOf(proxiedURI.port) == -1)) {
 		// Proxy by port
-		proxy = new Zotero.Proxy();
-		proxy.autoAssociate = false;
-		proxy.scheme = proxiedURI.protocol+"//"+proxiedURI.host+"/%p";
-		proxy.hosts = [properURI.host];
+		proxy = new Zotero.Proxy({
+			autoAssociate: false,
+			scheme: proxiedURI.protocol+"//"+proxiedURI.host+"/%p",
+			hosts: [properURI.host]
+		});
 	} else if (proxiedURI.hostname != loginURI.hostname && proxiedURI.host.indexOf(properURI.hostname) != -1) {
 		// Proxy by host
-		proxy = new Zotero.Proxy();
-		proxy.autoAssociate = true;
-		proxy.scheme = proxiedURI.protocol+"//"+proxiedURI.host.replace(properURI.hostname, "%h")+"/%p";
-		proxy.hosts = [properURI.host];
+		proxy = new Zotero.Proxy({
+			autoAssociate: false,
+			scheme: proxiedURI.protocol+"//"+proxiedURI.host.replace(properURI.hostname, "%h")+"/%p",
+			hosts: [properURI.host]
+		});
 	}
 	return proxy;
 }
@@ -703,11 +708,11 @@ Zotero.Proxies.Detectors.Juniper = function(details) {
 	var m = juniperRe.exec(details.url);
 	if (!m) return false;
 	
-	var proxy = new Zotero.Proxy();
-	proxy.autoAssociate = true;
-	proxy.scheme = m[1]+"/%d"+",DanaInfo=%h%a+%f";
-	proxy.hosts = [m[3]];
-	return proxy;
+	return new Zotero.Proxy({
+		autoAssociate: true,
+		scheme: m[1]+"/%d"+",DanaInfo=%h%a+%f",
+		hosts: [m[3]]
+	});
 }
 
 

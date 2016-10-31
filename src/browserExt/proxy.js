@@ -37,30 +37,24 @@ var url = require('url');
  * @property hosts {Zotero.Proxy{}} Object mapping hosts to proxies
  */
 Zotero.Proxies = new function() {
-	this.transparent = false;
-	this.proxies = [];
-	this.hosts = {};
-	this._reqIDToHeaders = {};
-	this._ignoreURLs = new Set();
-
 	/**
 	 * Initializes the proxy settings
 	 * @returns Promise{boolean} proxy enabled/disabled status
 	 */
-	this.init = function () {
-		// If transparent is true, we have loaded the settings from standalone already
-		Zotero.Proxies.transparent = Zotero.Prefs.get("proxies.transparent");
-		Zotero.Proxies.autoRecognize = Zotero.Proxies.transparent && Zotero.Prefs.get("proxies.autoRecognize");
+	this.init = function() {
+		this.transparent = false;
+		this.proxies = [];
+		this.hosts = {};
+		this._reqIDToHeaders = {};
+		this._ignoreURLs = new Set();
 		
-		var disableByDomainPref = Zotero.Prefs.get("proxies.disableByDomain");
-		Zotero.Proxies.disableByDomain = (Zotero.Proxies.transparent && disableByDomainPref ? Zotero.Prefs.get("proxies.disableByDomainString") : null);
-		Zotero.Proxies.showRedirectNotification = Zotero.Prefs.get("proxies.showRedirectNotification");
+		this.loadPrefs();
 		
 		Zotero.Proxies.lastIPCheck = 0;
 		Zotero.Proxies.disabledByDomain = false;
 		
 		Zotero.Proxies.proxies = Zotero.Prefs.get('proxies.proxies').map(function(proxy) {
-			proxy = Zotero.Proxies.newProxyFromJSON(proxy);
+			proxy = new Zotero.Proxy(proxy);
 			for (let host of proxy.hosts) {
 				Zotero.Proxies.hosts[host] = proxy;
 			}
@@ -71,6 +65,15 @@ Zotero.Proxies = new function() {
 			this.enable();
 			this.updateDisabledByDomain();
 		}
+	};
+	
+	this.loadPrefs = function() {
+		Zotero.Proxies.transparent = Zotero.Prefs.get("proxies.transparent");
+		Zotero.Proxies.autoRecognize = Zotero.Proxies.transparent && Zotero.Prefs.get("proxies.autoRecognize");
+		
+		var disableByDomainPref = Zotero.Prefs.get("proxies.disableByDomain");
+		Zotero.Proxies.disableByDomain = (Zotero.Proxies.transparent && disableByDomainPref ? Zotero.Prefs.get("proxies.disableByDomainString") : null);
+		Zotero.Proxies.showRedirectNotification = Zotero.Prefs.get("proxies.showRedirectNotification");	
 	};
 	
 	
@@ -94,6 +97,7 @@ Zotero.Proxies = new function() {
 	this.updateDisabledByDomain = function() {
 		let now = Date.now();
 		if (now - this.lastIPCheck > 15 * 60 * 1000) {
+			this.lastIPCheck = now;
 			Zotero.Proxies.DNS.getHostnames().then(function(hosts) {
 				// if domains necessitate disabling, disable them
 				Zotero.Proxies.disabledByDomain = false;
@@ -103,7 +107,6 @@ Zotero.Proxies = new function() {
 				}
 				
 				// IP update interval is every 15 minutes
-				this.lastIPCheck = now;
 			}.bind(this));
 		}
 	};
@@ -117,17 +120,6 @@ Zotero.Proxies = new function() {
 		delete this._reqIDToHeaders[details.requestID];
 	};
 	
-
-	/**
-	 * @param {Object} json - JSON object with proxy data
-	 * @return {Zotero.Proxy}
-	 */
-	this.newProxyFromJSON = function (json) {
-		var proxy = new Zotero.Proxy;
-		proxy.loadFromJSON(json);
-		return proxy;
-	};
-
 
 	/**
 	 * Observe method to capture and redirect page loads if they're going through an existing proxy.
@@ -145,7 +137,7 @@ Zotero.Proxies = new function() {
 		// see if there is a proxy we already know
 		var m = false;
 		for (var proxy of  Zotero.Proxies.proxies) {
-			if (proxy.regexp && proxy.multiHost) {
+			if (proxy.regexp) {
 				m = proxy.regexp.exec(requestURL);
 				if (m) break;
 			}
@@ -182,11 +174,10 @@ Zotero.Proxies = new function() {
 					}
 					
 					if (!proxy) continue;
-					Zotero.debug("Proxies: Detected "+detectorName+" proxy "+proxy.scheme+
-						(proxy.multiHost ? " (multi-host)" : " for "+proxy.hosts[0]));
+					Zotero.debug("Proxies: Detected "+detectorName+" proxy "+proxy.scheme+" for "+requestURI.host);
 					
 					_showNotification(
-						`Zotero detected that you are accessing this website through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[0]} through ${requestURI.host}`
+						`Zotero detected that you are accessing this website through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${requestURI.host}`
 					);
 					
 					Zotero.Proxies.save(proxy);
@@ -263,12 +254,30 @@ Zotero.Proxies = new function() {
 	 * Update proxy and host maps and store proxy settings in storage
 	 */
 	this.save = function(proxy) {
-		if (Zotero.Proxies.proxies.indexOf(proxy) == -1) Zotero.Proxies.proxies.push(proxy);
+		// If empty or default scheme
+		if (proxy.scheme.length == 0 || proxy.scheme == 'http://%h.example.com/%p'
+			// Or unmodified hosts
+			|| proxy.hosts.length == 0 || proxy.hosts.length == 1 && proxy.hosts[0] == 'www.example.com') {
+			return Zotero.Proxies.remove(proxy);
+		}
+		// If no %h present, then only a single host can be supported and we drop all but the first one.
+		if (proxy.scheme.indexOf('%h') == -1) {
+			proxy.hosts.slice(0, 1);
+		}
+		proxy = new Zotero.Proxy(proxy);
+	
+		var existingProxyIndex = Zotero.Proxies.proxies.findIndex((p) => p.id == proxy.id);
+		if (existingProxyIndex == -1) {
+			Zotero.Proxies.proxies.push(proxy);
+		}
+		else {
+			Zotero.Proxies.proxies[existingProxyIndex] = proxy;
+		}
 		if (!proxy.regexp) proxy.compileRegexp();
 
 		// delete hosts that point to this proxy if they no longer exist
 		for (let host in Zotero.Proxies.hosts) {
-			if (Zotero.Proxies.hosts[host] == proxy && proxy.hosts.indexOf(host) == -1) {
+			if (Zotero.Proxies.hosts[host].id == proxy.id && proxy.hosts.indexOf(host) == -1) {
 				delete Zotero.Proxies.hosts[host];
 			}
 		}
@@ -277,12 +286,24 @@ Zotero.Proxies = new function() {
 			Zotero.Proxies.hosts[host] = proxy;
 		}
 		
-		let proxies = Zotero.Proxies.proxies.map(function(proxy) {
+		Zotero.Proxies.storeProxies();
+	};
+	
+	this.remove = function(proxy) {
+		var existingProxyIndex = Zotero.Proxies.proxies.findIndex((p) => p.id == proxy.id);
+		if (existingProxyIndex != -1) {
+			Zotero.Proxies.proxies.splice(existingProxyIndex, 1);
+			Zotero.Proxies.storeProxies();
+		}
+	};
+	
+	this.storeProxies = function() {
+		let proxies = Zotero.Proxies.proxies.map(function(p) {
 			return {
-				multiHost: proxy.multiHost, 
-				autoAssociate: proxy.autoAssociate,
-				scheme: proxy.scheme,
-				hosts: proxy.hosts
+				id: p.id,
+				autoAssociate: p.autoAssociate,
+				scheme: p.scheme,
+				hosts: p.hosts
 			};
 		});
 		
@@ -407,9 +428,12 @@ Zotero.Proxies = new function() {
  * @constructor
  * @class Represents an individual proxy server
  */
-Zotero.Proxy = function () {
-	this.hosts = [];
-	this.multiHost = false;
+Zotero.Proxy = function (json={}) {
+	this.id = json.id || Date.now();
+	this.autoAssociate = !!json.autoAssociate;
+	this.scheme = json.scheme;
+	this.hosts = json.hosts || [];
+	this.compileRegexp();
 }
 
 /**
@@ -417,10 +441,11 @@ Zotero.Proxy = function () {
  * @const
  */
 const Zotero_Proxy_schemeParameters = {
-	"%p":"(.*?)",	// path
-	"%d":"(.*?)",	// directory
-	"%f":"(.*?)",	// filename
-	"%a":"(.*?)"	// anything
+	"%p": "(.*?)",	// path
+	"%d": "(.*?)",	// directory
+	"%f": "(.*?)",	// filename
+	"%a": "(.*?)",	// anything
+	"%h": "([a-zA-Z0-9]+\\.[a-zA-Z0-9\.]+)"	// hostname
 };
 
 /**
@@ -428,11 +453,11 @@ const Zotero_Proxy_schemeParameters = {
  * @const
  */
 const Zotero_Proxy_schemeParameterRegexps = {
-	"%p":/([^%])%p/,
-	"%d":/([^%])%d/,
-	"%f":/([^%])%f/,
-	"%h":/([^%])%h/,
-	"%a":/([^%])%a/
+	"%p": /([^%])%p/,
+	"%d": /([^%])%d/,
+	"%f": /([^%])%f/,
+	"%h": /([^%])%h/,
+	"%a": /([^%])%a/
 };
 
 /**
@@ -440,17 +465,15 @@ const Zotero_Proxy_schemeParameterRegexps = {
  * and saves it in this.regexp
  */
 Zotero.Proxy.prototype.compileRegexp = function() {
-	// take host only if flagged as multiHost
 	var parametersToCheck = Zotero_Proxy_schemeParameters;
-	if (this.multiHost) parametersToCheck["%h"] = "([a-zA-Z0-9]+\\.[a-zA-Z0-9\.]+)";
 
 	var indices = this.indices = {};
 	this.parameters = [];
-	for(var param in parametersToCheck) {
+	for (var param in parametersToCheck) {
 		var index = this.scheme.indexOf(param);
 
 		// avoid escaped matches
-		while(this.scheme[index-1] && (this.scheme[index-1] == "%")) {
+		while (this.scheme[index-1] && (this.scheme[index-1] == "%")) {
 			this.scheme = this.scheme.substr(0, index-1)+this.scheme.substr(index);
 			index = this.scheme.indexOf(param, index+1);
 		}
@@ -464,7 +487,7 @@ Zotero.Proxy.prototype.compileRegexp = function() {
 	// sort params by index
 	this.parameters = this.parameters.sort(function(a, b) {
 		return indices[a]-indices[b];
-	})
+	});
 
 	// now replace with regexp fragment in reverse order
 	var re = "^"+Zotero.Utilities.quotemeta(this.scheme)+"$";
@@ -483,8 +506,9 @@ Zotero.Proxy.prototype.compileRegexp = function() {
  * @type String
  */
 Zotero.Proxy.prototype.toProper = function(m) {
-	if (this.multiHost) {
-		var properURL = "http://"+m[this.parameters.indexOf("%h")+1]+"/";
+	let hostIdx = this.parameters.indexOf("%h");
+	if (hostIdx != -1) {
+		var properURL = "http://"+m[hostIdx+1]+"/";
 	} else {
 		var properURL = "http://"+this.hosts[0]+"/";
 	}
@@ -530,17 +554,6 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
 }
 
 /**
- * Loads a proxy object from a JSON object
- */
-Zotero.Proxy.prototype.loadFromJSON = function (json) {
-	this.multiHost = !!json.multiHost;
-	this.autoAssociate = !!json.autoAssociate;
-	this.scheme = json.scheme;
-	this.hosts = json.hosts;
-	this.compileRegexp();
-};
-
-/**
  * Detectors for various proxy systems
  * @namespace
  */
@@ -581,7 +594,7 @@ Zotero.Proxies.Detectors.EZProxy = function(details) {
 			}
 			if (m) {
 				// Make sure caught proxy is not multi-host and that we don't have this new proxy already
-				if (proxy.multiHost || Zotero.Proxies.proxyToProper(toProxy.href, true)) return false;
+				if (Zotero.Proxies.proxyToProper(toProxy.href, true)) return false;
 				
 				Zotero.debug("Proxies: Identified putative port-by-port EZProxy link from "+fromProxy.host+" to "+toProxy.host);
 
@@ -631,13 +644,13 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 	if (loginURI.hostname == proxiedURI.hostname && (!proxiedURI.port || [loginURI.port, 80, 443].indexOf(proxiedURI.port) == -1)) {
 		// Proxy by port
 		proxy = new Zotero.Proxy();
-		proxy.multiHost = false;
+		proxy.autoAssociate = false;
 		proxy.scheme = proxiedURI.protocol+"//"+proxiedURI.host+"/%p";
 		proxy.hosts = [properURI.host];
 	} else if (proxiedURI.hostname != loginURI.hostname && proxiedURI.host.indexOf(properURI.hostname) != -1) {
 		// Proxy by host
 		proxy = new Zotero.Proxy();
-		proxy.multiHost = proxy.autoAssociate = true;
+		proxy.autoAssociate = true;
 		proxy.scheme = proxiedURI.protocol+"//"+proxiedURI.host.replace(properURI.hostname, "%h")+"/%p";
 		proxy.hosts = [properURI.host];
 	}
@@ -660,7 +673,7 @@ Zotero.Proxies.Detectors.EZProxy.Listener.prototype.deregister = function(reques
 	chrome.webRequest.onErrorOccurred.removeListener(this.deregister);
 };
 Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onBeforeSendHeaders = function(details) {
-	return {requestHeaders: details.requestHeaders.filter((header) => header.name.toLowerCase != 'cookie')}
+	return {requestHeaders: details.requestHeaders.filter((header) => header.name.toLowerCase() != 'cookie')}
 };
 Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function(details) {
 	// Make sure this is a redirect involving an EZProxy
@@ -669,7 +682,7 @@ Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function
 	} catch (e) {
 		return false;
 	}
-	if (!loginURI.protocol || details.statusCode != 302 || details.responseHeaders["server"] != "EZproxy") return false;
+	if (!loginURI.host || details.statusCode != 302 || details.responseHeaders["server"] != "EZproxy") return false;
 
 	var proxy = Zotero.Proxies.Detectors.EZProxy.learn(url.parse(loginURI), url.parse(details.url));
 	if (proxy) {
@@ -691,8 +704,7 @@ Zotero.Proxies.Detectors.Juniper = function(details) {
 	if (!m) return false;
 	
 	var proxy = new Zotero.Proxy();
-	proxy.multiHost = true;
-	proxy.autoAssociate = false;
+	proxy.autoAssociate = true;
 	proxy.scheme = m[1]+"/%d"+",DanaInfo=%h%a+%f";
 	proxy.hosts = [m[3]];
 	return proxy;

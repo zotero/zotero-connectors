@@ -35,6 +35,10 @@
 				<div class="pane-image"><img src="../images/prefs-general.png" alt=""/></div>
 				<div class="pane-label">General</div>
 			</div>
+			<div id="pane-proxies" class="pane" style="display: none">
+				<div class="pane-image"><img src="../images/prefs-proxies.png" alt=""/></div>
+				<div class="pane-label">Proxies</div>
+			</div>
 			<div id="pane-advanced" class="pane">
 				<div class="pane-image"><img src="../images/prefs-advanced.png" alt=""/></div>
 				<div class="pane-label">Advanced</div>
@@ -82,6 +86,8 @@
 				</div>
 			</div>
 		</div>
+		<!-- React Component -->
+		<div id="content-proxies" class="content"></div>
 		<div id="content-advanced" class="content">
 			<div class="group">
 				<div class="group-title">Debug Output Logging</div>
@@ -114,7 +120,10 @@
 				</div>
 			</div>
 		</div>
+		<script type="text/javascript" src="../lib/react.js"></script>
+		<script type="text/javascript" src="../lib/react-dom.js"></script>
 		<script type="text/javascript" src="../zotero.js"></script>
+		<script type="text/javascript" src="../utilities.js"></script>
 		<script type="text/javascript" src="../messages.js"></script>
 		<script type="text/javascript" src="../messaging_inject.js"></script>
 		<script type="text/javascript" src="preferences.js"></script>

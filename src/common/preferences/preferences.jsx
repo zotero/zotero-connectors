@@ -29,6 +29,247 @@ var visiblePaneName = null;
 var pane = {};
 var content = {};
 
+var Zotero_Preferences = {};
+Zotero_Preferences.Proxies = {
+	init: function() {
+		this.proxiesComponent = React.createElement(Zotero_Preferences.Proxies.Components.Proxies, null);
+		ReactDOM.render(this.proxiesComponent, document.getElementById('content-proxies'));
+	}
+};
+
+Zotero_Preferences.Proxies.Components = {};
+
+Zotero_Preferences.Proxies.Components.ProxySettings = React.createClass({
+	getInitialState: function() {
+		let state = {};
+		let settings = ['transparent', 'autoRecognize', 'showRedirectNotification',
+			 'disableByDomain', 'disableByDomainString'];
+		for (let setting of settings) {
+			state[setting] = Zotero.Prefs.get('proxies.'+setting);
+		}
+		
+		return state;
+	},
+	
+	handleCheckboxChange: function(event) {
+		this.updateState(event.target.name, event.target.checked);
+	},
+	
+	handleTextInputChange: function(event) {
+		this.updateState(event.target.name, event.target.value);
+	},
+	
+	updateState: function(name, value) {
+		let newState = {};
+		newState[name] = value;
+		this.setState(newState);
+		Zotero.Prefs.set('proxies.'+name, value);
+		// Refresh prefs in the background page
+		Zotero.Proxies.loadPrefs();
+		if (name === 'transparent') {
+			this.props.onTransparentChange(value);
+		}
+	},
+	
+	render: function() {
+		return (
+			<div>
+				<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;Enable proxy redirection</label><br/>
+				<div style={{marginLeft: "1em"}}>
+					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically recognize proxied resources</label><br/>
+					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;Show notification when redirecting through a proxy</label><br/>
+					<br/>
+					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains (only available when Zotero Client is running)</label><br/>
+					<input style={{marginTop: "0.5em", marginLeft: "1.5em"}} type="text" onChange={this.handleTextInputChange} disabled={!this.state.transparent || !this.state.disableByDomain} name="disableByDomainString" defaultValue={this.state.disableByDomainString}/>
+				</div>
+			</div>
+		);
+	}
+});
+
+Zotero_Preferences.Proxies.Components.ConfiguredProxies = React.createClass({
+	getInitialState: function() {
+		return {proxies: Zotero.Prefs.get('proxies.proxies'), currentHostIdx: -1, currentProxyIdx: -1};
+	},
+	
+	componentWillMount: function() {
+		this.saveProxies = Zotero.Utilities.debounce(this.saveProxies, 200);
+	},
+
+	saveProxies: function(currentProxyIdx=-1, currentHostIdx=-1) {
+		var currentProxy;
+		if (currentHostIdx == -1) currentHostIdx = this.state.currentHostIdx;
+		if (currentProxyIdx != -1) {
+			currentProxy = this.state.proxies[currentProxyIdx];
+			Zotero.Proxies.save(currentProxy);
+		} else {
+			currentHostIdx = -1;
+		}
+		this.setState({proxies: this.state.proxies, currentProxyIdx: currentProxyIdx, currentHostIdx: currentHostIdx,
+			currentProxy: currentProxy, multiHost: currentProxy && currentProxy.scheme.indexOf('%h') != -1});
+	},
+	
+	handleProxySelectChange: function(event) {
+		var currentProxyIdx = -1, currentProxy;
+		let selected = Array.from(event.target.options).filter((o) => o.selected);
+		if (selected.length == 1) {
+			currentProxyIdx = parseInt(selected[0].value);
+			currentProxy = this.state.proxies[currentProxyIdx];
+		}
+		this.setState({currentProxyIdx: currentProxyIdx, currentProxy: currentProxy, currentHostIdx: 0});
+	},
+	
+	handleProxyButtonClick: function(event) {
+		var currentProxyIdx = -1, currentHostIdx = -1;
+		if (event.target.value == '+') {
+			this.state.proxies.push({id: Date.now(), scheme: 'http://%h.example.com/%p', autoAssociate: true, 
+				hosts: ['www.example.com']});
+			currentProxyIdx = this.state.proxies.length-1;
+			currentHostIdx = 0;
+		} else if (event.target.value == '-') {
+			this.state.proxies.splice(this.state.currentProxyIdx, 1);
+			Zotero.Proxies.remove(this.state.currentProxy);
+		}
+		this.saveProxies(currentProxyIdx, currentHostIdx);
+	},
+	
+	handleSchemeChange: function(event) {
+		this.state.currentProxy.scheme = event.target.value;
+		this.saveProxies(this.state.currentProxyIdx);
+	},
+	
+	handleAutoAssociateChange: function(event) {
+		this.state.currentProxy.autoAssociate = event.target.checked;
+		this.saveProxies(this.state.currentProxyIdx)
+	},
+	
+	handleHostSelectChange: function(event) {
+		var currentHostIdx = -1;
+		let selected = Array.from(event.target.options).filter((o) => o.selected);
+		if (selected.length == 1) {
+			currentHostIdx = parseInt(selected[0].value);
+		}
+		this.setState({currentHostIdx: currentHostIdx});
+	},
+	
+	handleHostButtonClick: function(event) {
+		var currentHostIdx = -1;
+		if (event.target.value == '+') {
+			this.state.currentProxy.hosts.push('www.example.com');
+			currentHostIdx = this.state.currentProxy.hosts.length-1;
+		} else if (event.target.value == '-') {
+			this.state.currentProxy.hosts.splice(this.state.currentHostIdx, 1);
+		}
+		this.setState({currentHostIdx: currentHostIdx});
+		this.saveProxies(this.state.currentProxyIdx);
+	},
+	
+	handleHostnameChange: function(event) {
+		this.state.currentProxy.hosts[this.state.currentHostIdx] = event.target.value;
+		this.saveProxies(this.state.currentProxyIdx);
+	},
+	
+	render: function(){
+		var configuredProxies;
+		if (this.state.proxies.length) {
+			configuredProxies = this.state.proxies.map((proxy, i) => 
+				<option value={i} key={i}>{proxy.scheme}</option> 
+			);
+		} else {
+			configuredProxies = <option>N/A</option>;
+		}
+		
+		var proxySettings = "";
+		if (this.props.transparent && this.state.currentProxy) {
+			let multiHost = this.state.currentProxy.scheme.indexOf('%h') != -1;
+			let configuredHosts = this.state.currentProxy.hosts.map((host, i) => 
+				<option value={i} key={i}>{host}</option>);
+				
+			proxySettings = (
+				<div>
+					<div style={{display: "flex"}}>
+						<label style={{alignSelf: "center"}}>Scheme: </label>
+						<input style={{flexGrow: "1"}} type="text" name="scheme" onChange={this.handleSchemeChange} defaultValue={this.state.currentProxy.scheme}/>
+						<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={this.handleAutoAssociateChange} value={this.state.currentProxy.autoAssociate}/>&nbsp;Automatically associate new hosts</label><br/>
+					</div>
+					<p>
+						You may use the following variables in your proxy scheme:<br/>
+						&#37;h - The hostname of the proxied site (e.g., www.zotero.org)<br/>
+						&#37;p - The path of the proxied page excluding the leading slash (e.g., about/index.html)<br/>
+						&#37;d - The directory path (e.g., about/)<br/>
+						&#37;f - The filename (e.g., index.html)<br/>
+						&#37;a - Any string
+					</p>
+					
+					<div style={{display: "flex", flexDirection: "column", marginTop: "10px"}}>
+						<label>Hostnames</label>
+						<select size="8" multiple onChange={this.handleHostSelectChange} value={[this.state.currentHostIdx]}>
+							{configuredHosts}
+						</select>
+						<div>
+							<input type="button" onClick={this.handleHostButtonClick} value="+"/>
+							<input type="button" onClick={this.handleHostButtonClick} disabled={this.state.currentHostIdx == -1} value="-"/>
+						</div>
+
+						<div style={{display: this.state.currentHostIdx === -1 ? 'none' : 'flex'}}>
+							<label style={{alignSelf: 'center'}}>Hostname: </label>
+							<input style={{flexGrow: '1'}} type="text" defaultValue={this.state.currentProxy.hosts[this.state.currentHostIdx] || ''} onChange={this.handleHostnameChange}/>
+						</div>
+					</div> 
+				</div>
+			);
+		}
+		
+		return (
+			<div style={{display: "flex", flexDirection: "column"}}>
+				<select size="8" multiple onChange={this.handleProxySelectChange} disabled={!this.props.transparent} value={[this.state.currentProxyIdx]}>
+					{configuredProxies}
+				</select>
+				<div style={{display: this.props.transparent ? null : 'none'}}>
+					<input type="button" onClick={this.handleProxyButtonClick} value="+"/>
+					<input type="button" onClick={this.handleProxyButtonClick} disabled={!this.state.currentProxy} value="-"/>
+				</div>
+				
+				{proxySettings}
+			</div>
+		);
+	}
+});
+
+
+Zotero_Preferences.Proxies.Components.Proxies = React.createClass({
+	getInitialState: function() {
+		return {
+			transparent: Zotero.Prefs.get('proxies.transparent')
+		}
+	},
+
+	onTransparentChange: function(transparent) {
+		this.setState({transparent});
+	},
+
+	render: function() {
+		return (
+			<div>
+				<div className="group">
+					<div className="group-title">Proxy Settings</div>
+					<div className="group-content">
+						<p>Zotero will transparently redirect requests through saved proxies. See the <a href="https://www.zotero.org/support/proxies">proxy documentation</a> for more information.</p>
+						<p></p>
+						<Zotero_Preferences.Proxies.Components.ProxySettings onTransparentChange={this.onTransparentChange}/>
+					</div>
+				</div>
+				<div className="group">
+					<div className="group-title">Configured Proxies</div>
+					<div className="group-content">
+						<Zotero_Preferences.Proxies.Components.ConfiguredProxies transparent={this.state.transparent}/>
+					</div>
+				</div>
+			</div>
+		)
+	}
+});
+
 /**
  * Called on document load. Sets up panes and gets data.
  */
@@ -72,6 +313,11 @@ function onLoad() {
 		document.getElementById('general-checkbox-automaticSnapshots').checked = status ? true : false;
 	});
 	Zotero.API.getUserInfo(updateAuthorization);
+
+	if (Zotero.isBrowserExt) {
+		document.getElementById('pane-proxies').style.display = null;
+		Zotero_Preferences.Proxies.init();
+	}
 	
 	refreshData();
 	window.setInterval(refreshData, 1000);

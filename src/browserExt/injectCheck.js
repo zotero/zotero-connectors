@@ -15,7 +15,7 @@
 	 * Looks for translators for the page and injects translation scripts, if translators are found
 	 */
 	function sendFrameLoaded() {
-		chrome.runtime.sendMessage(["frameLoaded", [window.location.url, window.top.location.url]]);
+		chrome.runtime.sendMessage(["frameLoaded", [window.location.href, window.top.location.href]]);
 	}
 
 	if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.protocol === "https:")) {

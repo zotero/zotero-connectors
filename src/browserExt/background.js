@@ -95,9 +95,10 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Called when Zotero goes online or offline
 	 */
-	this.onStateChange = function() {
-		if (!Zotero.Connector.isOnline) {
-			Zotero.debug("Standalone went offline, invalidating standalone translators");
+	this.onStateChange = function(isOnline) {
+		if(isOnline) {
+			Zotero.MIMETypeHandler.enable();
+		} else {
 			for (var i in _translatorsForTabIDs) {
 				if (_translatorsForTabIDs[i] && _translatorsForTabIDs[i].length) {
 					_translatorsForTabIDs[i] = _translatorsForTabIDs[i].filter(
@@ -109,6 +110,8 @@ Zotero.Connector_Browser = new function() {
 					})
 				}
 			}
+			
+			Zotero.MIMETypeHandler.disable();
 		}
 	}
 	
@@ -143,21 +146,40 @@ Zotero.Connector_Browser = new function() {
 		var url = args[0];
 		var rootUrl = args[1];
 		if (!url || !rootUrl) return;
-		Zotero.Translators.getWebTranslatorsForLocation(url, rootUrl).then(function(translators) {
+		return Zotero.Translators.getWebTranslatorsForLocation(url, rootUrl).then(function(translators) {
 			if (translators.length == 0) {
 				Zotero.debug("Not injecting. No translators found for [rootUrl, url]: " + rootUrl + " , " + url);
 				return;
 			}
 			Zotero.debug(translators.length+  " translators found. Injecting into [rootUrl, url]: " + rootUrl + " , " + url);
+			return Zotero.Connector_Browser.injectScripts(tab.id, frameId);
+		});
+	};
+
+	/**
+	 * Checks whether scripts already injected into a frame and if not - injects
+	 * @param tabID {Number}
+	 * @param [frameId=0] {Number] Defaults to top frame
+	 * @returns {Promise} A promise that resolves when all scripts have been injected
+	 */
+	this.injectScripts = function(tabID, frameId=0) {
+		let deferredAll = Zotero.Promise.defer();
+		chrome.tabs.sendMessage(tabID, 'ping', function(response) {
+			if (response) return deferredAll.resolve();
+			var promises = [];
 			for (let script of _injectScripts) {
+				let deferred = Zotero.Promise.defer();
+				promises.push(deferred.promise);
 				try {
-					chrome.tabs.executeScript(tab.id, {file: script, frameId});
+					chrome.tabs.executeScript(tabID, {file: script, frameId}, deferred.resolve);
 				} catch (e) {
-					return;
+					return Zotero.Promise.reject();
 				}
 			}
-		}.bind(this));
-	}
+			return Zotero.Promise.all(promises).then(deferredAll.resolve).catch(deferredAll.reject);
+		});
+		return deferredAll.promise;
+	};
 	
 	/**
 	 * Update status and tooltip of Zotero button
@@ -374,3 +396,5 @@ Zotero.Connector_Browser = new function() {
 }
 
 Zotero.initGlobal();
+Zotero.WebRequestIntercept.init();
+Zotero.Proxies.init();

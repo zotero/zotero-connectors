@@ -23,6 +23,18 @@
 	***** END LICENSE BLOCK *****
 */
 
+/**
+ * Intercepts web requests to detect and redirect proxies. Loosely based on Zotero for Firefox proxy code.
+ *
+ * Zotero.Proxies.Detectors specifies detector functions/objects, which run asynchronously for every
+ * request and add new proxies based on proxy specific rule match
+ *
+ * Zotero.Proxies.proxies defines a list of already known proxies (Zotero.Proxy), based on an URL match scheme.
+ *
+ * Each Zotero.Proxy holds a list of already recognized hosts (previously accessed via the proxy
+ * by the user) and automatically redirects the requests to these hosts via the proxy.
+ */
+
 (function() {
 
 "use strict";
@@ -45,7 +57,6 @@ Zotero.Proxies = new function() {
 		this.transparent = false;
 		this.proxies = [];
 		this.hosts = {};
-		this._reqIDToHeaders = {};
 		this._ignoreURLs = new Set();
 		
 		this.loadPrefs();
@@ -78,19 +89,12 @@ Zotero.Proxies = new function() {
 	
 	
 	this.enable = function() {
-		chrome.webRequest.onBeforeSendHeaders.addListener(this.storeRequestHeaders.bind(this), {urls: ['<all_urls>']}, ['requestHeaders']);
-		chrome.webRequest.onErrorOccurred.addListener(this.removeRequestHeaders.bind(this), {urls: ['<all_urls>']});
-		chrome.webRequest.onCompleted.addListener(this.removeRequestHeaders.bind(this), {urls: ['<all_urls>']});
-		chrome.webRequest.onHeadersReceived.addListener(this.observe.bind(this), {urls: ['<all_urls>']}, ['blocking', 'responseHeaders']);
+		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.observe);
 	};
 	
 	
 	this.disable = function() {
-		this._reqIDToHeaders = {};
-		chrome.webRequests.onBeforeSendHeaders.removeListener(this.storeRequestHeaders);
-		chrome.webRequest.onErrorOccurred.removeListener(this.removeRequestHeaders);
-		chrome.webRequest.onCompleted.removeListener(this.removeRequestHeaders);
-		chrome.webRequests.onHeadersReceived.removeListener(this.observe);
+		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.observe);
 	};
 	
 	
@@ -110,15 +114,7 @@ Zotero.Proxies = new function() {
 			}.bind(this));
 		}
 	};
-	
-	
-	this.storeRequestHeaders = function(details) {
-		this._reqIDToHeaders[details.requestID] = _processHeaders(details.requestHeaders);
-	};
-	
-	this.removeRequestHeaders = function(details) {
-		delete this._reqIDToHeaders[details.requestID];
-	};
+
 	
 
 	/**
@@ -127,7 +123,7 @@ Zotero.Proxies = new function() {
 	 * @param {Object} details - webRequest details object
 	 */
 	this.observe = function (details) {
-		if (this._ignoreURLs.has(details.url) || details.statusCode >= 400) {
+		if (Zotero.Proxies._ignoreURLs.has(details.url) || details.statusCode >= 400) {
 			return;
 		}
 		// try to detect a proxy
@@ -161,9 +157,6 @@ Zotero.Proxies = new function() {
 			// if autoRecognize enabled, send the request details off to standalone to try and detect a proxy
 			// perform in the next event loop step to reduce impact of header processing in a blocking call
 			setTimeout(function() {
-				details.responseHeaders = _processHeaders(details.responseHeaders);
-				details.requestHeaders = Zotero.Proxies._reqIDToHeaders[details.requestID];
-				
 				var proxy = false;
 				for (var detectorName in Zotero.Proxies.Detectors) {
 					var detector = Zotero.Proxies.Detectors[detectorName];
@@ -193,23 +186,21 @@ Zotero.Proxies = new function() {
 		var proxied = Zotero.Proxies.properToProxy(requestURL, true);
 		if (!proxied) return;
 
-		details.requestHeaders = Zotero.Proxies._reqIDToHeaders[details.requestID];
-		details.responseHeaders = _processHeaders(details.responseHeaders);
 		return _maybeRedirect(details, proxied);
 	};
 
 	function _maybeRedirect(details, proxied) {
 		var proxiedURI = url.parse(proxied);
-		if (details.requestHeaders['referer']) {
+		if (details.requestHeadersObject['referer']) {
 			// If the referrer is a proxiable host, we already have access (e.g., we're
 			// on-campus) and shouldn't redirect
-			if (Zotero.Proxies.properToProxy(details.requestHeaders['referer'], true)) {
+			if (Zotero.Proxies.properToProxy(details.requestHeadersObject['referer'], true)) {
 				Zotero.debug("Proxies: skipping redirect; referrer was proxiable");
 				return;
 			}
 			// If the referrer is the same host as we're about to redirect to, we shouldn't
 			// or we risk a loop
-			if (url.parse(details.requestHeaders['referer']).hostname == proxiedURI.hostname) {
+			if (url.parse(details.requestHeadersObject['referer']).hostname == proxiedURI.hostname) {
 				Zotero.debug("Proxies: skipping redirect; redirect URI and referrer have same host");
 				return;
 			}
@@ -405,24 +396,6 @@ Zotero.Proxies = new function() {
 		Zotero.debug(`NOTIFICATION: ${label}`)
 	};
 
-	/**
-	 * Convert from webRequest.HttpHeaders array to a lowercased object.
-	 * 
-	 * headers = _processHeaders(details.requestHeaders)
-	 * console.log(headers['accept-charset']) // utf-8
-	 * 
-	 * @param {Array} headerArray
-	 * @return {Object} headers
-	 */
-	function _processHeaders(headerArray) {
-		if (! Array.isArray(headerArray)) return headerArray;
-		
-		let headers = {};
-		for (let header of headerArray) {
-			headers[header.name.toLowerCase()] = header.value;
-		}
-		return headers;
-	};
 };
 
 /**
@@ -577,13 +550,13 @@ Zotero.Proxies.Detectors.EZProxy = function(details) {
 		var fromProxy = false;
 		if ([301, 302, 303].indexOf(details.statusCode) !== -1) {
 			try {
-				toProxy = url.parse(details.responseHeaders["location"]);
+				toProxy = url.parse(details.responseHeadersObject["location"]);
 				fromProxy = uri;
 			} catch(e) {}
 		} else {
 			try {
 				toProxy = uri;
-				fromProxy = url.parse(details.responseHeaders["referer"]);
+				fromProxy = url.parse(details.responseHeadersObject["referer"]);
 			} catch (e) {}
 		}
 		
@@ -614,11 +587,11 @@ Zotero.Proxies.Detectors.EZProxy = function(details) {
 	
 	// Now try to catch redirects
 	try {
-		var proxiedURI = url.parse(details.responseHeaders["location"]);
+		var proxiedURI = url.parse(details.responseHeadersObject["location"]);
 	} catch (e) {
 		return false;
 	}
-	if (!proxiedURI.protocol || details.statusCode != 302 || details.responseHeaders["server"] != "EZproxy") return false;
+	if (!proxiedURI.protocol || details.statusCode != 302 || details.responseHeadersObject["server"] != "EZproxy") return false;
 	return Zotero.Proxies.Detectors.EZProxy.learn(url.parse(details.url), proxiedURI);
 }
 
@@ -666,35 +639,44 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
  * @class Observer to clear cookies on an HTTP request, then remove itself
  */
 Zotero.Proxies.Detectors.EZProxy.Listener = function(requestURL) {
+	this.requestURL = requestURL;
+	this.listeners = {
+		beforeSendHeaders: this.onBeforeSendHeaders.bind(this),
+		headersReceived: this.onHeadersReceived.bind(this),
+		errorOccurred: this.deregister.bind(this)
+	};
 	Zotero.Proxies._ignoreURLs.add(requestURL);
-	chrome.webRequest.onBeforeSendHeaders.addListener(this.onBeforeSendHeaders.bind(this), {urls: [requestURL]}, ['blocking']);
-	chrome.webRequest.onHeadersReceived.addListener(this.onHeadersReceived.bind(this), {urls: [requestURL]}, ['blocking', 'responseHeaders']);
-	chrome.webRequest.onErrorOccurred.addListener(this.deregister.bind(this, [requestURL]), {urls: [requestURL]});
+	for (let listenerType in this.listeners) {
+		Zotero.WebRequestIntercept.addListener(listenerType, this.listeners[listenerType]);
+	}
 };
-Zotero.Proxies.Detectors.EZProxy.Listener.prototype.deregister = function(requestURL) {
-	Zotero.Proxies._ignoreURLs.delete(requestURL);
-	chrome.webRequest.onBeforeSendHeaders.removeListener(this.onBeforeSendHeaders);
-	chrome.webRequest.onHeadersReceived.removeListener(this.onHeadersReceived);
-	chrome.webRequest.onErrorOccurred.removeListener(this.deregister);
+Zotero.Proxies.Detectors.EZProxy.Listener.prototype.deregister = function(details) {
+	if (details.url.indexOf(this.requestURL) == -1) return;
+	Zotero.Proxies._ignoreURLs.delete(this.requestURL);
+	for (let listenerType in this.listeners) {
+		Zotero.WebRequestIntercept.removeListener(listenerType, this.listeners[listenerType]);
+	}
 };
 Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onBeforeSendHeaders = function(details) {
+	if (details.url.indexOf(this.requestURL) == -1) return;
 	return {requestHeaders: details.requestHeaders.filter((header) => header.name.toLowerCase() != 'cookie')}
 };
 Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function(details) {
+	if (details.url.indexOf(this.requestURL) == -1) return;
+	this.deregister(details);
 	// Make sure this is a redirect involving an EZProxy
 	try {
-		var loginURI = url.parse(details.responseHeaders["location"]);
+		var loginURI = url.parse(details.responseHeadersObject["location"]);
 	} catch (e) {
-		return false;
+		return;
 	}
-	if (!loginURI.host || details.statusCode != 302 || details.responseHeaders["server"] != "EZproxy") return false;
+	if (!loginURI.host || details.statusCode != 302 || details.responseHeadersObject["server"] != "EZproxy") return false;
 
 	var proxy = Zotero.Proxies.Detectors.EZProxy.learn(url.parse(loginURI), url.parse(details.url));
 	if (proxy) {
 		Zotero.debug("Proxies: Proxy-by-port EZProxy "+aSubject.URI.hostPort+" corresponds to "+proxy.hosts[0]);
 		Zotero.Proxies.save(proxy);
 	}
-	this.deregister();
 	return {cancel: true};
 };
 

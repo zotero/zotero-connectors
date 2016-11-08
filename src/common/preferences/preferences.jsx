@@ -23,23 +23,288 @@
     ***** END LICENSE BLOCK *****
 */
 
-var submittingErrorReport = false;
-var visiblePaneName = null;
 
-var pane = {};
-var content = {};
+/**
+ * Sets or removes the "disabled" attribute on an element.
+ */
+function toggleDisabled(element, status) {
+	if(status) {
+		element.setAttribute("disabled", "true");
+	} else if(element.hasAttribute("disabled")) {
+		element.removeAttribute("disabled");
+	}
+}
 
-var Zotero_Preferences = {};
+var Zotero_Preferences = {
+	pane: {},
+	content: {},
+	visiblePaneName: null,
+	init: function() {
+		Zotero.Messaging.init();
+		
+		var panesDiv = document.getElementById("panes");
+		var id;
+		for(var i in panesDiv.childNodes) {
+			var paneDiv = panesDiv.childNodes[i];
+			id = paneDiv.id;
+			if(id) {
+				if(id.substr(0, 5) === "pane-") {
+					var paneName = id.substr(5);
+					Zotero_Preferences.pane[paneName] = paneDiv;
+					Zotero_Preferences.content[paneName] = document.getElementById("content-"+paneName);
+					paneDiv.addEventListener("click", Zotero_Preferences.onPaneClick, false);
+				}
+			}
+		}
+		
+		Zotero_Preferences.selectPane("general");
+		
+		Zotero_Preferences.General.init();
+		Zotero_Preferences.Advanced.init();
+
+		if (Zotero.isBrowserExt) {
+			Zotero_Preferences.Proxies.init();
+		}
+		
+		Zotero_Preferences.refreshData();
+		window.setInterval(Zotero_Preferences.refreshData, 1000);
+	},
+
+	/**
+	 * Called when a pane is clicked.
+	 */
+	onPaneClick: function(e) {
+		Zotero_Preferences.selectPane(e.currentTarget.id.substr(5));
+	},
+	
+	/**
+	 * Selects a pane.
+	 */
+	selectPane: function(paneName) {
+		if(this.visiblePaneName === paneName) return;
+		
+		if(this.visiblePaneName) {
+			this.pane[this.visiblePaneName].classList.toggle('selected', false);
+			this.content[this.visiblePaneName].classList.toggle('selected', false);
+		}
+		
+		this.visiblePaneName = paneName;
+
+		this.pane[paneName].classList.toggle('selected', true);
+		this.content[paneName].classList.toggle('selected', true);
+	},
+	
+	/**
+	 * Refreshes data that may have changed while the options window is open
+	 */
+	refreshData: function() {
+		// get errors
+		Zotero.Errors.getErrors(function(errors) {
+			if(errors.length) {
+				document.getElementById('general-no-errors').style.display = "none";
+				document.getElementById('general-have-errors').style.display = "block";
+				document.getElementById('general-textarea-errors').textContent = errors.join("\n\n");
+			}
+		});
+		
+		// get debug logging info
+		Zotero.Connector_Debug.count(function(count) {
+			document.getElementById('advanced-span-lines-logged').textContent = count.toString();
+			toggleDisabled(document.getElementById('advanced-button-view-output'), !count);
+			toggleDisabled(document.getElementById('advanced-button-clear-output'), !count);
+			toggleDisabled(document.getElementById('advanced-button-submit-output'), !count);
+		});
+	}
+};
+
+Zotero_Preferences.General = {
+	init: function() {
+		document.getElementById("general-button-update-standalone-status").onclick = Zotero_Preferences.General.updateStandaloneStatus;
+		document.getElementById("general-button-authorize").onclick = 
+			document.getElementById("general-button-reauthorize").onclick = Zotero_Preferences.General.authorize;
+		document.getElementById("general-button-clear-credentials").onclick = Zotero_Preferences.General.clearCredentials;
+		document.getElementById("general-checkbox-automaticSnapshots").onchange =
+			function() { Zotero.Prefs.set('automaticSnapshots', this.checked) };
+		document.getElementById("general-checkbox-downloadAssociatedFiles").onchange =
+			function() { Zotero.Prefs.set('downloadAssociatedFiles', this.checked) };
+		document.getElementById("general-button-report-errors").onclick = Zotero_Preferences.General.submitErrors;
+
+		var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
+		if (openTranslatorTesterButton) openTranslatorTesterButton.onclick = Zotero_Preferences.General.openTranslatorTester;
+		
+		Zotero.Prefs.getCallback("downloadAssociatedFiles", function(status) {
+			document.getElementById('general-checkbox-downloadAssociatedFiles').checked = status ? true : false;
+		});
+		Zotero.Prefs.getCallback("automaticSnapshots", function(status) {
+			document.getElementById('general-checkbox-automaticSnapshots').checked = status ? true : false;
+		});
+		Zotero.API.getUserInfo(Zotero_Preferences.General.updateAuthorization);
+
+		// get standalone status
+		Zotero_Preferences.General.updateStandaloneStatus();
+
+	},
+	
+	/**
+	 * Updates Zotero Standalone status
+	 */
+	updateStandaloneStatus: function() {
+		Zotero.Connector.checkIsOnline(function(status) {
+			document.getElementById('general-span-standalone-status').textContent = status ? "available" : "unavailable";
+		});
+	},
+
+	/**
+	 * Updates the "Authorization" group based on a username
+	 */
+	updateAuthorization: function(userInfo) {
+		document.getElementById('general-authorization-not-authorized').style.display = (userInfo ? 'none' : 'block');
+		document.getElementById('general-authorization-authorized').style.display = (!userInfo ? 'none' : 'block');
+		if(userInfo) {
+			document.getElementById('general-span-authorization-username').textContent = userInfo.username;
+		}
+	},
+
+	/**
+	 * Authorizes the user
+	 */
+	authorize: function() {
+		Zotero.API.authorize(function(status, data) {
+			if(status) {
+				Zotero_Preferences.General.updateAuthorization(data);
+			} else {
+				alert("Authorization could not be completed.\n\n"+data);
+			}
+		});
+	},
+
+	/**
+	 * Clears authorization
+	 */
+	clearCredentials: function() {
+		Zotero.API.clearCredentials();
+		Zotero_Preferences.General.updateAuthorization(null);
+	},
+
+	/**
+	 * Submits an error report
+	 */
+	submitErrors: function() {
+		var reportErrorsButton = document.getElementById('general-button-report-errors');
+		toggleDisabled(reportErrorsButton, true);
+		
+		Zotero.Errors.sendErrorReport(function(status, message) {
+			if(status) {
+				alert('Your error report has been submitted.\n\nReport ID:'+message+'\n\n'+
+					'Please post a message to the Zotero forums (forums.zotero.org) with this Report '+
+					'ID, a description of the problem, and any steps necessary to reproduce it.\n\n'+
+					'Error reports are not reviewed unless referred to in the forums.');
+			} else {
+				alert('An error occurred submitting your error report.\n\n'+message+'\n\n'+
+					'Please ensure that you are connected to the Internet. If the problem persists, '+
+					'please post a message to the Zotero forums (forums.zotero.org).');
+			}
+			toggleDisabled(reportErrorsButton, false);
+		});
+	},
+
+	/**
+	 * Opens the translator tester in a new window.
+	 */
+	openTranslatorTester: function() {
+		if(Zotero.isSafari) {
+			window.open(safari.extension.baseURI+"tools/testTranslators/testTranslators.html", "translatorTester");
+		} else if(Zotero.isBrowserExt) {
+			window.open(chrome.extension.getURL("tools/testTranslators/testTranslators.html"), "translatorTester");
+		}
+	}
+};
+
 Zotero_Preferences.Proxies = {
 	init: function() {
-		this.proxiesComponent = React.createElement(Zotero_Preferences.Proxies.Components.Proxies, null);
+		document.getElementById('pane-proxies').style.display = null;
+		this.proxiesComponent = React.createElement(Zotero_Preferences.Components.Proxies, null);
 		ReactDOM.render(this.proxiesComponent, document.getElementById('content-proxies'));
 	}
 };
 
-Zotero_Preferences.Proxies.Components = {};
 
-Zotero_Preferences.Proxies.Components.ProxySettings = React.createClass({
+Zotero_Preferences.Advanced = {
+	init: function() {
+		if (Zotero.isBrowserExt) {
+			let elem = document.getElementById('intercept-and-import');
+			elem.style.display = null;
+			this.mimeTypeHandlingComponent = React.createElement(Zotero_Preferences.Components.MIMETypeHandling, null);
+			ReactDOM.render(this.mimeTypeHandlingComponent, elem.querySelectorAll('.group-content')[0]);
+		}
+		
+		document.getElementById("advanced-checkbox-enable-logging").onchange =
+			function() { Zotero.Debug.setStore(this.checked); };
+		document.getElementById("advanced-checkbox-enable-at-startup").onchange =
+			function() { Zotero.Prefs.set('debug.store', this.checked); };
+		document.getElementById("advanced-checkbox-show-in-console").onchange =
+			function() { Zotero.Prefs.set('debug.log', this.checked); };
+		document.getElementById("advanced-button-view-output").onclick = Zotero_Preferences.Advanced.viewDebugOutput;
+		document.getElementById("advanced-button-clear-output").onclick = Zotero_Preferences.Advanced.clearDebugOutput;
+		document.getElementById("advanced-button-submit-output").onclick = Zotero_Preferences.Advanced.submitDebugOutput;
+		document.getElementById("advanced-button-update-translators").onclick = function() { Zotero.Repo.update(false) };
+		document.getElementById("advanced-button-reset-translators").onclick = function() { Zotero.Repo.update(true) };
+		
+		// get preference values
+		Zotero.Connector_Debug.storing(function(status) {
+			document.getElementById('advanced-checkbox-enable-logging').checked = status ? true : false;
+		});
+		Zotero.Prefs.getCallback("debug.store", function(status) {
+			document.getElementById('advanced-checkbox-enable-at-startup').checked = status ? true : false;
+		});
+		Zotero.Prefs.getCallback("debug.log", function(status) {
+			document.getElementById('advanced-checkbox-show-in-console').checked = status ? true : false;
+		});
+	},
+		
+	/**
+	 * Opens a new window to view debug output.
+	 */
+	viewDebugOutput: function() {
+		Zotero.Connector_Debug.get(function(log) {
+			var textarea = document.getElementById("advanced-textarea-debug");
+			textarea.textContent = log;
+			textarea.style.display = "";
+		});
+	},
+
+	/**
+	 * Clears stored debug output.
+	 */
+	clearDebugOutput: function() {
+		Zotero.Debug.clear();
+		Zotero_Preferences.refreshData();
+	},
+
+	/**
+	 * Submits debug output to server.
+	 */
+	submitDebugOutput: function() {
+		var submitOutputButton = document.getElementById('advanced-button-submit-output');
+		toggleDisabled(submitOutputButton, true);
+		
+		Zotero.Connector_Debug.submitReport(function(status, message) {
+			if(status) {
+				alert("Debug output has been sent to the Zotero server.\n\n"
+					+ "The Debug ID is D" + message + ".");
+			} else {
+				alert('An error occurred submitting your debug output.\n\n'+message+'\n\n'+
+					'Please ensure that you are connected to the Internet.');
+			}
+			toggleDisabled(submitOutputButton, false);
+		});
+	}
+
+};
+
+Zotero_Preferences.Components = {};
+
+Zotero_Preferences.Components.ProxySettings = React.createClass({
 	getInitialState: function() {
 		let state = {};
 		let settings = ['transparent', 'autoRecognize', 'showRedirectNotification',
@@ -87,7 +352,7 @@ Zotero_Preferences.Proxies.Components.ProxySettings = React.createClass({
 	}
 });
 
-Zotero_Preferences.Proxies.Components.ConfiguredProxies = React.createClass({
+Zotero_Preferences.Components.ConfiguredProxies = React.createClass({
 	getInitialState: function() {
 		return {proxies: Zotero.Prefs.get('proxies.proxies'), currentHostIdx: -1, currentProxyIdx: -1};
 	},
@@ -190,7 +455,7 @@ Zotero_Preferences.Proxies.Components.ConfiguredProxies = React.createClass({
 					<div style={{display: "flex"}}>
 						<label style={{alignSelf: "center"}}>Scheme: </label>
 						<input style={{flexGrow: "1"}} type="text" name="scheme" onChange={this.handleSchemeChange} defaultValue={this.state.currentProxy.scheme}/>
-						<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={this.handleAutoAssociateChange} value={this.state.currentProxy.autoAssociate}/>&nbsp;Automatically associate new hosts</label><br/>
+						<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={this.handleAutoAssociateChange} defaultChecked={this.state.currentProxy.autoAssociate}/>&nbsp;Automatically associate new hosts</label><br/>
 					</div>
 					<p>
 						You may use the following variables in your proxy scheme:<br/>
@@ -237,14 +502,14 @@ Zotero_Preferences.Proxies.Components.ConfiguredProxies = React.createClass({
 });
 
 
-Zotero_Preferences.Proxies.Components.Proxies = React.createClass({
+Zotero_Preferences.Components.Proxies = React.createClass({
 	getInitialState: function() {
 		return {
 			transparent: Zotero.Prefs.get('proxies.transparent')
 		}
 	},
 
-	onTransparentChange: function(transparent) {
+	handleTransparentChange: function(transparent) {
 		this.setState({transparent});
 	},
 
@@ -256,13 +521,13 @@ Zotero_Preferences.Proxies.Components.Proxies = React.createClass({
 					<div className="group-content">
 						<p>Zotero will transparently redirect requests through saved proxies. See the <a href="https://www.zotero.org/support/proxies">proxy documentation</a> for more information.</p>
 						<p></p>
-						<Zotero_Preferences.Proxies.Components.ProxySettings onTransparentChange={this.onTransparentChange}/>
+						<Zotero_Preferences.Components.ProxySettings onTransparentChange={this.handleTransparentChange}/>
 					</div>
 				</div>
 				<div className="group">
 					<div className="group-title">Configured Proxies</div>
 					<div className="group-content">
-						<Zotero_Preferences.Proxies.Components.ConfiguredProxies transparent={this.state.transparent}/>
+						<Zotero_Preferences.Components.ConfiguredProxies transparent={this.state.transparent}/>
 					</div>
 				</div>
 			</div>
@@ -270,268 +535,74 @@ Zotero_Preferences.Proxies.Components.Proxies = React.createClass({
 	}
 });
 
-/**
- * Called on document load. Sets up panes and gets data.
- */
-function onLoad() {
-	Zotero.Messaging.init();
-	
-	var panesDiv = document.getElementById("panes");
-	var id;
-	for(var i in panesDiv.childNodes) {
-		var paneDiv = panesDiv.childNodes[i];
-		id = paneDiv.id;
-		if(id) {
-			if(id.substr(0, 5) === "pane-") {
-				var paneName = id.substr(5);
-				pane[paneName] = paneDiv;
-				content[paneName] = document.getElementById("content-"+paneName);
-				paneDiv.addEventListener("click", onPaneClick, false);
-			}
+Zotero_Preferences.Components.MIMETypeHandling = React.createClass({
+	getInitialState: function() {
+		return {
+			enabled: Zotero.Prefs.get('interceptAndImport'),
+			hosts: Zotero.Prefs.get('allowedInterceptHosts'),
+			currentHostIdx: -1
 		}
-	}
-	
-	selectPane("general");
-	
-	// get standalone status
-	updateStandaloneStatus();
-	
-	// get preference values
-	Zotero.Connector_Debug.storing(function(status) {
-		document.getElementById('advanced-checkbox-enable-logging').checked = status ? true : false;
-	});
-	Zotero.Prefs.getCallback("debug.store", function(status) {
-		document.getElementById('advanced-checkbox-enable-at-startup').checked = status ? true : false;
-	});
-	Zotero.Prefs.getCallback("debug.log", function(status) {
-		document.getElementById('advanced-checkbox-show-in-console').checked = status ? true : false;
-	});
-	Zotero.Prefs.getCallback("downloadAssociatedFiles", function(status) {
-		document.getElementById('general-checkbox-downloadAssociatedFiles').checked = status ? true : false;
-	});
-	Zotero.Prefs.getCallback("automaticSnapshots", function(status) {
-		document.getElementById('general-checkbox-automaticSnapshots').checked = status ? true : false;
-	});
-	Zotero.API.getUserInfo(updateAuthorization);
+	},
 
-	if (Zotero.isBrowserExt) {
-		document.getElementById('pane-proxies').style.display = null;
-		Zotero_Preferences.Proxies.init();
-	}
+	componentWillMount: function() {
+		this.updateHosts = Zotero.Utilities.debounce(this.updateHosts, 200);
+	},
 	
-	refreshData();
-	window.setInterval(refreshData, 1000);
-}
-
-/**
- * Called when a pane is clicked.
- */
-function onPaneClick(e) {
-	selectPane(e.currentTarget.id.substr(5));
-}
-
-/**
- * Refreshes data that may have changed while the options window is open
- */
-function refreshData() {
-	// get errors
-	Zotero.Errors.getErrors(function(errors) {
-		if(errors.length) {
-			document.getElementById('general-no-errors').style.display = "none";
-			document.getElementById('general-have-errors').style.display = "block";
-			document.getElementById('general-textarea-errors').textContent = errors.join("\n\n");
+	handleCheckboxChange: function(event) {
+		Zotero.Prefs.set('interceptAndImport', event.target.checked);
+		this.setState({enabled: event.target.checked});
+	},
+	
+	handleSelectChange: function(event) {
+		var currentHostIdx = -1;
+		let selected = Array.from(event.target.options).filter((o) => o.selected);
+		if (selected.length == 1) {
+			currentHostIdx = parseInt(selected[0].value);
 		}
-	});
+		this.setState({currentHostIdx});
+	},
 	
-	// get debug logging info
-	Zotero.Connector_Debug.count(function(count) {
-		document.getElementById('advanced-span-lines-logged').textContent = count.toString();
-		setDisabled(document.getElementById('advanced-button-view-output'), !count);
-		setDisabled(document.getElementById('advanced-button-clear-output'), !count);
-		setDisabled(document.getElementById('advanced-button-submit-output'), !count);
-	});
-}
-
-/**
- * Selects a pane.
- */
-function selectPane(paneName) {
-	if(visiblePaneName === paneName) return;
+	handleHostnameChange: function(event) {
+		this.state.hosts[this.state.currentHostIdx] = event.target.value;
+		this.updateHosts(this.state.hosts);
+	},
 	
-	if(visiblePaneName) {
-		setSelected(pane[visiblePaneName], false);
-		setSelected(content[visiblePaneName], false);
-	}
+	handleHostRemove: function() {
+		this.state.hosts.splice(this.state.currentHostIdx, 1);
+		this.setState({currentHostIdx: -1});
+		this.updateHosts(this.state.hosts);
+	},
 	
-	visiblePaneName = paneName;
-	setSelected(pane[paneName], true);
-	setSelected(content[paneName], true);
-}
-
-/**
- * Sets or unsets the "selected" class on an element.
- */
-function setSelected(element, status) {
-	var classes = element.className.split(" ");
+	updateHosts: function(hosts) {
+		this.setState({hosts});
+		Zotero.Prefs.set('allowedInterceptHosts', hosts);
+	},
 	
-	for(var i=0; i<classes.length; i++) {
-		if(classes[i] === "selected") {
-			if(status) return;	// already selected
-			classes = classes.splice(i-1, 1);
-			break;
+	render: function() {
+		let hosts = this.state.hosts.map((h, i) => <option value={i} key={i}>{h}</option>);
+		let hostname = '';
+		if (this.state.currentHostIdx != -1) {
+			hostname = <div style={{display: this.state.currentHostIdx === -1 ? 'none' : 'flex'}}>
+				<label style={{alignSelf: 'center'}}>Hostname: </label>
+				<input style={{flexGrow: '1'}} type="text" defaultValue={this.state.hosts[this.state.currentHostIdx] || ''} onChange={this.handleHostnameChange}/>
+			</div>
 		}
+		
+		return (
+		<div>
+			<p>Available when Zotero is running.</p>
+			<label><input type="checkbox" onChange={this.handleCheckboxChange} name="enabled" defaultChecked={this.state.enabled}/>&nbsp;Import BibTeX/RIS/Refer files into Zotero</label><br/>
+			<div style={{display: this.state.enabled ? 'flex' : 'none', flexDirection: "column", marginTop: "10px"}}>
+				<label>Enabled Hostnames</label>
+				<select size="8" multiple onChange={this.handleSelectChange} value={[this.state.currentHostIdx]}>
+					{hosts}
+				</select>
+				<div> <input type="button" onClick={this.handleHostRemove} disabled={this.state.currentHostIdx == -1} value="-"/> </div>
+				{hostname}
+			</div>
+			
+		</div>);
 	}
-	
-	if(status) classes.push("selected");
-	element.className = classes.join(" ");
-}
+});
 
-/**
- * Sets or removes the "disabled" attribute on an element.
- */
-function setDisabled(element, status) {
-	if(status) {
-		element.setAttribute("disabled", "true");
-	} else if(element.hasAttribute("disabled")) {
-		element.removeAttribute("disabled");
-	}
-}
-
-/**
- * Updates Zotero Standalone status
- */
-function updateStandaloneStatus() {
-	Zotero.Connector.checkIsOnline(function(status) {
-		document.getElementById('general-span-standalone-status').textContent = status ? "available" : "unavailable";
-	});
-}
-
-/**
- * Updates the "Authorization" group based on a username
- */
-function updateAuthorization(userInfo) {
-	document.getElementById('general-authorization-not-authorized').style.display = (userInfo ? 'none' : 'block');
-	document.getElementById('general-authorization-authorized').style.display = (!userInfo ? 'none' : 'block');
-	if(userInfo) {
-		document.getElementById('general-span-authorization-username').textContent = userInfo.username;
-	}
-}
-
-/**
- * Authorizes the user
- */
-function authorize() {
-	Zotero.API.authorize(function(status, data) {
-		if(status) {
-			updateAuthorization(data);
-		} else {
-			alert("Authorization could not be completed.\n\n"+data);
-		}
-	});
-}
-
-/**
- * Clears authorization
- */
-function clearCredentials() {
-	Zotero.API.clearCredentials();
-	updateAuthorization(null);
-}
-
-/**
- * Submits an error report
- */
-function submitErrors() {
-	var reportErrorsButton = document.getElementById('general-button-report-errors');
-	setDisabled(reportErrorsButton, true);
-	
-	Zotero.Errors.sendErrorReport(function(status, message) {
-		if(status) {
-			alert('Your error report has been submitted.\n\nReport ID:'+message+'\n\n'+
-				'Please post a message to the Zotero forums (forums.zotero.org) with this Report '+
-				'ID, a description of the problem, and any steps necessary to reproduce it.\n\n'+
-				'Error reports are not reviewed unless referred to in the forums.');
-		} else {
-			alert('An error occurred submitting your error report.\n\n'+message+'\n\n'+
-				'Please ensure that you are connected to the Internet. If the problem persists, '+
-				'please post a message to the Zotero forums (forums.zotero.org).');
-		}
-		setDisabled(reportErrorsButton, false);
-	});
-}
-
-/**
- * Opens a new window to view debug output.
- */
-function viewDebugOutput() {
-	Zotero.Connector_Debug.get(function(log) {
-		var textarea = document.getElementById("advanced-textarea-debug");
-		textarea.textContent = log;
-		textarea.style.display = "";
-	});
-}
-
-/**
- * Clears stored debug output.
- */
-function clearDebugOutput() {
-	Zotero.Debug.clear();
-	refreshData();
-}
-
-/**
- * Submits debug output to server.
- */
-function submitDebugOutput() {
-	var submitOutputButton = document.getElementById('advanced-button-submit-output');
-	setDisabled(submitOutputButton, true);
-	
-	Zotero.Connector_Debug.submitReport(function(status, message) {
-		if(status) {
-			alert("Debug output has been sent to the Zotero server.\n\n"
-				+ "The Debug ID is D" + message + ".");
-		} else {
-			alert('An error occurred submitting your debug output.\n\n'+message+'\n\n'+
-				'Please ensure that you are connected to the Internet.');
-		}
-		setDisabled(submitOutputButton, false);
-	});
-}
-
-/**
- * Opens the translator tester in a new window.
- */
-function openTranslatorTester() {
-	if(Zotero.isSafari) {
-		window.open(safari.extension.baseURI+"tools/testTranslators/testTranslators.html", "translatorTester");
-	} else if(Zotero.isBrowserExt) {
-		window.open(chrome.extension.getURL("tools/testTranslators/testTranslators.html"), "translatorTester");
-	}
-}
-
-document.getElementById("general-button-update-standalone-status").onclick = updateStandaloneStatus;
-document.getElementById("general-button-authorize").onclick = 
-	document.getElementById("general-button-reauthorize").onclick = authorize;
-document.getElementById("general-button-clear-credentials").onclick = clearCredentials;
-document.getElementById("general-checkbox-automaticSnapshots").onchange =
-	function() { Zotero.Prefs.set('automaticSnapshots', this.checked) };
-document.getElementById("general-checkbox-downloadAssociatedFiles").onchange =
-	function() { Zotero.Prefs.set('downloadAssociatedFiles', this.checked) };
-document.getElementById("general-button-report-errors").onclick = submitErrors;
-
-document.getElementById("advanced-checkbox-enable-logging").onchange =
-	function() { Zotero.Debug.setStore(this.checked); };
-document.getElementById("advanced-checkbox-enable-at-startup").onchange =
-	function() { Zotero.Prefs.set('debug.store', this.checked); };
-document.getElementById("advanced-checkbox-show-in-console").onchange =
-	function() { Zotero.Prefs.set('debug.log', this.checked); };
-document.getElementById("advanced-button-view-output").onclick = viewDebugOutput;
-document.getElementById("advanced-button-clear-output").onclick = clearDebugOutput;
-document.getElementById("advanced-button-submit-output").onclick = submitDebugOutput;
-document.getElementById("advanced-button-update-translators").onclick = function() { Zotero.Repo.update(false) };
-document.getElementById("advanced-button-reset-translators").onclick = function() { Zotero.Repo.update(true) };
-
-var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
-if(openTranslatorTesterButton) openTranslatorTesterButton.onclick = openTranslatorTester;
-
-window.addEventListener("load", onLoad, false);
+window.addEventListener("load", Zotero_Preferences.init, false);

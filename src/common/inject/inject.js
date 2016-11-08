@@ -40,8 +40,11 @@ if(isTopWindow) {
 	 * When an item is saved (by this page or by an iframe), the item will be relayed back to 
 	 * the background script and then to this handler, which will show the saving dialog
 	 */
-	Zotero.Messaging.addMessageListener("saveDialog_show", function() {
+	Zotero.Messaging.addMessageListener("progressWindow.show", function(headline) {
 		Zotero.ProgressWindow.show();
+		if (headline) {
+			return Zotero.ProgressWindow.changeHeadline(headline);
+		}
 		Zotero.Connector.callMethod("getSelectedCollection", {}, function(response, status) {
 			if(status !== 200) return;
 			Zotero.ProgressWindow.changeHeadline("Saving to ",
@@ -50,13 +53,13 @@ if(isTopWindow) {
 		});
 	});
 	var itemProgress = {};
-	Zotero.Messaging.addMessageListener("saveDialog_itemSaving", function(data) {
+	Zotero.Messaging.addMessageListener("progressWindow.itemSaving", function(data) {
 		itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1],
 			data.length > 3 ? itemProgress[data[3]] : undefined);
 	});
-	Zotero.Messaging.addMessageListener("saveDialog_itemProgress", function(data) {
+	Zotero.Messaging.addMessageListener("progressWindow.itemProgress", function(data) {
 		var progress = itemProgress[data[2]];
-		if(!progress) {
+		if(!progress || !data[2]) {
 			progress = itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1]);
 		} else {
 			progress.setIcon(data[0]);
@@ -68,8 +71,8 @@ if(isTopWindow) {
 			progress.setProgress(data[3]);
 		}
 	});
-	Zotero.Messaging.addMessageListener("saveDialog_close", Zotero.ProgressWindow.close);
-	Zotero.Messaging.addMessageListener("saveDialog_done", function(returnValue) {
+	Zotero.Messaging.addMessageListener("progressWindow.close", Zotero.ProgressWindow.close);
+	Zotero.Messaging.addMessageListener("progressWindow.done", function(returnValue) {
 		if(returnValue) {
 			Zotero.ProgressWindow.startCloseTimer(2500);
 		} else {
@@ -135,7 +138,7 @@ Zotero.Inject = new function() {
 	 */
 	this.translate = function(translator) {
 		// this relays an item from this tab to the top level of the window
-		Zotero.Messaging.sendMessage("saveDialog_show", null);
+		Zotero.Messaging.sendMessage("progressWindow.show", null);
 		_translate.setTranslator(translator);
 		_translate.translate();
 	};
@@ -182,23 +185,23 @@ Zotero.Inject = new function() {
 					Zotero.Connector_Browser.onSelect(items, function(returnItems) {
 						// if no items selected, close save dialog immediately
 						if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
-							Zotero.Messaging.sendMessage("saveDialog_close", null);
+							Zotero.Messaging.sendMessage("progressWindow.close", null);
 						}
 						callback(returnItems);
 					});
 				});
 				_translate.setHandler("itemSaving", function(obj, item) {
 					// this relays an item from this tab to the top level of the window
-					Zotero.Messaging.sendMessage("saveDialog_itemSaving",
+					Zotero.Messaging.sendMessage("progressWindow.itemSaving",
 						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id]);
 				});
 				_translate.setHandler("itemDone", function(obj, dbItem, item) {
 					// this relays an item from this tab to the top level of the window
-					Zotero.Messaging.sendMessage("saveDialog_itemProgress",
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
 						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id, 100]);
 					for(var i=0; i<item.attachments.length; i++) {
 						var attachment = item.attachments[i];
-						Zotero.Messaging.sendMessage("saveDialog_itemSaving",
+						Zotero.Messaging.sendMessage("progressWindow.itemSaving",
 							[determineAttachmentIcon(attachment), attachment.title, attachment.id,
 								item.id]);
 					}
@@ -206,11 +209,11 @@ Zotero.Inject = new function() {
 				_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
 					// this relays an item from this tab to the top level of the window
 					if(progress === 0) return;
-					Zotero.Messaging.sendMessage("saveDialog_itemProgress",
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
 						[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
 				});
 				_translate.setHandler("done", function(obj, status) {
-					Zotero.Messaging.sendMessage("saveDialog_done", status);
+					Zotero.Messaging.sendMessage("progressWindow.done", status);
 				});
 				_translate.setHandler("pageModified", function() {
 					Zotero.Connector_Browser.onPageLoad();

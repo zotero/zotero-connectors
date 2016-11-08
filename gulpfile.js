@@ -100,6 +100,8 @@ var backgroundInclude = [
 	'api.js',
 	'http.js',
 	'oauthsimple.js',
+	'webRequestIntercept.js',
+	'mimeTypeHandler.js',
 	'proxy.js',
 	'zotero/connector/connector.js',
 	'zotero/connector/cachedTypes.js',
@@ -128,6 +130,10 @@ if (!argv.p) {
 		'tools/testTranslators/translatorTester.js',
 		'tools/testTranslators/translatorTester_global.js');
 }
+var backgroundIncludeBrowserExt = backgroundInclude.concat([
+	'webRequestIntercept.js',
+	'contentTypeHandler.js',
+]);
 
 function reloadChromeExtensionsTab(cb) {
 	console.log("Reloading Chrome extensions tab");

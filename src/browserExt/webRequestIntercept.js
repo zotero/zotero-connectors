@@ -52,12 +52,12 @@ Zotero.WebRequestIntercept = {
 	},
 	
 	storeRequestHeaders: function(details) {
-		Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestID] = 
+		Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestId] = 
 			Zotero.WebRequestIntercept.processHeaders(details.requestHeaders);
 	},
 	
 	removeRequestHeaders: function(details) {
-		delete Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestID];
+		delete Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestId];
 	},
 	
 	/**
@@ -89,8 +89,8 @@ Zotero.WebRequestIntercept = {
 			if (details.responseHeaders) {
 				details.responseHeadersObject = Zotero.WebRequestIntercept.processHeaders(details.responseHeaders);
 			}
-			if (Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestID]) {
-				details.requestHeadersObject = Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestID];
+			if (Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestId]) {
+				details.requestHeadersObject = Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestId];
 			}
 			for (let listener of Zotero.WebRequestIntercept.listeners[requestType]) {
 				let retVal = listener(details);

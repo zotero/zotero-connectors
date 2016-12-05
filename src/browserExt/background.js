@@ -300,7 +300,7 @@ Zotero.Connector_Browser = new function() {
 			onclick: function (info, tab) {
 				_saveAsWebpage(tab);
 			},
-			contexts: ['page', 'browser_action']
+			contexts: ['all']
 		});
 	}
 	

@@ -22,14 +22,6 @@
 		<array>
 			<dict>
 				<key>Command</key>
-				<string>zotero-saveSnapshot</string>
-				<key>Identifier</key>
-				<string>zotero-saveSnapshot</string>
-				<key>Title</key>
-				<string>Save Page to Zotero</string>
-			</dict>
-			<dict>
-				<key>Command</key>
 				<string>zotero-preferences</string>
 				<key>Identifier</key>
 				<string>zotero-preferences</string>
@@ -39,19 +31,34 @@
 		</array>
 		<key>Global Page</key>
 		<string>global.html</string>
+		<key>Popovers</key>
+		<array>
+			<dict>
+				<key>Filename</key>
+				<string>popoverTranslatorSelector.html</string>
+				<key>Identifier</key>
+				<string>zotero-translatorSelector</string>
+				<key>Height</key>
+				<integer>200</integer>
+				<key>Width</key>
+				<integer>200</integer>
+			</dict>
+		</array>
 		<key>Toolbar Items</key>
 		<array>
 			<dict>
 				<key>Command</key>
-				<string>zotero-translate</string>
+				<string>zotero-button</string>
 				<key>Identifier</key>
-				<string>zotero-translate</string>
+				<string>zotero-button</string>
 				<key>Image</key>
 				<string>images/toolbar/zotero-new-z-16px.png</string>
 				<key>Label</key>
 				<string>Save to Zotero</string>
 				<key>Palette Label</key>
 				<string>Zotero</string>
+				<key>Popover</key>
+				<string>zotero-translatorSelector</string>
 				<key>Tool Tip</key>
 				<string>Save to Zotero</string>
 			</dict>

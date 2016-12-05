@@ -119,11 +119,13 @@ Zotero.ProgressWindow = new function() {
 			// Indication of partial progress, so we will use the circular indicator
 			this._image.style.backgroundImage = "url('"+imageBase+"progress_arcs.png')";
 			this._image.style.backgroundPosition = "-"+(Math.round(percent/100*nArcs)*16)+"px 0";
+			this._image.style.backgroundSize = "auto";
 			this._div.style.opacity = percent/200+.5;
 			this._div.style.filter = "alpha(opacity = "+(percent/2+50)+")";
 		} else if(percent == 100) {
 			this._image.style.backgroundImage = "url('"+this._iconSrc+"')";
 			this._image.style.backgroundPosition = "";
+			this._image.style.backgroundSize = "contain";
 			this._div.style.opacity = "1";
 			this._div.style.filter = "";
 		}

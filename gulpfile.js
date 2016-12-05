@@ -37,7 +37,7 @@ const argv = require('yargs')
 	.describe('v', 'Version of the extension')
 	.help('h')
 	.alias('h', 'help')
-	.default({'v': '4.0.29.11', p: false})
+	.default({'v': '5.0', p: false})
 	.argv;
 
 var injectInclude = [
@@ -194,9 +194,6 @@ function processFile() {
 		if (type === 'common' || type === 'safari') {
 			f = file.clone({contents: false});
 			f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/' + parts.slice(i+1).join('/');
-			if (ext === 'js') {
-				f.contents = new Buffer(babel.transform(f.contents, {presets: ['es2015']}).code);
-			}
 			console.log(`-> ${f.path.slice(f.cwd.length)}`);
 			this.push(f);
 		}

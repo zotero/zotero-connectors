@@ -190,6 +190,8 @@ Zotero.Connector_Browser = new function() {
 		if (_isDisabledForURL(tab.url)) {
 			_showZoteroStatus();
 			return;
+		} else {
+			_enableForTab(tab.id);
 		}
 		
 		var translators = _translatorsForTabIDs[tab.id];
@@ -341,7 +343,7 @@ Zotero.Connector_Browser = new function() {
 				"translate",
 				[
 					_instanceIDsForTabs[tab.id],
-					_translatorsForTabIDs[tab.id][i]
+					_translatorsForTabIDs[tab.id][i].translatorID
 				]
 			],
 			null
@@ -396,5 +398,6 @@ Zotero.Connector_Browser = new function() {
 }
 
 Zotero.initGlobal();
+// BrowserExt specific
 Zotero.WebRequestIntercept.init();
 Zotero.Proxies.init();

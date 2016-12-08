@@ -125,7 +125,6 @@ BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
 	"$EXTENSION_XPCOM_DIR/translation/translate.js" \
 	"$EXTENSION_XPCOM_DIR/connector/translate_item.js" \
 	"$SRCDIR/common/inject/translate_inject.js" \
-	"$SRCDIR/common/inject/translator.js" \
 	"$EXTENSION_XPCOM_DIR/connector/typeSchemaData.js" \
 	"$EXTENSION_XPCOM_DIR/utilities_translate.js" \
 	"$SRCDIR/bookmarklet/messaging_inject.js" \

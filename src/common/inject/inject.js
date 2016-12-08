@@ -122,7 +122,7 @@ if(isTopWindow) {
 var instanceID = (new Date()).getTime();
 Zotero.Inject = new function() {
 	var _translate;
-	this.translators = [];
+	this.translators = {};
 	
 	function determineAttachmentIcon(attachment) {
 		if(attachment.linkMode === "linked_url") {
@@ -136,10 +136,10 @@ Zotero.Inject = new function() {
 	 * Translates this page. First, retrieves schema and preferences from global script, then
 	 * passes them off to _haveSchemaAndPrefs
 	 */
-	this.translate = function(translator) {
+	this.translate = function(translatorID) {
 		// this relays an item from this tab to the top level of the window
 		Zotero.Messaging.sendMessage("progressWindow.show", null);
-		_translate.setTranslator(translator);
+		_translate.setTranslator(this.translators[translatorID]);
 		_translate.translate();
 	};
 	
@@ -172,12 +172,11 @@ Zotero.Inject = new function() {
 				_translate = new Zotero.Translate.Web();
 				_translate.setDocument(document);
 				_translate.setHandler("translators", function(obj, translators) {
-					me.translators = translators;
-					for(var i=0; i<translators.length; i++) {
-						if(translators[i].properToProxy) {
-							delete translators[i].properToProxy;
-						}
+					me.translators = {};
+					for (let translator of translators) {
+						me.translators[translator.translatorID] = translator;
 					}
+					
 					translators = translators.map(function(translator) {return translator.serialize(TRANSLATOR_PASSING_PROPERTIES)});
 					Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
 				});
@@ -244,7 +243,7 @@ if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.p
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {
 			if(data[0] !== instanceID) return;
-			Zotero.Inject.translate(new Zotero.Translator(data[1]));
+			Zotero.Inject.translate(data[1]);
 		});
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {

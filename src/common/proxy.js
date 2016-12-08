@@ -117,7 +117,6 @@ Zotero.Proxies = new function() {
 			}.bind(this));
 		}
 	};
-
 	
 
 	/**
@@ -325,7 +324,11 @@ Zotero.Proxies = new function() {
 			Zotero.Proxies.proxies.splice(existingProxyIndex, 1);
 			Zotero.Proxies.storeProxies();
 		}
-		Zotero.Proxies.hosts = Zotero.Proxies.hosts.filter((p) => p.proxyID != proxy.proxyID);
+		Object.keys(Zotero.Proxies.hosts).filter(function(h) {
+			if (Zotero.Proxies.hosts[h]) {
+				delete Zotero.Proxies.hosts[h];
+			}
+		});
 	};
 	
 	this.storeProxies = function() {
@@ -334,7 +337,8 @@ Zotero.Proxies = new function() {
 				id: p.id,
 				autoAssociate: p.autoAssociate,
 				scheme: p.scheme,
-				hosts: p.hosts
+				hosts: p.hosts,
+				dotsToHyphens: p.dotsToHyphens
 			};
 		});
 		
@@ -386,10 +390,58 @@ Zotero.Proxies = new function() {
 	 * a proxy object.
 	 * 
 	 * @param URL
-	 * @returns {Object} Unproxied url to proxy schema mappings
+	 * @returns {Object} Unproxied url to proxy object
 	 */
 	this.getPotentialProxies = function(URL) {
-	
+		var urlToProxy = {};
+		// If it's a known proxied URL just return it
+		if (Zotero.Proxies.transparent) {
+			for (var proxy of Zotero.Proxies.proxies) {
+				if (proxy.regexp) {
+					var m = proxy.regexp.exec(URL);
+					if (m) {
+						let proper = proxy.toProper(m);
+						urlToProxy[proper] = proxy.toJSON();
+						return urlToProxy;
+					}
+				}
+			}
+		}
+		urlToProxy[URL] = null;
+		
+		// if there is a subdomain that is also a TLD, also test against URI with the domain
+		// dropped after the TLD
+		// (i.e., www.nature.com.mutex.gmu.edu => www.nature.com)
+		var m = /^(https?:\/\/)([^\/]+)/i.exec(URL);
+		if (m) {
+			// First, drop the 0- if it exists (this is an III invention)
+			var host = m[2];
+			if (host.substr(0, 2) === "0-") host = host.substr(2);
+			var hostnameParts = [host.split(".")];
+			if (m[1] == 'https://' && host.replace(/-/g, '.') != host) {
+				// try replacing hyphens with dots for https protocol
+				// to account for EZProxy HttpsHypens mode
+				hostnameParts.push(host.replace(/-/g, '.').split('.'));
+			}
+			
+			for (let i=0; i < hostnameParts.length; i++) {
+				let parts = hostnameParts[i];
+				// If hostnameParts has two entries, then the second one is with replaced hyphens
+				let dotsToHyphens = i == 1;
+				// skip the lowest level subdomain, domain and TLD
+				for (let j=1; j<parts.length-2; j++) {
+					// if a part matches a TLD, everything up to it is probably the true URL
+					if (TLDS[parts[j].toLowerCase()]) {
+						var properHost = parts.slice(0, j+1).join(".");
+						// protocol + properHost + /path
+						var properURL = m[1]+properHost+URL.substr(m[0].length);
+						var proxyHost = parts.slice(j+1).join('.');
+						urlToProxy[properURL] = {scheme: m[1] + '%h.' + proxyHost + '/%p', dotsToHyphens};
+					}
+				}
+			}
+		}
+		return urlToProxy;
 	};
 
 	/**
@@ -454,17 +506,31 @@ Zotero.Proxies = new function() {
  * Creates a Zotero.Proxy object from a DB row
  *
  * @constructor
- * @class Represents an individual proxy server
+ * @class A model for a http proxy server
  */
 Zotero.Proxy = function (json={}) {
 	this.id = json.id || Date.now();
 	this.autoAssociate = !!json.autoAssociate;
 	this.scheme = json.scheme;
 	this.hosts = json.hosts || [];
+	this.dotsToHyphens = !!json.dotsToHyphens;
 	if (this.scheme) {
+		// Loading from storage or new
 		this.compileRegexp();
 	}
-}
+};
+
+/**
+ * Convert the proxy to JSON compatible object
+ * @returns {Object}
+ */
+Zotero.Proxy.prototype.toJSON = function() {
+	if (!this.scheme) {
+		throw Error('Cannot convert proxy to JSON - no scheme');
+	}
+	return {id: this.id, scheme: this.scheme, dotsToHyphens: this.dotsToHyphens};
+};
+
 
 /**
  * Regexps to match the URL contents corresponding to proxy scheme parameters
@@ -489,6 +555,7 @@ const Zotero_Proxy_schemeParameterRegexps = {
 	"%h": /([^%])%h/,
 	"%a": /([^%])%a/
 };
+
 
 /**
  * Compiles the regular expression against which we match URLs to determine if this proxy is in use
@@ -534,11 +601,26 @@ Zotero.Proxy.prototype.compileRegexp = function() {
  * @type String
  */
 Zotero.Proxy.prototype.toProper = function(m) {
+	if (!Array.isArray(m)) {
+		let match = this.regexp.exec(m);
+		if (!match) {
+			return m
+		} else {
+			m = match;
+		}
+	}
 	let hostIdx = this.parameters.indexOf("%h");
+	let scheme = this.scheme.indexOf('https') == -1 ? 'http://' : 'https://';
 	if (hostIdx != -1) {
-		var properURL = "http://"+m[hostIdx+1]+"/";
+		var properURL = scheme+m[hostIdx+1]+"/";
 	} else {
-		var properURL = "http://"+this.hosts[0]+"/";
+		var properURL = scheme+this.hosts[0]+"/";
+	}
+	
+	// Replace `-` with `.` in https to support EZProxy HttpsHyphens.
+	// Potentially troublesome with domains that contain dashes
+	if (this.dotsToHyphens || (this.dotsToHyphens == undefined) && scheme == "https://") {
+		properURL = properURL.replace(/-/g, '.');
 	}
 	
 	// Replace 
@@ -559,17 +641,23 @@ Zotero.Proxy.prototype.toProper = function(m) {
 /**
  * Converts an unproxied URL to a proxied URL using this proxy
  *
- * @param {Object} uri The URI corresponding to the unproxied URL
+ * @param {Object|String} uri The URI corresponding to the unproxied URL
  * @type String
  */
 Zotero.Proxy.prototype.toProxy = function(uri) {
+	if (typeof uri == "string") {
+		uri = url.parse(uri);
+	}
+	if (this.regexp.exec(uri.href)) {
+		return uri.href;
+	}
 	var proxyURL = this.scheme;
 
 	for(var i=this.parameters.length-1; i>=0; i--) {
 		var param = this.parameters[i];
 		var value = "";
 		if (param == "%h") {
-			value = uri.host;
+			value = this.dotsToHyphens ? uri.host.replace(/-/g, '.') : uri.host;
 		} else if (param == "%p") {
 			value = uri.path.substr(1);
 		} else if (param == "%d") {
@@ -677,7 +765,10 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 	let proxiedHostContainsProperHost = (proxiedURI.host.indexOf(properURI.hostname) != -1);
 	// Account for dashed out URLs in https wildcard scenario
 	if (!proxiedHostContainsProperHost && properURI.protocol == 'https:') {
-		properURI.hostname = properURI.hostname.replace(/\./g, '-');
+		if (properURI.hostname != properURI.hostname.replace(/\./g, '-')) {
+			properURI.hostname = properURI.hostname.replace(/\./g, '-');
+			var dotsToHyphens = true;
+		}
 		proxiedHostContainsProperHost = (proxiedURI.host.indexOf(properURI.hostname) != -1);
 	}
 
@@ -688,14 +779,16 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 		proxy = new Zotero.Proxy({
 			autoAssociate: false,
 			scheme: proxiedURI.protocol+"//"+proxiedURI.host+"/%p",
-			hosts: [properURI.host]
+			hosts: [properURI.host],
+			dotsToHyphens: !!dotsToHyphens
 		});
 	} else if (!loginHostIsProxiedHost && proxiedHostContainsProperHost) {
 		// Proxy by host
 		proxy = new Zotero.Proxy({
 			autoAssociate: false,
 			scheme: proxiedURI.protocol+"//"+proxiedURI.host.replace(properURI.hostname, "%h")+"/%p",
-			hosts: [properURI.host]
+			hosts: [properURI.host],
+			dotsToHyphens: !!dotsToHyphens
 		});
 	}
 	return proxy;

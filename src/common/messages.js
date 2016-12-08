@@ -96,9 +96,10 @@ var MESSAGES = {
 					return [[Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES), data[1]]];
 				},
 				postReceive: function(data) {
-					// Deserialize to Translator objects
-					data[0] = data[0].map(function(translator) {return new Zotero.Translator(translator)});
-					return [[data[0], Zotero.Translators.getConverterFunctions(data[1])]];
+					// Deserialize to class objects
+					data[0] = data[0].map((translator) => new Zotero.Translator(translator));
+					data[1] = data[1].map((proxy) => proxy && new Zotero.Proxy(proxy));
+					return [[data[0], data[1]]];
 				}
 			}
 		},
@@ -157,6 +158,7 @@ var MESSAGES = {
 		},
 	Repo: 
 		{
+			getTranslatorCode: true,
 			update: false
 		}
 };

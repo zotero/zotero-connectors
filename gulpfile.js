@@ -43,10 +43,12 @@ const argv = require('yargs')
 	.argv;
 
 var injectInclude = [
+	'node_modules.js',
 	'zotero.js',
 	'zotero_config.js',
 	'promise.js',
 	'http.js',
+	'proxy.js', // N.B. Should only be loaded in the background once we go away from Z4FX
 	'zotero/connector/cachedTypes.js',
 	'zotero/date.js',
 	'zotero/debug.js',
@@ -71,7 +73,6 @@ var injectInclude = [
 	'zotero/utilities_translate.js',
 	'inject/http.js',
 	'inject/progressWindow.js',
-	'inject/translator.js',
 	'inject/translate_inject.js',
 	'messages.js',
 	'messaging_inject.js'
@@ -100,8 +101,6 @@ var backgroundInclude = [
 	'api.js',
 	'http.js',
 	'oauthsimple.js',
-	'webRequestIntercept.js',
-	'mimeTypeHandler.js',
 	'proxy.js',
 	'zotero/connector/connector.js',
 	'zotero/connector/cachedTypes.js',
@@ -202,7 +201,7 @@ function processFile() {
 			case 'manifest.json':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("/*BACKGROUND SCRIPTS*/",
-						backgroundInclude.map((s) => `"${s}"`).join(',\n\t\t\t'))
+						backgroundIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
 					.replace(/"version": "[^"]*"/, '"version": "'+argv.version+'"'));
 				break;
 			case 'background.js':

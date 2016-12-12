@@ -30,6 +30,14 @@
 
 Zotero.Utilities = Zotero.Utilities || {};
 
+/**
+ * Returns a function which will execute `fn` with provided arguments after `delay` miliseconds and not more
+ * than once, if called multiple times. See 
+ * http://stackoverflow.com/questions/24004791/can-someone-explain-the-debounce-function-in-javascript
+ * @param fn {Function} function to debounce
+ * @param delay {Integer} number of miliseconds to delay the function execution
+ * @returns {Function}
+ */
 Zotero.Utilities.debounce = function(fn, delay) {
 	var timer = null;
 	return function () {

@@ -46,11 +46,8 @@
 		</div>
 		<div id="content-general" class="content">
 			<div class="group">
-				<div class="group-title">Zotero Standalone</div>
-				<div class="group-content">
-					<p>Zotero Standalone is currently <span id="general-span-standalone-status"></span>.</p>
-					<p><input type="button" value="Update Status" id="general-button-update-standalone-status"/></p>
-				</div>
+				<div class="group-title">Zotero Status</div>
+				<div class="group-content" id="client-status"></div>
 			</div>
 			<div class="group">
 				<div class="group-title">Save via Server</div>
@@ -72,18 +69,10 @@
 					</div>
 				</div>
 			</div>
-			<div class="group">
-				<div class="group-title">Report Errors</div>
-				<div class="group-content">
-					<div id="general-no-errors">
-						Zotero Connector has not experienced any errors since it was first started.
-					</div>
-					<div id="general-have-errors" style="display:none">
-						<p>Zotero Connector has experienced the following errors since it was first started:</p>
-						<p><textarea id="general-textarea-errors" style="width:100%; height:10em;" readonly="true"></textarea></p>
-						<p><input type="button" id="general-button-report-errors" value="Report Errors"/></p>
-					</div>
-				</div>
+			<div class="group" style="display: none" id="intercept-and-import">
+				<div class="group-title">Automatic File Importing</div>
+				<!-- React Component -->
+				<div class="group-content"></div>
 			</div>
 		</div>
 		<!-- React Component -->
@@ -109,9 +98,18 @@
 					<p><textarea id="advanced-textarea-debug" style="width:100%; height:10em; display:none" readonly="true"></textarea></p>
 				</div>
 			</div>
-			<div class="group" style="display: none" id="intercept-and-import">
-				<div class="group-title">File Interception</div>
-				<div class="group-content"></div>
+			<div class="group">
+				<div class="group-title">Report Errors</div>
+				<div class="group-content">
+					<div id="general-no-errors">
+						No errors have been logged.
+					</div>
+					<div id="general-have-errors" style="display:none">
+						<p>The following errors have occurred since the Zotero Connector was started:</p>
+						<p><textarea id="general-textarea-errors" style="width:100%; height:10em;" readonly="true"></textarea></p>
+						<p><input type="button" id="general-button-report-errors" value="Report Errors"/></p>
+					</div>
+				</div>
 			</div>
 			<div class="group">
 				<div class="group-title">Translators</div>

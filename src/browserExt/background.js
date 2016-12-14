@@ -164,7 +164,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.injectScripts = function(tabID, frameId=0) {
 		let deferredAll = Zotero.Promise.defer();
-		chrome.tabs.sendMessage(tabID, 'ping', function(response) {
+		chrome.tabs.sendMessage(tabID, ['ping'], function(response) {
 			if (response) return deferredAll.resolve();
 			var promises = [];
 			for (let script of _injectScripts) {

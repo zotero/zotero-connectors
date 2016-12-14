@@ -93,14 +93,20 @@ Zotero.Messaging = new function() {
 			// This is injected into other non-background pages such as translator tester and prefs.
 			// However, the onMessage handler here is triggered on chrome.runtime.sendMessage calls,
 			// i.e. those addressed to the background page. We exclude non-background pages here.
-			if (window.location.href.indexOf('-extension://') == -1) {
-				// Respond to indicate that script is injected
-				sendResponseCallback(true);
+			if (window.location.href.indexOf('-extension://') != -1) {
+				return;
 			}
 			if(typeof request !== "object" || !request.length || !_messageListeners[request[0]]) return;
 			try {
 				//Zotero.debug("Received message "+request[0]);
-				_messageListeners[request[0]](request[1]);
+				let response = _messageListeners[request[0]](request[1]);
+				// Handle promises
+				if (response && response.then) {
+					response.then(sendResponseCallback);
+					return true;
+				} else {
+					sendResponseCallback(response)
+				}
 			} catch(e) {
 				Zotero.logError(e);
 			}

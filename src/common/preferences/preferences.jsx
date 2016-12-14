@@ -612,10 +612,10 @@ Zotero_Preferences.Components.MIMETypeHandling = React.createClass({
 		}
 		let hostname = '';
 		if (this.state.currentHostIdx != -1) {
-			hostname = <div style={{display: this.state.currentHostIdx === -1 ? 'none' : 'flex'}}>
+			hostname = <p style={{display: this.state.currentHostIdx === -1 ? 'none' : 'flex'}}>
 				<label style={{alignSelf: 'center'}}>Hostname: </label>
 				<input style={{flexGrow: '1'}} type="text" defaultValue={this.state.hosts[this.state.currentHostIdx] || ''} onChange={this.handleHostnameChange}/>
-			</div>
+			</p>
 		}
 		
 		return (

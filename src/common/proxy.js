@@ -489,15 +489,16 @@ Zotero.Proxies = new function() {
 
 	/**
 	 * Show a proxy-related notification
-	 * @param {String} label - notification text
+	 * @param {String} message - notification text
 	 */
-	function _showNotification(title, label) {
-		new Notification(title, {
-			badge: 'images/zotero-new-z-16px.png',
-			body: label,
-			icon: 'Icon-128.png'
+	function _showNotification(title, message) {
+		chrome.notifications.create({
+			type: 'basic',
+			title,
+			message,
+			iconUrl: 'Icon-128.png'
 		});
-		Zotero.debug(`NOTIFICATION: ${label}`)
+		Zotero.debug(`NOTIFICATION: ${message}`)
 	};
 
 };
@@ -785,7 +786,7 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 	} else if (!loginHostIsProxiedHost && proxiedHostContainsProperHost) {
 		// Proxy by host
 		proxy = new Zotero.Proxy({
-			autoAssociate: false,
+			autoAssociate: true,
 			scheme: proxiedURI.protocol+"//"+proxiedURI.host.replace(properURI.hostname, "%h")+"/%p",
 			hosts: [properURI.host],
 			dotsToHyphens: !!dotsToHyphens

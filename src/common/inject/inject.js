@@ -114,6 +114,15 @@ if(isTopWindow) {
 				}
 			});
 	});
+	
+	Zotero.Messaging.addMessageListener("confirm", function (message) {
+		return window.confirm(message);
+	});
+	
+	Zotero.Messaging.addMessageListener("ping", function () {
+		// Respond to indicate that script is injected
+		return 'pong';
+	});
 }
 
 /**

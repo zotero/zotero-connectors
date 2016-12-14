@@ -28,8 +28,9 @@ const ZOTERO_CONFIG = {
 	REPOSITORY_CHECK_INTERVAL: 86400, // 24 hours
 	REPOSITORY_RETRY_INTERVAL: 3600, // 1 hour
 	REPOSITORY_CHANNEL: 'trunk',
-	BASE_URI: 'http://zotero.org/',
-	WWW_BASE_URL: 'http://www.zotero.org/',
+	BASE_URI: 'https://zotero.org/',
+	WWW_BASE_URL: 'https://www.zotero.org/',
+	CLIENT_DOWNLOAD_URL: 'https://www.zotero.org/download',
 	API_URL: 'https://api.zotero.org/',
 	OAUTH_REQUEST_URL: 'https://www.zotero.org/oauth/request',
 	OAUTH_ACCESS_URL: 'https://www.zotero.org/oauth/access',

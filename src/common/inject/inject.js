@@ -73,10 +73,10 @@ if(isTopWindow) {
 	});
 	Zotero.Messaging.addMessageListener("progressWindow.close", Zotero.ProgressWindow.close);
 	Zotero.Messaging.addMessageListener("progressWindow.done", function(returnValue) {
-		if(returnValue) {
+		if (returnValue[0]) {
 			Zotero.ProgressWindow.startCloseTimer(2500);
 		} else {
-			new Zotero.ProgressWindow.ErrorMessage("translationError");
+			new Zotero.ProgressWindow.ErrorMessage(returnValue[1] || "translationError");
 			Zotero.ProgressWindow.startCloseTimer(8000);
 		}
 	});
@@ -212,7 +212,7 @@ Zotero.Inject = new function() {
 						[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
 				});
 				_translate.setHandler("done", function(obj, status) {
-					Zotero.Messaging.sendMessage("progressWindow.done", status);
+					Zotero.Messaging.sendMessage("progressWindow.done", [status]);
 				});
 				_translate.setHandler("pageModified", function() {
 					Zotero.Connector_Browser.onPageLoad();

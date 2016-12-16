@@ -24,9 +24,7 @@
 */
 
 Zotero.Connector_Browser = new function() {
-	var _translatorsForTabIDs = {};
-	var _instanceIDsForTabs = {};
-	var _selectCallbacksForTabIDs = {};
+	var _tabInfo = {};
 	var _incompatibleVersionMessageShown;
 	var _injectScripts = [
 		/*INJECT SCRIPTS*/
@@ -38,17 +36,16 @@ Zotero.Connector_Browser = new function() {
 	this.onTranslators = function(translators, instanceID, contentType, tab) {
 		_enableForTab(tab.id);
 		
-		var oldTranslators = _translatorsForTabIDs[tab.id];
+		var oldTranslators = _tabInfo[tab.id] && _tabInfo[tab.id].translators;
 		if (oldTranslators) {
 			if ((oldTranslators.length
 					&& (!translators.length || oldTranslators[0].priority <= translators[0].priority))
 				|| (!oldTranslators.length && !translators.length)) return;
 		}
-		_translatorsForTabIDs[tab.id] = translators;
-		_instanceIDsForTabs[tab.id] = instanceID;
-		
 		var isPDF = contentType == 'application/pdf';
-		_updateExtensionUI(tab, isPDF);
+		_tabInfo[tab.id] = {translators, instanceID, isPDF};
+		
+		_updateExtensionUI(tab);
 	}
 	
 	/**
@@ -79,7 +76,7 @@ Zotero.Connector_Browser = new function() {
 					if (Zotero.isChrome && win.left < left) {
 						chrome.windows.update(win.id, { left: left });
 					}
-					_selectCallbacksForTabIDs[tab.id] = callback;
+					_tabInfo[tab.id].selectCallback = callback;
 				}
 			);
 		});
@@ -99,14 +96,14 @@ Zotero.Connector_Browser = new function() {
 		if(isOnline) {
 			Zotero.MIMETypeHandler.enable();
 		} else {
-			for (var i in _translatorsForTabIDs) {
-				if (_translatorsForTabIDs[i] && _translatorsForTabIDs[i].length) {
-					_translatorsForTabIDs[i] = _translatorsForTabIDs[i].filter(
+			for (var i in _tabInfo) {
+				if (_tabInfo[i].translators && _tabInfo[i].translators.length) {
+					_tabInfo[i].translators = _tabInfo[i].translators.filter(
 						(t) => t.runMode !== Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE);
 					
 					chrome.tabs.get(parseInt(i), function(tab) {
-						// If we have translators then the content type is false
-						_updateExtensionUI(tab, false);
+						// If we have translators then it is not a pdf
+						_updateExtensionUI(tab);
 					})
 				}
 			}
@@ -114,6 +111,10 @@ Zotero.Connector_Browser = new function() {
 			Zotero.MIMETypeHandler.disable();
 		}
 	}
+	
+	this.onTabActivated = function(tab) {
+		_updateExtensionUI(tab);
+	};
 	
 	/**
 	 * Called if Zotero version is determined to be incompatible with Standalone
@@ -184,7 +185,7 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Update status and tooltip of Zotero button
 	 */
-	function _updateExtensionUI(tab, isPDF) {
+	function _updateExtensionUI(tab) {
 		chrome.contextMenus.removeAll();
 
 		if (_isDisabledForURL(tab.url)) {
@@ -194,7 +195,8 @@ Zotero.Connector_Browser = new function() {
 			_enableForTab(tab.id);
 		}
 		
-		var translators = _translatorsForTabIDs[tab.id];
+		var isPDF = _tabInfo[tab.id] && _tabInfo[tab.id].isPDF;
+		var translators = _tabInfo[tab.id] && _tabInfo[tab.id].translators;
 		if (translators && translators.length) {
 			_showTranslatorIcon(tab, translators[0]);
 			_showTranslatorContextMenuItem(translators);
@@ -209,15 +211,17 @@ Zotero.Connector_Browser = new function() {
 		} else {
 			_showWebpageContextMenuItem();
 		}
+		
+		if (Zotero.isFirefox) {
+			_showPreferencesContextMenuItem();
+		}
 	}
 	
 	/**
 	 * Removes information about a specific tab
 	 */
 	function _clearInfoForTab(tabID) {
-		delete _translatorsForTabIDs[tabID];
-		delete _instanceIDsForTabs[tabID];
-		delete _selectCallbacksForTabIDs[tabID];
+		delete _tabInfo[tabID];
 	}
 	
 	function _isDisabledForURL(url) {
@@ -328,8 +332,24 @@ Zotero.Connector_Browser = new function() {
 		});
 	}
 	
+	function _showPreferencesContextMenuItem() {
+		chrome.contextMenus.create({
+			type: "separator",
+			id: "zotero-context-menu-pref-separator",
+			contexts: ['all']
+		});
+		chrome.contextMenus.create({
+			id: "zotero-context-menu-preferences",
+			title: "Preferences",
+			onclick: function () {
+				chrome.tabs.create({url: chrome.extension.getURL('preferences/preferences.html')});
+			},
+			contexts: ['all']
+		});
+	}
+	
 	function _save(tab) {
-		if(_translatorsForTabIDs[tab.id].length) {
+		if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
 			_saveWithTranslator(tab, 0);
 		} else {
 			_saveAsWebpage(tab);
@@ -342,8 +362,8 @@ Zotero.Connector_Browser = new function() {
 			[
 				"translate",
 				[
-					_instanceIDsForTabs[tab.id],
-					_translatorsForTabIDs[tab.id][i].translatorID
+					_tabInfo[tab.id].instanceID,
+					_tabInfo[tab.id].translators[i].translatorID
 				]
 			],
 			null
@@ -378,7 +398,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	Zotero.Messaging.addMessageListener("selectDone", function(data) {
-		_selectCallbacksForTabIDs[data[0]](data[1]);
+		_tabInfo[data[0]].selectCallback(data[1]);
 	});
 	
 	Zotero.Messaging.addMessageListener("frameLoaded", this.onFrameLoaded);
@@ -392,6 +412,12 @@ Zotero.Connector_Browser = new function() {
 		_clearInfoForTab(tabID);
 		_showZoteroStatus();
 		chrome.tabs.sendMessage(tabID, ["pageModified"], null);
+	});
+	
+	chrome.tabs.onActivated.addListener(function(activeInfo) {
+		chrome.tabs.get(activeInfo.tabId, function(tab) {
+			Zotero.Connector_Browser.onTabActivated(tab);
+		});
 	});
 
 	chrome.browserAction.onClicked.addListener(_save);

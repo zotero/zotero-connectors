@@ -46,10 +46,13 @@ if(isTopWindow) {
 			return Zotero.ProgressWindow.changeHeadline(headline);
 		}
 		Zotero.Connector.callMethod("getSelectedCollection", {}, function(response, status) {
-			if(status !== 200) return;
-			Zotero.ProgressWindow.changeHeadline("Saving to ",
-				response.id ? "treesource-collection.png" : "treesource-library.png",
-				response.name+"\u2026");
+			if (status !== 200) {
+				Zotero.ProgressWindow.changeHeadline("Saving to zotero.org");
+			} else {
+				Zotero.ProgressWindow.changeHeadline("Saving to ",
+					response.id ? "treesource-collection.png" : "treesource-library.png",
+					response.name+"\u2026");
+			}
 		});
 	});
 	var itemProgress = {};

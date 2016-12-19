@@ -136,8 +136,6 @@ Zotero_Preferences.General = {
 			function() { Zotero.Prefs.set('automaticSnapshots', this.checked) };
 		document.getElementById("general-checkbox-downloadAssociatedFiles").onchange =
 			function() { Zotero.Prefs.set('downloadAssociatedFiles', this.checked) };
-		document.getElementById("general-button-report-errors").onclick = Zotero_Preferences.General.submitErrors;
-
 		var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
 		if (openTranslatorTesterButton) openTranslatorTesterButton.onclick = Zotero_Preferences.General.openTranslatorTester;
 		
@@ -184,28 +182,6 @@ Zotero_Preferences.General = {
 	},
 
 	/**
-	 * Submits an error report
-	 */
-	submitErrors: function() {
-		var reportErrorsButton = document.getElementById('general-button-report-errors');
-		toggleDisabled(reportErrorsButton, true);
-		
-		Zotero.Errors.sendErrorReport(function(status, message) {
-			if(status) {
-				alert('Your error report has been submitted.\n\nReport ID:'+message+'\n\n'+
-					'Please post a message to the Zotero forums (forums.zotero.org) with this Report '+
-					'ID, a description of the problem, and any steps necessary to reproduce it.\n\n'+
-					'Error reports are not reviewed unless referred to in the forums.');
-			} else {
-				alert('An error occurred submitting your error report.\n\n'+message+'\n\n'+
-					'Please ensure that you are connected to the Internet. If the problem persists, '+
-					'please post a message to the Zotero forums (forums.zotero.org).');
-			}
-			toggleDisabled(reportErrorsButton, false);
-		});
-	},
-
-	/**
 	 * Opens the translator tester in a new window.
 	 */
 	openTranslatorTester: function() {
@@ -228,12 +204,6 @@ Zotero_Preferences.Proxies = {
 
 Zotero_Preferences.Advanced = {
 	init: function() {
-		if (Zotero.isBrowserExt) {
-			let elem = document.getElementById('intercept-and-import');
-			elem.style.display = null;
-			this.mimeTypeHandlingComponent = React.createElement(Zotero_Preferences.Components.MIMETypeHandling, null);
-			ReactDOM.render(this.mimeTypeHandlingComponent, elem.querySelectorAll('.group-content')[0]);
-		}
 		
 		document.getElementById("advanced-checkbox-enable-logging").onchange =
 			function() { Zotero.Debug.setStore(this.checked); };
@@ -246,6 +216,8 @@ Zotero_Preferences.Advanced = {
 		document.getElementById("advanced-button-submit-output").onclick = Zotero_Preferences.Advanced.submitDebugOutput;
 		document.getElementById("advanced-button-update-translators").onclick = function() { Zotero.Repo.update(false) };
 		document.getElementById("advanced-button-reset-translators").onclick = function() { Zotero.Repo.update(true) };
+		document.getElementById("general-button-report-errors").onclick = Zotero_Preferences.Advanced.submitErrors;
+
 		
 		// get preference values
 		Zotero.Connector_Debug.storing(function(status) {
@@ -295,8 +267,29 @@ Zotero_Preferences.Advanced = {
 			}
 			toggleDisabled(submitOutputButton, false);
 		});
-	}
+	},
 
+	/**
+	 * Submits an error report
+	 */
+	submitErrors: function() {
+		var reportErrorsButton = document.getElementById('general-button-report-errors');
+		toggleDisabled(reportErrorsButton, true);
+		
+		Zotero.Errors.sendErrorReport(function(status, message) {
+			if(status) {
+				alert('Your error report has been submitted.\n\nReport ID:'+message+'\n\n'+
+					'Please post a message to the Zotero forums (forums.zotero.org) with this Report '+
+					'ID, a description of the problem, and any steps necessary to reproduce it.\n\n'+
+					'Error reports are not reviewed unless referred to in the forums.');
+			} else {
+				alert('An error occurred submitting your error report.\n\n'+message+'\n\n'+
+					'Please ensure that you are connected to the Internet. If the problem persists, '+
+					'please post a message to the Zotero forums (forums.zotero.org).');
+			}
+			toggleDisabled(reportErrorsButton, false);
+		});
+	}
 };
 
 Zotero_Preferences.Components = {};

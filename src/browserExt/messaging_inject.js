@@ -93,7 +93,7 @@ Zotero.Messaging = new function() {
 			// This is injected into other non-background pages such as translator tester and prefs.
 			// However, the onMessage handler here is triggered on chrome.runtime.sendMessage calls,
 			// i.e. those addressed to the background page. We exclude non-background pages here.
-			if (window.location.href.indexOf('-extension://') != -1) {
+			if (window.location.href.includes('-extension://')) {
 				return;
 			}
 			if(typeof request !== "object" || !request.length || !_messageListeners[request[0]]) return;

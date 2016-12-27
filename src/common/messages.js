@@ -119,7 +119,8 @@ var MESSAGES = {
 		{
 			onSelect: true,
 			onPageLoad: false,
-			onTranslators: false
+			onTranslators: false,
+			injectScripts: true,
 		},
 	Connector_Debug: 
 		{

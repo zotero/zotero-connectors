@@ -26,7 +26,7 @@
 Zotero.Connector_Browser = new function() {
 	var _tabInfo = {};
 	var _incompatibleVersionMessageShown;
-	var _injectScripts = [
+	var _injectTranslationScripts = [
 		/*INJECT SCRIPTS*/
 	];
 	
@@ -94,7 +94,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onStateChange = function(isOnline) {
 		if(isOnline) {
-			Zotero.MIMETypeHandler.enable();
+			Zotero.ContentTypeHandler.enable();
 		} else {
 			for (var i in _tabInfo) {
 				if (_tabInfo[i].translators && _tabInfo[i].translators.length) {
@@ -108,7 +108,7 @@ Zotero.Connector_Browser = new function() {
 				}
 			}
 			
-			Zotero.MIMETypeHandler.disable();
+			Zotero.ContentTypeHandler.disable();
 		}
 	}
 	
@@ -153,22 +153,22 @@ Zotero.Connector_Browser = new function() {
 				return;
 			}
 			Zotero.debug(translators.length+  " translators found. Injecting into [rootUrl, url]: " + rootUrl + " , " + url);
-			return Zotero.Connector_Browser.injectScripts(tab.id, frameId);
+			return Zotero.Connector_Browser.injectTranslationScripts(tab.id, frameId);
 		});
 	};
 
 	/**
-	 * Checks whether scripts already injected into a frame and if not - injects
+	 * Checks whether translation scripts already injected into a frame and if not - injects
 	 * @param tabID {Number}
 	 * @param [frameId=0] {Number] Defaults to top frame
 	 * @returns {Promise} A promise that resolves when all scripts have been injected
 	 */
-	this.injectScripts = function(tabID, frameId=0) {
+	this.injectTranslationScripts = function(tabID, frameId=0) {
 		let deferredAll = Zotero.Promise.defer();
 		chrome.tabs.sendMessage(tabID, ['ping'], function(response) {
 			if (response) return deferredAll.resolve();
 			var promises = [];
-			for (let script of _injectScripts) {
+			for (let script of _injectTranslationScripts) {
 				let deferred = Zotero.Promise.defer();
 				promises.push(deferred.promise);
 				try {
@@ -180,6 +180,29 @@ Zotero.Connector_Browser = new function() {
 			return Zotero.Promise.all(promises).then(deferredAll.resolve).catch(deferredAll.reject);
 		});
 		return deferredAll.promise;
+	};
+
+	/**
+	 * Injects custom scripts
+	 * 
+	 * @param scripts {Object[]} array of scripts to inject
+	 * @param tabID {Number}
+	 * @param [frameId=0] {Number] Defaults to top frame
+	 * @returns {Promise} A promise that resolves when all scripts have been injected
+	 */
+	this.injectScripts = function(scripts, callback, tab, frameId=0) {
+		if (! Array.isArray(scripts)) scripts = [scripts];
+		var promises = [];
+		for (let script of scripts) {
+			let deferred = Zotero.Promise.defer();
+			promises.push(deferred.promise);
+			try {
+				chrome.tabs.executeScript(tab.id, {file: script, frameId}, deferred.resolve);
+			} catch (e) {
+				return Zotero.Promise.reject();
+			}
+		}
+		return Zotero.Promise.all(promises);
 	};
 	
 	/**

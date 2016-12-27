@@ -106,7 +106,7 @@ if(isTopWindow) {
 			function(returnValue, status) {
 				if(returnValue === false) {
 					if(status === 0) {
-						new Zotero.ProgressWindow.ErrorMessage("standaloneRequired");
+						new Zotero.ProgressWindow.ErrorMessage("clientRequired");
 					} else {
 						new Zotero.ProgressWindow.ErrorMessage("translationError");
 					}
@@ -118,8 +118,8 @@ if(isTopWindow) {
 			});
 	});
 	
-	Zotero.Messaging.addMessageListener("confirm", function (message) {
-		return window.confirm(message);
+	Zotero.Messaging.addMessageListener("confirm", function (props) {
+		return Zotero.Inject.confirm(props);
 	});
 	
 	Zotero.Messaging.addMessageListener("ping", function () {
@@ -143,6 +143,65 @@ Zotero.Inject = new function() {
 		return Zotero.ItemTypes.getImageSrc(attachment.mimeType === "application/pdf"
 							? "attachment-pdf" : "attachment-snapshot");
 	}
+
+	/**
+	 * Check if React and components are loaded and if not - load into page.
+	 * 
+	 * This is a performance optimization - we want to avoid loading React into every page.
+	 * 
+	 * @param components {Object[]} an array of component names to load
+	 * @return {Promise} resolves when components are injected
+	 */
+	this.loadReactComponents = function(components) {
+		var toLoad = [];
+		if (typeof ReactDOM === "undefined") {
+			toLoad = ['lib/react.js', 'lib/react-dom.js'];
+		}
+		for (let component of components) {
+			if (!Zotero.ui || !Zotero.ui[component]) {
+				toLoad.push(`ui/${component.replace(/(.)([A-Z])/g, '$1-$2').toLowerCase()}.js`)
+			}
+		}
+		if (toLoad.length) {
+			return Zotero.Connector_Browser.injectScripts(toLoad);
+		} else {
+			return Zotero.Promise.resolve();
+		}
+	}
+
+	/**
+	 * 
+	 * @param props {Object} to be passed to ModalPrompt component
+	 * @returns {Promise{Object}} Object with properties:
+	 * 		`button` - button number clicked (or 0 if clicked outside of prompt)
+	 * 		`checkboxChecked` - checkbox state on close
+	 * 		`inputText` - input field string on close	
+	 */
+	this.confirm = function(props) {
+		let deferred = Zotero.Promise.defer();
+		
+		Zotero.Inject.loadReactComponents(['ModalPrompt']).then(function() {
+			let div = document.createElement('div');
+			let prompt = (
+				<Zotero.ui.ModalPrompt 
+					onClose={onClose}
+					{...props}
+				/>
+			);
+			function onClose(state, event) {
+				deferred.resolve({button: event.target.name,
+					checkboxChecked: state.checkboxChecked,
+					inputText: state.inputText
+				});
+				ReactDOM.unmountComponentAtNode(div);
+				document.body.removeChild(div);
+			}
+			ReactDOM.render(prompt, div);
+			document.body.appendChild(div);	
+		}.bind(this));
+		
+		return deferred.promise;	
+	};
 	
 	/**
 	 * Translates this page. First, retrieves schema and preferences from global script, then

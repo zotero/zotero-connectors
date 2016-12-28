@@ -124,7 +124,7 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function(test, testDoneC
 		
 		_tabData[tab.id] = tabData;
 	} else if(Zotero.isBrowserExt) {
-		chrome.tabs.create({"url":(url ? url : test.url), "selected":false}, function(tab) {
+		chrome.tabs.create({url: (url ? url : test.url), active: false}, function(tab) {
 			tabData.tab = tab;
 			tabData.timeoutID = window.setTimeout(function() {
 				try {

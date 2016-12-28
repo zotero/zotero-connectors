@@ -28,7 +28,9 @@
 const exec = require('child_process').exec;
 const through = require('through2');
 const gulp = require('gulp');
+const plumber = require('gulp-plumber');
 const babel = require('babel-core');
+const browserify = require('browserify');
 const argv = require('yargs')
 	.boolean('p')
 	.alias('p', 'production')
@@ -41,10 +43,12 @@ const argv = require('yargs')
 	.argv;
 
 var injectInclude = [
+	'node_modules.js',
 	'zotero.js',
 	'zotero_config.js',
 	'promise.js',
 	'http.js',
+	'proxy.js', // N.B. Should only be loaded in the background once we go away from Z4FX
 	'zotero/connector/cachedTypes.js',
 	'zotero/date.js',
 	'zotero/debug.js',
@@ -69,7 +73,6 @@ var injectInclude = [
 	'zotero/utilities_translate.js',
 	'inject/http.js',
 	'inject/progressWindow.js',
-	'inject/translator.js',
 	'inject/translate_inject.js',
 	'messages.js',
 	'messaging_inject.js'
@@ -90,6 +93,7 @@ injectInclude.push.apply(injectInclude, injectIncludeLast);
 injectIncludeBrowserExt.push.apply(injectIncludeBrowserExt, injectIncludeLast);
 
 var backgroundInclude = [
+	'node_modules.js',
 	'zotero.js',
 	'zotero_config.js',
 	'promise.js',
@@ -97,6 +101,7 @@ var backgroundInclude = [
 	'api.js',
 	'http.js',
 	'oauthsimple.js',
+	'proxy.js',
 	'zotero/connector/connector.js',
 	'zotero/connector/cachedTypes.js',
 	'zotero/date.js',
@@ -113,15 +118,21 @@ var backgroundInclude = [
 	'zotero/connector/translator.js',
 	'zotero/connector/typeSchemaData.js',
 	'zotero/utilities.js',
+	'utilities.js',
 	'messages.js',
 	'messaging.js'
 ];
+
 
 if (!argv.p) {
 	backgroundInclude.push('tools/testTranslators/translatorTester_messages.js',
 		'tools/testTranslators/translatorTester.js',
 		'tools/testTranslators/translatorTester_global.js');
 }
+var backgroundIncludeBrowserExt = backgroundInclude.concat([
+	'webRequestIntercept.js',
+	'contentTypeHandler.js',
+]);
 
 function reloadChromeExtensionsTab(cb) {
 	console.log("Reloading Chrome extensions tab");
@@ -156,12 +167,41 @@ function processFile() {
 		}
 		var type = parts[i];
 		
+		if (ext == 'jsx') {
+			try {
+				file.contents = new Buffer(babel.transform(file.contents, {plugins: ['transform-react-jsx']}).code);
+			} catch (e) {
+				console.log(e.message);
+				return;
+			}
+			parts[parts.length-1] = basename = basename.substr(0, basename.length-1);
+			ext = 'js';
+		}
+		
+		var addFiles = function(file) {
+			// Amend paths
+			if (type === 'common' || type === 'browserExt') {
+				var f = file.clone({contents: false});
+				f.path = parts.slice(0, i-1).join('/') + '/build/browserExt/' + parts.slice(i+1).join('/');
+				console.log(`-> ${f.path.slice(f.cwd.length)}`);
+				this.push(f);
+			}
+			if (type === 'common' || type === 'safari') {
+				f = file.clone({contents: false});
+				f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/' + parts.slice(i+1).join('/');
+				console.log(`-> ${f.path.slice(f.cwd.length)}`);
+				this.push(f);
+			}
+			cb();
+		}.bind(this);
+		
+		var asyncAddFiles = false;
 		// Replace contents
 		switch (basename) {
 			case 'manifest.json':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("/*BACKGROUND SCRIPTS*/",
-						backgroundInclude.map((s) => `"${s}"`).join(',\n\t\t\t'))
+						backgroundIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
 					.replace(/"version": "[^"]*"/, '"version": "'+argv.version+'"'));
 				break;
 			case 'background.js':
@@ -175,6 +215,10 @@ function processFile() {
 						backgroundInclude.map((s) => '<script type="text/javascript" src="' + s + '"></script>')
 							.join('\n')));
 				break;
+			case 'preferences.html':
+				file.contents = Buffer.from(file.contents.toString()
+					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/, argv.p ? '' : '$1'));
+				break;
 			case 'Info.plist':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("<!--SCRIPTS-->",
@@ -182,22 +226,16 @@ function processFile() {
 					.replace(/(<key>(?:CFBundleShortVersionString|CFBundleVersion)<\/key>\s*)<string>[^<]*<\/string>/g,
 						 '$1<string>'+argv.version+'</string>'));
 				break;
+			case 'node_modules.js':
+				asyncAddFiles = true;
+				// Stream needs to be converted to a buffer because of complicated stream cloning quantum bugs
+				browserify(file).bundle((err, buf) => {file.contents = buf; addFiles(file)});
+				break;
 		}
 		
-		// Amend paths
-		if (type === 'common' || type === 'browserExt') {
-			var f = file.clone({contents: false});
-			f.path = parts.slice(0, i-1).join('/') + '/build/browserExt/' + parts.slice(i+1).join('/');
-			console.log(`-> ${f.path.slice(f.cwd.length)}`);
-			this.push(f);
+		if (!asyncAddFiles) {
+			addFiles(file);
 		}
-		if (type === 'common' || type === 'safari') {
-			f = file.clone({contents: false});
-			f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/' + parts.slice(i+1).join('/');
-			console.log(`-> ${f.path.slice(f.cwd.length)}`);
-			this.push(f);
-		}
-		cb();
 	});
 }
 
@@ -205,6 +243,7 @@ gulp.task('watch', function () {
 	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**']);
 	watcher.on('change', function(event) {
 		gulp.src(event.path)
+			.pipe(plumber())
 			.pipe(processFile())
 			.pipe(gulp.dest((data) => data.base));
 	});
@@ -214,18 +253,24 @@ gulp.task('watch-chrome', function () {
 	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**']);
 	watcher.on('change', function(event) {
 		gulp.src(event.path)
+			.pipe(plumber())
 			.pipe(processFile())
+			.pipe(gulp.dest((data) => data.base))
 			.on('close', reloadChromeExtensionsTab);
 	});
 });
 
-gulp.task('inject-scripts', function() {
+gulp.task('process-custom-scripts', function() {
 	gulp.src([
 		'./src/browserExt/background.js',
 		'./src/browserExt/manifest.json', 
 		'./src/safari/global.html',
-		'./src/safari/Info.plist'
-	]).pipe(processFile())
+		'./src/safari/Info.plist',
+		'./src/common/node_modules.js',
+		'./src/common/preferences/preferences.html',
+		'./src/**/*.jsx'
+	]).pipe(plumber())
+		.pipe(processFile())
 		.pipe(gulp.dest((data) => data.base));
 });
 

@@ -40,23 +40,29 @@ if(isTopWindow) {
 	 * When an item is saved (by this page or by an iframe), the item will be relayed back to 
 	 * the background script and then to this handler, which will show the saving dialog
 	 */
-	Zotero.Messaging.addMessageListener("saveDialog_show", function() {
+	Zotero.Messaging.addMessageListener("progressWindow.show", function(headline) {
 		Zotero.ProgressWindow.show();
+		if (headline) {
+			return Zotero.ProgressWindow.changeHeadline(headline);
+		}
 		Zotero.Connector.callMethod("getSelectedCollection", {}, function(response, status) {
-			if(status !== 200) return;
-			Zotero.ProgressWindow.changeHeadline("Saving to ",
-				response.id ? "treesource-collection.png" : "treesource-library.png",
-				response.name+"\u2026");
+			if (status !== 200) {
+				Zotero.ProgressWindow.changeHeadline("Saving to zotero.org");
+			} else {
+				Zotero.ProgressWindow.changeHeadline("Saving to ",
+					response.id ? "treesource-collection.png" : "treesource-library.png",
+					response.name+"\u2026");
+			}
 		});
 	});
 	var itemProgress = {};
-	Zotero.Messaging.addMessageListener("saveDialog_itemSaving", function(data) {
+	Zotero.Messaging.addMessageListener("progressWindow.itemSaving", function(data) {
 		itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1],
 			data.length > 3 ? itemProgress[data[3]] : undefined);
 	});
-	Zotero.Messaging.addMessageListener("saveDialog_itemProgress", function(data) {
+	Zotero.Messaging.addMessageListener("progressWindow.itemProgress", function(data) {
 		var progress = itemProgress[data[2]];
-		if(!progress) {
+		if(!progress || !data[2]) {
 			progress = itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1]);
 		} else {
 			progress.setIcon(data[0]);
@@ -68,12 +74,12 @@ if(isTopWindow) {
 			progress.setProgress(data[3]);
 		}
 	});
-	Zotero.Messaging.addMessageListener("saveDialog_close", Zotero.ProgressWindow.close);
-	Zotero.Messaging.addMessageListener("saveDialog_done", function(returnValue) {
-		if(returnValue) {
+	Zotero.Messaging.addMessageListener("progressWindow.close", Zotero.ProgressWindow.close);
+	Zotero.Messaging.addMessageListener("progressWindow.done", function(returnValue) {
+		if (returnValue[0]) {
 			Zotero.ProgressWindow.startCloseTimer(2500);
 		} else {
-			new Zotero.ProgressWindow.ErrorMessage("translationError");
+			new Zotero.ProgressWindow.ErrorMessage(returnValue[1] || "translationError");
 			Zotero.ProgressWindow.startCloseTimer(8000);
 		}
 	});
@@ -100,7 +106,7 @@ if(isTopWindow) {
 			function(returnValue, status) {
 				if(returnValue === false) {
 					if(status === 0) {
-						new Zotero.ProgressWindow.ErrorMessage("standaloneRequired");
+						new Zotero.ProgressWindow.ErrorMessage("clientRequired");
 					} else {
 						new Zotero.ProgressWindow.ErrorMessage("translationError");
 					}
@@ -111,6 +117,15 @@ if(isTopWindow) {
 				}
 			});
 	});
+	
+	Zotero.Messaging.addMessageListener("confirm", function (props) {
+		return Zotero.Inject.confirm(props);
+	});
+	
+	Zotero.Messaging.addMessageListener("ping", function () {
+		// Respond to indicate that script is injected
+		return 'pong';
+	});
 }
 
 /**
@@ -119,7 +134,7 @@ if(isTopWindow) {
 var instanceID = (new Date()).getTime();
 Zotero.Inject = new function() {
 	var _translate;
-	this.translators = [];
+	this.translators = {};
 	
 	function determineAttachmentIcon(attachment) {
 		if(attachment.linkMode === "linked_url") {
@@ -128,15 +143,74 @@ Zotero.Inject = new function() {
 		return Zotero.ItemTypes.getImageSrc(attachment.mimeType === "application/pdf"
 							? "attachment-pdf" : "attachment-snapshot");
 	}
+
+	/**
+	 * Check if React and components are loaded and if not - load into page.
+	 * 
+	 * This is a performance optimization - we want to avoid loading React into every page.
+	 * 
+	 * @param components {Object[]} an array of component names to load
+	 * @return {Promise} resolves when components are injected
+	 */
+	this.loadReactComponents = function(components) {
+		var toLoad = [];
+		if (typeof ReactDOM === "undefined") {
+			toLoad = ['lib/react.js', 'lib/react-dom.js'];
+		}
+		for (let component of components) {
+			if (!Zotero.ui || !Zotero.ui[component]) {
+				toLoad.push(`ui/${component.replace(/(.)([A-Z])/g, '$1-$2').toLowerCase()}.js`)
+			}
+		}
+		if (toLoad.length) {
+			return Zotero.Connector_Browser.injectScripts(toLoad);
+		} else {
+			return Zotero.Promise.resolve();
+		}
+	}
+
+	/**
+	 * 
+	 * @param props {Object} to be passed to ModalPrompt component
+	 * @returns {Promise{Object}} Object with properties:
+	 * 		`button` - button number clicked (or 0 if clicked outside of prompt)
+	 * 		`checkboxChecked` - checkbox state on close
+	 * 		`inputText` - input field string on close	
+	 */
+	this.confirm = function(props) {
+		let deferred = Zotero.Promise.defer();
+		
+		Zotero.Inject.loadReactComponents(['ModalPrompt']).then(function() {
+			let div = document.createElement('div');
+			let prompt = (
+				<Zotero.ui.ModalPrompt 
+					onClose={onClose}
+					{...props}
+				/>
+			);
+			function onClose(state, event) {
+				deferred.resolve({button: event.target.name,
+					checkboxChecked: state.checkboxChecked,
+					inputText: state.inputText
+				});
+				ReactDOM.unmountComponentAtNode(div);
+				document.body.removeChild(div);
+			}
+			ReactDOM.render(prompt, div);
+			document.body.appendChild(div);	
+		}.bind(this));
+		
+		return deferred.promise;	
+	};
 	
 	/**
 	 * Translates this page. First, retrieves schema and preferences from global script, then
 	 * passes them off to _haveSchemaAndPrefs
 	 */
-	this.translate = function(translator) {
+	this.translate = function(translatorID) {
 		// this relays an item from this tab to the top level of the window
-		Zotero.Messaging.sendMessage("saveDialog_show", null);
-		_translate.setTranslator(translator);
+		Zotero.Messaging.sendMessage("progressWindow.show", null);
+		_translate.setTranslator(this.translators[translatorID]);
 		_translate.translate();
 	};
 	
@@ -169,12 +243,11 @@ Zotero.Inject = new function() {
 				_translate = new Zotero.Translate.Web();
 				_translate.setDocument(document);
 				_translate.setHandler("translators", function(obj, translators) {
-					me.translators = translators;
-					for(var i=0; i<translators.length; i++) {
-						if(translators[i].properToProxy) {
-							delete translators[i].properToProxy;
-						}
+					me.translators = {};
+					for (let translator of translators) {
+						me.translators[translator.translatorID] = translator;
 					}
+					
 					translators = translators.map(function(translator) {return translator.serialize(TRANSLATOR_PASSING_PROPERTIES)});
 					Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
 				});
@@ -182,23 +255,23 @@ Zotero.Inject = new function() {
 					Zotero.Connector_Browser.onSelect(items, function(returnItems) {
 						// if no items selected, close save dialog immediately
 						if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
-							Zotero.Messaging.sendMessage("saveDialog_close", null);
+							Zotero.Messaging.sendMessage("progressWindow.close", null);
 						}
 						callback(returnItems);
 					});
 				});
 				_translate.setHandler("itemSaving", function(obj, item) {
 					// this relays an item from this tab to the top level of the window
-					Zotero.Messaging.sendMessage("saveDialog_itemSaving",
+					Zotero.Messaging.sendMessage("progressWindow.itemSaving",
 						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id]);
 				});
 				_translate.setHandler("itemDone", function(obj, dbItem, item) {
 					// this relays an item from this tab to the top level of the window
-					Zotero.Messaging.sendMessage("saveDialog_itemProgress",
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
 						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id, 100]);
 					for(var i=0; i<item.attachments.length; i++) {
 						var attachment = item.attachments[i];
-						Zotero.Messaging.sendMessage("saveDialog_itemSaving",
+						Zotero.Messaging.sendMessage("progressWindow.itemSaving",
 							[determineAttachmentIcon(attachment), attachment.title, attachment.id,
 								item.id]);
 					}
@@ -206,11 +279,11 @@ Zotero.Inject = new function() {
 				_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
 					// this relays an item from this tab to the top level of the window
 					if(progress === 0) return;
-					Zotero.Messaging.sendMessage("saveDialog_itemProgress",
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
 						[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
 				});
 				_translate.setHandler("done", function(obj, status) {
-					Zotero.Messaging.sendMessage("saveDialog_done", status);
+					Zotero.Messaging.sendMessage("progressWindow.done", [status]);
 				});
 				_translate.setHandler("pageModified", function() {
 					Zotero.Connector_Browser.onPageLoad();
@@ -241,7 +314,7 @@ if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.p
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {
 			if(data[0] !== instanceID) return;
-			Zotero.Inject.translate(new Zotero.Translator(data[1]));
+			Zotero.Inject.translate(data[1]);
 		});
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {

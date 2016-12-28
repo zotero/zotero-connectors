@@ -24,7 +24,7 @@
 */
 
 var Zotero = new function() {
-	this.version = "3.0.4";
+	this.version = "5.0";
 	this.isConnector = true;
 	this.isFx = false;
 
@@ -44,12 +44,21 @@ var Zotero = new function() {
 
 	if(this.isFirefox) {
 		this.browser = "g";
+		this.clientName = 'Firefox Connector';
 	} else if(this.isSafari) {
 		this.browser = "s";
+		this.clientName = 'Safari Connector';
 	} else if(this.isIE) {
 		this.browser = "i";
 	} else {
+		this.clientName = 'Chrome Connector';
 		this.browser = "c";
+	}
+	
+	if (this.isBrowserExt) {
+		this.version = chrome.runtime.getManifest().version;
+	} else if (this.isSafari) {
+		this.version = safari.extension.bundleVersion;
 	}
 	
 	this.Promise = window.Promise;
@@ -168,17 +177,26 @@ var Zotero = new function() {
 
 Zotero.Prefs = new function() {
 	const DEFAULTS = {
-		"debug.log":true,
-		"debug.stackTrace":false,
-		"debug.store":false,
-		"debug.store.limit":750000,
-		"debug.level":5,
-		"debug.time":false,
-		"downloadAssociatedFiles":true,
-		"automaticSnapshots":true,
-		"connector.repo.lastCheck.localTime":0,
-		"connector.repo.lastCheck.repoTime":0,
-		"capitalizeTitles":false
+		"debug.log": true,
+		"debug.stackTrace": false,
+		"debug.store": false,
+		"debug.store.limit": 750000,
+		"debug.level": 5,
+		"debug.time": false,
+		"downloadAssociatedFiles": true,
+		"automaticSnapshots": true,
+		"connector.repo.lastCheck.localTime": 0,
+		"connector.repo.lastCheck.repoTime": 0,
+		"capitalizeTitles": false,
+		"interceptKnownFileTypes": true,
+		"allowedInterceptHosts": [],
+		
+		"proxies.transparent": true,
+		"proxies.autoRecognize": true,
+		"proxies.showRedirectNotification": true,
+		"proxies.disableByDomain": false,
+		"proxies.disableByDomainString": '.edu',
+		"proxies.proxies": []
 	};
 	
 	this.get = function(pref) {

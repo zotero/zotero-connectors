@@ -35,6 +35,10 @@
 				<div class="pane-image"><img src="../images/prefs-general.png" alt=""/></div>
 				<div class="pane-label">General</div>
 			</div>
+			<div id="pane-proxies" class="pane" style="display: none">
+				<div class="pane-image"><img src="../images/prefs-proxies.png" alt=""/></div>
+				<div class="pane-label">Proxies</div>
+			</div>
 			<div id="pane-advanced" class="pane">
 				<div class="pane-image"><img src="../images/prefs-advanced.png" alt=""/></div>
 				<div class="pane-label">Advanced</div>
@@ -42,46 +46,37 @@
 		</div>
 		<div id="content-general" class="content">
 			<div class="group">
-				<div class="group-title">Zotero Standalone</div>
-				<div class="group-content">
-					<p>Zotero Standalone is currently <span id="general-span-standalone-status"></span>.</p>
-					<p><input type="button" value="Update Status" id="general-button-update-standalone-status"/></p>
-				</div>
+				<div class="group-title">Zotero Status</div>
+				<div class="group-content" id="client-status"></div>
 			</div>
 			<div class="group">
-				<div class="group-title">Save via Server</div>
+				<div class="group-title">Save to Zotero.org</div>
 				<div class="group-content">
 					<div id="general-authorization-not-authorized">
-						<p>Zotero Connector must be authorized in order to save items to zotero.org when Zotero Standalone is not open.</p>
+						<p>Zotero Connector must be authorized in order to save items to zotero.org when Zotero is not open.</p>
 						<p><input type="button" value="Authorize" id="general-button-authorize"/></p>
 					</div>
 					<div id="general-authorization-authorized" style="display:none">
-						<p>Zotero Connector will save items to zotero.org as <span id="general-span-authorization-username"></span> when Zotero Standalone is not open.</p>
+						<p>Zotero Connector will save items to zotero.org as <span id="general-span-authorization-username"></span> when Zotero is not open.</p>
 						<p>
 							<input type="button" value="Reauthorize" id="general-button-reauthorize"/>
 							<input type="button" value="Clear Credentials" id="general-button-clear-credentials"/>
 						</p>
 						<p>
-							<input type="checkbox" id="general-checkbox-automaticSnapshots"/>&nbsp;Automatically take snapshots when saving items<br/>
-							<input type="checkbox" id="general-checkbox-downloadAssociatedFiles"/>&nbsp;Automatically download associated PDFs and other files when saving items<br/>
+							<label><input type="checkbox" id="general-checkbox-automaticSnapshots"/>&nbsp;Automatically take snapshots when saving items</label><br/>
+							<label><input type="checkbox" id="general-checkbox-downloadAssociatedFiles"/>&nbsp;Automatically download associated PDFs and other files when saving items</label><br/>
 						</p>
 					</div>
 				</div>
 			</div>
-			<div class="group">
-				<div class="group-title">Report Errors</div>
-				<div class="group-content">
-					<div id="general-no-errors">
-						Zotero Connector has not experienced any errors since it was first started.
-					</div>
-					<div id="general-have-errors" style="display:none">
-						<p>Zotero Connector has experienced the following errors since it was first started:</p>
-						<p><textarea id="general-textarea-errors" style="width:100%; height:10em;" readonly="true"></textarea></p>
-						<p><input type="button" id="general-button-report-errors" value="Report Errors"/></p>
-					</div>
-				</div>
+			<div class="group" style="display: none" id="intercept-and-import">
+				<div class="group-title">Automatic File Importing</div>
+				<!-- React Component -->
+				<div class="group-content"></div>
 			</div>
 		</div>
+		<!-- React Component -->
+		<div id="content-proxies" class="content"></div>
 		<div id="content-advanced" class="content">
 			<div class="group">
 				<div class="group-title">Debug Output Logging</div>
@@ -104,6 +99,19 @@
 				</div>
 			</div>
 			<div class="group">
+				<div class="group-title">Report Errors</div>
+				<div class="group-content">
+					<div id="general-no-errors">
+						No errors have been logged.
+					</div>
+					<div id="general-have-errors" style="display:none">
+						<p>The following errors have occurred since the Zotero Connector was started:</p>
+						<p><textarea id="general-textarea-errors" style="width:100%; height:10em;" readonly="true"></textarea></p>
+						<p><input type="button" id="general-button-report-errors" value="Report Errors"/></p>
+					</div>
+				</div>
+			</div>
+			<div class="group">
 				<div class="group-title">Translators</div>
 				<div class="group-content">
 					<input type="button" id="advanced-button-update-translators" value="Update Translators" id="updateTranslators"/>
@@ -114,7 +122,10 @@
 				</div>
 			</div>
 		</div>
+		<script type="text/javascript" src="../lib/react.js"></script>
+		<script type="text/javascript" src="../lib/react-dom.js"></script>
 		<script type="text/javascript" src="../zotero.js"></script>
+		<script type="text/javascript" src="../utilities.js"></script>
 		<script type="text/javascript" src="../messages.js"></script>
 		<script type="text/javascript" src="../messaging_inject.js"></script>
 		<script type="text/javascript" src="preferences.js"></script>

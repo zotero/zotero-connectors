@@ -81,7 +81,7 @@ Zotero.HTTP = new function() {
 	* Send an HTTP POST request via XMLHTTPRequest
 	*
 	* @param {String} url URL to request
-	* @param {String} body Request body
+	* @param {String|Object[]} body Request body
 	* @param {Function} onDone Callback to be executed upon request completion
 	* @param {String} headers Request HTTP headers
 	* @return {Boolean} True if the request was sent, or false if the browser is offline
@@ -96,11 +96,16 @@ Zotero.HTTP = new function() {
 			}
 		}
 		
-		var bodyStart = body.substr(0, 1024);
-		Zotero.debug("HTTP POST "
-			+ (body.length > 1024 ?
-				bodyStart + '... (' + body.length + ' chars)' : bodyStart)
-			+ " to " + url);
+		try {
+			let bodyText = typeof body == 'string' ? body : JSON.stringify(body);
+			let bodyStart = bodyText.substr(0, 1024);
+			Zotero.debug("HTTP POST "
+				+ (bodyText.length > 1024 ?
+				bodyStart + '... (' + bodyText.length + ' chars)' : bodyStart)
+				+ " to " + url);
+		} catch (e) {
+			Zotero.debug(`HTTP POST (BLOB) to ${url}`)
+		}
 		
 		var xmlhttp = new XMLHttpRequest();
 		try {
@@ -110,6 +115,11 @@ Zotero.HTTP = new function() {
 			if (!headers["Content-Type"]) {
 				headers["Content-Type"] = "application/x-www-form-urlencoded";
 			}
+			if (headers["Content-Type"] == 'multipart/form-data') {
+				// Allow XHR to set Content-Type with boundary for multipart/form-data
+				delete headers["Content-Type"];
+			}	
+		
 			
 			for (var header in headers) {
 				xmlhttp.setRequestHeader(header, headers[header]);

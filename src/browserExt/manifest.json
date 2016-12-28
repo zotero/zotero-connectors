@@ -4,10 +4,15 @@
 	"version": "AUTOFILLED",
 	"description": "Saves references to Zotero from Chrome and Opera",
 	"browser_action": {
-		"default_icon": "images/treeitem-webpage-gray.png",
+		"default_icon": {
+			"16": "images/treeitem-webpage-gray.png",
+			"24": "images/treeitem-webpage-gray.png",
+			"32": "images/treeitem-webpage-gray.png"
+		},
 		"default_title": "Save to Zotero"
 	},
-	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies"],
+	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies", 
+		"webRequest", "webRequestBlocking", "notifications"],
 	"background": {
 		"scripts": [
 			/*BACKGROUND SCRIPTS*/,

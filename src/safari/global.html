@@ -142,7 +142,7 @@ Zotero.Connector_Browser = new function() {
 	this.saveWithTranslator = function(i) {
 		var tab = safari.application.activeBrowserWindow.activeTab;
 		tab.page.dispatchMessage("translate",
-				[tab.instanceID, tab.translators[i]]);
+				[tab.instanceID, tab.translators[i].translatorID]);
 	}
 
 	this.saveAsWebpage = function () {

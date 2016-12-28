@@ -73,106 +73,115 @@
  */
 const MESSAGE_SEPARATOR = ".";
 var MESSAGES = {
-	"Translators":
+	Translators: 
 		{
-			"get":{
-				"preSend":function(translators) {
+			get: {
+				preSend: function(translators) {
 					return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
 				},
-				"postReceive": function(translator) {
+				postReceive: function(translator) {
 					return [new Zotero.Translator(translator)];
 				}
 			},
-			"getAllForType":{
-				"preSend":function(translators) {
+			getAllForType: {
+				preSend: function(translators) {
 					return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
 				},
-				"postReceive": function(translators) {
+				postReceive: function(translators) {
 					return [translators.map(function(translator) {return new Zotero.Translator(translator)})];
 				}
 			},
-			"getWebTranslatorsForLocation":{
-				"preSend":function(data) {
+			getWebTranslatorsForLocation: {
+				preSend: function(data) {
 					return [[Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES), data[1]]];
 				},
-				"postReceive":function(data) {
-					// Deserialize to Translator objects
-					data[0] = data[0].map(function(translator) {return new Zotero.Translator(translator)});
-					return [[data[0], Zotero.Translators.getConverterFunctions(data[1])]];
+				postReceive: function(data) {
+					// Deserialize to class objects
+					data[0] = data[0].map((translator) => new Zotero.Translator(translator));
+					data[1] = data[1].map((proxy) => proxy && new Zotero.Proxy(proxy));
+					return [[data[0], data[1]]];
 				}
 			}
 		},
-	"Debug":
+	Debug: 
 		{
-			"clear":false,
-			"log":false,
-			"setStore":false
+			clear: false,
+			log: false,
+			setStore: false
 		},
-	"Connector":
+	Connector: 
 		{
-			"checkIsOnline":true,
-			"callMethod":true,
-			"setCookiesThenSaveItems": true
+			checkIsOnline: true,
+			callMethod: true,
+			setCookiesThenSaveItems: true
 		},
-	"Connector_Browser":
+	Connector_Browser: 
 		{
-			"onSelect":true,
-			"onPageLoad":false,
-			"onTranslators":false
+			onSelect: true,
+			onPageLoad: false,
+			onTranslators: false,
+			injectScripts: true,
 		},
-	"Connector_Debug":
+	Connector_Debug: 
 		{
-			"storing":true,
-			"get":true,
-			"count":true,
-			"submitReport":true
+			storing: true,
+			get: true,
+			count: true,
+			submitReport: true
 		},
-	"Errors":
+	Errors: 
 		{
-			"log":false,
-			"getErrors":true,
-			"sendErrorReport":true
+			log: false,
+			getErrors: true,
+			sendErrorReport: true
 		},
-	"Messaging":
+	Messaging: 
 		{
-			"sendMessage":false
+			sendMessage: false
 		},
-	"API":
+	API: 
 		{
-			"authorize":true,
-			"onAuthorizationComplete":false,
-			"clearCredentials":false,
-			"getUserInfo":true
+			authorize: true,
+			onAuthorizationComplete: false,
+			clearCredentials: false,
+			getUserInfo: true
 		},
-	"Prefs":
+	Prefs: 
 		{
-			"set":false,
-			"getCallback":true
+			set: false,
+			getCallback: true
 		},
-	"Repo":
+	Proxies: 
 		{
-			"update":false
+			loadPrefs: false,
+			save: false,
+			remove: false
+		},
+	Repo: 
+		{
+			getTranslatorCode: true,
+			update: false
 		}
 };
 
 MESSAGES["COHTTP"] = {
-	"doGet":{
+	doGet: {
 			// avoid trying to post responseXML
-			"preSend":function(xhr) {
-				return [{"responseText":xhr.responseText,
-					"status":xhr.status,
-					"statusText":xhr.statusText}];
+			preSend: function(xhr) {
+				return [{responseText: xhr.responseText,
+					status: xhr.status,
+					statusText: xhr.statusText}];
 			},
-			"callbackArg":1
+			callbackArg: 1
 		},
-	"doPost":{
+	doPost: {
 			// avoid trying to post responseXML
-			"preSend":function(xhr) {
-				return [{"responseText":xhr.responseText,
-					"status":xhr.status,
-					"statusText":xhr.statusText}];
+			preSend: function(xhr) {
+				return [{responseText: xhr.responseText,
+					status: xhr.status,
+					statusText: xhr.statusText}];
 			},
-			"callbackArg":2
+			callbackArg: 2
 		}
 };
 

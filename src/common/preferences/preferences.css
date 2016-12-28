@@ -94,6 +94,15 @@ body {
 	margin: 10px 0 0 0;
 }
 
+label {
+	white-space: nowrap;
+	margin-right: 5px;
+}
+
+input[type=checkbox] {
+	vertical-align: middle;
+}
+
 /** Shamelessly stolen from Firefox **/
 input[type=button] {
   font-size: 11px;

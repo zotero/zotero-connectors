@@ -108,7 +108,11 @@ Zotero.Messaging = new function() {
 			window.parent.postMessage((_structuredCloneSupported
 				? [messageName, args] : JSON.stringify([messageName, args])), "*");
 		} else if(Zotero.isBrowserExt) {
-			chrome.tabs.sendMessage(tab.id, [messageName, args]);
+			// We support response callback in BrowserExt for advanced functionality.
+			// Response resolves as a promise
+			let deferred = Zotero.Promise.defer();
+			chrome.tabs.sendMessage(tab.id, [messageName, args], {}, deferred.resolve);
+			return deferred.promise;
 		} else if(Zotero.isSafari) {
 			tab.page.dispatchMessage(messageName, args);
 		}

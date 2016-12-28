@@ -94,6 +94,7 @@ fi
 
 SRCDIR="$CWD/src"
 DISTDIR="$CWD/dist"
+NODE_MODULES_DIR="$CWD/node_modules"
 LOG="$CWD/build.log"
 
 EXTENSION_XPCOM_DIR="$SRCDIR/zotero/chrome/content/zotero/xpcom"
@@ -105,7 +106,9 @@ CHROME_EXT="$DISTDIR/Zotero_Connector-$VERSION.crx"
 ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-new-z-16px.png  \
     $SRCDIR/common/images/zotero-z-16px-offline.png"
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
-PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png"
+PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png $EXTENSION_SKIN_DIR/prefs-proxies.png"
+
+LIBS=("$NODE_MODULES_DIR/react/dist/react.js" "$NODE_MODULES_DIR/react-dom/dist/react-dom.js")
 
 # Scripts to be included in bookmarklet
 BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
@@ -122,7 +125,6 @@ BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
 	"$EXTENSION_XPCOM_DIR/translation/translate.js" \
 	"$EXTENSION_XPCOM_DIR/connector/translate_item.js" \
 	"$SRCDIR/common/inject/translate_inject.js" \
-	"$SRCDIR/common/inject/translator.js" \
 	"$EXTENSION_XPCOM_DIR/connector/typeSchemaData.js" \
 	"$EXTENSION_XPCOM_DIR/utilities_translate.js" \
 	"$SRCDIR/bookmarklet/messaging_inject.js" \
@@ -240,13 +242,6 @@ for browser in "browserExt" "safari"; do
 	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$browser_builddir/"{} \;
 	popd > /dev/null
 	
-	# Comment/uncomment debug code in preferences
-	if [ ! -z $DEBUG ]; then
-		perl -000 -pi -e 's/<!--BEGIN DEBUG(\s.*?\s)END DEBUG-->/<!--BEGIN DEBUG-->$1<!--END DEBUG-->/sg' "$browser_builddir/preferences/preferences.html"
-	else
-		perl -000 -pi -e 's/<!--BEGIN DEBUG-->(.*?)<!--END DEBUG-->//sg' "$browser_builddir/preferences/preferences.html"
-	fi
-	
 	# Set version
 	perl -pi -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$browser_builddir/zotero.js"
 	
@@ -267,6 +262,10 @@ for browser in "browserExt" "safari"; do
 	   "$EXTENSION_XPCOM_DIR/translation/tlds.js" \
 	   "$browser_builddir/zotero/translation"
 	
+	# Copy node_modules libs
+	mkdir "$browser_builddir/lib"
+	cp "${LIBS[@]}" "$browser_builddir/lib"
+	
 	if [ ! -z $DEBUG ]; then
 		cp "$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.js \
 			"$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.css \
@@ -278,9 +277,9 @@ done
 	
 # Update scripts
 if [ ! -z $DEBUG ]; then
-	gulp inject-scripts --version "$VERSION" > /dev/null 2>&1
+	gulp process-custom-scripts --version "$VERSION" > /dev/null 2>&1
 else
-	gulp inject-scripts --version "$VERSION" -p > /dev/null 2>&1
+	gulp process-custom-scripts --version "$VERSION" -p > /dev/null 2>&1
 fi
 
 echo "done"

@@ -158,29 +158,34 @@ Zotero.ProgressWindow = new function() {
 		this._div.style.cssText = cssDivClearString;
 		for(var j in cssDescription) this._div.style[j] = cssDescription[j];
 		
-		if(err === "translationError") {
-			// TODO localize
+		var link = doc.createElement('a');
+		link.style.cssText = cssAClearString;
+		for(var j in cssDescription) link.style[j] = cssDescription[j];
+		
+		if (err === "translationError") {
 			this._div.appendChild(doc.createTextNode("An error occurred while saving this item. Check "));
 			
-			var link = doc.createElement('a');
-			link.style.cssText = cssAClearString;
-			for(var j in cssDescription) link.style[j] = cssDescription[j];
-			
 			link.title = link.href = "http://www.zotero.org/documentation/known_translator_issues";
-			// TODO localize
 			link.appendChild(doc.createTextNode("Known Translator Issues"));
 			
 			this._div.appendChild(link);
-			// TODO localize
 			this._div.appendChild(doc.createTextNode(" for more information."));
-		} else if(err === "noTranslator") {
+		} else if (err === "noTranslator") {
 			var textNode = doc.createTextNode("No items could be saved because this website "+
 					"is not supported by any Zotero translator. If Zotero Standalone is not open, try "+
 					"opening it to increase the number of supported sites.");
 			this._div.appendChild(textNode);
-		} else if(err === "standaloneRequired") {
+		} else if (err === "clientRequired") {
 			this._div.appendChild(doc.createTextNode("This item could not be saved because Zotero "+
-				"Standalone is not open or unreachable. Please open Zotero Standalone and try again."));
+				"is not open or unreachable. Please open Zotero and try again."));
+		} else if (err === "upgradeClient") {
+			this._div.appendChild(doc.createTextNode("This feature is not supported by your version of " +
+				"Zotero. Please upgrade to the "));
+			link.title = link.href = ZOTERO_CONFIG.CLIENT_DOWNLOAD_URL;
+			link.appendChild(doc.createTextNode("latest version"));
+
+			this._div.appendChild(link);
+			this._div.appendChild(doc.createTextNode("."));
 		}
 		
 		container.appendChild(this._div);

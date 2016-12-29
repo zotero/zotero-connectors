@@ -12,6 +12,17 @@
 	} catch(e) {}
 
 	/**
+	 * FX50 compatibility
+	 * See: https://bugzilla.mozilla.org/show_bug.cgi?id=1286746 
+	 * TODO: remove once FX51 launches
+	 */
+	function listener(request, sender, sendResponse) {
+		chrome.runtime.onMessage.removeListener(listener);
+		sendResponse();
+	}
+	chrome.runtime.onMessage.addListener(listener);
+	
+	/**
 	 * Looks for translators for the page and injects translation scripts, if translators are found
 	 */
 	function sendFrameLoaded() {

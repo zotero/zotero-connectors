@@ -252,7 +252,6 @@ for browser in "browserExt" "safari"; do
 	   "$EXTENSION_XPCOM_DIR/date.js" \
 	   "$EXTENSION_XPCOM_DIR/debug.js" \
 	   "$EXTENSION_XPCOM_DIR/openurl.js" \
-	   "$EXTENSION_XPCOM_DIR/connector" \
 	   "$EXTENSION_XPCOM_DIR/rdf" \
 	   "$EXTENSION_XPCOM_DIR/xregexp" \
 	   "$browser_builddir/zotero"

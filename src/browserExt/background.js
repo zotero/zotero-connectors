@@ -248,7 +248,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _isDisabledForURL(url) {
-		return url.indexOf('chrome://') == 0;
+		return url.includes('chrome://') || url.includes('about:') || url.includes('-extension://');
 	}
 	
 	function _showZoteroStatus(tabID) {

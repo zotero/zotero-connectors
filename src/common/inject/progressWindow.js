@@ -242,7 +242,7 @@ Zotero.ProgressWindow = new function() {
 		if(!container) return;
 		if(!delay) delay = 2500;
 		if(timeoutID) win.clearTimeout(timeoutID);
-		timeoutID = win.setTimeout(Zotero.ProgressWindow.close, delay);
+		timeoutID = win.setTimeout(() => Zotero.ProgressWindow.close(), delay);
 	}
 	
 	/**

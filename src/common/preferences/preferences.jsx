@@ -67,7 +67,7 @@ var Zotero_Preferences = {
 		}
 		
 		Zotero_Preferences.refreshData();
-		window.setInterval(Zotero_Preferences.refreshData, 1000);
+		window.setInterval(() => Zotero_Preferences.refreshData(), 1000);
 	},
 
 	/**

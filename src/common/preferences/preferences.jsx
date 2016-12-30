@@ -139,11 +139,11 @@ Zotero_Preferences.General = {
 		var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
 		if (openTranslatorTesterButton) openTranslatorTesterButton.onclick = Zotero_Preferences.General.openTranslatorTester;
 		
-		Zotero.Prefs.getCallback("downloadAssociatedFiles", function(status) {
-			document.getElementById('general-checkbox-downloadAssociatedFiles').checked = status ? true : false;
+		Zotero.Prefs.getAsync("downloadAssociatedFiles").then(function(status) {
+			document.getElementById('general-checkbox-downloadAssociatedFiles').checked = !!status;
 		});
-		Zotero.Prefs.getCallback("automaticSnapshots", function(status) {
-			document.getElementById('general-checkbox-automaticSnapshots').checked = status ? true : false;
+		Zotero.Prefs.getAsync("automaticSnapshots").then(function(status) {
+			document.getElementById('general-checkbox-automaticSnapshots').checked = !!status;
 		});
 		Zotero.API.getUserInfo(Zotero_Preferences.General.updateAuthorization);
 
@@ -221,13 +221,13 @@ Zotero_Preferences.Advanced = {
 		
 		// get preference values
 		Zotero.Connector_Debug.storing(function(status) {
-			document.getElementById('advanced-checkbox-enable-logging').checked = status ? true : false;
+			document.getElementById('advanced-checkbox-enable-logging').checked = !!status;
 		});
-		Zotero.Prefs.getCallback("debug.store", function(status) {
-			document.getElementById('advanced-checkbox-enable-at-startup').checked = status ? true : false;
+		Zotero.Prefs.getAsync("debug.store").then(function(status) {
+			document.getElementById('advanced-checkbox-enable-at-startup').checked = !!status;
 		});
-		Zotero.Prefs.getCallback("debug.log", function(status) {
-			document.getElementById('advanced-checkbox-show-in-console').checked = status ? true : false;
+		Zotero.Prefs.getAsync("debug.log").then(function(status) {
+			document.getElementById('advanced-checkbox-show-in-console').checked = !!status;
 		});
 	},
 		

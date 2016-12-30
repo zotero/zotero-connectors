@@ -214,21 +214,19 @@ Zotero.Translate.ItemSaver.prototype = {
 			}
 			
 			Zotero.debug("Translate: Save to server complete");
-			Zotero.Prefs.getCallback(
-				["downloadAssociatedFiles", "automaticSnapshots"],
-				function (prefs) {
-					if(typedArraysSupported) {
-						for(var i=0; i<items.length; i++) {
-							var item = items[i], key = resp.success[itemIndices[i]];
-							if(item.attachments && item.attachments.length) {
-								this._saveAttachmentsToServer(key, this._getFileBaseNameFromItem(item),
-									item.attachments, prefs, attachmentCallback);
-							}
+			Zotero.Prefs.getAsync(["downloadAssociatedFiles", "automaticSnapshots"])
+			.then(function (prefs) {
+				if (typedArraysSupported) {
+					for (var i=0; i<items.length; i++) {
+						var item = items[i], key = resp.success[itemIndices[i]];
+						if (item.attachments && item.attachments.length) {
+							this._saveAttachmentsToServer(key, this._getFileBaseNameFromItem(item),
+								item.attachments, prefs, attachmentCallback);
 						}
 					}
-					deferred.resolve(items);
-				}.bind(this)
-			);
+				}
+				deferred.resolve(items);
+			}.bind(this));
 		}.bind(this));
 		return deferred.promise;
 	},

@@ -207,16 +207,22 @@ Zotero.Prefs = new function() {
 		throw "Zotero.Prefs: Invalid preference "+pref;
 	};
 	
-	this.getCallback = function(pref, callback) {
-		if(typeof pref === "object") {
-			var prefData = {};
-			for(var i=0; i<pref.length; i++) {
-				prefData[pref[i]] = Zotero.Prefs.get(pref[i]);
+	this.getAsync = function(pref) {
+		return new Zotero.Promise(function(resolve, reject) {
+			try {
+				if (typeof pref === "object") {
+					var prefData = {};
+					for(var i=0; i<pref.length; i++) {
+						prefData[pref[i]] = Zotero.Prefs.get(pref[i]);
+					}
+					resolve(prefData);
+				} else {
+					resolve(Zotero.Prefs.get(pref));
+				}	
+			} catch (e) {
+				reject(e);
 			}
-			callback(prefData);
-		} else {
-			callback(Zotero.Prefs.get(pref));
-		}
+		});
 	};
 	
 	this.set = function(pref, value) {

@@ -144,7 +144,7 @@ Zotero.ContentTypeHandler = {
 	importFile: function(details, type) {
 		chrome.tabs.get(details.tabId, function(tab) {
 			// Make sure scripts injected so we can display the progress window
-			Zotero.Connector_Browser.injectTranslationScripts(tab.id).then(function() {
+			Zotero.Connector_Browser.injectTranslationScripts(tab).then(function() {
 				Zotero.Messaging.sendMessage('progressWindow.show', type == 'csl' ? 'Installing Style' : 'Importing', tab);
 			
 				var xhr = new XMLHttpRequest();

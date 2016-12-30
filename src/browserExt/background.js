@@ -153,40 +153,31 @@ Zotero.Connector_Browser = new function() {
 				return;
 			}
 			Zotero.debug(translators.length+  " translators found. Injecting into [rootUrl, url]: " + rootUrl + " , " + url);
-			return Zotero.Connector_Browser.injectTranslationScripts(tab.id, frameId);
+			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
 		});
 	};
 
 	/**
-	 * Checks whether translation scripts already injected into a frame and if not - injects
-	 * @param tabID {Number}
+	 * Checks whether translation scripts are already injected into a frame and if not - injects
+	 * @param tab {Object}
 	 * @param [frameId=0] {Number] Defaults to top frame
 	 * @returns {Promise} A promise that resolves when all scripts have been injected
 	 */
-	this.injectTranslationScripts = function(tabID, frameId=0) {
-		let deferredAll = Zotero.Promise.defer();
-		chrome.tabs.sendMessage(tabID, ['ping'], function(response) {
-			if (response) return deferredAll.resolve();
-			var promises = [];
-			for (let script of _injectTranslationScripts) {
-				let deferred = Zotero.Promise.defer();
-				promises.push(deferred.promise);
-				try {
-					chrome.tabs.executeScript(tabID, {file: script, frameId}, deferred.resolve);
-				} catch (e) {
-					return Zotero.Promise.reject();
-				}
-			}
-			return Zotero.Promise.all(promises).then(deferredAll.resolve).catch(deferredAll.reject);
+	this.injectTranslationScripts = function(tab, frameId=0) {
+		let deferred = Zotero.Promise.defer();
+		chrome.tabs.sendMessage(tab.id, ['ping'], function(response) {
+			if (response) return deferred.resolve();
+			return Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, null, tab, frameId)
+			.then(deferred.resolve).catch(deferred.reject);
 		});
-		return deferredAll.promise;
+		return deferred.promise;
 	};
 
 	/**
 	 * Injects custom scripts
 	 * 
 	 * @param scripts {Object[]} array of scripts to inject
-	 * @param tabID {Number}
+	 * @param tab {Object}
 	 * @param [frameId=0] {Number] Defaults to top frame
 	 * @returns {Promise} A promise that resolves when all scripts have been injected
 	 */
@@ -199,7 +190,7 @@ Zotero.Connector_Browser = new function() {
 			try {
 				chrome.tabs.executeScript(tab.id, {file: script, frameId}, deferred.resolve);
 			} catch (e) {
-				return Zotero.Promise.reject();
+				deferred.reject(e);
 			}
 		}
 		return Zotero.Promise.all(promises);
@@ -450,3 +441,6 @@ Zotero.initGlobal();
 // BrowserExt specific
 Zotero.WebRequestIntercept.init();
 Zotero.Proxies.init();
+if (Zotero.Prefs.get('firstSaveToServer') && Zotero.isFirefox) {
+	chrome.browserAction.setPopup({popup: 'popovers/firstSaveToServer/popover.html'});
+}

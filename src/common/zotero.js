@@ -42,17 +42,18 @@ var Zotero = new function() {
 	this.isChrome = window.navigator.userAgent.indexOf("Chrome") !== -1 || window.navigator.userAgent.indexOf("Chromium") !== -1;
 	this.isBrowserExt = this.isFirefox || this.isEdge || this.isChrome;
 
-	if(this.isFirefox) {
+	if (this.isFirefox) {
 		this.browser = "g";
 		this.clientName = 'Firefox Connector';
-	} else if(this.isSafari) {
+	} else if (this.isSafari) {
 		this.browser = "s";
 		this.clientName = 'Safari Connector';
-	} else if(this.isIE) {
+	} else if (this.isIE) {
 		this.browser = "i";
+		this.clientName = 'Internet Explorer'; // ?? Property unlikely to be used, but it is IE.
 	} else {
-		this.clientName = 'Chrome Connector';
 		this.browser = "c";
+		this.clientName = 'Chrome Connector';
 	}
 	
 	if (this.isBrowserExt) {
@@ -190,6 +191,7 @@ Zotero.Prefs = new function() {
 		"capitalizeTitles": false,
 		"interceptKnownFileTypes": true,
 		"allowedInterceptHosts": [],
+		"firstSaveToServer": true,
 		
 		"proxies.transparent": true,
 		"proxies.autoRecognize": true,

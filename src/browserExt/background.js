@@ -195,7 +195,11 @@ Zotero.Connector_Browser = new function() {
 		}
 		return Zotero.Promise.all(promises);
 	};
-	
+
+	this.openTab = function(url) {
+		chrome.tabs.create({url});
+	};
+
 	/**
 	 * Update status and tooltip of Zotero button
 	 */

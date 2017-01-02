@@ -73,6 +73,9 @@ var Zotero = new function() {
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
 		Zotero.Repo.init();
+		
+		Zotero.promptFxConnectorMigration();
+		Zotero.Prefs.set('previousConnectorVersion', Zotero.version);
 	};
 	
 	/**
@@ -84,6 +87,12 @@ var Zotero = new function() {
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
 	};
+	
+	
+	this.promptFxConnectorMigration = function() {
+		if (Zotero.Prefs.get('previousConnectorVersion') >= "5" || !Zotero.isFirefox) return;
+		Zotero.Connector_Browser.openTab('https://www.zotero.org/support/zotero_for_firefox_migration');
+	}
 	
 	
 	/**
@@ -191,6 +200,7 @@ Zotero.Prefs = new function() {
 		"capitalizeTitles": false,
 		"interceptKnownFileTypes": true,
 		"allowedInterceptHosts": [],
+		"previousConnectorVersion": "0",
 		"firstSaveToServer": true,
 		
 		"proxies.transparent": true,

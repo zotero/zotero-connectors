@@ -241,7 +241,7 @@ Zotero.Inject = new function() {
 						if (proceed) {
 							Zotero.Prefs.set('firstSaveToServer', false);
 						}
-						return proceed
+						return proceed;
 					});
 				}
 				return true;

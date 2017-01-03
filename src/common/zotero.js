@@ -42,17 +42,18 @@ var Zotero = new function() {
 	this.isChrome = window.navigator.userAgent.indexOf("Chrome") !== -1 || window.navigator.userAgent.indexOf("Chromium") !== -1;
 	this.isBrowserExt = this.isFirefox || this.isEdge || this.isChrome;
 
-	if(this.isFirefox) {
+	if (this.isFirefox) {
 		this.browser = "g";
 		this.clientName = 'Firefox Connector';
-	} else if(this.isSafari) {
+	} else if (this.isSafari) {
 		this.browser = "s";
 		this.clientName = 'Safari Connector';
-	} else if(this.isIE) {
+	} else if (this.isIE) {
 		this.browser = "i";
+		this.clientName = 'Internet Explorer'; // ?? Property unlikely to be used, but it is IE.
 	} else {
-		this.clientName = 'Chrome Connector';
 		this.browser = "c";
+		this.clientName = 'Chrome Connector';
 	}
 	
 	if (this.isBrowserExt) {
@@ -72,6 +73,9 @@ var Zotero = new function() {
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
 		Zotero.Repo.init();
+		
+		Zotero.promptFxConnectorMigration();
+		Zotero.Prefs.set('previousConnectorVersion', Zotero.version);
 	};
 	
 	/**
@@ -83,6 +87,12 @@ var Zotero = new function() {
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
 	};
+	
+	
+	this.promptFxConnectorMigration = function() {
+		if (Zotero.Prefs.get('previousConnectorVersion') >= "5" || !Zotero.isFirefox) return;
+		Zotero.Connector_Browser.openTab('https://www.zotero.org/support/zotero_for_firefox_migration');
+	}
 	
 	
 	/**
@@ -190,6 +200,8 @@ Zotero.Prefs = new function() {
 		"capitalizeTitles": false,
 		"interceptKnownFileTypes": true,
 		"allowedInterceptHosts": [],
+		"previousConnectorVersion": "0",
+		"firstSaveToServer": true,
 		
 		"proxies.transparent": true,
 		"proxies.autoRecognize": true,

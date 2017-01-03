@@ -225,9 +225,6 @@ Zotero.API = new function() {
 	 */
 	this.createItem = function(payload, callback, askForAuth) {
 		Zotero.API.getUserInfo(function(userInfo) {
-			var userID = localStorage["auth-userID"],
-				apiKey = localStorage["auth-token_secret"];
-			
 			if(!userInfo) {
 				if(askForAuth === false) {
 					callback(403, "Not authorized");

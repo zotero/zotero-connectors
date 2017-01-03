@@ -53,6 +53,9 @@ Zotero.Messaging = new function() {
 	this.receiveMessage = function(messageName, args, sendResponseCallback, tab, frameId) {
 		try {
 			//Zotero.debug("Messaging: Received message: "+messageName);
+			if (!Array.isArray(args)) {
+				args = [args];
+			}
 			
 			// first see if there is a message listener
 			if(_messageListeners[messageName]) {

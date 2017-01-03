@@ -189,7 +189,7 @@ Zotero.Inject = new function() {
 				/>
 			);
 			function onClose(state, event) {
-				deferred.resolve({button: event.target.name,
+				deferred.resolve({button: parseInt(event.target.name || 0),
 					checkboxChecked: state.checkboxChecked,
 					inputText: state.inputText
 				});
@@ -203,15 +203,55 @@ Zotero.Inject = new function() {
 		return deferred.promise;	
 	};
 	
+	this.firstSaveToServerPrompt = function() {
+		return this.confirm({
+			checkbox: true,
+			checkboxBlock: true,
+			checkboxText: "I want to save directly to zotero.org",
+			button3Text: "More Information…",
+			title: `Saving to zotero.org`,
+			message: `
+				The Zotero Connector cannot communicate with Zotero on your computer. The Zotero Connector can save some pages directly to your zotero.org account, but for best results you should make sure Zotero is open before attempting to save.<br/><br/>
+				You can <a href="https://www.zotero.org/download/">download Zotero</a> or <a href="https://www.zotero.org/support/kb/connector_zotero_unavailable">troubleshoot the connection</a> if necessary.
+
+			`
+		}).then(function(result) {
+			if (result.button == 3) {
+				Zotero.Connector_Browser.openTab('https://www.zotero.org/support/save_to_zotero_org');
+			}
+			return result.button == 1;
+		});
+	};
+	
 	/**
-	 * Translates this page. First, retrieves schema and preferences from global script, then
-	 * passes them off to _haveSchemaAndPrefs
+	 * Translates this page.
+	 * Checks if Zotero is unavailable and prompts about saving to zotero.org if first time
 	 */
 	this.translate = function(translatorID) {
-		// this relays an item from this tab to the top level of the window
-		Zotero.Messaging.sendMessage("progressWindow.show", null);
-		_translate.setTranslator(this.translators[translatorID]);
-		_translate.translate();
+		Zotero.Connector.checkIsOnline(function(status) {
+			new Zotero.Promise(function(resolve) {
+				if (!status) {
+					resolve(Zotero.Prefs.getAsync('firstSaveToServer'));
+				} else {
+					resolve(false);
+				}
+			}).then(function(firstSaveToServer) {
+				if (firstSaveToServer) {
+					return Zotero.Inject.firstSaveToServerPrompt().then(function(proceed) {
+						if (proceed) {
+							Zotero.Prefs.set('firstSaveToServer', false);
+						}
+						return proceed;
+					});
+				}
+				return true;
+			}).then(function(proceed) {
+				if (!proceed) return;
+				Zotero.Messaging.sendMessage("progressWindow.show", null);
+				_translate.setTranslator(Zotero.Inject.translators[translatorID]);
+				_translate.translate();
+			})
+		});
 	};
 	
 	/**

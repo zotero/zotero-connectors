@@ -66,13 +66,17 @@ Zotero.ui.ModalPrompt = React.createClass({
 		 * This is required because the component does not know how to remove itself from the DOM.
 		 */
 		onClose: React.PropTypes.func.isRequired,
-		onButton1: React.PropTypes.func,
 		/**
-		 * Triggered on clicking button2. Defaults to onClose
+		 * Triggered on clicking a button. Defaults to onClose
 		 * @default onClose
 		 */
-		onButton2: React.PropTypes.func,
-		onButton3: React.PropTypes.func,
+		onButton: React.PropTypes.func,
+		/**
+		 * The body of the prompt to be displayed. Can be a react element or a html string.
+		 * Newlines are NOT converted into <br/>
+		 */
+		message: React.PropTypes.any,
+		children: React.PropTypes.any
 	},
 
 	getInitialState: function() {
@@ -186,7 +190,7 @@ Zotero.ui.ModalPrompt = React.createClass({
 				padding: "16px",
 				fontSize: "16px", fontFamily: "Tahoma, Geneva, sans-serif"
 			}}>
-				<h2 className="popup-title">{this.props.title}</h2>
+				<h2 style={{marginTop: 0}} className="popup-title">{this.props.title}</h2>
 				<p className="popup-body">{message}</p>
 				{checkbox}
 				{input}

@@ -182,6 +182,7 @@ Zotero.Inject = new function() {
 		
 		Zotero.Inject.loadReactComponents(['ModalPrompt']).then(function() {
 			let div = document.createElement('div');
+			div.style.cssText = 'z-index: 1000000; position: fixed; top: 0; left: 0; width: 100%; height: 100%';
 			let prompt = (
 				<Zotero.ui.ModalPrompt 
 					onClose={onClose}

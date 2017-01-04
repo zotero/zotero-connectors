@@ -134,7 +134,7 @@ Zotero.ui.ModalPrompt = React.createClass({
 		if (this.props.checkbox) {
 			checkbox = (<p className="checkbox">
 				<label>
-					<input type="checkbox" style={{verticalAlign: "middle"}} checked={this.state.checkboxChecked} onChange={this.onCheckboxChange}/>
+					<input type="checkbox" style={{verticalAlign: "middle", margin: "3px"}} checked={this.state.checkboxChecked} onChange={this.onCheckboxChange}/>
 					{this.props.checkboxText}
 				</label>
 			</p>);
@@ -174,13 +174,13 @@ Zotero.ui.ModalPrompt = React.createClass({
 		if (typeof message == "string") {
 			message = <span dangerouslySetInnerHTML={{__html: message}}/>
 		}
-		return (<div className="modal-overlay" style={{
+		return (<div className="z-modal-overlay" style={{
 			position: "fixed", top: "0",
 			width: "100%", height: "100%",
 			backgroundColor: "rgba(0, 0, 0, 0.3)",
 			zIndex: "1000000" // go big or go home
 		}} onClick={onClose}>
-			<div className="popup" style={{
+			<div className="z-popup" style={{
 				position: "fixed",
 				top: "50%", left: "50%",
 				transform: "translate(-50%, -50%)",
@@ -190,11 +190,11 @@ Zotero.ui.ModalPrompt = React.createClass({
 				padding: "16px",
 				fontSize: "16px", fontFamily: "Tahoma, Geneva, sans-serif"
 			}}>
-				<h2 style={{marginTop: 0}} className="popup-title">{this.props.title}</h2>
-				<p className="popup-body">{message}</p>
+				<h2 style={{margin: "0 0 1em 0"}} className="z-popup-title">{this.props.title}</h2>
+				<p style={{margin: "0 0 1em 0"}} className="z-popup-body">{message}</p>
 				{checkbox}
 				{input}
-				<div className="popup-buttons" style={{
+				<div className="z-popup-buttons" style={{
 					display: "flex", flexDirection: "row",
 					// this should be -16px (to counter padding), but firefox has awful bugs.
 					// filed here: https://bugzilla.mozilla.org/show_bug.cgi?id=1072638

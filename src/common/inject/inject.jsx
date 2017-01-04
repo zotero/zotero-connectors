@@ -209,12 +209,12 @@ Zotero.Inject = new function() {
 			checkbox: true,
 			checkboxBlock: true,
 			checkboxText: "I want to save directly to zotero.org",
+			button1Text: "Save",
 			button3Text: "More Information…",
 			title: `Saving to zotero.org`,
 			message: `
-				The Zotero Connector cannot communicate with Zotero on your computer. The Zotero Connector can save some pages directly to your zotero.org account, but for best results you should make sure Zotero is open before attempting to save.<br/><br/>
+				The Zotero Connector is unable to communicate with Zotero. The Zotero Connector can save some pages directly to your zotero.org account, but for best results you should make sure Zotero is open before attempting to save.<br/><br/>
 				You can <a href="https://www.zotero.org/download/">download Zotero</a> or <a href="https://www.zotero.org/support/kb/connector_zotero_unavailable">troubleshoot the connection</a> if necessary.
-
 			`
 		}).then(function(result) {
 			if (result.button == 3) {

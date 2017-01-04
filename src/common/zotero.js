@@ -69,13 +69,15 @@ var Zotero = new function() {
 	 */
 	this.initGlobal = function() {
 		Zotero.isBackground = true;
+		Zotero.Prefs.set('previousConnectorVersion', Zotero.version);
+		if (Zotero.Prefs.get('firstUseNoClient') === null) {
+			Zotero.Prefs.set('firstUseNoClient', Zotero.Prefs.get('connector.repo.lastCheck.localTime') == 0)
+		}
+		
 		Zotero.Debug.init();
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
 		Zotero.Repo.init();
-		
-		Zotero.promptFxConnectorMigration();
-		Zotero.Prefs.set('previousConnectorVersion', Zotero.version);
 	};
 	
 	/**
@@ -201,6 +203,7 @@ Zotero.Prefs = new function() {
 		"interceptKnownFileTypes": true,
 		"allowedInterceptHosts": [],
 		"previousConnectorVersion": "0",
+		"firstUseNoClient": null,
 		"firstSaveToServer": true,
 		
 		"proxies.transparent": true,

@@ -445,6 +445,3 @@ Zotero.initGlobal();
 // BrowserExt specific
 Zotero.WebRequestIntercept.init();
 Zotero.Proxies.init();
-if (Zotero.Prefs.get('firstSaveToServer') && Zotero.isFirefox) {
-	chrome.browserAction.setPopup({popup: 'popovers/firstSaveToServer/popover.html'});
-}

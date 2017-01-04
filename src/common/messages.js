@@ -151,7 +151,7 @@ var MESSAGES = {
 	Prefs: 
 		{
 			set: false,
-			getCallback: true
+			getAsync: true
 		},
 	Proxies: 
 		{

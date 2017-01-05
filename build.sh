@@ -48,15 +48,20 @@ function usage {
 Usage: $0 [-v VERSION] [-d]
 Options
  -v VERSION          use version VERSION
+ -b                  build bookmarklet
  -d                  build for debugging (enable translator tester, don't minify)
 DONE
 	exit 1
 }
 
-while getopts "v:d" opt; do
+BOOKMARKLET=0
+while getopts "v:bd" opt; do
 	case $opt in
 		v)
 			VERSION="$OPTARG"
+			;;
+		b)
+			BOOKMARKLET=1
 			;;
 		d)
 			DEBUG=1
@@ -339,109 +344,113 @@ else
 	echo "No Safari certificate found; not building Safari extension"
 fi
 
-echo -n "Building bookmarklet..."
-
-# Make bookmarklet
-for scpt in "iframe" "common" "inject"
-do
-	tmpScript="$BUILD_DIR/bookmarklet/${scpt}_tmp.js"
+if [ $BOOKMARKLET -eq 1 ]; then
+	echo -n "Building bookmarklet..."
 	
-	if [ "$scpt" == "iframe" ]; then
-		files=("${BOOKMARKLET_IFRAME_INCLUDE[@]}")
-	elif [ "$scpt" == "common" ]; then
-		files=("${BOOKMARKLET_COMMON_INCLUDE[@]}")
+	# Make bookmarklet
+	for scpt in "iframe" "common" "inject"
+	do
+		tmpScript="$BUILD_DIR/bookmarklet/${scpt}_tmp.js"
 		
-		echo "/******** BEGIN zotero.js ********/" >> "$tmpScript"
-		perl -p -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$SRCDIR/common/zotero.js" | LC_CTYPE=C tr -d '\r' >> "$tmpScript"
-		echo "" >> "$tmpScript"
-		echo "/******** END zotero.js ********/" >> "$tmpScript"
-	elif [ "$scpt" == "inject" ]; then
-		files=("${BOOKMARKLET_INJECT_INCLUDE[@]}")
-	fi
-	
-	# Bundle scripts
-	for f in "${files[@]}"
-	do
-		# Remove Windows CRs when bundling
-		echo "/******** BEGIN `basename $f` ********/"
-		LC_CTYPE=C tr -d '\r' < $f
-		echo ""
-		echo "/******** END `basename $f` ********/"
-	done >> "$tmpScript"
-	builtScript="$BUILD_DIR/bookmarklet/${scpt}.js"
-	ieTmpScript="$BUILD_DIR/bookmarklet/${scpt}_ie_tmp.js"
-	ieBuiltScript="$BUILD_DIR/bookmarklet/${scpt}_ie.js"
-	
-	if [ "$scpt" == "inject" ]; then
-		if [ ! -z $DEBUG ]; then
-			# Make test scripts
-			if [ ! -d "$BUILD_DIR/bookmarklet/tests" ]; then
-				mkdir "$BUILD_DIR/bookmarklet/tests"
-			fi
-			testScript="$BUILD_DIR/bookmarklet/tests/inject_test.js"
-			ieTestScript="$BUILD_DIR/bookmarklet/tests/inject_ie_test.js"
+		if [ "$scpt" == "iframe" ]; then
+			files=("${BOOKMARKLET_IFRAME_INCLUDE[@]}")
+		elif [ "$scpt" == "common" ]; then
+			files=("${BOOKMARKLET_COMMON_INCLUDE[@]}")
 			
-			# Make inject_test.js
-			cat "$BUILD_DIR/bookmarklet/common.js" "$tmpScript" > "$testScript"
-			for f in "${BOOKMARKLET_INJECT_TEST_INCLUDE[@]}"
-			do
-				echo "/******** BEGIN `basename $f` ********/"
-				LC_CTYPE=C tr -d '\r' < $f
-				echo ""
-				echo "/******** END `basename $f` ********/"
-			done >> "$testScript"
-			
-			# Make inject_ie_test.js
-			explorerify "$testScript" "$ieBuiltScript"
-			cat "$SRCDIR/bookmarklet/ie_compat.js" \
-				"$SRCDIR/bookmarklet/iframe_ie_compat.js" \
-				"$ieBuiltScript" \
-				"$SRCDIR/bookmarklet/inject_ie_compat.js" > "$ieTestScript"
-			rm "$ieBuiltScript"
+			echo "/******** BEGIN zotero.js ********/" >> "$tmpScript"
+			perl -p -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$SRCDIR/common/zotero.js" | LC_CTYPE=C tr -d '\r' >> "$tmpScript"
+			echo "" >> "$tmpScript"
+			echo "/******** END zotero.js ********/" >> "$tmpScript"
+		elif [ "$scpt" == "inject" ]; then
+			files=("${BOOKMARKLET_INJECT_INCLUDE[@]}")
 		fi
-	fi
-	
-	explorerify "$tmpScript" "$ieTmpScript"
-	if [ "$scpt" == "common" ]; then
-		cat "$SRCDIR/bookmarklet/ie_compat.js" >> "$ieTmpScript"
-	elif [ "$scpt" == "iframe" ]; then
-		cat "$SRCDIR/bookmarklet/iframe_ie_compat.js" >> "$ieTmpScript"
-	elif [ "$scpt" == "inject" ]; then
-		cat "$SRCDIR/bookmarklet/inject_ie_compat.js" >> "$ieTmpScript";
-	fi
-	
-	# Transpile. Minify if not in debug mode
-	if [ ! -z $DEBUG ]; then
-		"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015 -q >> "$LOG" 2>&1
-		"$CWD/node_modules/babel-cli/bin/babel.js" "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015 -q >> "$LOG" 2>&1
-		rm "$tmpScript" "$ieTmpScript"
-	else
-		"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
-		"$CWD/node_modules/babel-cli/bin/babel.js" "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
-		rm "$tmpScript" "$ieTmpScript"
-	fi
-done
-
-# Copy/minify auxiliary JS
-	if [ ! -z $DEBUG ]; then
-	cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BUILD_DIR/bookmarklet"
-else	
-	for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
-	do
-		"$CWD/node_modules/babel-cli/bin/babel.js" "$scpt" --out-file "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
+		
+		# Bundle scripts
+		for f in "${files[@]}"
+		do
+			# Remove Windows CRs when bundling
+			echo "/******** BEGIN `basename $f` ********/"
+			LC_CTYPE=C tr -d '\r' < $f
+			echo ""
+			echo "/******** END `basename $f` ********/"
+		done >> "$tmpScript"
+		builtScript="$BUILD_DIR/bookmarklet/${scpt}.js"
+		ieTmpScript="$BUILD_DIR/bookmarklet/${scpt}_ie_tmp.js"
+		ieBuiltScript="$BUILD_DIR/bookmarklet/${scpt}_ie.js"
+		
+		if [ "$scpt" == "inject" ]; then
+			if [ ! -z $DEBUG ]; then
+				# Make test scripts
+				if [ ! -d "$BUILD_DIR/bookmarklet/tests" ]; then
+					mkdir "$BUILD_DIR/bookmarklet/tests"
+				fi
+				testScript="$BUILD_DIR/bookmarklet/tests/inject_test.js"
+				ieTestScript="$BUILD_DIR/bookmarklet/tests/inject_ie_test.js"
+				
+				# Make inject_test.js
+				cat "$BUILD_DIR/bookmarklet/common.js" "$tmpScript" > "$testScript"
+				for f in "${BOOKMARKLET_INJECT_TEST_INCLUDE[@]}"
+				do
+					echo "/******** BEGIN `basename $f` ********/"
+					LC_CTYPE=C tr -d '\r' < $f
+					echo ""
+					echo "/******** END `basename $f` ********/"
+				done >> "$testScript"
+				
+				# Make inject_ie_test.js
+				explorerify "$testScript" "$ieBuiltScript"
+				cat "$SRCDIR/bookmarklet/ie_compat.js" \
+					"$SRCDIR/bookmarklet/iframe_ie_compat.js" \
+					"$ieBuiltScript" \
+					"$SRCDIR/bookmarklet/inject_ie_compat.js" > "$ieTestScript"
+				rm "$ieBuiltScript"
+			fi
+		fi
+		
+		explorerify "$tmpScript" "$ieTmpScript"
+		if [ "$scpt" == "common" ]; then
+			cat "$SRCDIR/bookmarklet/ie_compat.js" >> "$ieTmpScript"
+		elif [ "$scpt" == "iframe" ]; then
+			cat "$SRCDIR/bookmarklet/iframe_ie_compat.js" >> "$ieTmpScript"
+		elif [ "$scpt" == "inject" ]; then
+			cat "$SRCDIR/bookmarklet/inject_ie_compat.js" >> "$ieTmpScript";
+		fi
+		
+		# Transpile. Minify if not in debug mode
+		if [ ! -z $DEBUG ]; then
+			"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015 -q >> "$LOG" 2>&1
+			"$CWD/node_modules/babel-cli/bin/babel.js" "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015 -q >> "$LOG" 2>&1
+			rm "$tmpScript" "$ieTmpScript"
+		else
+			"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
+			"$CWD/node_modules/babel-cli/bin/babel.js" "$ieTmpScript" --out-file "$ieBuiltScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
+			rm "$tmpScript" "$ieTmpScript"
+		fi
 	done
+	
+	# Copy/minify auxiliary JS
+		if [ ! -z $DEBUG ]; then
+		cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BUILD_DIR/bookmarklet"
+	else	
+		for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
+		do
+			"$CWD/node_modules/babel-cli/bin/babel.js" "$scpt" --out-file "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
+		done
+	fi
+	
+	# Copy HTML to dist directory
+	cp "$SRCDIR/bookmarklet/bookmarklet.html" \
+		"$SRCDIR/bookmarklet/debug_mode.html" \
+		"$SRCDIR/bookmarklet/iframe.html" \
+		"$SRCDIR/bookmarklet/iframe_ie.html" \
+		"$SRCDIR/bookmarklet/auth_complete.html" \
+		"$SRCDIR/common/itemSelector/"* \
+		"$BUILD_DIR/bookmarklet"
+	cp "$SRCDIR/bookmarklet/htaccess" "$BUILD_DIR/bookmarklet/.htaccess"
+	rm -rf "$BUILD_DIR/bookmarklet/images"
+	mkdir "$BUILD_DIR/bookmarklet/images"
+	cp $ICONS $IMAGES "$BUILD_DIR/bookmarklet/images"
+	echo "done"
+else
+	rmdir "$BUILD_DIR/bookmarklet"
 fi
-
-# Copy HTML to dist directory
-cp "$SRCDIR/bookmarklet/bookmarklet.html" \
-	"$SRCDIR/bookmarklet/debug_mode.html" \
-	"$SRCDIR/bookmarklet/iframe.html" \
-	"$SRCDIR/bookmarklet/iframe_ie.html" \
-	"$SRCDIR/bookmarklet/auth_complete.html" \
-	"$SRCDIR/common/itemSelector/"* \
-	"$BUILD_DIR/bookmarklet"
-cp "$SRCDIR/bookmarklet/htaccess" "$BUILD_DIR/bookmarklet/.htaccess"
-rm -rf "$BUILD_DIR/bookmarklet/images"
-mkdir "$BUILD_DIR/bookmarklet/images"
-cp $ICONS $IMAGES "$BUILD_DIR/bookmarklet/images"
-echo "done"

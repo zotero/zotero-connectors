@@ -273,7 +273,9 @@ for browser in "browserExt" "safari"; do
 		rm -rf "$browser_builddir/tools"
 	fi
 done
-	
+
+gulp -v >/dev/null 2>&1 || { echo >&2 "gulp not found -- aborting"; exit 1; }
+
 # Update scripts
 if [ ! -z $DEBUG ]; then
 	gulp process-custom-scripts --version "$VERSION" > /dev/null 2>&1

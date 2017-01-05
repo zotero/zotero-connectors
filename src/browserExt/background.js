@@ -94,7 +94,14 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onStateChange = function(isOnline) {
 		if(isOnline) {
+			Zotero.Prefs.set('firstUseNoClient', false);
 			Zotero.ContentTypeHandler.enable();
+			
+			chrome.tabs.query({active: true}, function(tabs) {
+				for (let tab of tabs) {
+					_updateExtensionUI(tab);
+				}
+			});
 		} else {
 			for (var i in _tabInfo) {
 				if (_tabInfo[i].translators && _tabInfo[i].translators.length) {
@@ -204,6 +211,7 @@ Zotero.Connector_Browser = new function() {
 	 * Update status and tooltip of Zotero button
 	 */
 	function _updateExtensionUI(tab) {
+		if (Zotero.Prefs.get('firstUseNoClient')) return _showFirstTimeUI(tab);
 		chrome.contextMenus.removeAll();
 
 		if (_isDisabledForURL(tab.url)) {
@@ -235,6 +243,18 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 	
+	function _showFirstTimeUI(tab) {
+		chrome.browserAction.setIcon({
+			tabId: tab.id,
+			path: "images/zotero-new-z-16px.png"
+		});
+		chrome.browserAction.setTitle({
+			tabId: tab.id,
+			title: "Zotero Connector"
+		});
+		chrome.browserAction.enable(tab.id);
+	}
+	
 	/**
 	 * Removes information about a specific tab
 	 */
@@ -247,9 +267,6 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _showZoteroStatus(tabID) {
-		chrome.browserAction.disable(tabID);
-		chrome.contextMenus.removeAll();
-		
 		Zotero.Connector.checkIsOnline(function(isOnline) {
 			var icon, title;
 			if (isOnline) {
@@ -269,6 +286,8 @@ Zotero.Connector_Browser = new function() {
 				title: title
 			});
 		});
+		chrome.browserAction.disable(tabID);
+		chrome.contextMenus.removeAll();
 	}
 	
 	function _enableForTab(tabID) {
@@ -366,8 +385,12 @@ Zotero.Connector_Browser = new function() {
 		});
 	}
 	
-	function _save(tab) {
-		if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
+	function _browserAction(tab) {
+		if (Zotero.Prefs.get('firstUseNoClient')) {
+			Zotero.Prefs.set('firstUseNoClient', false);
+			Zotero.Connector_Browser.openTab('https://www.zotero.org/connector_start');
+		}
+		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
 			_saveWithTranslator(tab, 0);
 		} else {
 			_saveAsWebpage(tab);
@@ -438,7 +461,7 @@ Zotero.Connector_Browser = new function() {
 		});
 	});
 
-	chrome.browserAction.onClicked.addListener(_save);
+	chrome.browserAction.onClicked.addListener(_browserAction);
 }
 
 Zotero.initGlobal();

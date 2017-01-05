@@ -70,6 +70,17 @@ Zotero.Translate.ItemSaver.ATTACHMENT_MODE_DOWNLOAD = 1;
 Zotero.Translate.ItemSaver.ATTACHMENT_MODE_FILE = 2;
 
 Zotero.Translate.ItemSaver.prototype = {
+	saveSnapshot: function() {
+		var item = {
+			itemType: 'webpage',
+			title: document.title,
+			url: document.location.href,
+			attachments: [],
+			accessDate: Zotero.Date.dateToSQL(new Date())
+		};
+		return this.saveItems([item]);
+	},
+
 	/**
 	 * Saves items to Standalone or the server
 	 * @param items Items in Zotero.Item.toArray() format

@@ -105,8 +105,16 @@ if(isTopWindow) {
 		Zotero.Connector.callMethod("saveSnapshot", data,
 			function(returnValue, status) {
 				if(returnValue === false) {
-					if(status === 0) {
-						new Zotero.ProgressWindow.ErrorMessage("clientRequired");
+					if (status === 0) {
+						if (document.contentType != 'application/pdf') {
+							Zotero.ProgressWindow.changeHeadline('Saving to zotero.org');
+							let itemSaver = new Zotero.Translate.ItemSaver({});
+							itemSaver.saveSnapshot().then(function() {
+								progress.setProgress(100);
+							});
+						} else {
+							new Zotero.ProgressWindow.ErrorMessage("clientRequired");
+						}
 					} else {
 						new Zotero.ProgressWindow.ErrorMessage("translationError");
 					}
@@ -318,7 +326,6 @@ Zotero.Inject = new function() {
 					}
 				});
 				_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
-					// this relays an item from this tab to the top level of the window
 					if(progress === 0) return;
 					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
 						[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);

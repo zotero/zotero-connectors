@@ -87,7 +87,7 @@ Zotero.Connector_Browser = new function() {
 		var tab = safari.application.activeBrowserWindow.activeTab;
 		if (Zotero.Prefs.get('firstUseNoClient')) {
 			Zotero.Prefs.set('firstUseNoClient', false);
-			Zotero.Connector_Browser.openTab('https://www.zotero.org/start_connector');
+			Zotero.Connector_Browser.openTab('https://www.zotero.org/connector_start');
 		}
 		else if (command === "zotero-button") {
 			if(tab.translators && tab.translators.length) {

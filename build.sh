@@ -104,7 +104,7 @@ SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
 CHROME_EXT="$DISTDIR/Zotero_Connector-$VERSION.crx"
 
 ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-new-z-16px.png  \
-    $SRCDIR/common/images/zotero-z-16px-offline.png"
+    $SRCDIR/common/images/*"
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png $EXTENSION_SKIN_DIR/prefs-proxies.png"
 

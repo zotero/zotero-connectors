@@ -242,7 +242,7 @@ Zotero.API = new function() {
 				return;
 			}
 			
-			var url = ZOTERO_CONFIG.API_URL+"users/"+userInfo.userID+"/items?key="+userInfo.apiKey;
+			var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo.userID + "/items";
 			Zotero.HTTP.doPost(url, JSON.stringify(payload), function(xmlhttp) {
 				if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
 					callback(xmlhttp.status, xmlhttp.responseText);
@@ -263,6 +263,7 @@ Zotero.API = new function() {
 				}
 			}, {
 				"Content-Type":"application/json",
+				"Zotero-API-Key": userInfo.apiKey,
 				"Zotero-API-Version":"2"
 			});
 		});
@@ -330,7 +331,7 @@ Zotero.API = new function() {
 				return;
 			}
 			
-			var url = ZOTERO_CONFIG.API_URL+"users/"+userInfo.userID+"/items/"+attachment.key+"/file?key="+userInfo.apiKey;
+			var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo.userID + "/items/" + attachment.key + "/file";
 			Zotero.HTTP.doPost(url, data, function(xmlhttp) {
 				if(xmlhttp.status !== 200) {
 					var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
@@ -397,6 +398,7 @@ Zotero.API = new function() {
 			{
 				"Content-Type":"application/x-www-form-urlencoded",
 				"If-None-Match":"*",
+				"Zotero-API-Key": userInfo.apiKey,
 				"Zotero-API-Version":"2"
 			});
 		});

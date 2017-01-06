@@ -76,7 +76,7 @@ Zotero.Translate.ItemSaver.prototype = {
 			title: document.title,
 			url: document.location.href,
 			attachments: [],
-			accessDate: Zotero.Date.dateToSQL(new Date())
+			accessDate: Zotero.Date.dateToSQL(new Date(), true)
 		};
 		return this.saveItems([item]);
 	},

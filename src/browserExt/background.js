@@ -203,8 +203,14 @@ Zotero.Connector_Browser = new function() {
 		return Zotero.Promise.all(promises);
 	};
 
-	this.openTab = function(url) {
-		chrome.tabs.create({url});
+	this.openTab = function(url, tab) {
+		var tabProps = {};
+		if (tab) {
+			tabProps = {openerTabId: tab.id};
+			chrome.tabs.create(Object.assign({url}, tabProps));
+		} else {
+			chrome.tabs.query({active: true, lastFocusedWindow: true}, (tabs) => this.openTab(url, tabs[0]));
+		}
 	};
 
 	/**

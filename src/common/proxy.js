@@ -234,7 +234,7 @@ Zotero.Proxies = new function() {
 		}
 
 		// Otherwise, redirect.
-		if (Zotero.Proxies.showRedirectNotification && details.frameId == 0) {
+		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
 			_showNotification('Proxy Redirection', `${url.parse(details.url).host} was automatically redirected through a proxy at ${proxiedURI.host}`);
 		}
 			

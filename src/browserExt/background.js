@@ -93,25 +93,14 @@ Zotero.Connector_Browser = new function() {
 	 * Called when Zotero goes online or offline
 	 */
 	this.onStateChange = function(isOnline) {
-		if(isOnline) {
+		if (isOnline) {
 			Zotero.Prefs.set('firstUseNoClient', false);
 			Zotero.ContentTypeHandler.enable();
-			
-			chrome.tabs.query({active: true}, function(tabs) {
-				for (let tab of tabs) {
-					_updateExtensionUI(tab);
-				}
-			});
 		} else {
 			for (var i in _tabInfo) {
 				if (_tabInfo[i].translators && _tabInfo[i].translators.length) {
 					_tabInfo[i].translators = _tabInfo[i].translators.filter(
 						(t) => t.runMode !== Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE);
-					
-					chrome.tabs.get(parseInt(i), function(tab) {
-						// If we have translators then it is not a pdf
-						_updateExtensionUI(tab);
-					})
 				}
 			}
 			
@@ -148,7 +137,6 @@ Zotero.Connector_Browser = new function() {
 	this.onFrameLoaded = function(args, tab, frameId) {
 		if (_isDisabledForURL(tab.url)) {
 			_clearInfoForTab(tab.id);
-			_showZoteroStatus(tab.id);
 			return;
 		}
 		var url = args[0];
@@ -217,7 +205,10 @@ Zotero.Connector_Browser = new function() {
 	 * Update status and tooltip of Zotero button
 	 */
 	function _updateExtensionUI(tab) {
-		if (Zotero.Prefs.get('firstUseNoClient')) return _showFirstTimeUI(tab);
+		// Doing this would be nice, but as chrome currently stands
+		// it resets default icon on tab refresh, so this creates annoying flashing
+		// http://stackoverflow.com/questions/12710061/why-does-a-browser-actions-default-icon-reapper-after-a-custom-icon-was-applied
+		// if (Zotero.Prefs.get('firstUseNoClient')) return _showFirstTimeUI(tab);
 		chrome.contextMenus.removeAll();
 
 		if (_isDisabledForURL(tab.url)) {
@@ -457,7 +448,6 @@ Zotero.Connector_Browser = new function() {
 		if(!changeInfo.url) return;
 		Zotero.debug("Connector_Browser: URL changed for tab");
 		_clearInfoForTab(tabID);
-		_showZoteroStatus();
 		chrome.tabs.sendMessage(tabID, ["pageModified"], null);
 	});
 	

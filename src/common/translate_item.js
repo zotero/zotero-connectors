@@ -115,7 +115,14 @@ Zotero.Translate.ItemSaver.prototype = {
 				deferred.resolve(items);
 				if (haveAttachments) this._pollForProgress(items, attachmentCallback);
 			} else {
-				deferred.resolve(this._saveToServer(items, attachmentCallback));
+				Zotero.Inject.checkSaveToServer().then(function(proceed) {
+					if (proceed) {
+						deferred.resolve(this._saveToServer(items, attachmentCallback));
+					} else {
+						deferred.resolve([]);
+						Zotero.ProgressWindow.close();
+					}
+				}.bind(this));
 			}
 		}.bind(this));
 		return deferred.promise;

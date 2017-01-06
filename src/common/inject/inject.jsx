@@ -83,49 +83,6 @@ if(isTopWindow) {
 			Zotero.ProgressWindow.startCloseTimer(8000);
 		}
 	});
-	Zotero.Messaging.addMessageListener("saveSnapshot", function (title) {
-		var html = document.documentElement.innerHTML;
-		
-		var data = {
-			"url": document.location.toString(),
-			"cookie": document.cookie,
-			"html": html
-		};
-		
-		if (document.contentType == 'application/pdf') {
-			data.pdf = true;
-			var image = "attachment-pdf";
-		} else {
-			var image = "webpage";
-		}
-		
-		var progress = new Zotero.ProgressWindow.ItemProgress(
-			Zotero.ItemTypes.getImageSrc(image), title || document.title
-		);
-		Zotero.Connector.callMethod("saveSnapshot", data,
-			function(returnValue, status) {
-				if(returnValue === false) {
-					if (status === 0) {
-						if (document.contentType != 'application/pdf') {
-							Zotero.ProgressWindow.changeHeadline('Saving to zotero.org');
-							let itemSaver = new Zotero.Translate.ItemSaver({});
-							itemSaver.saveSnapshot().then(function() {
-								progress.setProgress(100);
-							});
-						} else {
-							new Zotero.ProgressWindow.ErrorMessage("clientRequired");
-						}
-					} else {
-						new Zotero.ProgressWindow.ErrorMessage("translationError");
-					}
-					Zotero.ProgressWindow.startCloseTimer(8000);
-				} else {
-					progress.setProgress(100);
-					Zotero.ProgressWindow.startCloseTimer(2500);
-				}
-			});
-	});
-	
 	Zotero.Messaging.addMessageListener("confirm", function (props) {
 		return Zotero.Inject.confirm(props);
 	});
@@ -231,36 +188,76 @@ Zotero.Inject = new function() {
 			return result.button == 1;
 		});
 	};
-	
+
 	/**
-	 * Translates this page.
-	 * Checks if Zotero is unavailable and prompts about saving to zotero.org if first time
+	 * Prompts about saving to zotero.org if attempting for the first time
+	 * 
+	 * return {Promise<Boolean>} whether save to server should proceed
 	 */
-	this.translate = function(translatorID) {
-		Zotero.Connector.checkIsOnline(function(status) {
-			new Zotero.Promise(function(resolve) {
-				if (!status) {
-					resolve(Zotero.Prefs.getAsync('firstSaveToServer'));
-				} else {
-					resolve(false);
-				}
-			}).then(function(firstSaveToServer) {
-				if (firstSaveToServer) {
-					return Zotero.Inject.firstSaveToServerPrompt().then(function(proceed) {
-						if (proceed) {
-							Zotero.Prefs.set('firstSaveToServer', false);
-						}
-						return proceed;
-					});
-				}
-				return true;
-			}).then(function(proceed) {
-				if (!proceed) return;
-				Zotero.Messaging.sendMessage("progressWindow.show", null);
-				_translate.setTranslator(Zotero.Inject.translators[translatorID]);
-				_translate.translate();
-			})
+	this.checkSaveToServer = function() {
+		return Zotero.Prefs.getAsync('firstSaveToServer')
+		.then(function(firstSaveToServer) {
+			if (firstSaveToServer) {
+				return Zotero.Inject.firstSaveToServerPrompt().then(function(proceed) {
+					if (proceed) {
+						Zotero.Prefs.set('firstSaveToServer', false);
+					}
+					return proceed;
+				});
+			}
+			return true;
 		});
+	}
+	
+	this.translate = function(translatorID) {
+		Zotero.Messaging.sendMessage("progressWindow.show", null);
+		_translate.setTranslator(Zotero.Inject.translators[translatorID]);
+		_translate.translate();
+	};
+	
+	this.saveAsWebpage = function (title) {
+		var html = document.documentElement.innerHTML;
+		
+		var data = {
+			"url": document.location.toString(),
+			"cookie": document.cookie,
+			"html": html
+		};
+		
+		if (document.contentType == 'application/pdf') {
+			data.pdf = true;
+			var image = "attachment-pdf";
+		} else {
+			var image = "webpage";
+		}
+		
+		var progress = new Zotero.ProgressWindow.ItemProgress(
+			Zotero.ItemTypes.getImageSrc(image), title || document.title
+		);
+		Zotero.Connector.callMethod("saveSnapshot", data,
+			function(returnValue, status) {
+				if (returnValue === false) {
+					// Client unavailable
+					if (status === 0) {
+						// Attempt saving to server if not pdf
+						if (document.contentType != 'application/pdf') {
+							Zotero.ProgressWindow.changeHeadline('Saving to zotero.org');
+							let itemSaver = new Zotero.Translate.ItemSaver({});
+							itemSaver.saveSnapshot().then(function(items) {
+								if (items.length) progress.setProgress(100);
+							});
+						} else {
+							new Zotero.ProgressWindow.ErrorMessage("clientRequired");
+						}
+					} else {
+						new Zotero.ProgressWindow.ErrorMessage("translationError");
+					}
+					Zotero.ProgressWindow.startCloseTimer(8000);
+				} else {
+					progress.setProgress(100);
+					Zotero.ProgressWindow.startCloseTimer(2500);
+				}
+			});
 	};
 	
 	/**
@@ -364,10 +361,13 @@ if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.p
 			if(data[0] !== instanceID) return;
 			Zotero.Inject.translate(data[1]);
 		});
+		// add a listener to save as webpage when translators unavailable
+		Zotero.Messaging.addMessageListener("saveAsWebpage", Zotero.Inject.saveAsWebpage);
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {
 			Zotero.Inject.detect(true);
 		});
+
 		// initialize
 		Zotero.initInject();
 		

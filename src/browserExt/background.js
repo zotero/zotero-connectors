@@ -413,7 +413,7 @@ Zotero.Connector_Browser = new function() {
 	
 	function _saveAsWebpage(tab) {
 		if (tab.id != -1) {
-			chrome.tabs.sendMessage(tab.id, ["saveSnapshot", tab.title], null);
+			chrome.tabs.sendMessage(tab.id, ["saveAsWebpage", tab.title], null);
 		}
 		// Handle right-click on PDF overlay, which exists in a weird non-tab state
 		else {
@@ -423,7 +423,7 @@ Zotero.Connector_Browser = new function() {
 					active: true
 				},
 				function (tabs) {
-					chrome.tabs.sendMessage(tabs[0].id, ["saveSnapshot", tab.title], null);
+					chrome.tabs.sendMessage(tabs[0].id, ["saveAsWebpage", tab.title], null);
 				}
 			);
 		}

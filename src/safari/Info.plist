@@ -93,6 +93,6 @@
 	<key>Update Manifest URL</key>
 	<string>https://www.zotero.org/download/everywhere/safari/update.plist</string>
 	<key>Website</key>
-	<string>http://www.zotero.org/</string>
+	<string>https://www.zotero.org/</string>
 </dict>
 </plist>

@@ -69,7 +69,7 @@ Zotero.Errors = new function() {
 				body += key + '=' + encodeURIComponent(parts[key]) + '&';
 			}
 			body = body.substr(0, body.length - 1);
-			Zotero.HTTP.doPost("http://www.zotero.org/repo/report", body, function(xmlhttp) {
+			Zotero.HTTP.doPost("https://www.zotero.org/repo/report", body, function(xmlhttp) {
 				if(!xmlhttp.responseXML){
 					try {
 						if (xmlhttp.status>1000){

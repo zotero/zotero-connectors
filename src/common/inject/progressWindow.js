@@ -163,10 +163,10 @@ Zotero.ProgressWindow = new function() {
 		for(var j in cssDescription) link.style[j] = cssDescription[j];
 		
 		if (err === "translationError") {
-			this._div.appendChild(doc.createTextNode("An error occurred while saving this item. Check "));
+			this._div.appendChild(doc.createTextNode("An error occurred while saving this item. See "));
 			
-			link.title = link.href = "http://www.zotero.org/documentation/known_translator_issues";
-			link.appendChild(doc.createTextNode("Known Translator Issues"));
+			link.title = link.href = "https://www.zotero.org/support/troubleshooting_translator_issues";
+			link.appendChild(doc.createTextNode("Troubleshooting Translator Issues"));
 			
 			this._div.appendChild(link);
 			this._div.appendChild(doc.createTextNode(" for more information."));

@@ -210,10 +210,7 @@ Zotero.Connector_Browser = new function() {
 	 * Update status and tooltip of Zotero button
 	 */
 	function _updateExtensionUI(tab) {
-		// Doing this would be nice, but as chrome currently stands
-		// it resets default icon on tab refresh, so this creates annoying flashing
-		// http://stackoverflow.com/questions/12710061/why-does-a-browser-actions-default-icon-reapper-after-a-custom-icon-was-applied
-		// if (Zotero.Prefs.get('firstUseNoClient')) return _showFirstTimeUI(tab);
+		if (Zotero.Prefs.get('firstUseNoClient')) return _showFirstTimeUI(tab);
 		chrome.contextMenus.removeAll();
 
 		if (_isDisabledForURL(tab.url)) {
@@ -248,7 +245,7 @@ Zotero.Connector_Browser = new function() {
 	function _showFirstTimeUI(tab) {
 		chrome.browserAction.setIcon({
 			tabId: tab.id,
-			path: "images/zotero-new-z-16px.png"
+			path: "images/zotero-z-16px-offline.png"
 		});
 		chrome.browserAction.setTitle({
 			tabId: tab.id,
@@ -449,10 +446,11 @@ Zotero.Connector_Browser = new function() {
 	chrome.tabs.onRemoved.addListener(_clearInfoForTab);
 
 	chrome.tabs.onUpdated.addListener(function(tabID, changeInfo, tab) {
-		// Rerun translation if a tab's URL changes
+		_updateExtensionUI(tab);
 		if(!changeInfo.url) return;
 		Zotero.debug("Connector_Browser: URL changed for tab");
 		_clearInfoForTab(tabID);
+		// Rerun translation
 		chrome.tabs.sendMessage(tabID, ["pageModified"], null);
 	});
 	

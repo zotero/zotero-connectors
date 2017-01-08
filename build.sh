@@ -55,8 +55,11 @@ DONE
 }
 
 BOOKMARKLET=0
-while getopts "v:bd" opt; do
+while getopts "hv:bd" opt; do
 	case $opt in
+		h)
+			usage
+			;;
 		v)
 			VERSION="$OPTARG"
 			;;

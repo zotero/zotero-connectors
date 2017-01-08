@@ -78,13 +78,7 @@ if [ ! -z $1 ]; then
 fi
 
 if [ -z $VERSION ]; then
-	pushd "$CWD" > /dev/null
-    if [ -z $DEFAULT_VERSION ]; then
-        VERSION="5.0"
-    else
-        VERSION="$DEFAULT_VERSION"
-    fi
-	popd > /dev/null
+	VERSION="4.999.0"
 fi
 
 if [ -z "$BUILD_DIR" ]; then

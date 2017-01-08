@@ -39,7 +39,7 @@ const argv = require('yargs')
 	.describe('v', 'Version of the extension')
 	.help('h')
 	.alias('h', 'help')
-	.default({'v': '5.0', p: false})
+	.default({'v': '4.999.0', p: false})
 	.argv;
 
 var injectInclude = [

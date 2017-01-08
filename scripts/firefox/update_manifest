@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""
+Update a WebExtension build manifest with info on a given build
+"""
+import argparse
+import sys
+import shutil
+import json
+import traceback
+from operator import itemgetter
+
+parser = argparse.ArgumentParser(
+    description='Update a WebExtension build manifest with info on a given build',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+parser.add_argument('-f', '--file', required=True, help="path to updates.json")
+parser.add_argument('-v', '--version', required=True, help='version number of XPI')
+parser.add_argument('-s', '--sha', required=True, help="SHA256 of XPI")
+
+args = parser.parse_args()
+
+def main():
+    try:
+        file = args.file
+        version = args.version
+        sha = args.sha
+        
+        # Read in existing file
+        with open(file) as f:
+            manifest = json.loads(f.read())
+        
+        updates = manifest['addons']['zotero@chnm.gmu.edu']['updates']
+        
+        if any(u['version'] == version for u in updates):
+            sys.stderr.write(
+                "Update with version '{0}' already exists in manifest\n"
+                .format(version)
+            )
+            return 1
+        
+        url = "https://download.zotero.org/connector/firefox/Zotero_Connector-{0}.xpi"
+        updates.append({
+            "version": version,
+            "update_link": url.format(version),
+            "update_hash": "sha256:" + sha
+        })
+        updates = sorted(updates, key=itemgetter('version'))
+        
+        # Keep last 5 versions
+        manifest['addons']['zotero@chnm.gmu.edu']['updates'] = updates[-5:]
+        
+        # Back up JSON file
+        shutil.copy2(file, file + '.bak')
+        
+        # Write new file
+        manifest = json.dumps(manifest, indent=2)
+        with open(file, 'w') as f:
+            f.write(manifest + "\n")
+        
+        print(manifest)
+        
+        return 0
+    
+    except Exception as err:
+        sys.stderr.write("\n" + traceback.format_exc())
+        return 1
+
+if __name__ == '__main__':
+    sys.exit(main())

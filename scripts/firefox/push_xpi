@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
+BUILD_DIR="$( cd "$DIR"/../../build && pwd )"
+
+. "$ROOT_DIR/config.sh"
+
+cd "$DIR"
+
+XPI="`./get_xpi_path`"
+VERSION="$( cat "$BUILD_DIR/browserExt/manifest.json" | jq -r .version )"
+HASH="$( shasum -a 256 "$XPI" | cut -d' ' -f1 )"
+
+./upload_signed_xpi
+scp $DEPLOY_HOST:"$MANIFEST_DEPLOY_PATH/updates.json" "$BUILD_DIR/updates.json"
+./update_manifest -f "$BUILD_DIR/updates.json" -v $VERSION -s $HASH
+scp "$BUILD_DIR/updates.json" $DEPLOY_HOST:"$MANIFEST_DEPLOY_PATH/updates.json"
+rm "$BUILD_DIR/updates.json"
+
+ssh $DEPLOY_HOST $DEPLOY_CMD -n

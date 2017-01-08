@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BUILD_DIR="$( cd "$DIR"/../../build && pwd )"
+
+if [ "$( ls "$BUILD_DIR"/*.xpi | wc -l )" -gt 1 ]; then
+	echo "More than one XPI found"
+	exit 1
+fi
+
+ls "$BUILD_DIR"/*.xpi

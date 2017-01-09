@@ -70,17 +70,24 @@ var Zotero = new function() {
 	this.initGlobal = function() {
 		Zotero.isBackground = true;
 		
-		chrome.runtime.getPlatformInfo(function (info) {
-			switch (info.os) {
-			case 'mac':
-			case 'win':
-				this.platform = info.os;
-				break;
-			
-			default:
-				this.platform = 'unix';
-			}
-		}.bind(this));
+		if (Zotero.isBrowserExt) {
+			chrome.runtime.getPlatformInfo(function (info) {
+				switch (info.os) {
+					case 'mac':
+					case 'win':
+						this.platform = info.os;
+						break;
+
+					default:
+						this.platform = 'unix';
+				}
+			}.bind(this));
+		} else if (Zotero.isSafari) {
+			this.platform = 'osx';
+		} else {
+			// IE and the likes? Who knows
+			this.platform = 'win';
+		}
 		
 		Zotero.Prefs.set('previousConnectorVersion', Zotero.version);
 		if (Zotero.Prefs.get('firstUseNoClient') === null) {

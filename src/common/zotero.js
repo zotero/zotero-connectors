@@ -69,6 +69,19 @@ var Zotero = new function() {
 	 */
 	this.initGlobal = function() {
 		Zotero.isBackground = true;
+		
+		chrome.runtime.getPlatformInfo(function (info) {
+			switch (info.os) {
+			case 'mac':
+			case 'win':
+				this.platform = info.os;
+				break;
+			
+			default:
+				this.platform = 'unix';
+			}
+		}.bind(this));
+		
 		Zotero.Prefs.set('previousConnectorVersion', Zotero.version);
 		if (Zotero.Prefs.get('firstUseNoClient') === null) {
 			Zotero.Prefs.set('firstUseNoClient', Zotero.Prefs.get('connector.repo.lastCheck.localTime') == 0)

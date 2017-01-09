@@ -243,9 +243,16 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _showFirstTimeUI(tab) {
+		if (Zotero.isFirefox) {
+			let platform = Zotero.platform;
+			var icon = `${Zotero.platform}/zotero-z-${window.devicePixelRatio > 1 ? 32 : 16}px-australis.png`;
+		}
+		else {
+			var icon = 'zotero-z-16px-offline.png';
+		}
 		chrome.browserAction.setIcon({
 			tabId: tab.id,
-			path: "images/zotero-z-16px-offline.png"
+			path: `images/${icon}`
 		});
 		chrome.browserAction.setTitle({
 			tabId: tab.id,

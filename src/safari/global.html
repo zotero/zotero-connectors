@@ -155,7 +155,7 @@ Zotero.Connector_Browser = new function() {
 		let tab = safari.application.activeBrowserWindow.activeTab;
 		let title = tab.title.split('/');
 		title = title[title.length-1];
-		tab.page.dispatchMessage("saveSnapshot", title);
+		tab.page.dispatchMessage("saveAsWebpage", title);
 	}
 
 	this.openTab = function(url) {

@@ -133,7 +133,7 @@ Zotero.ui.ModalPrompt = React.createClass({
 		
 		if (this.props.checkbox) {
 			checkbox = (<p className="checkbox">
-				<label>
+				<label style={{fontWeight: 'initial'}}>
 					<input type="checkbox" style={{verticalAlign: "middle", margin: "3px"}} checked={this.state.checkboxChecked} onChange={this.onCheckboxChange}/>
 					{this.props.checkboxText}
 				</label>
@@ -155,10 +155,20 @@ Zotero.ui.ModalPrompt = React.createClass({
 					disabled={i==1 && this.state.checkboxBlocked}
 					ref={`button${i}`}
 					style={{
+						all: 'initial',
+						WebkitAppearance: 'button',
+						textAlign: 'center',
+						fontFamily: 'inherit',
+						whiteSpace: 'nowrap',
 						marginRight: i > 1 ? "16px" : "0",
 						minWidth: "100px",
-						padding: "6px 10px",
-						fontSize: "16px"
+						padding: "0px 8px",
+						fontSize: "13px",
+						background: '#ffffff',
+						color: "#444",
+						borderRadius: '6px',
+						border: '1px solid #bbb',
+						height: '21px'
 				}}/>
 			}
 		}
@@ -185,13 +195,15 @@ Zotero.ui.ModalPrompt = React.createClass({
 				top: "50%", left: "50%",
 				transform: "translate(-50%, -50%)",
 				backgroundColor: "#ededed",
+				color: "#444",
 				border: "#7a0000 2px solid",
 				maxWidth: "50%", minWidth: "400px", 
 				padding: "16px",
-				fontSize: "16px", fontFamily: "Tahoma, Geneva, sans-serif"
+				lineHeight: '1.5',
+				fontSize: "16px", fontFamily: "Helvetica, Geneva, sans-serif"
 			}}>
-				<h2 style={{margin: "0 0 1em 0"}} className="z-popup-title">{this.props.title}</h2>
-				<p style={{margin: "0 0 1em 0"}} className="z-popup-body">{message}</p>
+				<h2 style={{color: 'inherit', margin: "0 0 1em 0"}} className="z-popup-title">{this.props.title}</h2>
+				<p style={{color: 'inherit', margin: "0 0 1em 0"}} className="z-popup-body">{message}</p>
 				{checkbox}
 				{input}
 				<div className="z-popup-buttons" style={{

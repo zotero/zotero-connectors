@@ -114,7 +114,7 @@ Zotero.Translate.ItemSaver.prototype = {
 				}
 				deferred.resolve(items);
 				if (haveAttachments) this._pollForProgress(items, attachmentCallback);
-			} else {
+			} else if (status == 0) {
 				Zotero.Inject.checkSaveToServer().then(function(proceed) {
 					if (proceed) {
 						deferred.resolve(this._saveToServer(items, attachmentCallback));
@@ -123,6 +123,8 @@ Zotero.Translate.ItemSaver.prototype = {
 						Zotero.ProgressWindow.close();
 					}
 				}.bind(this));
+			} else {
+				deferred.reject(new Error(`Zotero responded with ${status}`))
 			}
 		}.bind(this));
 		return deferred.promise;

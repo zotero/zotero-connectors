@@ -191,22 +191,28 @@ Zotero.Inject = new function() {
 
 	/**
 	 * Prompts about saving to zotero.org if attempting for the first time
+	 * Prompt only available on BrowserExt which supports programmatic injection
+	 * Otherwise just resolves to true
 	 * 
 	 * return {Promise<Boolean>} whether save to server should proceed
 	 */
 	this.checkSaveToServer = function() {
-		return Zotero.Prefs.getAsync('firstSaveToServer')
-		.then(function(firstSaveToServer) {
-			if (firstSaveToServer) {
-				return Zotero.Inject.firstSaveToServerPrompt().then(function(proceed) {
-					if (proceed) {
-						Zotero.Prefs.set('firstSaveToServer', false);
-					}
-					return proceed;
-				});
-			}
-			return true;
-		});
+		if (Zotero.isBrowserExt) {
+			return Zotero.Prefs.getAsync('firstSaveToServer')
+			.then(function (firstSaveToServer) {
+				if (firstSaveToServer) {
+					return Zotero.Inject.firstSaveToServerPrompt().then(function (proceed) {
+						if (proceed) {
+							Zotero.Prefs.set('firstSaveToServer', false);
+						}
+						return proceed;
+					});
+				}
+				return true;
+			});
+		} else {
+			return Zotero.Promise.resolve(true);
+		}
 	}
 	
 	this.translate = function(translatorID) {

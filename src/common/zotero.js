@@ -83,7 +83,7 @@ var Zotero = new function() {
 				}
 			}.bind(this));
 		} else if (Zotero.isSafari) {
-			this.platform = 'osx';
+			this.platform = 'mac';
 		} else {
 			// IE and the likes? Who knows
 			this.platform = 'win';

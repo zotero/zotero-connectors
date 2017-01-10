@@ -11,4 +11,4 @@ rm -f "$BUILD_DIR"/*.xpi
 VERSION="$( cat "$BUILD_DIR/browserExt/manifest.json" | jq -r .version )"
 echo "Signing $VERSION"
 sleep 3
-web-ext sign -s "$BUILD_DIR/browserExt" -a $BUILD_DIR -v
+web-ext sign -s "$BUILD_DIR/browserExt" -a $BUILD_DIR

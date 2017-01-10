@@ -184,24 +184,28 @@ Zotero.Inject = new function() {
 	
 	this.firstSaveToServerPrompt = function() {
 		return this.confirm({
-			checkbox: true,
-			checkboxBlock: true,
-			checkboxText: "I want to save directly to zotero.org",
-			button1Text: "Save",
-			button3Text: "More Information…",
-			title: `Saving to zotero.org`,
+			button1Text: "Try Again",
+			button2Text: "Cancel",
+			button3Text: "Enable Saving to Zotero.org",
+			title: "Zotero is Offline",
 			message: `
 				The Zotero Connector was unable to communicate with the Zotero desktop application. The Connector can save some pages directly to your zotero.org account, but for best results you should make sure Zotero is open before attempting to save.<br/><br/>
 				You can <a href="https://www.zotero.org/download/">download Zotero</a> or <a href="https://www.zotero.org/support/kb/connector_zotero_unavailable">troubleshoot the connection</a> if necessary.
 			`
 		}).then(function(result) {
-			if (result.button == 3) {
-				Zotero.Connector_Browser.openTab('https://www.zotero.org/support/save_to_zotero_org');
+			switch (result.button) {
+			case 1:
+				return 'retry';
+			
+			case 3:
+				return 'server';
+			
+			default:
+				return 'cancel';
 			}
-			return result.button == 1;
 		});
 	};
-
+	
 	/**
 	 * Prompts about saving to zotero.org if attempting for the first time
 	 * Prompt only available on BrowserExt which supports programmatic injection
@@ -214,17 +218,18 @@ Zotero.Inject = new function() {
 			return Zotero.Prefs.getAsync('firstSaveToServer')
 			.then(function (firstSaveToServer) {
 				if (firstSaveToServer) {
-					return Zotero.Inject.firstSaveToServerPrompt().then(function (proceed) {
-						if (proceed) {
+					return this.firstSaveToServerPrompt()
+					.then(function (result) {
+						if (result == 'server') {
 							Zotero.Prefs.set('firstSaveToServer', false);
 						}
-						return proceed;
+						return result;
 					});
 				}
-				return true;
-			});
+				return 'server';
+			}.bind(this));
 		} else {
-			return Zotero.Promise.resolve(true);
+			return Zotero.Promise.resolve('server');
 		}
 	}
 	

@@ -115,10 +115,18 @@ Zotero.Translate.ItemSaver.prototype = {
 				deferred.resolve(items);
 				if (haveAttachments) this._pollForProgress(items, attachmentCallback);
 			} else if (status == 0) {
-				Zotero.Inject.checkSaveToServer().then(function(proceed) {
-					if (proceed) {
+				Zotero.Inject.checkSaveToServer()
+				.then(function (result) {
+					switch (result) {
+					case 'retry':
+						deferred.resolve(this.saveItems(items, attachmentCallback));
+						break;
+					
+					case 'server':
 						deferred.resolve(this._saveToServer(items, attachmentCallback));
-					} else {
+						break;
+					
+					default:
 						deferred.resolve([]);
 						Zotero.ProgressWindow.close();
 					}

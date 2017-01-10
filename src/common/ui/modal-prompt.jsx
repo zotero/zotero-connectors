@@ -139,8 +139,13 @@ Zotero.ui.ModalPrompt = React.createClass({
 		
 		if (this.props.checkbox) {
 			checkbox = (<p className="checkbox">
-				<label style={{fontWeight: 'initial'}}>
-					<input type="checkbox" style={{verticalAlign: "middle", margin: "3px"}} checked={this.state.checkboxChecked} onChange={this.onCheckboxChange}/>
+				<label style={{
+						fontWeight: "initial",
+						lineHeight: "18px"}}>
+					<input type="checkbox"
+						style={{margin: "3px 7px 3px 3px" }}
+						checked={this.state.checkboxChecked}
+						onChange={this.onCheckboxChange}/>
 					{this.props.checkboxText}
 				</label>
 			</p>);
@@ -201,11 +206,13 @@ Zotero.ui.ModalPrompt = React.createClass({
 				position: "fixed",
 				top: "50%", left: "50%",
 				transform: "translate(-50%, -50%)",
-				backgroundColor: "#ededed",
+				backgroundColor: "#ececec",
 				color: "#444",
-				border: "#7a0000 2px solid",
-				maxWidth: "50%", minWidth: "400px", 
-				padding: "16px",
+				borderRadius: "5px",
+				boxShadow: "7px 10px 18px -6px rgba(0,0,0,0.45)",
+				maxWidth: "570px",
+				minWidth: "400px",
+				padding: "21px 17px 20px 21px",
 				lineHeight: '1.5',
 				fontSize: "16px", fontFamily: "Helvetica, Geneva, sans-serif"
 			}}>
@@ -218,8 +225,7 @@ Zotero.ui.ModalPrompt = React.createClass({
 					// this should be -16px (to counter padding), but firefox has awful bugs.
 					// filed here: https://bugzilla.mozilla.org/show_bug.cgi?id=1072638
 					margin: "0 -15px -15px -15px",
-					padding: "16px",
-					backgroundColor: "#e0e0e0"
+					padding: "16px"
 				}}>
 					{buttons[2]}
 					<span style={{flexGrow: 1}}/>

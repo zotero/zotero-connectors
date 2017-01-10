@@ -119,7 +119,8 @@ Zotero.Translate.ItemSaver.prototype = {
 				.then(function (result) {
 					switch (result) {
 					case 'retry':
-						deferred.resolve(this.saveItems(items, attachmentCallback));
+						setTimeout(() => deferred.resolve(this.saveItems(items, attachmentCallback)),
+							500);
 						break;
 					
 					case 'server':

@@ -192,13 +192,11 @@ Zotero.Connector_Browser = new function() {
 	};
 
 	this.openTab = function(url, tab) {
-		var tabProps = {};
 		if (tab) {
-			// Firefox does not support openerTabId, but we want to jump to previous tab on close
-			if (Zotero.isFirefox) {
-				tabProps = {index: tab.index+1};
-			} else {
-				tabProps = {openerTabId: tab.id};
+			let tabProps = { index: tab.index + 1 };
+			// Firefox doesn't support openerTabId
+			if (!Zotero.isFirefox) {
+				tabProps.openerTabId = tab.id;
 			}
 			chrome.tabs.create(Object.assign({url}, tabProps));
 		} else {

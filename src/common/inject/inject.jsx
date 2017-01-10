@@ -155,7 +155,8 @@ Zotero.Inject = new function() {
 				/>
 			);
 			function onClose(state, event) {
-				deferred.resolve({button: parseInt(event.target.name || 0),
+				deferred.resolve({
+					button: event ? parseInt(event.target.name || 0) : 0,
 					checkboxChecked: state.checkboxChecked,
 					inputText: state.inputText
 				});

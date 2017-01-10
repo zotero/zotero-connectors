@@ -121,7 +121,7 @@ Zotero.ui.ModalPrompt = React.createClass({
 	
 	escListener: function(event) {
 		if (event.key == "Escape") {
-			this.props.onClose(this.state, event);
+			this.props.onClose(this.state);
 			event.preventDefault();
 		}
 	},

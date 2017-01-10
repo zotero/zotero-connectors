@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
+
+function usage {
+	echo Current version: `"$DIR/get_current_version"` >&2
+	echo >&2
+	cat >&2 <<DONE
+Usage: $0 -v VERSION
+DONE
+	exit 1
+}
+
+VERSION=""
+while getopts "v:" opt; do
+	case $opt in
+		v)
+			VERSION="$OPTARG"
+			;;
+		*)
+			usage
+			;;
+	esac
+	shift $((OPTIND-1)); OPTIND=1
+done
+
+if [ -z "$VERSION" ]; then
+	usage
+fi
+
+cd "$ROOT_DIR"
+./build.sh -v "$VERSION"
+cd "$DIR"
+./sign_xpi
+echo "Pushing XPI"
+./push_xpi

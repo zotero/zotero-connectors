@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
+
+. "$ROOT_DIR/config.sh"
+
+ssh $DEPLOY_HOST cat "$MANIFEST_DEPLOY_PATH/updates.json" | jq -r '.addons["zotero@chnm.gmu.edu"].updates[-1].version'

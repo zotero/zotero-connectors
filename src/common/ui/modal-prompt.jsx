@@ -61,6 +61,11 @@ Zotero.ui.ModalPrompt = React.createClass({
 		 */
 		button3Text: React.PropTypes.string,
 		/**
+		 * Whether clicking outside the prompt should cause it to close
+		 * @default false
+		 */
+		clickOutsideToClose: React.PropTypes.bool,
+		/**
 		 * Triggered on <ESC> clicking outside of the prompt and on Cancel, unless overriden.
 		 * 
 		 * This is required because the component does not know how to remove itself from the DOM.
@@ -99,6 +104,7 @@ Zotero.ui.ModalPrompt = React.createClass({
 			button1Text: "OK",
 			button2Text: "Cancel",
 			button3Text: "",
+			clickOutsideToClose: false
 		}
 	},
 	
@@ -173,10 +179,11 @@ Zotero.ui.ModalPrompt = React.createClass({
 			}
 		}
 		
-		let onClose = (e) => {
+		let onClickOutside = e => {
 			e.stopPropagation();
-			if (e.target.classList.contains('modal-overlay')) {
-				this.props.onClose(this.state, e)	;
+			if (this.props.clickOutsideToClose
+					&& e.target.classList.contains('z-modal-overlay')) {
+				this.props.onClose(this.state, e);
 			}
 		};
 		
@@ -189,7 +196,7 @@ Zotero.ui.ModalPrompt = React.createClass({
 			width: "100%", height: "100%",
 			backgroundColor: "rgba(0, 0, 0, 0.3)",
 			zIndex: "1000000" // go big or go home
-		}} onClick={onClose}>
+		}} onClick={onClickOutside}>
 			<div className="z-popup" style={{
 				position: "fixed",
 				top: "50%", left: "50%",

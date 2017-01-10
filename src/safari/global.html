@@ -85,11 +85,7 @@ Zotero.Connector_Browser = new function() {
 	this.onPerformCommand = function(event) {
 		var command = event.command;
 		var tab = safari.application.activeBrowserWindow.activeTab;
-		if (Zotero.Prefs.get('firstUseNoClient')) {
-			Zotero.Prefs.set('firstUseNoClient', false);
-			Zotero.Connector_Browser.openTab('https://www.zotero.org/connector_start');
-		}
-		else if (command === "zotero-button") {
+		if (command === "zotero-button") {
 			if(tab.translators && tab.translators.length) {
 				Zotero.Connector_Browser.saveWithTranslator(0);
 			} else {
@@ -126,8 +122,6 @@ Zotero.Connector_Browser = new function() {
 				}
 			}
 			_updateButtonStatus();
-		} else {
-			Zotero.Prefs.set('firstUseNoClient', false);
 		}
 	};
 	
@@ -173,7 +167,6 @@ Zotero.Connector_Browser = new function() {
 	 */
 	function _updateButtonStatus() {
 		if (!_zoteroButton) return;
-		if (Zotero.Prefs.get('firstUseNoClient')) return _showFirstTimeUI();
 		
 		var tab = safari.application.activeBrowserWindow.activeTab;
 		if (_isDisabledForURL(tab.url)) {
@@ -191,12 +184,6 @@ Zotero.Connector_Browser = new function() {
 		} else {
 			_showWebpageIcon();
 		}
-	}
-	
-	function _showFirstTimeUI(tab) {
-		_zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-new-z-16px.png";
-		_zoteroButton.toolTip = "Zotero Connector";
-		_zoteroButton.disabled = false;
 	}
 	
 	function _showZoteroStatus() {

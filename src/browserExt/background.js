@@ -94,7 +94,6 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onStateChange = function(isOnline) {
 		if (isOnline) {
-			Zotero.Prefs.set('firstUseNoClient', false);
 			Zotero.ContentTypeHandler.enable();
 		} else {
 			for (var i in _tabInfo) {
@@ -208,7 +207,7 @@ Zotero.Connector_Browser = new function() {
 	 * Update status and tooltip of Zotero button
 	 */
 	function _updateExtensionUI(tab) {
-		if (Zotero.Prefs.get('firstUseNoClient')) return _showFirstTimeUI(tab);
+		if (Zotero.Prefs.get('firstUse')) return _showFirstUseUI(tab);
 		chrome.contextMenus.removeAll();
 
 		if (_isDisabledForURL(tab.url)) {
@@ -240,14 +239,10 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 	
-	function _showFirstTimeUI(tab) {
-		if (Zotero.isFirefox) {
-			let platform = Zotero.platform;
-			var icon = `${Zotero.platform}/zotero-z-${window.devicePixelRatio > 1 ? 32 : 16}px-australis.png`;
-		}
-		else {
-			var icon = 'zotero-z-16px-offline.png';
-		}
+	function _showFirstUseUI(tab) {
+		if (!Zotero.isFirefox) return;
+		
+		var icon = `${Zotero.platform}/zotero-z-${window.devicePixelRatio > 1 ? 32 : 16}px-australis.png`;
 		chrome.browserAction.setIcon({
 			tabId: tab.id,
 			path: `images/${icon}`
@@ -390,9 +385,10 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _browserAction(tab) {
-		if (Zotero.Prefs.get('firstUseNoClient')) {
-			Zotero.Prefs.set('firstUseNoClient', false);
-			Zotero.Connector_Browser.openTab('https://www.zotero.org/connector_start');
+		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) {
+			chrome.tabs.sendMessage(tab.id, ["firstUse"], null);
+			Zotero.Prefs.set('firstUse', false);
+			_updateExtensionUI(tab);
 		}
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
 			_saveWithTranslator(tab, 0);

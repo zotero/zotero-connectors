@@ -90,9 +90,6 @@ var Zotero = new function() {
 		}
 		
 		Zotero.Prefs.set('previousConnectorVersion', Zotero.version);
-		if (Zotero.Prefs.get('firstUseNoClient') === null) {
-			Zotero.Prefs.set('firstUseNoClient', Zotero.Prefs.get('connector.repo.lastCheck.localTime') == 0)
-		}
 		
 		Zotero.Debug.init();
 		Zotero.Messaging.init();
@@ -223,7 +220,7 @@ Zotero.Prefs = new function() {
 		"interceptKnownFileTypes": true,
 		"allowedInterceptHosts": [],
 		"previousConnectorVersion": "0",
-		"firstUseNoClient": null,
+		"firstUse": true,
 		"firstSaveToServer": true,
 		
 		"proxies.transparent": true,

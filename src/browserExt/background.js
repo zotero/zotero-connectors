@@ -208,7 +208,7 @@ Zotero.Connector_Browser = new function() {
 	 * Update status and tooltip of Zotero button
 	 */
 	function _updateExtensionUI(tab) {
-		if (Zotero.Prefs.get('firstUse')) return _showFirstUseUI(tab);
+		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) return _showFirstUseUI(tab);
 		chrome.contextMenus.removeAll();
 
 		if (_isDisabledForURL(tab.url)) {
@@ -241,8 +241,6 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _showFirstUseUI(tab) {
-		if (!Zotero.isFirefox) return;
-		
 		var icon = `${Zotero.platform}/zotero-z-${window.devicePixelRatio > 1 ? 32 : 16}px-australis.png`;
 		chrome.browserAction.setIcon({
 			tabId: tab.id,

@@ -94,6 +94,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onStateChange = function(isOnline) {
 		if (isOnline) {
+			Zotero.Prefs.set('firstSaveToServer', true);
 			Zotero.ContentTypeHandler.enable();
 		} else {
 			for (var i in _tabInfo) {

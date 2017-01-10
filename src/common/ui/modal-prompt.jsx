@@ -111,6 +111,8 @@ Zotero.ui.ModalPrompt = React.createClass({
 	componentDidMount: function() {
 		document.addEventListener('keyup', this.escListener);
 		setTimeout(() => this.refs.button1.focus());
+		
+		this.newTabifyLinks();
 	},
 	
 	componentWillUnmount: function() {
@@ -122,6 +124,24 @@ Zotero.ui.ModalPrompt = React.createClass({
 			this.props.onClose(this.state, event);
 			event.preventDefault();
 		}
+	},
+	
+	/**
+	 * Update any links in `message` to open in new tabs
+	 */
+	newTabifyLinks: function () {
+		var links = ReactDOM.findDOMNode(this).querySelectorAll('.z-popup-body a');
+		var component = this;
+		links.forEach(function (link) {
+			link.onclick = function (event) {
+				component.props.onClose(component.state, event);
+				let href = this.getAttribute('href');
+				// Allow prompt to close before opening tab, which avoids a flash
+				// in Chrome when returning to the tab
+				setTimeout(() => Zotero.Connector_Browser.openTab(href), 50);
+				return false;
+			};
+		});
 	},
 	
 	onCheckboxChange: function() {

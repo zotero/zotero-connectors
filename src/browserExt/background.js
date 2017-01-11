@@ -385,9 +385,11 @@ Zotero.Connector_Browser = new function() {
 	
 	function _browserAction(tab) {
 		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) {
-			chrome.tabs.sendMessage(tab.id, ["firstUse"], null);
-			Zotero.Prefs.set('firstUse', false);
-			_updateExtensionUI(tab);
+			chrome.tabs.sendMessage(tab.id, ["firstUse"], null)
+			.then(function () {
+				Zotero.Prefs.set('firstUse', false);
+				_updateExtensionUI(tab);
+			});
 		}
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
 			_saveWithTranslator(tab, 0);

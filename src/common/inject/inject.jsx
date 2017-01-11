@@ -392,8 +392,8 @@ if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.p
 		Zotero.Messaging.addMessageListener("pageModified", function() {
 			Zotero.Inject.detect(true);
 		});
-		Zotero.Messaging.addMessageListener("firstUse", function() {
-			Zotero.Inject.firstUsePrompt();
+		Zotero.Messaging.addMessageListener("firstUse", function () {
+			return Zotero.Inject.firstUsePrompt();
 		});
 		
 		// initialize

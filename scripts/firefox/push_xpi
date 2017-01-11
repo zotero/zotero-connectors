@@ -19,4 +19,4 @@ scp $DEPLOY_HOST:"$MANIFEST_DEPLOY_PATH/updates.json" "$BUILD_DIR/updates.json"
 scp "$BUILD_DIR/updates.json" $DEPLOY_HOST:"$MANIFEST_DEPLOY_PATH/updates.json"
 rm "$BUILD_DIR/updates.json"
 
-ssh $DEPLOY_HOST $DEPLOY_CMD -n
+ssh $DEPLOY_HOST $DEPLOY_CMD

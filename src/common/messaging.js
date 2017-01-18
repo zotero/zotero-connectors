@@ -113,9 +113,14 @@ Zotero.Messaging = new function() {
 		} else if(Zotero.isBrowserExt) {
 			// We support response callback in BrowserExt for advanced functionality.
 			// Response resolves as a promise
-			let deferred = Zotero.Promise.defer();
-			chrome.tabs.sendMessage(tab.id, [messageName, args], {}, deferred.resolve);
-			return deferred.promise;
+			if (Zotero.isFirefox) {
+				// Firefox returns a promise. But also works with callbacks, but the callback is always triggered
+				return chrome.tabs.sendMessage(tab.id, [messageName, args], {});
+			} else {
+				let deferred = Zotero.Promise.defer();
+				chrome.tabs.sendMessage(tab.id, [messageName, args], {}, deferred.resolve);
+				return deferred.promise;
+			}
 		} else if(Zotero.isSafari) {
 			tab.page.dispatchMessage(messageName, args);
 		}

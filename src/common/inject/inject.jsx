@@ -276,7 +276,7 @@ Zotero.Inject = new function() {
 							new Zotero.ProgressWindow.ErrorMessage("clientRequired");
 						}
 					} else {
-						new Zotero.ProgressWindow.ErrorMessage("translationError");
+						new Zotero.ProgressWindow.ErrorMessage("unexpectedError");
 					}
 					Zotero.ProgressWindow.startCloseTimer(8000);
 				} else {

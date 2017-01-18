@@ -186,6 +186,15 @@ Zotero.ProgressWindow = new function() {
 
 			this._div.appendChild(link);
 			this._div.appendChild(doc.createTextNode("."));
+		} else if (err === 'unexpectedError') {
+			this._div.appendChild(doc.createTextNode("An error occurred while saving this item. Try again " +
+				"and if the issue persists see "));
+			
+			link.title = link.href = "https://www.zotero.org/support/reporting_problems";
+			link.appendChild(doc.createTextNode("Reporting Problems"));
+			
+			this._div.appendChild(link);
+			this._div.appendChild(doc.createTextNode(" for more information."));	
 		}
 		
 		container.appendChild(this._div);

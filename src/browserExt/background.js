@@ -160,7 +160,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.injectTranslationScripts = function(tab, frameId=0) {
 		let deferred = Zotero.Promise.defer();
-		chrome.tabs.sendMessage(tab.id, ['ping'], function(response) {
+		Zotero.Messaging.sendMessage('ping', null, tab).then(function(response) {
 			if (response) return deferred.resolve();
 			return Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, null, tab, frameId)
 			.then(deferred.resolve).catch(deferred.reject);
@@ -385,7 +385,7 @@ Zotero.Connector_Browser = new function() {
 	
 	function _browserAction(tab) {
 		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) {
-			chrome.tabs.sendMessage(tab.id, ["firstUse"], null)
+			Zotero.Messaging.sendMessage("firstUse", null, tab)
 			.then(function () {
 				Zotero.Prefs.set('firstUse', false);
 				_updateExtensionUI(tab);
@@ -399,22 +399,15 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _saveWithTranslator(tab, i) {
-		chrome.tabs.sendMessage(
-			tab.id,
-			[
-				"translate",
-				[
-					_tabInfo[tab.id].instanceID,
-					_tabInfo[tab.id].translators[i].translatorID
-				]
-			],
-			null
-		);
+		Zotero.Messaging.sendMessage("translate", [
+			_tabInfo[tab.id].instanceID,
+			_tabInfo[tab.id].translators[i].translatorID
+		], tab);
 	}
 	
 	function _saveAsWebpage(tab) {
 		if (tab.id != -1) {
-			chrome.tabs.sendMessage(tab.id, ["saveAsWebpage", tab.title], null);
+			Zotero.Messaging.sendMessage("saveAsWebpage", tab.title, tab);
 		}
 		// Handle right-click on PDF overlay, which exists in a weird non-tab state
 		else {
@@ -424,7 +417,7 @@ Zotero.Connector_Browser = new function() {
 					active: true
 				},
 				function (tabs) {
-					chrome.tabs.sendMessage(tabs[0].id, ["saveAsWebpage", tab.title], null);
+					Zotero.Messaging.sendMessage("saveAsWebpage", tabs[0].title, tabs[0]);
 				}
 			);
 		}
@@ -453,7 +446,7 @@ Zotero.Connector_Browser = new function() {
 		Zotero.debug("Connector_Browser: URL changed for tab");
 		_clearInfoForTab(tabID);
 		// Rerun translation
-		chrome.tabs.sendMessage(tabID, ["pageModified"], null);
+		Zotero.Messaging.sendMessage("pageModified", null, tab);
 	});
 	
 	chrome.tabs.onActivated.addListener(function(activeInfo) {

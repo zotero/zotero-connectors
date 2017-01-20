@@ -340,14 +340,16 @@ Zotero.Inject = new function() {
 		}.bind(this));
 	};
 	
-	this.saveAsWebpage = function (title) {
+	this.saveAsWebpage = function (args) {
+		var title = args[0], withSnapshot = args[1];
 		Zotero.Inject.checkActionToServer().then(function(result) {
 			if (!result) return;
 			
 			var data = {
 				url: document.location.toString(),
 				cookie: document.cookie,
-				html: document.documentElement.innerHTML
+				html: document.documentElement.innerHTML,
+				skipSnapshot: !withSnapshot
 			};
 			
 			if (document.contentType == 'application/pdf') {

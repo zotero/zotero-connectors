@@ -315,7 +315,7 @@ Zotero.Connector_Browser = new function() {
 		});
 		chrome.browserAction.setTitle({
 			tabId:tab.id,
-			title:"Save to Zotero (Web Page)"
+			title:"Save to Zotero (Web Page with Snapshot)"
 		});
 	}
 	
@@ -347,10 +347,18 @@ Zotero.Connector_Browser = new function() {
 	
 	function _showWebpageContextMenuItem() {
 		chrome.contextMenus.create({
-			id: "zotero-context-menu-webpage-save",
-			title: "Save to Zotero (Web Page)",
+			id: "zotero-context-menu-webpage-withSnapshot-save",
+			title: "Save to Zotero (Web Page with Snapshot)",
 			onclick: function (info, tab) {
-				_saveAsWebpage(tab);
+				_saveAsWebpage(tab, true);
+			},
+			contexts: ['page', 'browser_action']
+		});
+		chrome.contextMenus.create({
+			id: "zotero-context-menu-webpage-withoutSnapshot-save",
+			title: "Save to Zotero (Web Page without Snapshot)",
+			onclick: function (info, tab) {
+				_saveAsWebpage(tab, false);
 			},
 			contexts: ['page', 'browser_action']
 		});
@@ -394,7 +402,7 @@ Zotero.Connector_Browser = new function() {
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
 			_saveWithTranslator(tab, 0);
 		} else {
-			_saveAsWebpage(tab);
+			_saveAsWebpage(tab, true);
 		}
 	}
 	
@@ -405,9 +413,9 @@ Zotero.Connector_Browser = new function() {
 		], tab);
 	}
 	
-	function _saveAsWebpage(tab) {
+	function _saveAsWebpage(tab, withSnapshot) {
 		if (tab.id != -1) {
-			Zotero.Messaging.sendMessage("saveAsWebpage", tab.title, tab);
+			Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, withSnapshot], tab);
 		}
 		// Handle right-click on PDF overlay, which exists in a weird non-tab state
 		else {

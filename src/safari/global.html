@@ -89,7 +89,7 @@ Zotero.Connector_Browser = new function() {
 			if(tab.translators && tab.translators.length) {
 				Zotero.Connector_Browser.saveWithTranslator(0);
 			} else {
-				Zotero.Connector_Browser.saveAsWebpage();
+				Zotero.Connector_Browser.saveAsWebpage(true);
 			}
 		} else if (command === "zotero-preferences") {
 			tab.url = safari.extension.baseURI+"preferences/preferences.html";
@@ -148,11 +148,11 @@ Zotero.Connector_Browser = new function() {
 				[tab.instanceID, tab.translators[i].translatorID]);
 	}
 
-	this.saveAsWebpage = function () {
+	this.saveAsWebpage = function (withSnapshot) {
 		let tab = safari.application.activeBrowserWindow.activeTab;
 		let title = tab.title.split('/');
 		title = title[title.length-1];
-		tab.page.dispatchMessage("saveAsWebpage", title);
+		tab.page.dispatchMessage("saveAsWebpage", [title, withSnapshot]);
 	}
 
 	this.openTab = function(url) {
@@ -212,7 +212,7 @@ Zotero.Connector_Browser = new function() {
 
 	function _showWebpageIcon() {
 		_zoteroButton.image = Zotero.ItemTypes.getImageSrc("webpage-gray").replace('images/', 'images/toolbar/');
-		_zoteroButton.toolTip = "Save to Zotero (Web Page)";
+		_zoteroButton.toolTip = "Save to Zotero (Web Page with Snapshot)";
 	}
 
 	function _showPDFIcon() {

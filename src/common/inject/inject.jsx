@@ -369,7 +369,7 @@ Zotero.Inject = new function() {
 							if (document.contentType != 'application/pdf') {
 								Zotero.ProgressWindow.changeHeadline('Saving to zotero.org');
 								let itemSaver = new Zotero.Translate.ItemSaver({});
-								itemSaver.saveSnapshot().then(function(items) {
+								itemSaver.saveAsWebpage().then(function(items) {
 									if (items.length) progress.setProgress(100);
 								});
 							} else {

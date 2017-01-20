@@ -70,7 +70,7 @@ Zotero.Translate.ItemSaver.ATTACHMENT_MODE_DOWNLOAD = 1;
 Zotero.Translate.ItemSaver.ATTACHMENT_MODE_FILE = 2;
 
 Zotero.Translate.ItemSaver.prototype = {
-	saveSnapshot: function() {
+	saveAsWebpage: function() {
 		var item = {
 			itemType: 'webpage',
 			title: document.title,

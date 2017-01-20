@@ -115,7 +115,7 @@ Zotero.Translate.ItemSaver.prototype = {
 				deferred.resolve(items);
 				if (haveAttachments) this._pollForProgress(items, attachmentCallback);
 			} else if (status == 0) {
-				this._saveToServer(items, attachmentCallback);
+				deferred.resolve(this._saveToServer(items, attachmentCallback));
 			} else {
 				deferred.reject(new Error(`Zotero responded with ${status}`))
 			}

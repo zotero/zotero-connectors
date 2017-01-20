@@ -367,6 +367,8 @@ Zotero.API = new function() {
 				
 				var xhr = new XMLHttpRequest();
 				xhr.open("POST", response.url, true);
+				xhr.setRequestHeader("Zotero-API-Key", userInfo.apiKey);
+				xhr.setRequestHeader("Zotero-API-Version", 2);
 				xhr.onloadend = function() {
 					if(this.status !== 200 && this.status !== 201) {
 						var msg = this.status+" ("+this.responseText+")";
@@ -385,7 +387,9 @@ Zotero.API = new function() {
 						}
 					}, {
 						"Content-Type":"application/x-www-form-urlencoded",
-						"If-None-Match":"*"
+						"If-None-Match":"*",
+						"Zotero-API-Key": userInfo.apiKey,
+						"Zotero-API-Version": "2"
 					});
 				};
 				xhr.onprogress = function(event) {

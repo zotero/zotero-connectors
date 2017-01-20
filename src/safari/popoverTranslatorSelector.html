@@ -37,11 +37,15 @@
 	<li><a id="zotero-save-page-with-snapshot" href="javascript:void(0)">Save to Zotero (Web Page with Snapshot)</a></li>
 	<li><a id="zotero-save-page-without-snapshot" href="javascript:void(0)">Save to Zotero (Web Page without Snapshot)</a></li>
 	<hr/>
-	<li><a id="zotero-preferences" onclick="safari.self.hide()">Zotero Preferences</a></li>
+	<li><a id="zotero-preferences">Zotero Preferences</a></li>
 </menu>
 <script>
 	(function () {
-		document.getElementById('zotero-preferences').setAttribute('href', safari.extension.baseURI + "preferences/preferences.html");
+		document.getElementById('zotero-preferences').onclick = function() {
+			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
+			Zotero_Connector_Browser.openTab(safari.extension.baseURI + "preferences/preferences.html");
+			safari.self.hide();
+		};
 		document.getElementById('zotero-save-page-with-snapshot').onclick = function () {
 			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
 			Zotero_Connector_Browser.saveAsWebpage(true);

@@ -92,7 +92,7 @@ Zotero.Connector_Browser = new function() {
 				Zotero.Connector_Browser.saveAsWebpage(true);
 			}
 		} else if (command === "zotero-preferences") {
-			tab.url = safari.extension.baseURI+"preferences/preferences.html";
+			Zotero.Connector_Browser.openTab(safari.extension.baseURI+"preferences/preferences.html");
 		}
 	}
 	

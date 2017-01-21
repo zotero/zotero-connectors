@@ -173,7 +173,7 @@ Zotero.Proxies = new function() {
 					
 					// Ideally we would like to ask the user whether they want to add a new proxy on this notification,
 					// but only chrome supports that
-					_showNotification('New Proxy', `Future requests to ${proxy.hosts[proxy.hosts.length-1]} will be automatically redirected through ${requestURI.host}. You can disable automatic proxy detection in Zotero Connector preferences.`);
+					_showNotification('New Proxy', `Future requests to ${proxy.hosts[proxy.hosts.length-1]} will be automatically redirected through ${requestURI.host}. You can disable automatic proxy detection in the Zotero Connector preferences.`);
 					
 					Zotero.Proxies.save(proxy);
 					

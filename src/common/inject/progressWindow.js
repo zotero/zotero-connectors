@@ -172,12 +172,12 @@ Zotero.ProgressWindow = new function() {
 			this._div.appendChild(doc.createTextNode(" for more information."));
 		} else if (err === "noTranslator") {
 			var textNode = doc.createTextNode("No items could be saved because this website "+
-					"is not supported by any Zotero translator. If Zotero Standalone is not open, try "+
+					"is not supported by any Zotero translator. If Zotero is not open, try "+
 					"opening it to increase the number of supported sites.");
 			this._div.appendChild(textNode);
 		} else if (err === "clientRequired") {
 			this._div.appendChild(doc.createTextNode("This item could not be saved because Zotero "+
-				"is not open or unreachable. Please open Zotero and try again."));
+				"is not open or is unreachable. Please open Zotero and try again."));
 		} else if (err === "upgradeClient") {
 			this._div.appendChild(doc.createTextNode("This feature is not supported by your version of " +
 				"Zotero. Please upgrade to the "));
@@ -187,11 +187,11 @@ Zotero.ProgressWindow = new function() {
 			this._div.appendChild(link);
 			this._div.appendChild(doc.createTextNode("."));
 		} else if (err === 'unexpectedError') {
-			this._div.appendChild(doc.createTextNode("An error occurred while saving this item. Try again " +
+			this._div.appendChild(doc.createTextNode("An error occurred while saving this item. Try again, " +
 				"and if the issue persists see "));
 			
-			link.title = link.href = "https://www.zotero.org/support/reporting_problems";
-			link.appendChild(doc.createTextNode("Reporting Problems"));
+			link.title = link.href = "https://www.zotero.org/support/getting_help";
+			link.appendChild(doc.createTextNode("Getting Help"));
 			
 			this._div.appendChild(link);
 			this._div.appendChild(doc.createTextNode(" for more information."));	

@@ -110,13 +110,14 @@ Zotero.Messaging = new function() {
 		if(Zotero.isBookmarklet) {
 			window.parent.postMessage((_structuredCloneSupported
 				? [messageName, args] : JSON.stringify([messageName, args])), "*");
-		} else if(Zotero.isBrowserExt) {
-			// We support response callback in BrowserExt for advanced functionality.
-			// Response resolves as a promise
+		}
+		// Use the promise or response callback in BrowserExt for advanced functionality
+		else if(Zotero.isBrowserExt) {
+			// Firefox returns a promise
 			if (Zotero.isFirefox) {
-				// Firefox returns a promise. But also works with callbacks, but the callback is always triggered
-				return chrome.tabs.sendMessage(tab.id, [messageName, args], {});
-			} else {
+				return browser.tabs.sendMessage(tab.id, [messageName, args], {});
+			}
+			else {
 				let deferred = Zotero.Promise.defer();
 				chrome.tabs.sendMessage(tab.id, [messageName, args], {}, deferred.resolve);
 				return deferred.promise;

@@ -30,6 +30,17 @@ if [ -z "$VERSION" ]; then
 	usage
 fi
 
+CURRENT_VERSION="$("$DIR/get_current_version")"
+
+if [ "$VERSION" \< "$CURRENT_VERSION" ]; then
+	echo "$VERSION must be greater than $CURRENT_VERSION"
+	exit 1
+fi
+if [ "$VERSION" = "$CURRENT_VERSION" ]; then
+	echo "$VERSION is the current version"
+	exit 1
+fi
+
 cd "$ROOT_DIR"
 ./build.sh -v "$VERSION"
 cd "$DIR"

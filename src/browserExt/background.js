@@ -162,6 +162,7 @@ Zotero.Connector_Browser = new function() {
 		let deferred = Zotero.Promise.defer();
 		Zotero.Messaging.sendMessage('ping', null, tab).then(function(response) {
 			if (response) return deferred.resolve();
+			Zotero.debug(`Injecting translation scripts into ${tab.url}`);
 			return Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, null, tab, frameId)
 			.then(deferred.resolve).catch(deferred.reject);
 		});
@@ -179,6 +180,7 @@ Zotero.Connector_Browser = new function() {
 	this.injectScripts = function(scripts, callback, tab, frameId=0) {
 		if (! Array.isArray(scripts)) scripts = [scripts];
 		var promises = [];
+		Zotero.debug(`Injecting scripts into ${tab.url} : ${scripts.join(', ')}`);
 		for (let script of scripts) {
 			let deferred = Zotero.Promise.defer();
 			promises.push(deferred.promise);

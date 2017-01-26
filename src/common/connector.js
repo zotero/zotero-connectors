@@ -291,16 +291,13 @@ Zotero.Connector_Debug = new function() {
 	 */
 	this.submitReport = function(callback) {
 		Zotero.Debug.get().then(function(output){
-			return Zotero.HTTP.request(
+			let deferred = Zotero.Promise.defer();
+			let xmlhttp = Zotero.HTTP.doPost(
 				ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1",
-				{
-					headers: {
-						"Content-Type": "text/plain"
-					},
-					body: output,
-					successCodes: false
-				}
+				output,
+				() => deferred.resolve(xmlhttp)
 			);
+			return deferred.promise;
 		}).then(function(xmlhttp){
 			if (!xmlhttp.responseXML) {
 				callback(false, 'Invalid response from server');

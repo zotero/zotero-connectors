@@ -50,10 +50,17 @@ var Zotero = new function() {
 		this.clientName = 'Safari Connector';
 	} else if (this.isIE) {
 		this.browser = "i";
-		this.clientName = 'Internet Explorer'; // ?? Property unlikely to be used, but it is IE.
-	} else {
+		this.clientName = 'Internet Explorer';
+	} else if (this.isEdge) {
+		this.browser = "c";
+		this.clientName = 'Edge Connector';
+	} else if (this.isChrome) {
 		this.browser = "c";
 		this.clientName = 'Chrome Connector';
+	} else {
+		// Assume this is something with no more capabilities than IE
+		this.browser = "i";
+		this.clientName = window.navigator.appName;
 	}
 	
 	if (this.isBrowserExt) {
@@ -109,10 +116,8 @@ var Zotero = new function() {
 	
 	/**
 	 * Get versions, platform, etc.
-	 *
-	 * Can be used synchronously or asynchronously.
 	 */
-	this.getSystemInfo = function(callback) {
+	this.getSystemInfo = function() {
 		var info = {
 			connector: "true",
 			version: this.version,
@@ -121,26 +126,15 @@ var Zotero = new function() {
 			appVersion: navigator.appVersion
 		};
 		
-		if(this.isChrome) {
-			info.appName = "Chrome";
-		} else if(this.isSafari) {
-			info.appName = "Safari";
-		} else if(this.isIE) {
-			info.appName = "Internet Explorer";
-		} else if(this.isFirefox) {
-			info.appName = "Firefox Connector";
-		} else if(this.isEdge) {
-			info.appName = "Edge";
-		} else {
-			info.appName = window.navigator.appName;
-		}
+		info.appName = Zotero.clientName;
+		info.zoteroAvailable = Zotero.Connector.isOnline;
 		
 		var str = '';
 		for (var key in info) {
 			str += key + ' => ' + info[key] + ', ';
 		}
 		str = str.substr(0, str.length - 2);
-		callback(str);
+		return Promise.resolve(str);
 	};
 	
 	/**

@@ -99,7 +99,7 @@ var Zotero_Preferences = {
 	 */
 	refreshData: function() {
 		// get errors
-		Zotero.Errors.getErrors(function(errors) {
+		Zotero.Errors.getErrors().then(function(errors) {
 			if(errors.length) {
 				document.getElementById('general-no-errors').style.display = "none";
 				document.getElementById('general-have-errors').style.display = "block";
@@ -260,9 +260,9 @@ Zotero_Preferences.Advanced = {
 		Zotero.Connector_Debug.submitReport(function(status, message) {
 			if(status) {
 				alert("Debug output has been sent to the Zotero server.\n\n"
-					+ "The Debug ID is D" + message + ".");
+					+ `The Debug ID is D${message}.`);
 			} else {
-				alert('An error occurred submitting your debug output.\n\n'+message+'\n\n'+
+				alert(`An error occurred submitting your debug output.\n\n${message}\n\n`+
 					'Please ensure that you are connected to the Internet.');
 			}
 			toggleDisabled(submitOutputButton, false);
@@ -278,12 +278,12 @@ Zotero_Preferences.Advanced = {
 		
 		Zotero.Errors.sendErrorReport(function(status, message) {
 			if(status) {
-				alert('Your error report has been submitted.\n\nReport ID:'+message+'\n\n'+
+				alert(`Your error report has been submitted.\n\nReport ID: ${message}\n\n`+
 					'Please post a message to the Zotero forums (forums.zotero.org) with this Report '+
 					'ID, a description of the problem, and any steps necessary to reproduce it.\n\n'+
 					'Error reports are not reviewed unless referred to in the forums.');
 			} else {
-				alert('An error occurred submitting your error report.\n\n'+message+'\n\n'+
+				alert(`An error occurred submitting your error report.\n\n${message}\n\n`+
 					'Please ensure that you are connected to the Internet. If the problem persists, '+
 					'please post a message to the Zotero forums (forums.zotero.org).');
 			}

@@ -48,15 +48,15 @@ Zotero.Errors = new function() {
 	/**
 	 * Gets errors as an array of strings
 	 */
-	this.getErrors = function(callback) {
-		callback(_output.slice());
-	}
+	this.getErrors = Zotero.Promise.method(function() {
+		return _output.slice();
+	})
 	
 	/**
 	 * Sends an error report to the server
 	 */
 	this.sendErrorReport = function(callback) {
-		Zotero.getSystemInfo(function(info) {
+		Zotero.getSystemInfo().then(function(info) {
 			var parts = {
 				error: "true",
 				errorData: _output.join('\n'),

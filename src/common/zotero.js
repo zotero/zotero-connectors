@@ -89,7 +89,6 @@ var Zotero = new function() {
 			this.platform = 'win';
 		}
 		
-		Zotero.Prefs.set('previousConnectorVersion', Zotero.version);
 		
 		Zotero.Debug.init();
 		Zotero.Messaging.init();
@@ -106,12 +105,6 @@ var Zotero = new function() {
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
 	};
-	
-	
-	this.promptFxConnectorMigration = function() {
-		if (Zotero.Prefs.get('previousConnectorVersion') >= "5" || !Zotero.isFirefox) return;
-		Zotero.Connector_Browser.openTab('https://www.zotero.org/support/zotero_for_firefox_migration');
-	}
 	
 	
 	/**
@@ -219,7 +212,6 @@ Zotero.Prefs = new function() {
 		"capitalizeTitles": false,
 		"interceptKnownFileTypes": true,
 		"allowedInterceptHosts": [],
-		"previousConnectorVersion": "0",
 		"firstUse": true,
 		"firstSaveToServer": true,
 		
@@ -230,6 +222,7 @@ Zotero.Prefs = new function() {
 		"proxies.disableByDomainString": '.edu',
 		"proxies.proxies": []
 	};
+	
 	
 	this.get = function(pref) {
 		try {

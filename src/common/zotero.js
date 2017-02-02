@@ -208,6 +208,7 @@ Zotero.Prefs = new function() {
 		"allowedInterceptHosts": [],
 		"firstUse": true,
 		"firstSaveToServer": true,
+		"reportTranslationFailure": true,
 		
 		"proxies.transparent": true,
 		"proxies.autoRecognize": true,

@@ -211,6 +211,8 @@ Zotero_Preferences.Advanced = {
 			function() { Zotero.Prefs.set('debug.store', this.checked); };
 		document.getElementById("advanced-checkbox-show-in-console").onchange =
 			function() { Zotero.Prefs.set('debug.log', this.checked); };
+		document.getElementById("advanced-checkbox-report-translator-failure").onchange =
+			function() { Zotero.Prefs.set('reportTranslationFailure', this.checked); };
 		document.getElementById("advanced-button-view-output").onclick = Zotero_Preferences.Advanced.viewDebugOutput;
 		document.getElementById("advanced-button-clear-output").onclick = Zotero_Preferences.Advanced.clearDebugOutput;
 		document.getElementById("advanced-button-submit-output").onclick = Zotero_Preferences.Advanced.submitDebugOutput;
@@ -228,6 +230,9 @@ Zotero_Preferences.Advanced = {
 		});
 		Zotero.Prefs.getAsync("debug.log").then(function(status) {
 			document.getElementById('advanced-checkbox-show-in-console').checked = !!status;
+		});
+		Zotero.Prefs.getAsync("reportTranslationFailure").then(function(status) {
+			document.getElementById('advanced-checkbox-report-translator-failure').checked = !!status;
 		});
 	},
 		

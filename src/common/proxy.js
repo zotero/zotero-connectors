@@ -153,7 +153,7 @@ Zotero.Proxies = new function() {
 				proxy.hosts.push(host);
 				Zotero.Proxies.save(proxy);
 
-				_showNotification('New Proxy Host', `${host} was automatically associated with an existing proxy. Future requests will be redirected to ${requestURI.host}`);
+				_showNotification('New Zotero Proxy Host', `${host} will redirect through ${requestURI.host}`);
 			}
 		} else if (Zotero.Proxies.autoRecognize) {
 			// if autoRecognize enabled, send the request details off to standalone to try and detect a proxy
@@ -173,7 +173,7 @@ Zotero.Proxies = new function() {
 					
 					// Ideally we would like to ask the user whether they want to add a new proxy on this notification,
 					// but only chrome supports that
-					_showNotification('New Proxy', `Future requests to ${proxy.hosts[proxy.hosts.length-1]} will be automatically redirected through ${requestURI.host}. You can disable automatic proxy detection in the Zotero Connector preferences.`);
+					_showNotification('New Zotero Proxy', `${requestURI.host}`);
 					
 					Zotero.Proxies.save(proxy);
 					
@@ -235,7 +235,7 @@ Zotero.Proxies = new function() {
 
 		// Otherwise, redirect.
 		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
-			_showNotification('Proxy Redirection', `${url.parse(details.url).host} was automatically redirected through a proxy at ${proxiedURI.host}`);
+			_showNotification('Zotero Proxy Redirection', `${url.parse(details.url).host} was automatically redirected through ${proxiedURI.host}`);
 		}
 			
 		return {redirectUrl: proxied};

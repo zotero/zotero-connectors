@@ -123,7 +123,7 @@ var Zotero = new function() {
 			version: this.version,
 			platform: navigator.platform,
 			locale: navigator.language,
-			appVersion: navigator.appVersion
+			userAgent: navigator.userAgent
 		};
 		
 		info.appName = Zotero.clientName;

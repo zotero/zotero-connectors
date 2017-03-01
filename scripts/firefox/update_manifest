@@ -7,7 +7,7 @@ import sys
 import shutil
 import json
 import traceback
-from operator import itemgetter
+from distutils.version import StrictVersion
 
 parser = argparse.ArgumentParser(
     description='Update a WebExtension build manifest with info on a given build',
@@ -44,7 +44,7 @@ def main():
             "update_link": url.format(version),
             "update_hash": "sha256:" + sha
         })
-        updates = sorted(updates, key=itemgetter('version'))
+        updates = sorted(updates, key=lambda item: StrictVersion(item['version']))
         
         # Keep last 5 versions
         manifest['addons']['zotero@chnm.gmu.edu']['updates'] = updates[-5:]

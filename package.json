@@ -11,6 +11,7 @@
     "gulp-plumber": "^1.1.0",
     "react": "^15.3.2",
     "react-dom": "^15.3.2",
+    "semver-compare": "^1.0.0",
     "through2": "^2.0.1",
     "yargs": "^6.0.0"
   }

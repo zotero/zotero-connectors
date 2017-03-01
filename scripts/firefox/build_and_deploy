@@ -31,13 +31,17 @@ if [ -z "$VERSION" ]; then
 fi
 
 CURRENT_VERSION="$("$DIR/get_current_version")"
-
-if [ "$VERSION" \< "$CURRENT_VERSION" ]; then
+CMP=$(node -e "var cmp = require('semver-compare'); console.log(cmp('$VERSION', '$CURRENT_VERSION'))")
+if [ "$CMP" = "-1" ]; then
 	echo "$VERSION must be greater than $CURRENT_VERSION"
 	exit 1
 fi
-if [ "$VERSION" = "$CURRENT_VERSION" ]; then
+if [ "$CMP" = "0" ]; then
 	echo "$VERSION is the current version"
+	exit 1
+fi
+if [ "$CMP" != "1" ]; then
+	echo "Unexpected response $CMP from semver-compare"
 	exit 1
 fi
 

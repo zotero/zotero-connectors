@@ -58,7 +58,7 @@ Zotero.Messaging = new function() {
 								? messageConfig.callbackArg : arguments.length-1);
 							callback = arguments[callbackArg];
 							if(typeof callback !== "function") {
-								Zotero.debug("Message `"+messageName+"` has no callback arg. It should use the returned promise", 5);
+								// Zotero.debug("Message `"+messageName+"` has no callback arg. It should use the returned promise", 5);
 								callbackArg = null;
 							}
 						}

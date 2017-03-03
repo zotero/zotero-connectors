@@ -409,7 +409,7 @@ if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.p
 		Zotero.Messaging.addMessageListener("saveAsWebpage", Zotero.Inject.saveAsWebpage);
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {
-			Zotero.Inject.detect(true);
+			Zotero.Inject.init(true);
 		});
 		Zotero.Messaging.addMessageListener("firstUse", function () {
 			return Zotero.Inject.firstUsePrompt();

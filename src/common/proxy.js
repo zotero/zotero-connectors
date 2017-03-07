@@ -658,7 +658,7 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
 		var param = this.parameters[i];
 		var value = "";
 		if (param == "%h") {
-			value = this.dotsToHyphens ? uri.host.replace(/-/g, '.') : uri.host;
+			value = this.dotsToHyphens ? uri.host.replace(/\./g, '-') : uri.host;
 		} else if (param == "%p") {
 			value = uri.path.substr(1);
 		} else if (param == "%d") {

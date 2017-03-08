@@ -238,6 +238,8 @@ Zotero.Translators = new function() {
 			for(var i in newMetadata) {
 				var newTranslator = newMetadata[i];
 				
+				if (newTranslator.deleted) continue;
+				
 				if(_translators.hasOwnProperty(newTranslator.translatorID)) {
 					var oldTranslator = _translators[newTranslator.translatorID];
 					
@@ -260,13 +262,17 @@ Zotero.Translators = new function() {
 				}
 			}
 			
-			let deletedTranslators = Object.keys(_translators).filter(id => _translators[id].deleted);
-			if (deletedTranslators.length) {
+			let deletedTranslators = newMetadata
+				.filter(translator => translator.deleted)
+				.map(translator => translator.translatorID);
+				
+			for (let id of deletedTranslators) {
+				// Already deleted
+				if (! _translators.hasOwnProperty(id)) continue;
+				
 				hasChanged = true;
-				for (let id of deletedTranslators) {
-					Zotero.debug(`Translators: Removing ${_translators[id].label}`);
-					delete _translators[id];
-				}
+				Zotero.debug(`Translators: Removing ${_translators[id].label}`);
+				delete _translators[id];
 			}
 			
 			if(!hasChanged) return;

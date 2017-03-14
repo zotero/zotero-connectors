@@ -117,15 +117,23 @@ Zotero.ContentTypeHandler = {
 	confirm: function(details, message, checkboxText="") {
 		let deferred = Zotero.Promise.defer();
 		chrome.tabs.get(details.tabId, function(tab) {
-			var props = {message};
-			if (checkboxText.length) {
-				props = {
-					message,
-					checkbox: true,
-					checkboxText
+			// Make sure the scripts to handle the confirmation box are injected
+			Zotero.Connector_Browser.injectTranslationScripts(tab).then(function() {
+				var props = {message};
+				if (checkboxText.length) {
+					props = {
+						message,
+						checkbox: true,
+						checkboxText
+					}
+				}	
+				return Zotero.Messaging.sendMessage('confirm', props, tab)
+			}).then(function(response) {
+				// If captured URL was pasted on about:blank or other browser pages they respond immediately
+				// with undefined which we treat as cancel here
+				if (!response) {
+					response = {button: 2}
 				}
-			}
-			Zotero.Messaging.sendMessage('confirm', props, tab).then(function(response) {
 				if (!response.button || response.button == 2) {
 					Zotero.ContentTypeHandler.ignoreURL.add(details.url);
 					// Ignore the next request to this url and redirect

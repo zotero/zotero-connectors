@@ -267,6 +267,9 @@ for browser in "browserExt" "safari"; do
 	mkdir "$browser_builddir/lib"
 	cp "${LIBS[@]}" "$browser_builddir/lib"
 	
+	# Remove .jsx files - we'll deal with those in gulp
+	find "$browser_builddir" -type f -name "*.jsx" -delete
+	
 	if [ ! -z $DEBUG ]; then
 		cp "$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.js \
 			"$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.css \
@@ -280,10 +283,15 @@ gulp -v >/dev/null 2>&1 || { echo >&2 "gulp not found -- aborting"; exit 1; }
 
 # Update scripts
 if [ ! -z $DEBUG ]; then
-	gulp process-custom-scripts --version "$VERSION" > /dev/null 2>&1
+	gulp process-custom-scripts --version "$VERSION" > "$LOG" 2>&1
 else
-	gulp process-custom-scripts --version "$VERSION" -p > /dev/null 2>&1
+	gulp process-custom-scripts --version "$VERSION" -p > "$LOG" 2>&1
 fi
+
+# Transpile Safari JS for Safari 10.0<
+echo "Transpiling Safari JS..." >> "$LOG";
+"$CWD/node_modules/babel-cli/bin/babel.js" "$BUILD_DIR/safari.safariextension/" --out-dir "$BUILD_DIR/safari.safariextension/" -q >> "$LOG" 2>&1
+echo "Transpiled" >> "$LOG";
 
 echo "done"
 

@@ -362,7 +362,7 @@ Zotero.Inject = new function() {
 			var progress = new Zotero.ProgressWindow.ItemProgress(
 				Zotero.ItemTypes.getImageSrc(image), title || document.title
 			);
-			Zotero.Connector.callMethod("saveSnapshot", data,
+			Zotero.Connector.callMethodWithCookies("saveSnapshot", data,
 				function(returnValue, status) {
 					if (returnValue === false) {
 						// Client unavailable

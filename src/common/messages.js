@@ -113,7 +113,7 @@ var MESSAGES = {
 		{
 			checkIsOnline: true,
 			callMethod: true,
-			setCookiesThenSaveItems: true
+			callMethodWithCookies: true
 		},
 	Connector_Browser: 
 		{

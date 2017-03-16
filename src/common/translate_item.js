@@ -97,7 +97,7 @@ Zotero.Translate.ItemSaver.prototype = {
 			payload.cookie = document.cookie;
 		}
 		payload.proxy = this._proxy && this._proxy.toJSON();
-		Zotero.Connector.setCookiesThenSaveItems(payload, function(data, status) {
+		Zotero.Connector.callMethodWithCookies("saveItems", payload, function(data, status) {
 			if(data !== false) {
 				Zotero.debug("Translate: Save via Standalone succeeded");
 				var haveAttachments = false;

@@ -232,10 +232,11 @@ Zotero.Connector = new function() {
 	 * Adds detailed cookies to the data before sending "saveItems" request to
 	 *  the server/Standalone
 	 *
+	 * @param {String|Object} options. See documentation above
 	 * @param	{Object} data RPC data. See documentation above.
 	 * @param	{Function} callback Function to be called when requests complete.
 	 */
-	this.setCookiesThenSaveItems = function(data, callback, tab) {
+	this.callMethodWithCookies = function(options, data, callback, tab) {
 		if(Zotero.isBrowserExt && !Zotero.isBookmarklet) {
 			var self = this;
 			chrome.cookies.getAll({url: tab.url}, function(cookies) {
@@ -250,17 +251,18 @@ Zotero.Connector = new function() {
 				
 				if(cookieHeader) {
 					data.detailedCookies = cookieHeader.substr(1);
+					delete data.cookie;
 				}
 				
 				// Cookie URI needed to set up the cookie sandbox on standalone
 				data.uri = tab.url;
 				
-				self.callMethod("saveItems", data, callback, tab);
+				self.callMethod(options, data, callback, tab);
 			});
 			return;
 		}
 		
-		this.callMethod("saveItems", data, callback, tab);
+		this.callMethod(options, data, callback, tab);
 	}
 }
 

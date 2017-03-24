@@ -15,7 +15,7 @@ XPI="`$DIR/get_xpi_path`"
 VERSION="$( unzip -p "$XPI" manifest.json | jq -r .version )"
 
 if ! unzip -l "$XPI" | grep --quiet META-INF; then
-	echo "$XPI_FILE is not signed"
+	echo "$XPI is not signed"
 	exit 1
 fi
 

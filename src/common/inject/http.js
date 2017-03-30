@@ -187,10 +187,17 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 		document.body.appendChild(iframe);
 		
 		// load cross-site data into iframe
-		doc = iframe.contentDocument;
-		doc.open();
-		doc.write(xmlhttp.responseText);
-		doc.close();
+		var doc = iframe.contentDocument;
+		try {
+			// Firefox throws a security error here so we use iframe.srcdoc
+			// Unfortunately Edge 15 still does not support srcdoc.
+			// See http://caniuse.com/#feat=iframe-srcdoc
+			doc.open();
+			doc.write(xmlhttp.responseText);
+			doc.close();
+		} catch (e) {
+			iframe.srcdoc = xmlhttp.responseText;
+		}
 		process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView);
 	}
 	

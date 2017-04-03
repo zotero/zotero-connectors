@@ -12,23 +12,13 @@
 		"default_title": "Save to Zotero"
 	},
 	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies", 
-		"webRequest", "webRequestBlocking", "notifications"],
+		"webRequest", "webRequestBlocking", "webNavigation", "notifications"],
 	"background": {
 		"scripts": [
 			/*BACKGROUND SCRIPTS*/,
 			"background.js"
 		]
 	},
-	"content_scripts": [
-		{
-			"matches": ["http://*/*", "https://*/*"],
-			"js": [
-				"injectCheck.js"
-			],
-			"run_at": "document_idle",
-			"all_frames": true
-		}
-	],
 	"web_accessible_resources": [
 		"images/*"
 	],

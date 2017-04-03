@@ -115,7 +115,9 @@ Zotero.Messaging = new function() {
 		else if(Zotero.isBrowserExt) {
 			// Firefox returns a promise
 			if (Zotero.isFirefox) {
-				return browser.tabs.sendMessage(tab.id, [messageName, args], {});
+				// Firefox throws an error when the receiving end doesn't exist (e.g. before injection)
+				return browser.tabs.sendMessage(tab.id, [messageName, args], {})
+					.catch(() => undefined);
 			}
 			else {
 				let deferred = Zotero.Promise.defer();

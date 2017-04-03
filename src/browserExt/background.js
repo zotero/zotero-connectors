@@ -130,24 +130,25 @@ Zotero.Connector_Browser = new function() {
 	 * Checks whether a given frame has any matching translators. Injects translation code
 	 * if translators are found.
 	 * 
-	 * @param args [url, rootUrl]
 	 * @param tab
 	 * @param frameId
+	 * @param url - url of the frame
 	 */
-	this.onFrameLoaded = function(args, tab, frameId) {
+	this.onFrameLoaded = function(tab, frameId, url) {
 		if (_isDisabledForURL(tab.url)) {
 			_clearInfoForTab(tab.id);
 			return;
 		}
-		var url = args[0];
-		var rootUrl = args[1];
-		if (!url || !rootUrl) return;
-		return Zotero.Translators.getWebTranslatorsForLocation(url, rootUrl).then(function(translators) {
-			if (translators.length == 0) {
-				Zotero.debug("Not injecting. No translators found for [rootUrl, url]: " + rootUrl + " , " + url);
+		// Always inject in the top-frame
+		if (frameId == 0) {
+			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+		}
+		return Zotero.Translators.getWebTranslatorsForLocation(tab.url, url).then(function(translators) {
+			if (translators[0].length == 0) {
+				Zotero.debug("Not injecting. No translators found for [tab.url, url]: " + tab.url + " , " + url);
 				return;
 			}
-			Zotero.debug(translators.length+  " translators found. Injecting into [rootUrl, url]: " + rootUrl + " , " + url);
+			Zotero.debug(translators[0].length+  " translators found. Injecting into [tab.url, url]: " + tab.url + " , " + url);
 			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
 		});
 	};
@@ -446,8 +447,6 @@ Zotero.Connector_Browser = new function() {
 		_tabInfo[data[0]].selectCallback(data[1]);
 	});
 	
-	Zotero.Messaging.addMessageListener("frameLoaded", this.onFrameLoaded);
-
 	chrome.tabs.onRemoved.addListener(_clearInfoForTab);
 
 	chrome.tabs.onUpdated.addListener(function(tabID, changeInfo, tab) {
@@ -466,6 +465,12 @@ Zotero.Connector_Browser = new function() {
 	});
 
 	chrome.browserAction.onClicked.addListener(_browserAction);
+	
+	chrome.webNavigation.onDOMContentLoaded.addListener(function(details) {
+		chrome.tabs.get(details.tabId, function(tab) {
+			Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
+		});
+	});
 }
 
 Zotero.initGlobal();

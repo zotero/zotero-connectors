@@ -202,6 +202,12 @@ function processFile() {
 		var asyncAddFiles = false;
 		// Replace contents
 		switch (basename) {
+			case 'zotero.js':
+				if (!argv.p) {
+					file.contents = Buffer.from(file.contents.toString()
+						.replace('"debug.log": false', '"debug.log": true'));
+				}
+				break;
 			case 'manifest.json':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("/*BACKGROUND SCRIPTS*/",
@@ -272,6 +278,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/safari/Info.plist',
 		'./src/common/node_modules.js',
 		'./src/common/preferences/preferences.html',
+		'./src/common/zotero.js',
 		'./src/**/*.jsx'
 	]).pipe(plumber())
 		.pipe(processFile())

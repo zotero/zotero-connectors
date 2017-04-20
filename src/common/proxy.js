@@ -102,6 +102,7 @@ Zotero.Proxies = new function() {
 	
 	
 	this.updateDisabledByDomain = function() {
+		if (!Zotero.Proxies.disableByDomain) return;
 		let now = Date.now();
 		if (now - this.lastIPCheck > 15 * 60 * 1000) {
 			this.lastIPCheck = now;

@@ -124,8 +124,8 @@ Zotero.Proxies = new function() {
 	 *
 	 * @param {Object} details - webRequest details object
 	 */
-	this.observe = function (details) {
-		if (Zotero.Proxies._ignoreURLs.has(details.url) || details.statusCode >= 400) {
+	this.observe = function (details, meta) {
+		if (meta.proxyRedirected || Zotero.Proxies._ignoreURLs.has(details.url) || details.statusCode >= 400) {
 			return;
 		}
 		// try to detect a proxy
@@ -188,10 +188,10 @@ Zotero.Proxies = new function() {
 		var proxied = Zotero.Proxies.properToProxy(requestURL, true);
 		if (!proxied) return;
 
-		return _maybeRedirect(details, proxied);
+		return _maybeRedirect(details, proxied, meta);
 	};
 
-	function _maybeRedirect(details, proxied) {
+	function _maybeRedirect(details, proxied, meta) {
 		var proxiedURI = url.parse(proxied);
 		if (details.requestHeadersObject['referer']) {
 			// If the referrer is a proxiable host, we already have access (e.g., we're
@@ -237,7 +237,8 @@ Zotero.Proxies = new function() {
 		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
 			_showNotification('Zotero Proxy Redirection', `${url.parse(details.url).host} was automatically redirected through ${proxiedURI.host}`);
 		}
-			
+
+		meta.proxyRedirected = true;
 		return {redirectUrl: proxied};
 	}
 

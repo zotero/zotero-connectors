@@ -130,7 +130,6 @@ Zotero.Proxies = new function() {
 		}
 		// try to detect a proxy
 		var requestURL = details.url;
-		var requestURI = url.parse(requestURL);
 
 		// see if there is a proxy we already know
 		var m = false;
@@ -153,6 +152,7 @@ Zotero.Proxies = new function() {
 				proxy.hosts.push(host);
 				Zotero.Proxies.save(proxy);
 
+				let requestURI = url.parse(requestURL);
 				_showNotification('New Zotero Proxy Host', `${host} will redirect through ${requestURI.host}`);
 			}
 		} else if (Zotero.Proxies.autoRecognize) {
@@ -169,6 +169,7 @@ Zotero.Proxies = new function() {
 					}
 					
 					if (!proxy) continue;
+					let requestURI = url.parse(requestURL);
 					Zotero.debug("Proxies: Detected "+detectorName+" proxy "+proxy.scheme+" for "+requestURI.host);
 					
 					// Ideally we would like to ask the user whether they want to add a new proxy on this notification,

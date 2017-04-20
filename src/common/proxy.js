@@ -700,7 +700,7 @@ Zotero.Proxies.Detectors.EZProxy = function(details) {
 		} else {
 			try {
 				toProxy = uri;
-				fromProxy = url.parse(details.responseHeadersObject["referer"]);
+				fromProxy = url.parse(details.requestHeadersObject["referer"]);
 			} catch (e) {}
 		}
 		

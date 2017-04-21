@@ -258,7 +258,7 @@ Zotero.Proxies = new function() {
 		
 		// If no %h present, then only a single host can be supported and we drop all but the first one.
 		if (proxy.scheme.indexOf('%h') == -1) {
-			proxy.hosts.slice(0, 1);
+			proxy.hosts = proxy.hosts.slice(0, 1);
 		}
 		proxy = new Zotero.Proxy(proxy);
 	

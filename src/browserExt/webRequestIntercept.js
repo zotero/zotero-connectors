@@ -41,8 +41,7 @@ Zotero.WebRequestIntercept = {
 	reqIDToReqMeta: {},
 
 	init: function() {
-		// Ignore XHR because we use those to fetch intercepted resources
-		let types = ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "object", "ping", "other"];
+		let types = ["main_frame", "sub_frame"];
 		chrome.webRequest.onBeforeSendHeaders.addListener(Zotero.WebRequestIntercept.handleRequest('beforeSendHeaders'), {urls: ['<all_urls>'], types}, ['blocking', 'requestHeaders']);
 		chrome.webRequest.onErrorOccurred.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
 		chrome.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});

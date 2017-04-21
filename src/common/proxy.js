@@ -102,6 +102,7 @@ Zotero.Proxies = new function() {
 	
 	
 	this.updateDisabledByDomain = function() {
+		if (!Zotero.Proxies.disableByDomain) return;
 		let now = Date.now();
 		if (now - this.lastIPCheck > 15 * 60 * 1000) {
 			this.lastIPCheck = now;
@@ -124,13 +125,12 @@ Zotero.Proxies = new function() {
 	 *
 	 * @param {Object} details - webRequest details object
 	 */
-	this.observe = function (details) {
-		if (Zotero.Proxies._ignoreURLs.has(details.url) || details.statusCode >= 400) {
+	this.observe = function (details, meta) {
+		if (meta.proxyRedirected || Zotero.Proxies._ignoreURLs.has(details.url) || details.statusCode >= 400) {
 			return;
 		}
 		// try to detect a proxy
 		var requestURL = details.url;
-		var requestURI = url.parse(requestURL);
 
 		// see if there is a proxy we already know
 		var m = false;
@@ -153,6 +153,7 @@ Zotero.Proxies = new function() {
 				proxy.hosts.push(host);
 				Zotero.Proxies.save(proxy);
 
+				let requestURI = url.parse(requestURL);
 				_showNotification('New Zotero Proxy Host', `${host} will redirect through ${requestURI.host}`);
 			}
 		} else if (Zotero.Proxies.autoRecognize) {
@@ -169,6 +170,7 @@ Zotero.Proxies = new function() {
 					}
 					
 					if (!proxy) continue;
+					let requestURI = url.parse(requestURL);
 					Zotero.debug("Proxies: Detected "+detectorName+" proxy "+proxy.scheme+" for "+requestURI.host);
 					
 					// Ideally we would like to ask the user whether they want to add a new proxy on this notification,
@@ -188,10 +190,10 @@ Zotero.Proxies = new function() {
 		var proxied = Zotero.Proxies.properToProxy(requestURL, true);
 		if (!proxied) return;
 
-		return _maybeRedirect(details, proxied);
+		return _maybeRedirect(details, proxied, meta);
 	};
 
-	function _maybeRedirect(details, proxied) {
+	function _maybeRedirect(details, proxied, meta) {
 		var proxiedURI = url.parse(proxied);
 		if (details.requestHeadersObject['referer']) {
 			// If the referrer is a proxiable host, we already have access (e.g., we're
@@ -237,7 +239,8 @@ Zotero.Proxies = new function() {
 		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
 			_showNotification('Zotero Proxy Redirection', `${url.parse(details.url).host} was automatically redirected through ${proxiedURI.host}`);
 		}
-			
+
+		meta.proxyRedirected = true;
 		return {redirectUrl: proxied};
 	}
 

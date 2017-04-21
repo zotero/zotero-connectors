@@ -38,26 +38,25 @@ Zotero.WebRequestIntercept = {
 		errorOccurred: []
 	},
 	
-	reqIDToReqHeaders: {},
+	reqIDToReqMeta: {},
 
 	init: function() {
 		// Ignore XHR because we use those to fetch intercepted resources
 		let types = ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "object", "ping", "other"];
 		chrome.webRequest.onBeforeSendHeaders.addListener(Zotero.WebRequestIntercept.handleRequest('beforeSendHeaders'), {urls: ['<all_urls>'], types}, ['blocking', 'requestHeaders']);
-		chrome.webRequest.onErrorOccurred.addListener(Zotero.WebRequestIntercept.removeRequestHeaders, {urls: ['<all_urls>'], types});
-		chrome.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestHeaders, {urls: ['<all_urls>'], types});
+		chrome.webRequest.onErrorOccurred.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
+		chrome.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
 		chrome.webRequest.onHeadersReceived.addListener(Zotero.WebRequestIntercept.handleRequest('headersReceived'), {urls: ['<all_urls>'], types}, ['blocking', 'responseHeaders']);
-		
+
 		Zotero.WebRequestIntercept.addListener('beforeSendHeaders', Zotero.WebRequestIntercept.storeRequestHeaders)
 	},
+
+	storeRequestHeaders: function(details, meta) {
+		meta.requestHeadersObject = details.requestHeadersObject;
+    },
 	
-	storeRequestHeaders: function(details) {
-		Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestId] = 
-			Zotero.WebRequestIntercept.processHeaders(details.requestHeaders);
-	},
-	
-	removeRequestHeaders: function(details) {
-		delete Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestId];
+	removeRequestMeta: function(details) {
+		delete Zotero.WebRequestIntercept.reqIDToReqMeta[details.requestId];
 	},
 	
 	/**
@@ -82,18 +81,25 @@ Zotero.WebRequestIntercept = {
 	handleRequest: function(requestType) {
 		return function(details) {
 			if (!Zotero.WebRequestIntercept.listeners[requestType].length) return;
-		
-			if (details.requestHeaders) {
+
+			let meta = Zotero.WebRequestIntercept.reqIDToReqMeta[details.requestId];
+			if (!meta) {
+				meta = {};
+				Zotero.WebRequestIntercept.reqIDToReqMeta[details.requestId] = meta;
+			}
+
+			if (meta.requestHeadersObject) {
+				details.requestHeadersObject = meta.requestHeadersObject;
+			} else if (details.requestHeaders) {
 				details.requestHeadersObject = Zotero.WebRequestIntercept.processHeaders(details.requestHeaders);
 			}
+
 			if (details.responseHeaders) {
 				details.responseHeadersObject = Zotero.WebRequestIntercept.processHeaders(details.responseHeaders);
 			}
-			if (Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestId]) {
-				details.requestHeadersObject = Zotero.WebRequestIntercept.reqIDToReqHeaders[details.requestId];
-			}
+
 			for (let listener of Zotero.WebRequestIntercept.listeners[requestType]) {
-				let retVal = listener(details);
+				let retVal = listener(details, meta);
 				if (retVal != undefined) {
 					return retVal;
 				}

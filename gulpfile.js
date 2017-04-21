@@ -191,7 +191,12 @@ function processFile() {
 				f = file.clone({contents: false});
 				f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/' + parts.slice(i+1).join('/');
 				if (ext === 'js') {
-					f.contents = new Buffer(babel.transform(f.contents, {presets: ['es2015']}).code);
+					try {
+						f.contents = new Buffer(babel.transform(f.contents, {presets: ['es2015']}).code);
+					} catch (e) {
+						console.log(e.message);
+						return;
+					}
 				}
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);

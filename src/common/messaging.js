@@ -106,7 +106,7 @@ Zotero.Messaging = new function() {
 	/**
 	 * Sends a message to a tab
 	 */
-	this.sendMessage = function(messageName, args, tab) {
+	this.sendMessage = function(messageName, args, tab, frameId=0) {
 		if(Zotero.isBookmarklet) {
 			window.parent.postMessage((_structuredCloneSupported
 				? [messageName, args] : JSON.stringify([messageName, args])), "*");
@@ -116,12 +116,12 @@ Zotero.Messaging = new function() {
 			// Firefox returns a promise
 			if (Zotero.isFirefox) {
 				// Firefox throws an error when the receiving end doesn't exist (e.g. before injection)
-				return browser.tabs.sendMessage(tab.id, [messageName, args], {})
+				return browser.tabs.sendMessage(tab.id, [messageName, args], {frameId})
 					.catch(() => undefined);
 			}
 			else {
 				let deferred = Zotero.Promise.defer();
-				chrome.tabs.sendMessage(tab.id, [messageName, args], {}, deferred.resolve);
+				chrome.tabs.sendMessage(tab.id, [messageName, args], {frameId}, deferred.resolve);
 				return deferred.promise;
 			}
 		} else if(Zotero.isSafari) {

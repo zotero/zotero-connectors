@@ -161,7 +161,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.injectTranslationScripts = function(tab, frameId=0) {
 		let deferred = Zotero.Promise.defer();
-		Zotero.Messaging.sendMessage('ping', null, tab).then(function(response) {
+		Zotero.Messaging.sendMessage('ping', null, tab, frameId).then(function(response) {
 			if (response) return deferred.resolve();
 			Zotero.debug(`Injecting translation scripts into ${tab.url}`);
 			return Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, null, tab, frameId)

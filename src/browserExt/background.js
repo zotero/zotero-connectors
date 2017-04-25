@@ -216,6 +216,10 @@ Zotero.Connector_Browser = new function() {
 		}
 	};
 	
+	this.openPreferences = function(paneID, tab) {
+		this.openTab(chrome.extension.getURL(`preferences/preferences.html#${paneID}`), tab);
+	};
+	
 	this.notify = function(text, buttons, timeout=15000, tab=null) {
 		// Get current tab if not provided
 		if (!tab) {

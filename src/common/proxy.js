@@ -140,6 +140,24 @@ Zotero.Proxies = new function() {
 				if (m) break;
 			}
 		}
+		function notifyNewProxy(proxy, proxiedHost) {
+			_showNotification(
+				'New Zotero Proxy',
+				`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxiedHost}?`,
+				['Accept', 'Dismiss', "Proxy Settings"],
+				null
+			)
+			.then(function(response) {
+				if (response == 0) Zotero.Proxies.save(proxy);
+				if (response == 2) {
+					Zotero.Connector_Browser.openPreferences("proxies");
+					// This is a bit of a hack.
+					// Technically the notification can take an onClick handler, but we cannot
+					// pass functions from background to content scripts easily
+					notifyNewProxy(proxy, proxiedHost);
+				}
+			});
+		}
 
 		if (m) {
 			var host = m[proxy.parameters.indexOf("%h")+1];
@@ -175,12 +193,7 @@ Zotero.Proxies = new function() {
 					let requestURI = url.parse(requestURL);
 					Zotero.debug("Proxies: Detected "+detectorName+" proxy "+proxy.scheme+" for "+requestURI.host);
 					
-					_showNotification('New Zotero Proxy', `Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${requestURI.host}?`, ['Dismiss', 'Accept', 'Proxy Settings'])
-					.then(function(response) {
-						if (response == 1) Zotero.Proxies.save(proxy);
-						if (response == 2) Zotero.Connector_Browser.openPreferences("proxies");
-					});
-					
+					notifyNewProxy(proxy, requestURI.host);
 					
 					break;
 				}
@@ -503,7 +516,7 @@ Zotero.Proxies = new function() {
 	 * @param {Object[String]} actions
 	 * @param {Number} timeout
 	 */
-	function _showNotification(title, message, actions, timeout=15000) {
+	function _showNotification(title, message, actions, timeout=7000) {
 		// chrome.notifications.create({
 		// 	type: 'basic',
 		// 	title,

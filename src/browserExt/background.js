@@ -237,7 +237,7 @@ Zotero.Connector_Browser = new function() {
 					// If it still exists try again
 					// But make sure translation scripts are injected first
 					return this.injectTranslationScripts(tab)
-						.then(resolve(this.notify(text, buttons, timeout, tab)));
+						.then(() => resolve(this.notify(text, buttons, timeout, tab)));
 				}.bind(this));
 			}.bind(this))
 		}.bind(this));

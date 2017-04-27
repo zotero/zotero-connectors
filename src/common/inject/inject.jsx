@@ -272,7 +272,8 @@ Zotero.Inject = new function() {
 				return notification.show();
 			});
 	};
-	
+
+	// TODO: Add "For more information" with link to blog post
 	this.firstUsePrompt = function () {
 		return this.confirm({
 			title: "You’ve installed the Zotero Connector!",

@@ -64,7 +64,7 @@ Zotero.ui.Notification.rootStyle = {
 	backgroundColor: "rgb(210, 82, 77)", color: "#fafafa",
 	zIndex: "16777269", padding: "12px 10%", minHeight: "40px",
 	display: "flex", flexDirection: "row", alignItems: "center",
-	boxSizing: "border-box"
+	boxSizing: "border-box", cursor: "default"
 };
 
 Zotero.ui.Notification.textStyle = {
@@ -91,7 +91,6 @@ Zotero.ui.Notification.prototype = {
 		elem = doc.createElement('span');
 		elem.innerHTML = this.text;
 		elem.style.flexGrow = 1;
-		elem.style.textAlign = "center";
 		this.elems.text = elem;
 		this.elems.root.appendChild(elem);
 

@@ -127,7 +127,7 @@ BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
 	"$EXTENSION_XPCOM_DIR/translation/translate.js" \
 	"$EXTENSION_XPCOM_DIR/connector/translate_item.js" \
 	"$SRCDIR/common/inject/translate_inject.js" \
-	"$EXTENSION_XPCOM_DIR/connector/typeSchemaData.js" \
+	"$SRCDIR/zotero/resource/schema/connectorTypeSchemaData.js" \
 	"$EXTENSION_XPCOM_DIR/utilities_translate.js" \
 	"$SRCDIR/bookmarklet/messaging_inject.js" \
 	"$SRCDIR/bookmarklet/inject_base.js")
@@ -250,18 +250,19 @@ for browser in "browserExt" "safari"; do
 	# Copy extension pieces
 	mkdir "$browser_builddir/zotero"
 	cp -r "$EXTENSION_XPCOM_DIR/utilities.js" \
-	   "$EXTENSION_XPCOM_DIR/utilities_translate.js" \
-	   "$EXTENSION_XPCOM_DIR/date.js" \
-	   "$EXTENSION_XPCOM_DIR/debug.js" \
-	   "$EXTENSION_XPCOM_DIR/openurl.js" \
-	   "$EXTENSION_XPCOM_DIR/rdf" \
-	   "$EXTENSION_XPCOM_DIR/xregexp" \
-	   "$browser_builddir/zotero"
+		"$EXTENSION_XPCOM_DIR/utilities_translate.js" \
+		"$EXTENSION_XPCOM_DIR/date.js" \
+		"$EXTENSION_XPCOM_DIR/debug.js" \
+		"$EXTENSION_XPCOM_DIR/openurl.js" \
+		"$EXTENSION_XPCOM_DIR/rdf" \
+		"$SRCDIR/zotero/resource/schema/connectorTypeSchemaData.js" \
+		"$EXTENSION_XPCOM_DIR/xregexp" \
+		"$browser_builddir/zotero"
 	mkdir "$browser_builddir/zotero/translation"
 	cp "$EXTENSION_XPCOM_DIR/translation/translate.js" \
-	   "$EXTENSION_XPCOM_DIR/translation/translator.js" \
-	   "$EXTENSION_XPCOM_DIR/translation/tlds.js" \
-	   "$browser_builddir/zotero/translation"
+		"$EXTENSION_XPCOM_DIR/translation/translator.js" \
+		"$EXTENSION_XPCOM_DIR/translation/tlds.js" \
+		"$browser_builddir/zotero/translation"
 	
 	# Copy node_modules libs
 	mkdir "$browser_builddir/lib"

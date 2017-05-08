@@ -120,7 +120,12 @@ Zotero.Connector_Types = new function() {
 				if(!itemType) return false;
 				return itemType[3]/* creatorTypes */[0];
 			};
-		}
+			
+			this.isValidForItemType = function(creatorTypeID, itemTypeID) {
+				let itemType = itemTypes[itemTypeID];
+				return itemType[3]/* creatorTypes */.includes(creatorTypeID);
+			};
+		};
 		
 		Zotero.ItemFields = new function() {
 			this.schemaType = "fields";
@@ -134,6 +139,10 @@ Zotero.Connector_Types = new function() {
 				
 				       /* fields */        /* id */
 				return itemType[4].indexOf(field[0]) !== -1;
+			};
+			
+			this.isBaseField = function(fieldID) {
+				return fields[fieldID][2];
 			};
 			
 			this.getFieldIDFromTypeAndBase = function(typeIdOrName, fieldIdOrName) {

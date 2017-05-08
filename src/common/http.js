@@ -33,9 +33,11 @@ Zotero.HTTP = new function() {
 	* 
 	* @param {nsIURI|String}	url				URL to request
 	* @param {Function} 		onDone			Callback to be executed upon request completion
+	* @param {N/A}				cookieSandbox	Not used in Connector
+	* @param {Object{}}			requestHeaders	HTTP headers to include with the request
 	* @return {Boolean} True if the request was sent, or false if the browser is offline
 	*/
-	this.doGet = function(url, onDone, responseCharset) {
+	this.doGet = function(url, onDone, responseCharset, cookieSandbox, requestHeaders) {
 		if(Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
 			if(Zotero.isBookmarklet) {
 				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
@@ -50,6 +52,10 @@ Zotero.HTTP = new function() {
 		var xmlhttp = new XMLHttpRequest();
 		try {
 			xmlhttp.open('GET', url, true);
+
+			for (let header in requestHeaders) {
+				xmlhttp.setRequestHeader(header, requestHeaders[header]);
+			}
 			
 			if(xmlhttp.overrideMimeType && responseCharset) {
 				xmlhttp.overrideMimeType("text/plain; charset=" + responseCharset);

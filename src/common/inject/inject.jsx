@@ -86,6 +86,8 @@ if(isTopWindow) {
 	Zotero.Messaging.addMessageListener("confirm", function (props) {
 		return Zotero.Inject.confirm(props);
 	});
+
+	Zotero.Messaging.addMessageListener("notify", (args) => Zotero.Inject.notify.apply(this, args));
 	
 	Zotero.Messaging.addMessageListener("ping", function () {
 		// Respond to indicate that script is injected
@@ -256,6 +258,21 @@ Zotero.Inject = new function() {
 		return deferred.promise;	
 	};
 	
+	this.notify = function(text, buttons, timeout, tabStatus) {
+			// This is a little awkward, because the tab status is passed from the background script to
+			// the content script, but chrome.tabs is unavailable in content scripts.
+			//
+			// If we're navigating somewhere don't display the notification, because it looks dumb.
+			// The navigation will re-trigger this method from the background script.
+			if (tabStatus != 'complete') return;
+			
+			return Zotero.Inject.loadReactComponents(['Notification']).then(function() {
+				var notification = new Zotero.ui.Notification(text, buttons);
+				if (timeout) setTimeout(notification.dismiss.bind(notification, null, 0), timeout);
+				return notification.show();
+			});
+	};
+
 	// TODO: Add "For more information" with link to blog post
 	this.firstUsePrompt = function () {
 		return this.confirm({

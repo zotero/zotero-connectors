@@ -45,6 +45,8 @@ body {
 	padding-left: 7px;
 	font-size: 14px;
 	width: 100%;
+	color: inherit;
+	text-decoration: inherit;
 }
 
 .content {

@@ -160,14 +160,23 @@ Zotero.Connector_Browser = new function() {
 	 * @returns {Promise} A promise that resolves when all scripts have been injected
 	 */
 	this.injectTranslationScripts = function(tab, frameId=0) {
-		let deferred = Zotero.Promise.defer();
+		// Prevent triggering multiple times
+		let key = tab.id+'-'+frameId;
+		let deferred = this.injectTranslationScripts[key];
+		if (deferred) return deferred.promise;
+		deferred = Zotero.Promise.defer();
+		this.injectTranslationScripts[key] = deferred;
+		
 		Zotero.Messaging.sendMessage('ping', null, tab, frameId).then(function(response) {
 			if (response) return deferred.resolve();
 			Zotero.debug(`Injecting translation scripts into ${tab.url}`);
 			return Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, null, tab, frameId)
 			.then(deferred.resolve).catch(deferred.reject);
 		});
-		return deferred.promise;
+		return deferred.promise.then(function(response) {
+			delete this.injectTranslationScripts[key];
+			return response;
+		}.bind(this));
 	};
 
 	/**
@@ -205,6 +214,33 @@ Zotero.Connector_Browser = new function() {
 		} else {
 			chrome.tabs.query({active: true, lastFocusedWindow: true}, (tabs) => this.openTab(url, tabs[0]));
 		}
+	};
+	
+	this.openPreferences = function(paneID, tab) {
+		this.openTab(chrome.extension.getURL(`preferences/preferences.html#${paneID}`), tab);
+	};
+	
+	this.notify = function(text, buttons, timeout=15000, tab=null) {
+		// Get current tab if not provided
+		if (!tab) {
+			return new Zotero.Promise(function(resolve) { 
+				chrome.tabs.query({active: true, lastFocusedWindow: true}, 
+					(tabs) => resolve(this.notify(text, buttons, timeout, tabs[0])));
+			}.bind(this));
+		}
+		return Zotero.Messaging.sendMessage('notify', [text, buttons, timeout, tab.status], tab).then(function(response) {
+			if (response != undefined) return response;
+			// Tab url changed or tab got removed, hence the undefined response
+			return new Zotero.Promise(function(resolve) {
+				chrome.tabs.get(tab.id, function(tab) {
+					if (!tab) return;
+					// If it still exists try again
+					// But make sure translation scripts are injected first
+					return this.injectTranslationScripts(tab)
+						.then(() => resolve(this.notify(text, buttons, timeout, tab)));
+				}.bind(this));
+			}.bind(this))
+		}.bind(this));
 	};
 
 	/**

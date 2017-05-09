@@ -57,7 +57,12 @@ var Zotero_Preferences = {
 			}
 		}
 		
-		Zotero_Preferences.selectPane("general");
+		let hashPane = window.location.hash && window.location.hash.substr(1);
+		if (hashPane in Zotero_Preferences.pane) {
+			Zotero_Preferences.selectPane(hashPane);
+		} else {
+			Zotero_Preferences.selectPane("general");
+		}
 		
 		Zotero_Preferences.General.init();
 		Zotero_Preferences.Advanced.init();

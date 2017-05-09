@@ -122,7 +122,8 @@ var MESSAGES = {
 			onTranslators: false,
 			injectScripts: true,
 			firstSaveToServerPrompt: true,
-			openTab: false
+			openTab: false,
+			openPreferences: false
 		},
 	Connector_Debug: 
 		{

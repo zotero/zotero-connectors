@@ -140,6 +140,24 @@ Zotero.Proxies = new function() {
 				if (m) break;
 			}
 		}
+		function notifyNewProxy(proxy, proxiedHost) {
+			_showNotification(
+				'New Zotero Proxy',
+				`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxiedHost}?`,
+				['Accept', 'Dismiss', "Proxy Settings"],
+				null
+			)
+			.then(function(response) {
+				if (response == 0) Zotero.Proxies.save(proxy);
+				if (response == 2) {
+					Zotero.Connector_Browser.openPreferences("proxies");
+					// This is a bit of a hack.
+					// Technically the notification can take an onClick handler, but we cannot
+					// pass functions from background to content scripts easily
+					notifyNewProxy(proxy, proxiedHost);
+				}
+			});
+		}
 
 		if (m) {
 			var host = m[proxy.parameters.indexOf("%h")+1];
@@ -154,10 +172,12 @@ Zotero.Proxies = new function() {
 				Zotero.Proxies.save(proxy);
 
 				let requestURI = url.parse(requestURL);
-				_showNotification('New Zotero Proxy Host', `${host} will redirect through ${requestURI.host}`);
+				_showNotification('New Zotero Proxy Host', `Zotero automatically associated this site with a previously defined proxy. Future requests to ${host} will be redirected to ${requestURI.host}.`, ["Dismiss", "Proxy Settings"])
+				.then(function(response) {
+					if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
+				});
 			}
 		} else if (Zotero.Proxies.autoRecognize) {
-			// if autoRecognize enabled, send the request details off to standalone to try and detect a proxy
 			// perform in the next event loop step to reduce impact of header processing in a blocking call
 			setTimeout(function() {
 				var proxy = false;
@@ -173,11 +193,7 @@ Zotero.Proxies = new function() {
 					let requestURI = url.parse(requestURL);
 					Zotero.debug("Proxies: Detected "+detectorName+" proxy "+proxy.scheme+" for "+requestURI.host);
 					
-					// Ideally we would like to ask the user whether they want to add a new proxy on this notification,
-					// but only chrome supports that
-					_showNotification('New Zotero Proxy', `${requestURI.host}`);
-					
-					Zotero.Proxies.save(proxy);
+					notifyNewProxy(proxy, requestURI.host);
 					
 					break;
 				}
@@ -237,7 +253,10 @@ Zotero.Proxies = new function() {
 
 		// Otherwise, redirect.
 		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
-			_showNotification('Zotero Proxy Redirection', `${url.parse(details.url).host} was automatically redirected through ${proxiedURI.host}`);
+			_showNotification('Zotero Proxy Redirection', `Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxiedURI.host}.`, ['Dismiss', 'Proxy Settings'])
+			.then(function(response) {
+				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
+			});
 		}
 
 		meta.proxyRedirected = true;
@@ -492,17 +511,22 @@ Zotero.Proxies = new function() {
 
 	/**
 	 * Show a proxy-related notification
+	 * @param {String} title - notification title (currently unused)
 	 * @param {String} message - notification text
+	 * @param {Object[String]} actions
+	 * @param {Number} timeout
 	 */
-	function _showNotification(title, message) {
-		chrome.notifications.create({
-			type: 'basic',
-			title,
-			message,
-			iconUrl: 'Icon-128.png'
-		});
-		Zotero.debug(`NOTIFICATION: ${message}`)
-	};
+	function _showNotification(title, message, actions, timeout=7000) {
+		// chrome.notifications.create({
+		// 	type: 'basic',
+		// 	title,
+		// 	message,
+		// 	iconUrl: 'Icon-128.png'
+		// });
+		Zotero.debug(`NOTIFICATION: ${message}`);
+		actions = actions && actions.map((a) => {return {title: a, dismiss: true}});
+		return Zotero.Connector_Browser.notify(message, actions, timeout);
+	}
 
 };
 

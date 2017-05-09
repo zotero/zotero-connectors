@@ -41,7 +41,7 @@ Zotero.ui.Notification = function(text, buttons) {
 	this.text = text;
 	if (!buttons) {
 		buttons = [{
-			title: "Dismiss",
+			title: "✕",
 			dismiss: true
 		}]
 	}
@@ -58,22 +58,36 @@ Zotero.ui.Notification = function(text, buttons) {
 	this.elems = {};
 };
 
+// TODO: Put styles in a stylesheet that we insert, so we can use pseudo-classes properly, do proper
+// resetting, etc.
 Zotero.ui.Notification.rootStyle = {
-	position: (Zotero.isIE && document.compatMode === "BackCompat" ? "absolute" : "fixed"),
-	top: "0", left: "0", width: "100%", 
-	backgroundColor: "rgb(210, 82, 77)", color: "#fafafa",
-	zIndex: "16777269", padding: "12px 10%", minHeight: "40px",
-	display: "flex", flexDirection: "row", alignItems: "center",
-	boxSizing: "border-box", cursor: "default"
+	/* Copy the notification style from Firefox */
+	background: "linear-gradient(#ffe13e, #ffc703)",
+	color: "rgba(0,0,0,0.95)",
+	borderBottom: "1px solid #bf8a01",
+	padding: "3px 10px 4px",
+	display: "flex",
+	flexDirection: "row",
+	alignItems: "center",
+	boxSizing: "border-box",
+	cursor: "default",
+	transition: "margin-top 300ms, opacity 300ms"
 };
 
 Zotero.ui.Notification.textStyle = {
-	fontFamily: "Lucida Grande, Tahoma, sans", fontSize: "16px", lineHeight: "1.4em", 
+	fontFamily: "Lucida Grande, Tahoma, sans",
+	fontSize: "8.5pt",
+	lineHeight: "1.4em",
+	fontWeight: "bold",
+	color: "rgba(0,0,0,0.95)"
 };
 
 Zotero.ui.Notification.buttonStyle = Object.assign({
-	color: "#fafafa", fontWeight: "bold", padding: "3px", textDecoration: "none", margin: "0",
-	marginRight: "30px", whiteSpace: "nowrap"
+	padding: "3px",
+	textDecoration: "none",
+	margin: "0",
+	marginLeft: "30px",
+	whiteSpace: "nowrap"
 }, Zotero.ui.Notification.textStyle);
 
 Zotero.ui.Notification.prototype = {
@@ -81,10 +95,12 @@ Zotero.ui.Notification.prototype = {
 		if (this.deferred) return deferred.promise;
 		this.deferred = Zotero.Promise.defer();
 		var elem = doc.createElement('div');
-		for (let param in Zotero.ui.Notification.rootStyle) 
+		for (let param in Zotero.ui.Notification.rootStyle) {
 			elem.style[param] = Zotero.ui.Notification.rootStyle[param];
-		for (let param in Zotero.ui.Notification.textStyle)
+		}
+		for (let param in Zotero.ui.Notification.textStyle) {
 			elem.style[param] = Zotero.ui.Notification.textStyle[param];
+		}
 		this.elems.root = elem;
 		elem.classList.add('zotero-notificaton');
 
@@ -104,8 +120,12 @@ Zotero.ui.Notification.prototype = {
 			elem = doc.createElement('a');
 			elem.dataset.id = i;
 			elem.setAttribute('href', 'javascript:void(0)');
-			for (let param in Zotero.ui.Notification.buttonStyle)
+			for (let param in Zotero.ui.Notification.buttonStyle) {
 				elem.style[param] = Zotero.ui.Notification.buttonStyle[param];
+			}
+			for (let param in Zotero.ui.Notification.textStyle) {
+				elem.style[param] = Zotero.ui.Notification.textStyle[param];
+			}
 			this.elems.buttons.push(elem);
 			this.elems.root.appendChild(elem);
 			button.onClick && elem.addEventListener('click', button.onClick);
@@ -114,7 +134,13 @@ Zotero.ui.Notification.prototype = {
 			this.elems.buttons[this.buttons.length-1-i].appendChild(elem);
 		}
 		
-		doc.body.appendChild(this.elems.root);
+		doc.body.insertBefore(this.elems.root, doc.body.firstChild);
+		
+		// Hack to use pseudo-class
+		try {
+			document.styleSheets[0].insertRule('.zotero-notification a:hover { color: rgba(0,0,0,0.95) !important; }', 0);
+		}
+		catch (e) {}
 		
 		return this.deferred.promise;
 	},

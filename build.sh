@@ -103,7 +103,6 @@ EXTENSION_XPCOM_DIR="$SRCDIR/zotero/chrome/content/zotero/xpcom"
 EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 
 SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
-CHROME_EXT="$DISTDIR/Zotero_Connector-$VERSION.crx"
 
 ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-new-z-16px.png  \
     $SRCDIR/common/images/*"
@@ -295,20 +294,6 @@ echo "Transpiling Safari JS..." >> "$LOG";
 echo "Transpiled" >> "$LOG";
 
 echo "done"
-
-# Build Chrome extension
-if [ -e "$CHROME_CERTIFICATE" -a -e "$CHROME_EXECUTABLE" ]; then
-	echo -n "Building Chrome extension..."
-	if "$CHROME_EXECUTABLE" --pack-extension="$BUILD_DIR/browserExt" --pack-extension-key="$CHROME_CERTIFICATE" >> "$LOG" 2>&1
-	then
-		echo "succeeded"
-		mv "$BUILD_DIR/chrome.crx" "$CHROME_EXT"
-	else
-		echo "failed"
-	fi
-else
-	echo "No Chrome certificate found; not building Chrome extension"
-fi
 
 # Build Safari extension
 if [ -e "$SAFARI_PRIVATE_KEY" -a -e "$XAR_EXECUTABLE" ]; then

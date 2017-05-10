@@ -312,12 +312,12 @@ if [ -e "$SAFARI_PRIVATE_KEY" -a -e "$XAR_EXECUTABLE" ]; then
 	pushd "$BUILD_DIR" > /dev/null
 	if "$XAR_EXECUTABLE" -cf "$SAFARI_EXT" --distribution "`basename \"$BUILD_DIR/safari.safariextension\"`" &&
 		popd > /dev/null &&
-		# Convert pem certificate to der
-		openssl x509 -outform der -in "$SAFARI_PRIVATE_KEY" -out "$TMP_BUILD_DIR/safari_key.der" >> "$LOG" && 
 		# Make signature data
 		"$XAR_EXECUTABLE" --sign -f "$SAFARI_EXT" \
-			--data-to-sign "$TMP_BUILD_DIR/safari_sha1.dat"  --sig-size $SIGSIZE \
-			--cert-loc="$TMP_BUILD_DIR/safari_key.der" --cert-loc="$SAFARI_AUX_CERTIFICATE1" \
+			--data-to-sign "$TMP_BUILD_DIR/safari_sha1.dat" \
+			--sig-size $SIGSIZE \
+			--cert-loc="$SAFARI_EXT_CERTIFICATE" \
+			--cert-loc="$SAFARI_AUX_CERTIFICATE1" \
 			--cert-loc="$SAFARI_AUX_CERTIFICATE2" >> "$LOG" 2>&1 &&
 		# Sign signature data
 		(echo "3021300906052B0E03021A05000414" | xxd -r -p; cat "$TMP_BUILD_DIR/safari_sha1.dat") \
@@ -329,8 +329,7 @@ if [ -e "$SAFARI_PRIVATE_KEY" -a -e "$XAR_EXECUTABLE" ]; then
 	else
 		echo "failed"
 	fi
-	# Delete converted signature
-	rm -fP "$TMP_BUILD_DIR/safari_key.der"
+	rm -rf "$TMP_BUILD_DIR"
 else
 	echo "No Safari certificate found; not building Safari extension"
 fi

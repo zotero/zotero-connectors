@@ -1,4 +1,6 @@
 build.log
 build
+cert
 config.sh
+dist
 node_modules

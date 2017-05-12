@@ -49,4 +49,15 @@ Zotero.Utilities.debounce = function(fn, delay) {
 	};
 }
 
+Zotero.Utilities.logCallbackError = function(fn) {
+	return function() {
+		try {
+			return fn.apply(this, arguments);
+		} catch (e) {
+			Zotero.logError(e);
+			throw e;
+		}
+	}
+}
+
 })();

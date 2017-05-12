@@ -495,19 +495,19 @@ Zotero.Connector_Browser = new function() {
 	});
 	
 	chrome.tabs.onActivated.addListener(function(activeInfo) {
-		chrome.tabs.get(activeInfo.tabId, function(tab) {
+		chrome.tabs.get(activeInfo.tabId, Zotero.Utilities.logCallbackError(function(tab) {
 			Zotero.debug("Connector_Browser: onActivated for " + tab.url);
 			Zotero.Connector_Browser.onTabActivated(tab);
-		});
+		}));
 	});
 
 	chrome.browserAction.onClicked.addListener(_browserAction);
 	
 	chrome.webNavigation.onDOMContentLoaded.addListener(function(details) {
-		chrome.tabs.get(details.tabId, function(tab) {
+		chrome.tabs.get(details.tabId, Zotero.Utilities.logCallbackError(function(tab) {
 			Zotero.debug("Connector_Browser: onDOMContentLoaded for " + tab.url);
 			Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
-		});
+		}));
 	});
 }
 

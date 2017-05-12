@@ -1,12 +1,12 @@
 #!/bin/sh
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # This must be xar from https://code.google.com/p/xar/issues/detail?id=76
 XAR_EXECUTABLE=/usr/local/bin/xar
-SAFARI_PRIVATE_KEY="$DIR/cert/safari_extension.key"
-SAFARI_EXT_CERTIFICATE="$DIR/cert/safari_extension.cer"
-SAFARI_AUX_CERTIFICATE1="$DIR/cert/Apple Worldwide Developer Relations Certification Authority.cer"
-SAFARI_AUX_CERTIFICATE2="$DIR/cert/Apple Root CA.cer"
+SAFARI_PRIVATE_KEY="$ROOT_DIR/cert/safari_extension.key"
+SAFARI_EXT_CERTIFICATE="$ROOT_DIR/cert/safari_extension.cer"
+SAFARI_AUX_CERTIFICATE1="$ROOT_DIR/cert/Apple Worldwide Developer Relations Certification Authority.cer"
+SAFARI_AUX_CERTIFICATE2="$ROOT_DIR/cert/Apple Root CA.cer"
 SAFARI_DEVELOPER_ID=""
 
 export WEB_EXT_API_KEY=""

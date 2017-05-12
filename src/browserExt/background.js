@@ -488,7 +488,7 @@ Zotero.Connector_Browser = new function() {
 	chrome.tabs.onUpdated.addListener(function(tabID, changeInfo, tab) {
 		_updateExtensionUI(tab);
 		if(!changeInfo.url) return;
-		Zotero.debug("Connector_Browser: URL changed for tab");
+		Zotero.debug("Connector_Browser: URL changed for tab " + tab.url);
 		_clearInfoForTab(tabID);
 		// Rerun translation
 		Zotero.Messaging.sendMessage("pageModified", null, tab);
@@ -496,6 +496,7 @@ Zotero.Connector_Browser = new function() {
 	
 	chrome.tabs.onActivated.addListener(function(activeInfo) {
 		chrome.tabs.get(activeInfo.tabId, function(tab) {
+			Zotero.debug("Connector_Browser: onActivated for " + tab.url);
 			Zotero.Connector_Browser.onTabActivated(tab);
 		});
 	});
@@ -504,6 +505,7 @@ Zotero.Connector_Browser = new function() {
 	
 	chrome.webNavigation.onDOMContentLoaded.addListener(function(details) {
 		chrome.tabs.get(details.tabId, function(tab) {
+			Zotero.debug("Connector_Browser: onDOMContentLoaded for " + tab.url);
 			Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
 		});
 	});

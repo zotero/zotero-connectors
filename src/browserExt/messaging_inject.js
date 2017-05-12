@@ -92,7 +92,7 @@ Zotero.Messaging = new function() {
 		chrome.runtime.onMessage.addListener(function(request, sender, sendResponseCallback) {
 			if (typeof request !== "object" || !request.length || !_messageListeners[request[0]]) return;
 			try {
-				//Zotero.debug("Received message "+request[0]);
+				Zotero.debug(request[0] + " message received in injected page " + window.location.href);
 				let response = _messageListeners[request[0]](request[1]);
 				// Handle promises
 				if (response && response.then) {

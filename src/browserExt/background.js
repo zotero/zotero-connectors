@@ -220,7 +220,7 @@ Zotero.Connector_Browser = new function() {
 		this.openTab(chrome.extension.getURL(`preferences/preferences.html#${paneID}`), tab);
 	};
 	
-	this.notify = function(text, buttons, timeout=15000, tab=null) {
+	this.notify = function(text, buttons, timeout=null, tab=null) {
 		// Get current tab if not provided
 		if (!tab) {
 			return new Zotero.Promise(function(resolve) { 

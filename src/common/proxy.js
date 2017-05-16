@@ -144,8 +144,7 @@ Zotero.Proxies = new function() {
 			_showNotification(
 				'New Zotero Proxy',
 				`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxiedHost}?`,
-				['✕', 'Proxy Settings', 'Accept'],
-				null
+				['✕', 'Proxy Settings', 'Accept']
 			)
 			.then(function(response) {
 				if (response == 2) Zotero.Proxies.save(proxy);
@@ -526,7 +525,7 @@ Zotero.Proxies = new function() {
 	 * @param {String[]} actions
 	 * @param {Number} timeout
 	 */
-	function _showNotification(title, message, actions, timeout=7000) {
+	function _showNotification(title, message, actions, timeout=null) {
 		// chrome.notifications.create({
 		// 	type: 'basic',
 		// 	title,

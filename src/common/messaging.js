@@ -113,6 +113,11 @@ Zotero.Messaging = new function() {
 		}
 		// Use the promise or response callback in BrowserExt for advanced functionality
 		else if(Zotero.isBrowserExt) {
+			// Get current tab if not provided
+			if (!tab) return new Zotero.Promise(function(resolve) {
+				chrome.tabs.query({active: true, lastFocusedWindow: true},
+					(tabs) => resolve(this.sendMessage(messageName, args, tabs[0], frameId)));
+			}.bind(this));
 			// Firefox returns a promise
 			if (Zotero.isFirefox) {
 				// Firefox throws an error when the receiving end doesn't exist (e.g. before injection)
@@ -125,6 +130,8 @@ Zotero.Messaging = new function() {
 				return deferred.promise;
 			}
 		} else if(Zotero.isSafari) {
+			// Use current tab if not provided
+			tab = tab || safari.application.activeBrowserWindow.activeTab;
 			tab.page.dispatchMessage(messageName, args);
 		}
 	}

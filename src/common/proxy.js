@@ -147,12 +147,26 @@ Zotero.Proxies = new function() {
 				['✕', 'Proxy Settings', 'Accept']
 			)
 			.then(function(response) {
-				if (response == 2) Zotero.Proxies.save(proxy);
+				if (response == 2) {
+					return Zotero.Messaging.sendMessage('confirm', {
+						title: 'Only add proxies linked from your library, school, or corporate website',
+						message: 'Adding other proxies allows malicious sites to masquarade as sites you trust.<br/></br>'
+							+ 'Adding this proxy will allow Zotero to recognize items from its pages and will automatically '
+							+ `redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxiedHost}.`,
+						button1Text: 'Add Proxy',
+						button2Text: 'Ignore'
+					}).then(function(result) {
+						if (result.button == 1) {
+							return Zotero.Proxies.save(proxy);
+						}
+					});
+				}
 				if (response == 1) {
 					Zotero.Connector_Browser.openPreferences("proxies");
 					// This is a bit of a hack.
 					// Technically the notification can take an onClick handler, but we cannot
 					// pass functions from background to content scripts easily
+					// so to "keep the notification open" we display it agian
 					notifyNewProxy(proxy, proxiedHost);
 				}
 			});

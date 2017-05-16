@@ -385,7 +385,14 @@ Zotero_Preferences.Components.Proxies = React.createClass({
 	componentWillMount: function() {
 		this.saveCurrentProxy = Zotero.Utilities.debounce(Zotero.Proxies.save.bind(Zotero.Proxies), 200);
 	},
-
+	
+	componentDidUpdate: function() {
+		if (this.focusHostInput) {
+			this.focusHostInput = false;
+			this.refs.hostInput.focus();
+		}
+	},
+	
 	saveProxies: function(currentProxyIdx=-1, currentHostIdx=-1) {
 		var currentProxy;
 		if (currentHostIdx == -1) currentHostIdx = this.state.currentHostIdx;
@@ -413,9 +420,10 @@ Zotero_Preferences.Components.Proxies = React.createClass({
 		var currentProxyIdx = -1, currentHostIdx = -1;
 		if (event.target.value == '+') {
 			this.state.proxies.push({id: Date.now(), scheme: 'http://%h.example.com/%p', autoAssociate: true, 
-				hosts: ['www.example.com']});
+				hosts: ['']});
 			currentProxyIdx = this.state.proxies.length-1;
 			currentHostIdx = 0;
+			this.focusHostInput = true;
 		} else if (event.target.value == '-') {
 			this.state.proxies.splice(this.state.currentProxyIdx, 1);
 			Zotero.Proxies.remove(this.state.currentProxy);
@@ -445,13 +453,18 @@ Zotero_Preferences.Components.Proxies = React.createClass({
 	handleHostButtonClick: function(event) {
 		var currentHostIdx = -1;
 		if (event.target.value == '+') {
-			this.state.currentProxy.hosts.push('www.example.com');
+			this.state.currentProxy.hosts.push('');
 			currentHostIdx = this.state.currentProxy.hosts.length-1;
+			this.focusHostInput = true;
 		} else if (event.target.value == '-') {
+			currentHostIdx = this.state.currentHostIdx;
+			if (currentHostIdx == this.state.currentProxy.hosts.length-1) {
+				currentHostIdx--;
+			}
 			this.state.currentProxy.hosts.splice(this.state.currentHostIdx, 1);
 		}
 		this.setState({currentHostIdx: currentHostIdx});
-		this.saveProxies(this.state.currentProxyIdx);
+		this.saveProxies(this.state.currentProxyIdx, currentHostIdx);
 	},
 	
 	handleHostnameChange: function(event) {
@@ -463,7 +476,7 @@ Zotero_Preferences.Components.Proxies = React.createClass({
 		var configuredProxies;
 		if (this.state.proxies.length) {
 			configuredProxies = this.state.proxies.map((proxy, i) => 
-				<option value={i} key={i}>{proxy.scheme}</option> 
+				<option value={i} key={i} selected={this.state.currentProxyIdx == i}>{proxy.scheme}</option>
 			);
 		} else {
 			configuredProxies = <option value={-1}></option>;
@@ -471,19 +484,22 @@ Zotero_Preferences.Components.Proxies = React.createClass({
 		
 		var proxySettings = "";
 		if (this.props.transparent && this.state.currentProxy) {
-			let multiHost = this.state.currentProxy.scheme.indexOf('%h') != -1;
-			let configuredHosts = this.state.currentProxy.hosts.map((host, i) => 
-				<option value={i} key={i}>{host}</option>);
+			let currentProxy = this.state.currentProxy;
+			let multiHost = currentProxy.scheme.indexOf('%h') != -1;
+			let configuredHosts = currentProxy.hosts.map((host, i) => 
+				<option value={i} key={i} selected={this.state.currentHostIdx == i}>{host}</option>);
+				
+			let disableAddHost = currentProxy.hosts.length && currentProxy.hosts[currentProxy.hosts.length-1].trim().length == 0;
 				
 			proxySettings = (
 				<div className="group" style={{marginTop: "10px"}}>
 					<p style={{display: "flex", alignItems: "center", flexWrap: "wrap"}}>
-						<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={this.handleCheckboxChange} checked={this.state.currentProxy.autoAssociate}/>&nbsp;Automatically associate new hosts</label><br/>
-						<label><input type="checkbox" name="dotsToHyphens" onChange={this.handleCheckboxChange} checked={this.state.currentProxy.dotsToHyphens}/>&nbsp;Automatically convert hyphens to dots in proxied hostnames</label><br/>
+						<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={this.handleCheckboxChange} checked={currentProxy.autoAssociate}/>&nbsp;Automatically associate new hosts</label><br/>
+						<label><input type="checkbox" name="dotsToHyphens" onChange={this.handleCheckboxChange} checked={currentProxy.dotsToHyphens}/>&nbsp;Automatically convert hyphens to dots in proxied hostnames</label><br/>
 					</p>
 					<p style={{display: "flex", alignItems: "center"}}>
 						<label style={{alignSelf: "center", marginRight: "5px"}}>Scheme: </label>
-						<input style={{flexGrow: "1"}} type="text" name="scheme" onChange={this.handleSchemeChange} value={this.state.currentProxy.scheme}/>
+						<input style={{flexGrow: "1"}} type="text" name="scheme" onChange={this.handleSchemeChange} value={currentProxy.scheme}/>
 					</p>
 					<p>
 						You may use the following variables in your proxy scheme:<br/>
@@ -496,17 +512,17 @@ Zotero_Preferences.Components.Proxies = React.createClass({
 					
 					<div style={{display: "flex", flexDirection: "column", marginTop: "10px"}}>
 						<label>Hostnames</label>
-						<select size="8" multiple onChange={this.handleHostSelectChange} value={[this.state.currentHostIdx]}>
+						<select size="8" multiple onChange={this.handleHostSelectChange}>
 							{configuredHosts}
 						</select>
 						<p>
-							<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostButtonClick} value="+"/>
-							<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostButtonClick} disabled={this.state.currentHostIdx == -1} value="-"/>
+							<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostButtonClick} disabled={disableAddHost} value="+"/>
+							<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostButtonClick} value="-"/>
 						</p>
 
 						<p style={{display: this.state.currentHostIdx === -1 ? 'none' : 'flex'}}>
 							<label style={{alignSelf: 'center', marginRight: "5px"}}>Hostname: </label>
-							<input style={{flexGrow: '1'}} type="text" value={this.state.currentProxy.hosts[this.state.currentHostIdx] || ''} onChange={this.handleHostnameChange}/>
+							<input style={{flexGrow: '1'}} type="text" value={currentProxy.hosts[this.state.currentHostIdx] || ''} onChange={this.handleHostnameChange} ref={"hostInput"}/>
 						</p>
 					</div> 
 				</div>
@@ -515,7 +531,7 @@ Zotero_Preferences.Components.Proxies = React.createClass({
 		
 		return (
 			<div style={{display: "flex", flexDirection: "column"}}>
-				<select size="8" multiple onChange={this.handleProxySelectChange} disabled={!this.props.transparent} value={[this.state.currentProxyIdx]}>
+				<select size="8" multiple onChange={this.handleProxySelectChange} disabled={!this.props.transparent}>
 					{configuredProxies}
 				</select>
 				<p style={{display: this.props.transparent ? null : 'none'}}>
@@ -609,7 +625,7 @@ Zotero_Preferences.Components.MIMETypeHandling = React.createClass({
 	render: function() {
 		var hosts;
 		if (this.state.hosts.length) {
-			hosts = this.state.hosts.map((h, i) => <option value={i} key={i}>{h}</option>);
+			hosts = this.state.hosts.map((h, i) => <option value={i} key={i} selected={this.state.currentHostIdx == i}>{h}</option>);
 		} else {
 			hosts = <option value={-1}></option>;
 		}
@@ -629,7 +645,7 @@ Zotero_Preferences.Components.MIMETypeHandling = React.createClass({
 			</p>
 			<div style={{display: this.state.enabled ? 'flex' : 'none', flexDirection: "column", marginTop: "10px"}}>
 				<label>Enabled Hostnames</label>
-				<select size="8" multiple onChange={this.handleSelectChange} value={[this.state.currentHostIdx]}>
+				<select size="8" multiple onChange={this.handleSelectChange}>
 					{hosts}
 				</select>
 				<p> <input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostRemove} disabled={this.state.currentHostIdx == -1} value="Remove"/> </p>

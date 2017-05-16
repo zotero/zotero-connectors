@@ -319,11 +319,12 @@ Zotero.Proxies = new function() {
 	 *	no error.
 	 */
 	this.validate = function(proxy) {
-		if(proxy.scheme.length < 8 || (proxy.scheme.substr(0, 7) != "http://" && proxy.scheme.substr(0, 8) != "https://")) {
+		proxy.scheme.trim();
+		if (proxy.scheme.length < 8 || (proxy.scheme.substr(0, 7) != "http://" && proxy.scheme.substr(0, 8) != "https://")) {
 			return ["scheme.noHTTP"];
 		}
 		
-		if(!Zotero_Proxy_schemeParameterRegexps["%p"].test(proxy.scheme) && 
+		if (!Zotero_Proxy_schemeParameterRegexps["%p"].test(proxy.scheme) &&
 				(!Zotero_Proxy_schemeParameterRegexps["%d"].test(proxy.scheme) ||
 				!Zotero_Proxy_schemeParameterRegexps["%f"].test(proxy.scheme))) {
 			return ["scheme.noPath"];
@@ -334,13 +335,14 @@ Zotero.Proxies = new function() {
 			return ["scheme.invalid"];
 		}
 		// If empty or unmodified hosts
-		if (proxy.hosts.length == 0 || proxy.hosts.length == 1 && proxy.hosts[0] == 'www.example.com') {
+		if (proxy.hosts.length == 0 || proxy.hosts.length == 1 && proxy.hosts[0].trim().length == 0) {
 			return ["hosts.invalid"];
 		}
 		
-		for (var host in proxy.hosts) {
+		for (let host in proxy.hosts) {
+			host = host.trim();
 			var oldProxy = Zotero.Proxies.hosts[host];
-			if(oldProxy && oldProxy.proxyID  != proxy.proxyID) {
+			if (oldProxy && oldProxy.proxyID  != proxy.proxyID) {
 				return ["host.proxyExists", host];
 			}
 		}

@@ -258,19 +258,30 @@ Zotero.Inject = new function() {
 		return deferred.promise;	
 	};
 	
-	this.notify = function(text, buttons, timeout, tabStatus) {
+	this.notify = new function() {
+		var lastChainedPromise = Zotero.Promise.resolve();
+		return function(text, buttons, timeout, tabStatus) {
 			// This is a little awkward, because the tab status is passed from the background script to
 			// the content script, but chrome.tabs is unavailable in content scripts.
 			//
 			// If we're navigating somewhere don't display the notification, because it looks dumb.
 			// The navigation will re-trigger this method from the background script.
 			if (tabStatus != 'complete') return;
+
+			let showNotificationPrompt = function() {
+				return Zotero.Promise.delay(500).then(function() {
+					return Zotero.Inject.loadReactComponents(['Notification']).then(function() {
+						var notification = new Zotero.ui.Notification(text, buttons);
+						if (timeout) setTimeout(notification.dismiss.bind(notification, null, 0), timeout);
+						return notification.show();
+					});
+				}.bind(this));
+			}.bind(this);
 			
-			return Zotero.Inject.loadReactComponents(['Notification']).then(function() {
-				var notification = new Zotero.ui.Notification(text, buttons);
-				if (timeout) setTimeout(notification.dismiss.bind(notification, null, 0), timeout);
-				return notification.show();
-			});
+			// Sequentialize notification display
+			lastChainedPromise = lastChainedPromise.then(showNotificationPrompt);
+			return lastChainedPromise;
+		}
 	};
 
 	// TODO: Add "For more information" with link to blog post

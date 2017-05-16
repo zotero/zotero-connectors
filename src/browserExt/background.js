@@ -230,16 +230,21 @@ Zotero.Connector_Browser = new function() {
 		}
 		return Zotero.Messaging.sendMessage('notify', [text, buttons, timeout, tab.status], tab).then(function(response) {
 			if (response != undefined) return response;
+			
 			// Tab url changed or tab got removed, hence the undefined response
-			return new Zotero.Promise(function(resolve) {
-				chrome.tabs.get(tab.id, function(tab) {
-					if (!tab) return;
-					// If it still exists try again
-					// But make sure translation scripts are injected first
-					return this.injectTranslationScripts(tab)
-						.then(() => resolve(this.notify(text, buttons, timeout, tab)));
-				}.bind(this));
-			}.bind(this))
+			// Wait half a sec to not run a busy-waiting loop
+			return Zotero.Promise.delay(500)
+			.then(function() {
+				return new Zotero.Promise(function(resolve) {
+					chrome.tabs.get(tab.id, function(tab) {
+						if (!tab) return;
+						// If it still exists try again
+						// But make sure translation scripts are injected first
+						return this.injectTranslationScripts(tab)
+							.then(() => resolve(this.notify(text, buttons, timeout, tab)));
+					}.bind(this));
+				}.bind(this))
+			}.bind(this));
 		}.bind(this));
 	};
 

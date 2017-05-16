@@ -42,3 +42,9 @@ Zotero.Promise.defer = function() {
 	});
 	return deferred;
 }
+
+Zotero.Promise.delay = function (timeout) {
+	return new Promise(function (resolve) {
+		setTimeout(resolve, timeout);
+	});
+}

@@ -219,32 +219,45 @@ Zotero.Connector_Browser = new function() {
 	this.openPreferences = function(paneID, tab) {
 		this.openTab(chrome.extension.getURL(`preferences/preferences.html#${paneID}`), tab);
 	};
-	
-	this.notify = function(text, buttons, timeout=null, tab=null) {
+
+	/**
+	 * Display an old-school firefox notification by injecting HTML directly into DOM.
+	 * This has a side-effect of navigation (user-initiated or JS-redirect-based) 
+	 * removing the notification so we keep on re-injecting it into DOM.
+	 * 
+	 * The timeout argument specifies how long the notification has to be displayed for
+	 * without navigation, before it is considered "seen" and further navigation on the tab
+	 * will not make it re-appear.
+	 * 
+	 * @param {String} text
+	 * @param {String[]} buttons - labels for buttons
+	 * @param {Number} [seenTimeout=5000]
+	 * @param {Tab} [tab=currentTab]
+	 * @returns {Promise{Number}} button pressed idx or undefined if timed-out and navigated away from
+	 */
+	this.notify = function(text, buttons, seenTimeout=5000, tab=null) {
 		// Get current tab if not provided
 		if (!tab) {
 			return new Zotero.Promise(function(resolve) { 
 				chrome.tabs.query({active: true, lastFocusedWindow: true}, 
-					(tabs) => resolve(this.notify(text, buttons, timeout, tabs[0])));
+					(tabs) => resolve(this.notify(text, buttons, seenTimeout, tabs[0])));
 			}.bind(this));
 		}
-		return Zotero.Messaging.sendMessage('notify', [text, buttons, timeout, tab.status], tab).then(function(response) {
-			if (response != undefined) return response;
+		let timedOut = false;
+		seenTimeout && setTimeout(() => timedOut = true, seenTimeout);
+		return Zotero.Messaging.sendMessage('notify', [text, buttons, null, tab.status], tab).then(function(response) {
+			if (response != undefined || timedOut) return response;
 			
 			// Tab url changed or tab got removed, hence the undefined response
-			// Wait half a sec to not run a busy-waiting loop
-			return Zotero.Promise.delay(500)
-			.then(function() {
-				return new Zotero.Promise(function(resolve) {
-					chrome.tabs.get(tab.id, function(tab) {
-						if (!tab) return;
-						// If it still exists try again
-						// But make sure translation scripts are injected first
-						return this.injectTranslationScripts(tab)
-							.then(() => resolve(this.notify(text, buttons, timeout, tab)));
-					}.bind(this));
-				}.bind(this))
-			}.bind(this));
+			return new Zotero.Promise(function(resolve) {
+				chrome.tabs.get(tab.id, function(tab) {
+					if (!tab) return;
+					// If it still exists try again
+					// But make sure translation scripts are injected first
+					return this.injectTranslationScripts(tab)
+						.then(() => resolve(this.notify(text, buttons, seenTimeout, tab)));
+				}.bind(this));
+			}.bind(this))
 		}.bind(this));
 	};
 

@@ -257,7 +257,16 @@ Zotero.Inject = new function() {
 		
 		return deferred.promise;	
 	};
-	
+
+	/**
+	 * Display an old-school firefox notification by injecting HTML directly into DOM.
+	 * 
+	 * @param {String} text
+	 * @param {String[]} buttons - labels for buttons
+	 * @param {Number} timeout - notification gets removed after this timeout
+	 * @param {String} tabStatus - available on chrome.Tab.status in background scripts
+	 * @returns {Number} button pressed
+	 */
 	this.notify = new function() {
 		var lastChainedPromise = Zotero.Promise.resolve();
 		return function(text, buttons, timeout, tabStatus) {

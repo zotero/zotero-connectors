@@ -80,26 +80,6 @@
 		<div id="content-proxies" class="content"></div>
 		<div id="content-advanced" class="content">
 			<div class="group">
-				<div class="group-title">Debug Output Logging</div>
-				<div class="group-content">
-					<p>Debug output can help Zotero developers diagnose problems in Zotero. Debug logging will slow down Zotero, so you should generally leave it disabled unless a Zotero developer requests debug output.</p>
-					<p>
-						<input type="checkbox" id="advanced-checkbox-enable-logging"/>&nbsp;Enable Logging<br/>
-						<input type="checkbox" id="advanced-checkbox-enable-at-startup"/>&nbsp;Enable at Startup<br/>
-						<input type="checkbox" id="advanced-checkbox-show-in-console"/>&nbsp;Show in Console<br/>
-					</p>
-					<p>
-						<span id="advanced-span-lines-logged"></span> lines logged
-					</p>
-					<p>
-						<input type="button" id="advanced-button-view-output" value="View Output"/>
-						<input type="button" id="advanced-button-clear-output" value="Clear Output"/>
-						<input type="button" id="advanced-button-submit-output" value="Submit to Zotero Server"/>
-					</p>
-					<p><textarea id="advanced-textarea-debug" style="width:100%; height:10em; display:none" readonly="true"></textarea></p>
-				</div>
-			</div>
-			<div class="group">
 				<div class="group-title">Report Errors</div>
 				<div class="group-content">
 					<div id="advanced-no-errors">
@@ -109,13 +89,33 @@
 						<p>The following errors have occurred since the Zotero Connector was started:</p>
 						<p><textarea id="advanced-textarea-errors" style="width:100%; height:10em;" readonly="true"></textarea></p>
 					</div>
-					<p><input type="button" id="advanced-button-report-errors" value="Report Errors to Zotero"/></p>
+					<p><input type="button" id="advanced-button-report-errors" value="Submit Report"/></p>
+				</div>
+			</div>
+			<div class="group">
+				<div class="group-title">Debug Output Logging</div>
+				<div class="group-content">
+					<p>Debug output can help Zotero developers diagnose problems. Debug logging may slow down your browser, so you should generally leave it disabled unless a Zotero developer requests debug output.</p>
+					<p>
+						<label><input type="checkbox" id="advanced-checkbox-enable-logging"/>&nbsp;Enable Logging</label><br/>
+						<label><input type="checkbox" id="advanced-checkbox-enable-at-startup"/>&nbsp;Enable at Startup</label><br/>
+						<label><input type="checkbox" id="advanced-checkbox-show-in-console"/>&nbsp;Show in Console</label><br/>
+					</p>
+					<p>
+						<span id="advanced-span-lines-logged"></span> lines logged
+					</p>
+					<p>
+						<input type="button" id="advanced-button-view-output" value="View Output"/>
+						<input type="button" id="advanced-button-clear-output" value="Clear Output"/>
+						<input type="button" id="advanced-button-submit-output" value="Submit Debug Report"/>
+					</p>
+					<p><textarea id="advanced-textarea-debug" style="width:100%; height:10em; display:none" readonly="true"></textarea></p>
 				</div>
 			</div>
 			<div class="group">
 				<div class="group-title">Translators</div>
 				<div class="group-content">
-					<p><label><input type="checkbox" id="advanced-checkbox-report-translator-failure"/> Send automatic error reports to zotero.org about broken translators</label></p>
+					<p><label><input type="checkbox" id="advanced-checkbox-report-translator-failure"/> Report broken site translators to zotero.org</label></p>
 					<p>
 						<input type="button" id="advanced-button-update-translators" value="Update Translators" id="updateTranslators"/>
 						<input type="button" id="advanced-button-reset-translators" value="Reset Translators" id="resetTranslators"/>

@@ -106,9 +106,9 @@ var Zotero_Preferences = {
 		// get errors
 		Zotero.Errors.getErrors().then(function(errors) {
 			if(errors.length) {
-				document.getElementById('general-no-errors').style.display = "none";
-				document.getElementById('general-have-errors').style.display = "block";
-				document.getElementById('general-textarea-errors').textContent = errors.join("\n\n");
+				document.getElementById('advanced-no-errors').style.display = "none";
+				document.getElementById('advanced-have-errors').style.display = "block";
+				document.getElementById('advanced-textarea-errors').textContent = errors.join("\n\n");
 			}
 		});
 		
@@ -223,7 +223,7 @@ Zotero_Preferences.Advanced = {
 		document.getElementById("advanced-button-submit-output").onclick = Zotero_Preferences.Advanced.submitDebugOutput;
 		document.getElementById("advanced-button-update-translators").onclick = function() { Zotero.Repo.update(false) };
 		document.getElementById("advanced-button-reset-translators").onclick = function() { Zotero.Repo.update(true) };
-		document.getElementById("general-button-report-errors").onclick = Zotero_Preferences.Advanced.submitErrors;
+		document.getElementById("advanced-button-report-errors").onclick = Zotero_Preferences.Advanced.submitErrors;
 
 		
 		// get preference values
@@ -283,7 +283,7 @@ Zotero_Preferences.Advanced = {
 	 * Submits an error report
 	 */
 	submitErrors: function() {
-		var reportErrorsButton = document.getElementById('general-button-report-errors');
+		var reportErrorsButton = document.getElementById('advanced-button-report-errors');
 		toggleDisabled(reportErrorsButton, true);
 		
 		Zotero.Errors.sendErrorReport(function(status, message) {

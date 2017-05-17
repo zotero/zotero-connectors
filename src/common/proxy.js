@@ -187,7 +187,7 @@ Zotero.Proxies = new function() {
 				let requestURI = url.parse(requestURL);
 				_showNotification(
 					'New Zotero Proxy Host',
-					`Zotero automatically associated this site with a previously defined proxy. Future requests to ${host} will be redirected to ${requestURI.host}.`,
+					`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected to ${requestURI.host}.`,
 					["✕", "Proxy Settings"]
 				)
 				.then(function(response) {

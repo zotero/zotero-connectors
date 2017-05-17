@@ -61,6 +61,9 @@ Zotero.ui.Notification = function(text, buttons) {
 // TODO: Put styles in a stylesheet that we insert, so we can use pseudo-classes properly, do proper
 // resetting, etc.
 Zotero.ui.Notification.rootStyle = {
+	// Stay on top of other page elements
+	position: "relative",
+	zIndex: 2147483647,
 	/* Copy the notification style from Firefox */
 	background: "linear-gradient(#ffe13e, #ffc703)",
 	color: "rgba(0,0,0,0.95)",

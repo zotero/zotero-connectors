@@ -178,8 +178,8 @@ Zotero.ContentTypeHandler = {
 								return Zotero.Messaging.sendMessage('progressWindow.done',
 									[false, 'upgradeClient'], tab);
 							} else {
-								Zotero.Messaging.sendMessage('progressWindow.itemProgress',
-									[chrome.extension.getURL('images/csl-style.png'), response, null, false], tab);
+								return Zotero.Messaging.sendMessage('progressWindow.done',
+									[false, 'clientRequired'], tab);
 							}
 							Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
 						});
@@ -189,6 +189,10 @@ Zotero.ContentTypeHandler = {
 							if (status == 404) {
 								return Zotero.Messaging.sendMessage('progressWindow.done',
 									[false, 'upgradeClient'], tab);
+							}
+							if (status < 200 || status > 400) {
+								return Zotero.Messaging.sendMessage('progressWindow.done',
+									[false, 'clientRequired'], tab);
 							}
 							Zotero.Messaging.sendMessage('progressWindow.show', 
 								`Imported ${result.length} item` + (result.length > 1 ? 's' : ''), tab);

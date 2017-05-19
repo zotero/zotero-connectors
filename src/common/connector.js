@@ -171,7 +171,7 @@ Zotero.Connector = new function() {
 				if(Zotero.Connector.isOnline !== isOnline) {
 					Zotero.Connector.isOnline = isOnline;
 					if(Zotero.Connector_Browser && Zotero.Connector_Browser.onStateChange) {
-						Zotero.Connector_Browser.onStateChange(isOnline);
+						Zotero.Connector_Browser.onStateChange(isOnline && req.getResponseHeader('X-Zotero-Version'));
 					}
 				}
 				var val = null;

@@ -101,11 +101,13 @@ Zotero.Connector_Browser = new function() {
 	
 	/**
 	 * Called when Zotero goes online or offline
+	 * @param [String|Boolean] version - either `false` or version string from X-Zotero-Version header
 	 */
-	this.onStateChange = function(isOnline) {
-		if (isOnline) {
+	this.onStateChange = function(version) {
+		if (version) {
 			Zotero.Prefs.set('firstSaveToServer', true);
-			Zotero.ContentTypeHandler.enable();
+			// TODO: Enable once 5.0 is out, so that ContentTypeHandlers show an upgradeClient message instead
+			parseInt(version[0]) >= 5 && Zotero.ContentTypeHandler.enable();
 		} else {
 			for (var i in _tabInfo) {
 				if (_tabInfo[i].translators && _tabInfo[i].translators.length) {

@@ -151,10 +151,10 @@ Zotero.Proxies = new function() {
 					return Zotero.Messaging.sendMessage('confirm', {
 						title: 'Only add proxies linked from your library, school, or corporate website',
 						message: 'Adding other proxies allows malicious sites to masquarade as sites you trust.<br/></br>'
-							+ 'Adding this proxy will allow Zotero to recognize items from its pages and will automatically '
+							+ 'Adding this proxy will allow Zotero to recognize items from proxied pages and will automatically '
 							+ `redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxiedHost}.`,
 						button1Text: 'Add Proxy',
-						button2Text: 'Ignore'
+						button2Text: 'Cancel'
 					}).then(function(result) {
 						if (result.button == 1) {
 							return Zotero.Proxies.save(proxy);

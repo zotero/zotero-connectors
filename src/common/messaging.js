@@ -129,7 +129,7 @@ Zotero.Messaging = new function() {
 					(tabs) => resolve(this.sendMessage(messageName, args, tabs[0], frameId)));
 			}.bind(this));
 			let options = {};
-			if (frameId !== null) options = {frameId};
+			if (typeof(frameId) == 'number') options = {frameId};
 			// Firefox returns a promise
 			if (Zotero.isFirefox) {
 				// Firefox throws an error when the receiving end doesn't exist (e.g. before injection)

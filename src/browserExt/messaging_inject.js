@@ -76,9 +76,6 @@ Zotero.Messaging = new function() {
 									if (messageConfig.inject && messageConfig.inject.postReceive) {
 										response = messageConfig.inject.postReceive.apply(null, response);
 									}
-									if(messageConfig.postReceive) {
-										response = messageConfig.postReceive.apply(null, response);
-									}
 									if (callbackArg !== null) callback.apply(null, response);
 									resolve.apply(null, response);
 								} catch(e) {

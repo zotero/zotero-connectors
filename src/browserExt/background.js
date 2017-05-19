@@ -33,15 +33,25 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Called when translators are available for a given page
 	 */
-	this.onTranslators = function(translators, instanceID, contentType, tab) {
+	this.onTranslators = function(translators, instanceID, contentType, tab, frameId) {
 		_enableForTab(tab.id);
-		
-		var oldTranslators = _tabInfo[tab.id] && _tabInfo[tab.id].translators;
-		if (oldTranslators) {
-			if ((oldTranslators.length
-					&& (!translators.length || oldTranslators[0].priority <= translators[0].priority))
-				|| (!oldTranslators.length && !translators.length)) return;
+
+		let existingTranslators = _tabInfo[tab.id] && _tabInfo[tab.id].translators;
+		// If translators already exist for tab we need to figure out if the new translators
+		// are more important/higher priority
+		if (existingTranslators) {
+			if (!translators.length) return;
+			
+			if (existingTranslators.length) {
+				let existingTranslatorsHaveHigherPriority = existingTranslators[0].priority > translators[0].priority;
+				if (existingTranslatorsHaveHigherPriority) return;
+				
+				let priorityEqual = translators[0].priority == existingTranslators[0].priority;
+				let newTranslatorsAreFromTopFrame = frameId == 0;
+				if (priorityEqual && !newTranslatorsAreFromTopFrame) return;
+			}	
 		}
+		
 		var isPDF = contentType == 'application/pdf';
 		_tabInfo[tab.id] = {translators, instanceID, isPDF};
 		
@@ -135,15 +145,14 @@ Zotero.Connector_Browser = new function() {
 	 * @param url - url of the frame
 	 */
 	this.onFrameLoaded = function(tab, frameId, url) {
-		if (_isDisabledForURL(tab.url)) {
-			_clearInfoForTab(tab.id);
+		if (_isDisabledForURL(tab.url) || _isDisabledForURL(url)) {
 			return;
 		}
 		// Always inject in the top-frame
 		if (frameId == 0) {
 			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
 		}
-		return Zotero.Translators.getWebTranslatorsForLocation(tab.url, url).then(function(translators) {
+		return Zotero.Translators.getWebTranslatorsForLocation(url, tab.url).then(function(translators) {
 			if (translators[0].length == 0) {
 				Zotero.debug("Not injecting. No translators found for [tab.url, url]: " + tab.url + " , " + url);
 				return;
@@ -169,7 +178,7 @@ Zotero.Connector_Browser = new function() {
 		
 		Zotero.Messaging.sendMessage('ping', null, tab, frameId).then(function(response) {
 			if (response) return deferred.resolve();
-			Zotero.debug(`Injecting translation scripts into ${tab.url}`);
+			Zotero.debug(`Injecting translation scripts into ${frameId} ${tab.url}`);
 			return Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, null, tab, frameId)
 			.then(deferred.resolve).catch(deferred.reject);
 		});
@@ -464,10 +473,12 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _saveWithTranslator(tab, i) {
+		// Set frameId to null - send message to all frames
+		// There is code to figure out which frame should translate with instanceID.
 		Zotero.Messaging.sendMessage("translate", [
 			_tabInfo[tab.id].instanceID,
 			_tabInfo[tab.id].translators[i].translatorID
-		], tab);
+		], tab, null);
 	}
 	
 	function _saveAsWebpage(tab, withSnapshot) {
@@ -523,7 +534,7 @@ Zotero.Connector_Browser = new function() {
 	
 	chrome.webNavigation.onDOMContentLoaded.addListener(function(details) {
 		chrome.tabs.get(details.tabId, Zotero.Utilities.logCallbackError(function(tab) {
-			Zotero.debug("Connector_Browser: onDOMContentLoaded for " + tab.url);
+			Zotero.debug("Connector_Browser: onDOMContentLoaded for " + tab.url + "; " + details.url);
 			Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
 		}));
 	});

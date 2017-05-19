@@ -32,6 +32,7 @@ if(window.top) {
 		isTopWindow = window.top == window;
 	} catch(e) {};
 }
+var instanceID = isTopWindow ? 0 : (new Date()).getTime();
 
 if(isTopWindow) {
 	/*
@@ -98,7 +99,6 @@ if(isTopWindow) {
 /**
  * @namespace
  */
-var instanceID = (new Date()).getTime();
 Zotero.Inject = new function() {
 	var _translate;
 	this.translators = {};

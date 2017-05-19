@@ -76,8 +76,8 @@ Zotero.Messaging = new function() {
 								var requestID = Math.floor(Math.random() * 1e12);
 								_callbacks[requestID] = function (response) {
 									try {
-										if (messageConfig.postReceive) {
-											response = messageConfig.postReceive.apply(null, response);
+										if (messageConfig.inject && messageConfig.inject.postReceive) {
+											response = messageConfig.inject.postReceive.apply(null, response);
 										}
 										if (callbackArg !== null) callback.apply(null, response);
 										resolve.apply(null, response);

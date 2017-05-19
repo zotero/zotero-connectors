@@ -67,10 +67,17 @@ Zotero.Messaging = new function() {
 			var messageParts = messageName.split(MESSAGE_SEPARATOR);
 			var messageConfig = MESSAGES[messageParts[0]][messageParts[1]];
 			
-			if(messageConfig) {
-				var callbackArg = (messageConfig.callbackArg ? messageConfig.callbackArg : args.length-1);
+			if (messageConfig && messageConfig.background) {
+				while (messageConfig.background.minArgs > args.length) {
+					args.push(undefined);
+				}
+			}
+			var shouldRespond = messageConfig && messageConfig.response !== false;
+			if (shouldRespond) {
+				var callbackArg = args.length-1;
 
-				if(args[callbackArg] !== null && args[callbackArg] !== undefined) {
+				// TODO: maybe not needed
+				if (args[callbackArg] !== null && args[callbackArg] !== undefined) {
 					// Just append the callback if it is not there as is the case for promisified functions
 					!messageConfig.callbackArg && args.push(0);
 					callbackArg = (messageConfig.callbackArg ? messageConfig.callbackArg : args.length-1); 
@@ -82,11 +89,14 @@ Zotero.Messaging = new function() {
 						newArgs[i] = arguments[i];
 					}
 					
-					if(messageConfig.preSend) newArgs = messageConfig.preSend.apply(null, newArgs);
+					if (messageConfig.background && messageConfig.background.preSend) {
+						newArgs = messageConfig.background.preSend.apply(null, newArgs);
+					}
 					sendResponseCallback(newArgs);
 				}
 			}
 			args.push(tab);
+			args.push(frameId);
 			
 			var fn = Zotero[messageParts[0]][messageParts[1]];
 			if(!fn) throw new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
@@ -100,7 +110,7 @@ Zotero.Messaging = new function() {
 			Zotero.logError(e);
 		}
 		// Return a value, indicating whether `sendResponseCallback` will be called
-		return !!messageConfig;
+		return shouldRespond;
 	}
 	
 	/**
@@ -118,15 +128,17 @@ Zotero.Messaging = new function() {
 				chrome.tabs.query({active: true, lastFocusedWindow: true},
 					(tabs) => resolve(this.sendMessage(messageName, args, tabs[0], frameId)));
 			}.bind(this));
+			let options = {};
+			if (frameId !== null) options = {frameId};
 			// Firefox returns a promise
 			if (Zotero.isFirefox) {
 				// Firefox throws an error when the receiving end doesn't exist (e.g. before injection)
-				return browser.tabs.sendMessage(tab.id, [messageName, args], {frameId})
+				return browser.tabs.sendMessage(tab.id, [messageName, args], options)
 					.catch(() => undefined);
 			}
 			else {
 				let deferred = Zotero.Promise.defer();
-				chrome.tabs.sendMessage(tab.id, [messageName, args], {frameId}, deferred.resolve);
+				chrome.tabs.sendMessage(tab.id, [messageName, args], options, deferred.resolve);
 				return deferred.promise;
 			}
 		} else if(Zotero.isSafari) {

@@ -73,6 +73,9 @@ Zotero.Messaging = new function() {
 						return new Zotero.Promise(function(resolve, reject) {
 							chrome.runtime.sendMessage([messageName, newArgs], function(response) {
 								try {
+									if (messageConfig.inject && messageConfig.inject.postReceive) {
+										response = messageConfig.inject.postReceive.apply(null, response);
+									}
 									if(messageConfig.postReceive) {
 										response = messageConfig.postReceive.apply(null, response);
 									}

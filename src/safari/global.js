@@ -46,14 +46,23 @@ Zotero.Connector_Browser = new function() {
 	this.onTranslators = function(translators, instanceID, contentType, tab) {
 		var oldTranslators = tab.translators;
 		tab.contentType = contentType;
-		if (oldTranslators) {
-			if ((oldTranslators.length
-					&& (!translators.length || oldTranslators[0].priority <= translators[0].priority))
-				|| (!oldTranslators.length && !translators.length)) {
-					_updateButtonStatus();
-					return;
-			}
+		
+		let existingTranslators = tab.translators;
+		// If translators already exist for tab we need to figure out if the new translators
+		// are more important/higher priority
+		if (existingTranslators) {
+			if (!translators.length) return;
+			
+			if (existingTranslators.length) {
+				let existingTranslatorsHaveHigherPriority = existingTranslators[0].priority > translators[0].priority;
+				if (existingTranslatorsHaveHigherPriority) return;
+				
+				let priorityEqual = translators[0].priority == existingTranslators[0].priority;
+				let newTranslatorsAreFromTopFrame = instanceID == 0;
+				if (priorityEqual && !newTranslatorsAreFromTopFrame) return;
+			}	
 		}
+		
 		tab.translators = translators;
 		tab.instanceID = instanceID;
 

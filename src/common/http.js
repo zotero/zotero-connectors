@@ -42,7 +42,7 @@ Zotero.HTTP = new function() {
 			if(Zotero.isBookmarklet) {
 				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
 			} else if(Zotero.isSafari || Zotero.HTTP.isLessSecure(url)) {
-				Zotero.COHTTP.doGet(url, onDone, responseCharset);
+				Zotero.COHTTP.doGet(url, null, responseCharset).then(onDone);
 				return;
 			}
 		}
@@ -97,7 +97,7 @@ Zotero.HTTP = new function() {
 			if(Zotero.isBookmarklet) {
 				Zotero.debug("Attempting cross-site request from bookmarklet; this may fail");
 			} else if(Zotero.isSafari || Zotero.HTTP.isLessSecure(url)) {
-				Zotero.COHTTP.doPost(url, body, onDone, headers, responseCharset);
+				Zotero.COHTTP.doPost(url, body, null, headers, responseCharset).then(onDone);
 				return;
 			}
 		}

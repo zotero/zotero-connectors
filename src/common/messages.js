@@ -76,37 +76,54 @@ var MESSAGES = {
 	Translators: 
 		{
 			get: {
-				preSend: function(translators) {
-					return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
+				background: {
+					preSend: function(translators) {
+						return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
+					}
 				},
-				postReceive: function(translator) {
-					return [new Zotero.Translator(translator)];
+				inject: {
+					postReceive: function(translator) {
+						return [new Zotero.Translator(translator)];
+					}
 				}
 			},
 			getAllForType: {
-				preSend: function(translators) {
-					return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
+				background: {
+					preSend: function(translators) {
+						return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
+					},
 				},
-				postReceive: function(translators) {
-					return [translators.map(function(translator) {return new Zotero.Translator(translator)})];
+				inject: {
+					postReceive: function(translators) {
+						return [translators.map(function(translator) {return new Zotero.Translator(translator)})];
+					}
 				}
 			},
 			getWebTranslatorsForLocation: {
-				preSend: function(data) {
-					return [[Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES), data[1]]];
+				background: {
+					preSend: function(data) {
+						return [[Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES), data[1]]];
+					}
 				},
-				postReceive: function(data) {
-					// Deserialize to class objects
-					data[0] = data[0].map((translator) => new Zotero.Translator(translator));
-					data[1] = data[1].map((proxy) => proxy && new Zotero.Proxy(proxy));
-					return [[data[0], data[1]]];
+				inject: {
+					postReceive: function(data) {
+						// Deserialize to class objects
+						data[0] = data[0].map((translator) => new Zotero.Translator(translator));
+						data[1] = data[1].map((proxy) => proxy && new Zotero.Proxy(proxy));
+						return [[data[0], data[1]]];
+					}
 				}
 			}
 		},
 	Debug: 
 		{
 			clear: false,
-			log: false,
+			log: {
+				response: false,
+				background: {
+					minArgs: 4
+				}
+			},
 			setStore: false
 		},
 	Connector: 
@@ -140,7 +157,12 @@ var MESSAGES = {
 		},
 	Messaging: 
 		{
-			sendMessage: false
+			sendMessage: {
+				response: false,
+				background: {
+					minArgs: 4
+				}
+			}
 		},
 	API: 
 		{
@@ -169,23 +191,25 @@ var MESSAGES = {
 
 MESSAGES["COHTTP"] = {
 	doGet: {
+		background: {
 			// avoid trying to post responseXML
 			preSend: function(xhr) {
 				return [{responseText: xhr.responseText,
 					status: xhr.status,
 					statusText: xhr.statusText}];
 			},
-			callbackArg: 1
 		},
+	},
 	doPost: {
+		background: {
 			// avoid trying to post responseXML
 			preSend: function(xhr) {
 				return [{responseText: xhr.responseText,
 					status: xhr.status,
 					statusText: xhr.statusText}];
 			},
-			callbackArg: 2
 		}
+	}
 };
 
 if(Zotero.isSafari) {

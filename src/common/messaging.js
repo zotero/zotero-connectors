@@ -74,7 +74,7 @@ Zotero.Messaging = new function() {
 			}
 			var shouldRespond = messageConfig && messageConfig.response !== false;
 			if (shouldRespond) {
-				var callbackArg = args.length-1;
+				var callbackArg = messageConfig.callbackArg || args.length-1;
 
 				// TODO: maybe not needed
 				if (args[callbackArg] !== null && args[callbackArg] !== undefined) {

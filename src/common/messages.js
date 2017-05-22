@@ -191,6 +191,7 @@ var MESSAGES = {
 
 MESSAGES["COHTTP"] = {
 	doGet: {
+		callbackArg: 1,
 		background: {
 			// avoid trying to post responseXML
 			preSend: function(xhr) {
@@ -201,6 +202,7 @@ MESSAGES["COHTTP"] = {
 		},
 	},
 	doPost: {
+		callbackArg: 2,
 		background: {
 			// avoid trying to post responseXML
 			preSend: function(xhr) {

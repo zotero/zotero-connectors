@@ -174,7 +174,10 @@ Zotero.Connector_Browser = new function() {
 		// Prevent triggering multiple times
 		let key = tab.id+'-'+frameId;
 		let deferred = this.injectTranslationScripts[key];
-		if (deferred) return deferred.promise;
+		if (deferred) {
+			Zotero.debug(`Connector_Browser.injectTranslationScripts: Script injection already in progress for ${key} : ${tab.url}`);
+			return deferred.promise;
+		}
 		deferred = Zotero.Promise.defer();
 		this.injectTranslationScripts[key] = deferred;
 		

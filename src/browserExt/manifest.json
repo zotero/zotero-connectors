@@ -41,6 +41,7 @@
 			}
 		}
 	},
+	"minimum_chrome_version": "55",
 	"applications": {
 		"gecko": {
 			"id": "zotero@chnm.gmu.edu",

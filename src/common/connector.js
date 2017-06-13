@@ -24,7 +24,6 @@
 */
 
 Zotero.Connector = new function() {
-	const CONNECTOR_URI = "http://127.0.0.1:23119/";
 	const CONNECTOR_API_VERSION = 2;
 	
 	var _ieStandaloneIframeTarget, _ieConnectorCallbacks;
@@ -216,7 +215,7 @@ Zotero.Connector = new function() {
 				callback(false, 0);
 			}
 		} else {							// Other browsers can use plain doPost
-			var uri = CONNECTOR_URI + "connector/" + method + queryString;
+			var uri = ZOTERO_CONFIG.CONNECTOR_SERVER_URL + "connector/" + method + queryString;
 			if (headers["Content-Type"] == 'application/json') {
 				data = JSON.stringify(data);
 			}

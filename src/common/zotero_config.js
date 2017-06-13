@@ -32,6 +32,7 @@ const ZOTERO_CONFIG = {
 	WWW_BASE_URL: 'https://www.zotero.org/',
 	CLIENT_DOWNLOAD_URL: 'https://www.zotero.org/download',
 	API_URL: 'https://api.zotero.org/',
+	CONNECTOR_SERVER_URL: "http://127.0.0.1:23119/",
 	OAUTH_REQUEST_URL: 'https://www.zotero.org/oauth/request',
 	OAUTH_ACCESS_URL: 'https://www.zotero.org/oauth/access',
 	OAUTH_AUTHORIZE_URL: 'https://www.zotero.org/oauth/authorize',

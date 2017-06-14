@@ -180,7 +180,10 @@ Zotero.Connector_Browser = new function() {
 		}
 		deferred = Zotero.Promise.defer();
 		this.injectTranslationScripts[key] = deferred;
-		deferred.promise.catch((e) => e).then(function() {
+		deferred.promise.catch(function(e) {
+			Zotero.debug('Connector_Browser.injectTranslationScripts: Script injection rejected');
+			Zotero.logError(e);
+		}).then(function() {
 			delete this.injectTranslationScripts[key];
 		}.bind(this));
 		

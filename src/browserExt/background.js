@@ -181,11 +181,23 @@ Zotero.Connector_Browser = new function() {
 		deferred = Zotero.Promise.defer();
 		this.injectTranslationScripts[key] = deferred;
 		deferred.promise.catch(function(e) {
-			Zotero.debug('Connector_Browser.injectTranslationScripts: Script injection rejected');
+			Zotero.debug(`Connector_Browser.injectTranslationScripts: Script injection rejected ${key}`);
 			Zotero.logError(e);
 		}).then(function() {
 			delete Zotero.Connector_Browser.injectTranslationScripts[key];
 		});
+		
+		// Unfortunately firefox sometimes just doesn't resolve or reject tabs#executeScript() and/or
+		// tabs#sendMessage() calls. Testing proxied
+		// http://www.ams.org/mathscinet/search/publdoc.html?pg1=INDI&s1=916336&sort=Newest&vfpref=html&r=1&mx-pid=3439694
+		// with a fresh browser session consistently reproduces the bug, even though the scripts are always fully
+		// injected, so we just resolve the promise. We may have partial injections sometimes, but it's better
+		// to have a broken tab that will fix itself on refresh, than to just stall it forever.
+		let timeout = setTimeout(function() {
+			Zotero.debug(`Connector_Browser.injectTranslationScripts: timed out for ${key}, resolving`);
+			deferred.resolve();
+		}, 2000);
+		deferred.promise.then(clearTimeout.bind(null, timeout));
 		
 		Zotero.Messaging.sendMessage('ping', null, tab, frameId).then(function(response) {
 			if (response) return deferred.resolve();

@@ -184,8 +184,8 @@ Zotero.Connector_Browser = new function() {
 			Zotero.debug('Connector_Browser.injectTranslationScripts: Script injection rejected');
 			Zotero.logError(e);
 		}).then(function() {
-			delete this.injectTranslationScripts[key];
-		}.bind(this));
+			delete Zotero.Connector_Browser.injectTranslationScripts[key];
+		});
 		
 		Zotero.Messaging.sendMessage('ping', null, tab, frameId).then(function(response) {
 			if (response) return deferred.resolve();

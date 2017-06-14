@@ -180,6 +180,9 @@ Zotero.Connector_Browser = new function() {
 		}
 		deferred = Zotero.Promise.defer();
 		this.injectTranslationScripts[key] = deferred;
+		deferred.promise.catch((e) => e).then(function() {
+			delete this.injectTranslationScripts[key];
+		}.bind(this));
 		
 		Zotero.Messaging.sendMessage('ping', null, tab, frameId).then(function(response) {
 			if (response) return deferred.resolve();
@@ -187,10 +190,7 @@ Zotero.Connector_Browser = new function() {
 			return Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, null, tab, frameId)
 			.then(deferred.resolve).catch(deferred.reject);
 		});
-		return deferred.promise.then(function(response) {
-			delete this.injectTranslationScripts[key];
-			return response;
-		}.bind(this));
+		return deferred.promise;
 	};
 
 	/**

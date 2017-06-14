@@ -187,18 +187,6 @@ Zotero.Connector_Browser = new function() {
 			delete Zotero.Connector_Browser.injectTranslationScripts[key];
 		});
 		
-		// Unfortunately firefox sometimes just doesn't resolve or reject tabs#executeScript() and/or
-		// tabs#sendMessage() calls. Testing proxied
-		// http://www.ams.org/mathscinet/search/publdoc.html?pg1=INDI&s1=916336&sort=Newest&vfpref=html&r=1&mx-pid=3439694
-		// with a fresh browser session consistently reproduces the bug, even though the scripts are always fully
-		// injected, so we just resolve the promise. We may have partial injections sometimes, but it's better
-		// to have a broken tab that will fix itself on refresh, than to just stall it forever.
-		let timeout = setTimeout(function() {
-			Zotero.debug(`Connector_Browser.injectTranslationScripts: timed out for ${key}, resolving`);
-			deferred.resolve();
-		}, 2000);
-		deferred.promise.then(clearTimeout.bind(null, timeout));
-		
 		Zotero.Messaging.sendMessage('ping', null, tab, frameId).then(function(response) {
 			if (response) return deferred.resolve();
 			Zotero.debug(`Injecting translation scripts into ${frameId} ${tab.url}`);
@@ -229,7 +217,18 @@ Zotero.Connector_Browser = new function() {
 				deferred.reject(e);
 			}
 		}
-		return Zotero.Promise.all(promises);
+			
+		// Unfortunately firefox sometimes neither rejects nor resolves tabs#executeScript(). Testing proxied
+		// http://www.ams.org/mathscinet/search/publdoc.html?pg1=INDI&s1=916336&sort=Newest&vfpref=html&r=1&mx-pid=3439694
+		// with a fresh browser session consistently reproduces the bug. The injection may be partial, but we need to
+		// resolve this promise somehow, so we reject in the event of timeout.
+		var deferred = Zotero.Promise.defer();
+		let timeout = setTimeout(deferred.reject.bind(deferred, new Error("Script injection timed out")), 3000);
+		Zotero.Promise.all(promises).then(function(result) {
+			clearTimeout(timeout);
+			deferred.resolve(result);
+		});
+		return deferred.promise;
 	};
 
 	this.openTab = function(url, tab) {

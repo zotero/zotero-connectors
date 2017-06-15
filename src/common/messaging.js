@@ -103,8 +103,12 @@ Zotero.Messaging = new function() {
 			var maybePromise = fn.apply(Zotero[messageParts[0]], args);
 			// If you thought the message passing system wasn't complicated enough as it were,
 			// now background page functions can return promises too 👍
-			if (maybePromise && maybePromise.then) {
-				maybePromise.then(args[callbackArg]);
+			if (shouldRespond) {
+				if (maybePromise && maybePromise.then) {
+					maybePromise.then(args[callbackArg]);
+				} else {
+					args[callbackArg](maybePromise);
+				}
 			}
 		} catch(e) {
 			Zotero.logError(e);

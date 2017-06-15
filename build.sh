@@ -117,6 +117,7 @@ if [[ ! -z $DEBUG ]]; then
 		"$NODE_MODULES_DIR/bluebird/js/browser/bluebird.js" \
 		"$NODE_MODULES_DIR/chai/chai.js" \
 		"$NODE_MODULES_DIR/mocha/mocha.js" \
+		"$NODE_MODULES_DIR/mocha/mocha.css" \
 		"$NODE_MODULES_DIR/sinon/pkg/sinon.js")
 		
 fi

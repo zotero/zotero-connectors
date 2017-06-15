@@ -59,16 +59,27 @@ setTimeout(function() {
 				}
 			}
 		}
-		Zotero.Background.registeredTabs = new Set();
-			chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-			if (Zotero.Background.registeredTabs.has(tabId) && changeInfo.status == "complete") {
-				Zotero.Connector_Browser.injectScripts([
-					'lib/sinon.js',
-					'tests/testSetup.js'
-				], null, tab);
+		Zotero.Background.registeredTabs = {};
+		chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+			var deferred = Zotero.Background.registeredTabs[tabId];
+			if (deferred) {
+				if (changeInfo.status == "complete" && !deferred.resolved) {
+					var scripts = [];
+					// Don't try to inject in extension own pages
+					if (!tab.url.includes('chrome-extension://')) {
+						scripts = [ 'lib/sinon.js', 'tests/testSetup.js' ];
+					}
+					Zotero.Connector_Browser.injectScripts(scripts, null, tab).catch(function(e) {
+						deferred.resolved = true;
+						deferred.reject(e);
+					}).then(function() {
+						deferred.resolved = true;
+						deferred.resolve(tabId);
+					});
+				}
 			}
 		});
-	} else if (Zotero.isInject) {
+	} else if (Zotero.isInject || Zotero.isPreferences) {
 		// injected page
 		Zotero.Messaging.addMessageListener('run', function(args) {
 			let code = args[0];
@@ -80,75 +91,88 @@ setTimeout(function() {
 				return ["error", e.message];
 			}
 		});
-	} else {
-		// test.html
-		window.background = Promise.coroutine(function* (code) {
+	}
+	else if (typeof mocha != 'undefined') {
+		mocha.run();
+	}
+}, 50);
+
+if (typeof mocha != 'undefined') {
+	// test.html
+	var background = Promise.coroutine(function* (code) {
+		if (typeof code == 'function') {
+			arguments[0] = code.toString();
+		}
+		var response = yield Zotero.Background.run.apply(null, arguments);
+		if (Array.isArray(response) && response[0] == 'error') {
+			throw Error(response[1]);
+		}
+		return response;
+	});
+	
+	var Tab = function() {
+		if (Zotero.isSafari) {
+			throw new Error("Testing Safari is currently unsupported :(");
+		}
+	};
+	window.Tab.prototype = {
+		init: Promise.coroutine(function* (url='http://www.example.com') {
+			if (Zotero.isBrowserExt) {
+				this.tabId = yield background(function(url) {
+					var deferred = Zotero.Promise.defer();
+					chrome.tabs.create({url, active: false}, function(tab) {
+						Zotero.Background.registeredTabs[tab.id] = deferred;
+					});
+					return deferred.promise;
+				}, url);
+				yield Promise.delay(100);
+			}
+		}),
+		
+		navigate: Promise.coroutine(function* (url) {
+			if (this.tabId == undefined) {
+				throw new Error('Must run Tab#init() before Tab#run');
+			}
+			yield background(function(url, tabId) {
+				Zotero.Background.registeredTabs[tabId] = Zotero.Background.defer();
+				chrome.tabs.update(tabId, {url});
+				return Zotero.Background.registeredTabs[tabId].promise;
+			}, url, this.tabId);
+			yield Promise.delay(100);
+		}),
+		
+		run: Promise.coroutine(function* (code) {
+			if (this.tabId == undefined) {
+				throw new Error('Must run Tab#init() before Tab#run');
+			}
 			if (typeof code == 'function') {
 				arguments[0] = code.toString();
 			}
-			var response = yield Zotero.Background.run.apply(null, arguments);
+			var response;
+			if (Zotero.isFirefox) {
+				// Firefox throws an error when the receiving end doesn't exist (e.g. before injection)
+				response = yield browser.tabs.sendMessage(this.tabId, ['run', Array.from(arguments)], {})
+					.catch(e => undefined);
+			}
+			else {
+				let deferred = Zotero.Promise.defer();
+				chrome.tabs.sendMessage(this.tabId, ['run', Array.from(arguments)], {}, deferred.resolve);
+				var response = yield deferred.promise;
+			}
 			if (Array.isArray(response) && response[0] == 'error') {
 				throw Error(response[1]);
 			}
 			return response;
-		});
+		}),
 		
-		window.Tab = function() {
-			if (Zotero.isSafari) {
-				throw new Error("Testing Safari is currently unsupported :(");
-			}
-		};
-		window.Tab.prototype = {
-			init: Promise.coroutine(function* (url='http://www.example.com') {
-				if (Zotero.isBrowserExt) {
-					this.tabId = yield background(function(url) {
-						return new Promise(function(resolve) {
-							chrome.tabs.create({url, active: false}, function(tab) {
-								Zotero.Background.registeredTabs.add(tab.id);
-								Zotero.Connector_Browser.injectScripts([
-									'lib/sinon.js',
-									'tests/testSetup.js'
-								], null, tab).then(() => resolve(tab.id));
-							});
-						});
-					}, url);
-				}
-			}),
-			
-			run: Promise.coroutine(function* (code) {
-				if (this.tabId == undefined) {
-					throw new Error('Must run Tab#init() before Tab#run');
-				}
-				if (typeof code == 'function') {
-					arguments[0] = code.toString();
-				}
-				var response;
-				if (Zotero.isFirefox) {
-					// Firefox throws an error when the receiving end doesn't exist (e.g. before injection)
-					response = yield browser.tabs.sendMessage(this.tabId, ['run', Array.from(arguments)], {})
-						.catch(e => undefined);
-				}
-				else {
-					let deferred = Zotero.Promise.defer();
-					chrome.tabs.sendMessage(this.tabId, ['run', Array.from(arguments)], {}, deferred.resolve);
-					var response = yield deferred.promise;
-				}
-				if (Array.isArray(response) && response[0] == 'error') {
-					throw Error(response[1]);
-				}
-				return response;
-			}),
-			
-			close: Promise.coroutine(function* () {
-				chrome.tabs.remove(this.tabId);
-				delete this.tabId;
-			})
-		}
-		
-		Zotero.Messaging.init();
-		
-		mocha.setup('bdd');
-		// mocha.run();
-	}
-}, 10);
+		close: Promise.coroutine(function* () {
+			yield new Promise((resolve) => chrome.tabs.remove(this.tabId, resolve));
+			delete this.tabId;
+		})
+	};
+
+	var assert = chai.assert;
+	Zotero.Messaging.init();
+	mocha.setup('bdd');
+}
 

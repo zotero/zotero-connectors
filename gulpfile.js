@@ -129,7 +129,10 @@ var backgroundInclude = [
 if (!argv.p) {
 	backgroundInclude.push('tools/testTranslators/translatorTester_messages.js',
 		'tools/testTranslators/translatorTester.js',
-		'tools/testTranslators/translatorTester_global.js');
+		'tools/testTranslators/translatorTester_global.js',
+		'tests/messages.js',
+		'tests/testSetup.js',
+		'lib/sinon.js');
 }
 var backgroundIncludeBrowserExt = backgroundInclude.concat([
 	'webRequestIntercept.js',
@@ -277,7 +280,7 @@ gulp.task('watch-chrome', function () {
 });
 
 gulp.task('process-custom-scripts', function() {
-	gulp.src([
+	let sources = [
 		'./src/browserExt/background.js',
 		'./src/browserExt/manifest.json', 
 		'./src/safari/global.html',
@@ -286,7 +289,11 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/preferences/preferences.html',
 		'./src/common/zotero.js',
 		'./src/**/*.jsx'
-	]).pipe(plumber())
+	];
+	if (!argv.p) {
+		sources.push('./src/common/tests/**/*.js');	
+	}
+	gulp.src(sources).pipe(plumber())
 		.pipe(processFile())
 		.pipe(gulp.dest((data) => data.base));
 });

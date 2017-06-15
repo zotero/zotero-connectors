@@ -109,7 +109,17 @@ ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collectio
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png $EXTENSION_SKIN_DIR/prefs-proxies.png"
 
-LIBS=("$NODE_MODULES_DIR/react/dist/react.js" "$NODE_MODULES_DIR/react-dom/dist/react-dom.js")
+LIBS=("$NODE_MODULES_DIR/react/dist/react.js" \
+	"$NODE_MODULES_DIR/react-dom/dist/react-dom.js")
+	
+if [[ ! -z $DEBUG ]]; then
+	LIBS=("${LIBS[@]}" \
+		"$NODE_MODULES_DIR/bluebird/js/browser/bluebird.js" \
+		"$NODE_MODULES_DIR/chai/chai.js" \
+		"$NODE_MODULES_DIR/mocha/mocha.js" \
+		"$NODE_MODULES_DIR/sinon/pkg/sinon.js")
+		
+fi
 
 # Scripts to be included in bookmarklet
 BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
@@ -276,6 +286,7 @@ for browser in "browserExt" "safari"; do
 			"$browser_builddir/tools/testTranslators"
 	else
 		rm -rf "$browser_builddir/tools"
+		rm -rf "$browser_builddir/tests"
 	fi
 done
 

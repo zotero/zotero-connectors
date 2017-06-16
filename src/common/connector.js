@@ -39,28 +39,27 @@ Zotero.Connector = new function() {
 	 * Checks if Zotero is online and passes current status to callback
 	 * @param {Function} callback
 	 */
-	this.checkIsOnline = function(callback) {
+	this.checkIsOnline = Zotero.Promise.method(function() {
 		// Only check once in bookmarklet
 		if(Zotero.isBookmarklet && this.isOnline !== null) {
-			callback(this.isOnline);
-			return;
+			return this.isOnline;
 		}
+
+		var deferred = Zotero.Promise.defer();
 		
-		if(Zotero.isIE) {
-			if(window.location.protocol !== "http:") {
+		if (Zotero.isIE) {
+			if (window.location.protocol !== "http:") {
 				this.isOnline = false;
-				callback(false);
-				return;
+				return false;
 			}
 		
 			Zotero.debug("Connector: Looking for Zotero Standalone");
-			var me = this;
 			var fail = function() {
-				if(me.isOnline !== null) return;
+				if (this.isOnline !== null) return;
 				Zotero.debug("Connector: Zotero Standalone is not online or cannot be contacted");
-				me.isOnline = false;
-				callback(false);
-			};
+				this.isOnline = false;
+				deferred.resolve(false);
+			}.bind(this);
 			
 			window.setTimeout(fail, 1000);
 			try {
@@ -95,8 +94,7 @@ Zotero.Connector = new function() {
 						if(!_ieStandaloneIframeTarget) {
 							Zotero.debug("Connector: Standalone loaded");
 							_ieStandaloneIframeTarget = iframe.contentWindow;
-							callback(true);
-							return;
+							deferred.resolve(true);
 						}
 						
 						// Otherwise, this is a response event
@@ -131,9 +129,12 @@ Zotero.Connector = new function() {
 				fail();
 			}
 		} else {
-			Zotero.Connector.ping().then(() => callback(true)).catch(() => callback(false));
+			Zotero.Connector.callMethod("ping", {}, function(status) {
+				deferred.resolve(status !== false);
+			});
 		}
-	}
+		return deferred.promise;
+	});
 
 	this.reportActiveURL = function(url) {
 		if (!this.isOnline || !this.shouldReportActiveURL) return;
@@ -290,49 +291,48 @@ Zotero.Connector_Debug = new function() {
 	/**
 	 * Call a callback depending upon whether debug output is being stored
 	 */
-	this.storing = function(callback) {
-		callback(Zotero.Debug.storing);
+	this.storing = function() {
+		return Zotero.Debug.storing;
 	}
 	
 	/**
 	 * Call a callback with the lines themselves
 	 */
-	this.get = function(callback) {
-		Zotero.Debug.get().then(callback);
+	this.get = function() {
+		return Zotero.Debug.get();
 	};
 		
 	/**
 	 * Call a callback with the number of lines of output
 	 */
-	this.count = function(callback) {
-		callback(Zotero.Debug.count());
+	this.count = function() {
+		return Zotero.Debug.count();
 	}
 	
 	/**
 	 * Submit data to the server
 	 */
-	this.submitReport = function(callback) {
-		Zotero.Debug.get().then(function(output){
+	this.submitReport = function() {
+		return Zotero.Debug.get().then(function(output){
 			let deferred = Zotero.Promise.defer();
-			let xmlhttp = Zotero.HTTP.doPost(
+			Zotero.HTTP.doPost(
 				ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1",
 				output,
-				() => deferred.resolve(xmlhttp)
+				(xmlhttp) => deferred.resolve(xmlhttp)
 			);
 			return deferred.promise;
-		}).then(function(xmlhttp){
+		}).then(function(xmlhttp) {
 			if (!xmlhttp.responseXML) {
-				callback(false, 'Invalid response from server');
-				return;
+				return {status: false, message: 'Invalid response from server'};
 			}
 			var reported = xmlhttp.responseXML.getElementsByTagName('reported');
 			if (reported.length != 1) {
-				callback(false, 'The server returned an error. Please try again.');
+				return {status: false, message: 'The server returned an error. Please try again.'};
 				return;
 			}
 			
 			var reportID = reported[0].getAttribute('reportID');
-			callback(true, reportID);
+			return {status: true, message: reportID};
 		});
 	};
 }

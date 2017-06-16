@@ -344,7 +344,7 @@ Zotero.Inject = new function() {
 		if (Zotero.isBrowserExt) {
 			return Zotero.Promise.all([
 				Zotero.Prefs.getAsync('firstSaveToServer'), 
-				new Zotero.Promise((resolve) => Zotero.Connector.checkIsOnline(resolve))
+				new Zotero.Promise((resolve) => Zotero.Connector.checkIsOnline().then(resolve))
 			])
 			.then(function (result) {
 				let firstSaveToServer = result[0];

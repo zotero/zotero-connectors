@@ -200,7 +200,7 @@ Zotero.Connector_Browser = new function() {
 	
 	function _showZoteroStatus() {
 		_zoteroButton.disabled = true;
-		Zotero.Connector.checkIsOnline(function(isOnline) {
+		Zotero.Connector.checkIsOnline().then(function(isOnline) {
 			if (isOnline) {
 				_zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-new-z-16px.png";
 				_zoteroButton.toolTip = "Zotero is Online";

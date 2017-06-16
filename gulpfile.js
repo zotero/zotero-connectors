@@ -236,7 +236,7 @@ function processFile() {
 				break;
 			case 'preferences.html':
 				file.contents = Buffer.from(file.contents.toString()
-					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/, argv.p ? '' : '$1'));
+					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/g, argv.p ? '' : '$1'));
 				break;
 			case 'Info.plist':
 				file.contents = Buffer.from(file.contents.toString()

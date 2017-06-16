@@ -354,7 +354,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _showZoteroStatus(tabID) {
-		Zotero.Connector.checkIsOnline(function(isOnline) {
+		Zotero.Connector.checkIsOnline().then(function(isOnline) {
 			var icon, title;
 			if (isOnline) {
 				icon = "images/zotero-new-z-16px.png";

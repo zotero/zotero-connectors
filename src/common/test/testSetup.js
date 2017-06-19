@@ -56,7 +56,7 @@ setTimeout(function() {
 					return fn.apply(null, Array.from(arguments).slice(1));
 				} catch (e) {
 					Zotero.logError(e);
-					throw e;
+					return ["error", e.message];
 				}
 			}
 		}
@@ -94,31 +94,9 @@ setTimeout(function() {
 		});
 	}
 	else if (typeof mocha != 'undefined') {
-		var runner = mocha.run(function() {
-			var elem = document.createElement('p');
-			elem.setAttribute('id', 'mocha-tests-complete');
-			document.body.appendChild(elem);
-		});
-		
-		// Log results for Selenium access
-		window.testResults = [];
-		var flattenTitles = function(test){
-			let titles = [test.title];
-			while (test.parent.title){
-				titles.push(test.parent.title);
-				test = test.parent;
-			}
-			return titles.reverse();
-		};
-		function logResult(test, error) {
-			window.testResults.push({
-				title: flattenTitles(test),
-				error: error && JSON.stringify(error, ['message', 'stack'].concat(Object.keys(error)))});
-		}
-		runner.on('pass', logResult);
-		runner.on('fail', logResult);
+		mocha.run();
 	}
-}, 150);
+}, 250);
 
 if (typeof mocha != 'undefined') {
 	// test.html
@@ -148,11 +126,7 @@ if (typeof mocha != 'undefined') {
 					});
 					return deferred.promise;
 				}, url);
-				yield Promise.delay(200);
-				if (Zotero.isFirefox) {
-					// Firefox is just slow in injecting..
-					yield Promise.delay(1500);
-				}
+				yield Promise.delay(100);
 			}
 		}),
 		
@@ -165,11 +139,7 @@ if (typeof mocha != 'undefined') {
 				chrome.tabs.update(tabId, {url});
 				return Zotero.Background.registeredTabs[tabId].promise;
 			}, url, this.tabId);
-			yield Promise.delay(200);
-			if (Zotero.isFirefox) {
-				// Firefox is just slow in injecting..
-				yield Promise.delay(1500);
-			}
+			yield Promise.delay(100);
 		}),
 		
 		run: Promise.coroutine(function* (code) {
@@ -204,6 +174,6 @@ if (typeof mocha != 'undefined') {
 
 	var assert = chai.assert;
 	Zotero.Messaging.init();
-	mocha.setup({ui: 'bdd', timeout: 6000});
+	mocha.setup('bdd');
 }
 

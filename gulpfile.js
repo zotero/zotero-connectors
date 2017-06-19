@@ -130,8 +130,8 @@ if (!argv.p) {
 	backgroundInclude.push('tools/testTranslators/translatorTester_messages.js',
 		'tools/testTranslators/translatorTester.js',
 		'tools/testTranslators/translatorTester_global.js',
-		'tests/messages.js',
-		'tests/testSetup.js',
+		'test/messages.js',
+		'test/testSetup.js',
 		'lib/sinon.js');
 }
 var backgroundIncludeBrowserExt = backgroundInclude.concat([
@@ -291,7 +291,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/**/*.jsx'
 	];
 	if (!argv.p) {
-		sources.push('./src/common/tests/**/*.js');	
+		sources.push('./src/common/test/**/*.js');	
 	}
 	gulp.src(sources).pipe(plumber())
 		.pipe(processFile())

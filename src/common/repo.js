@@ -47,7 +47,6 @@ Zotero.Repo = new function() {
 			// TODO: make update/cascade to repo explicit
 			promise = _updateFromStandalone(_nextCheck <= Date.now());
 			return promise.catch(() => 0).then(() => promise = null);
-			
 		}
 	};
 	

@@ -76,23 +76,27 @@ Zotero.Messaging = new function() {
 			if (shouldRespond) {
 				var callbackArg = messageConfig.callbackArg || args.length-1;
 
-				// TODO: maybe not needed
-				if (args[callbackArg] !== null && args[callbackArg] !== undefined) {
-					// Just append the callback if it is not there as is the case for promisified functions
-					!messageConfig.callbackArg && args.push(0);
-					callbackArg = (messageConfig.callbackArg ? messageConfig.callbackArg : args.length-1); 
-				}
-				// add a response passthrough callback for the message
-				args[callbackArg] = function() {
-					var newArgs = new Array(arguments.length);
-					for(var i=0; i<arguments.length; i++) {
-						newArgs[i] = arguments[i];
+				// TODO: make this not awful
+				// sendMessage is used to notify top frame, but the callback arg messes with tab injection
+				if (messageParts[1] != 'sendMessage') {
+					// TODO: maybe not needed
+					if (args[callbackArg] !== null && args[callbackArg] !== undefined) {
+						// Just append the callback if it is not there as is the case for promisified functions
+						!messageConfig.callbackArg && args.push(0);
+						callbackArg = (messageConfig.callbackArg ? messageConfig.callbackArg : args.length-1); 
 					}
-					
-					if (messageConfig.background && messageConfig.background.preSend) {
-						newArgs = messageConfig.background.preSend.apply(null, newArgs);
+					// add a response passthrough callback for the message
+					args[callbackArg] = function() {
+						var newArgs = new Array(arguments.length);
+						for(var i=0; i<arguments.length; i++) {
+							newArgs[i] = arguments[i];
+						}
+						
+						if (messageConfig.background && messageConfig.background.preSend) {
+							newArgs = messageConfig.background.preSend.apply(null, newArgs);
+						}
+						sendResponseCallback(newArgs);
 					}
-					sendResponseCallback(newArgs);
 				}
 			}
 			args.push(tab);

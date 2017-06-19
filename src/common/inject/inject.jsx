@@ -238,6 +238,7 @@ Zotero.Inject = new function() {
 		
 		Zotero.Inject.loadReactComponents(['ModalPrompt']).then(function() {
 			let div = document.createElement('div');
+			div.id = 'zotero-modal-prompt';
 			div.style.cssText = 'z-index: 1000000; position: fixed; top: 0; left: 0; width: 100%; height: 100%';
 			let prompt = (
 				<Zotero.ui.ModalPrompt 
@@ -370,11 +371,11 @@ Zotero.Inject = new function() {
 	};
 	
 	this.translate = function(translatorID) {
-		Zotero.Inject.checkActionToServer().then(function (result) {
+		return Zotero.Inject.checkActionToServer().then(function (result) {
 			if (!result) return;
 			Zotero.Messaging.sendMessage("progressWindow.show", null);
 			_translate.setTranslator(Zotero.Inject.translators[translatorID]);
-			_translate.translate();
+			return _translate.translate();
 		}.bind(this));
 	};
 	
@@ -445,7 +446,7 @@ if(!isHiddenIFrame && (isWeb || isTestPage)) {
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {
 			if(data[0] !== instanceID) return;
-			Zotero.Inject.translate(data[1]);
+			return Zotero.Inject.translate(data[1]);
 		});
 		// add a listener to save as webpage when translators unavailable
 		Zotero.Messaging.addMessageListener("saveAsWebpage", Zotero.Inject.saveAsWebpage);

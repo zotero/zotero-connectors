@@ -62,33 +62,35 @@ Zotero.Connector_Browser = new function() {
 	 * Called to display select items dialog
 	 */
 	this.onSelect = function(items, callback, tab) {
-		chrome.windows.get(tab.windowId, null, function (win) {
-			var width = 600;
-			var height = 325;
-			var left = Math.floor(win.left + (win.width / 2) - (width / 2));
-			var top = Math.floor(win.top + (win.height / 2) - (height / 2));
-			
-			chrome.windows.create(
-				{
-					url: chrome.extension.getURL("itemSelector/itemSelector.html")
-						+ "#" + encodeURIComponent(JSON.stringify([tab.id, items]))
-						// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
-						.replace(/%3A/g, 'ZOTEROCOLON'),
-					height: height,
-					width: width,
-					top: top,
-					left: left,
-					type: 'popup'
-				},
-				function (win) {
-					// Fix positioning in Chrome when window is on second monitor
-					// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
-					if (Zotero.isChrome && win.left < left) {
-						chrome.windows.update(win.id, { left: left });
+		return new Zotero.Promise(function(resolve) {
+			chrome.windows.get(tab.windowId, null, function (win) {
+				var width = 600;
+				var height = 325;
+				var left = Math.floor(win.left + (win.width / 2) - (width / 2));
+				var top = Math.floor(win.top + (win.height / 2) - (height / 2));
+				
+				chrome.windows.create(
+					{
+						url: chrome.extension.getURL("itemSelector/itemSelector.html")
+							+ "#" + encodeURIComponent(JSON.stringify([tab.id, items]))
+							// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
+							.replace(/%3A/g, 'ZOTEROCOLON'),
+						height: height,
+						width: width,
+						top: top,
+						left: left,
+						type: 'popup'
+					},
+					function (win) {
+						// Fix positioning in Chrome when window is on second monitor
+						// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
+						if (Zotero.isChrome && win.left < left) {
+							chrome.windows.update(win.id, { left: left });
+						}
+						_tabInfo[tab.id].selectCallback = resolve;
 					}
-					_tabInfo[tab.id].selectCallback = callback;
-				}
-			);
+				);
+			});
 		});
 	}
 	

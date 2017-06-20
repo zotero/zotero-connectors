@@ -46,17 +46,16 @@ if(isTopWindow) {
 		if (headline) {
 			return Zotero.ProgressWindow.changeHeadline(headline);
 		}
-		Zotero.Connector.callMethod("getSelectedCollection", {}, function(response, status) {
-			if (status !== 200) {
-				Zotero.ProgressWindow.changeHeadline("Saving to zotero.org");
+		return Zotero.Connector.callMethod("getSelectedCollection", {}).then(function(response, status) {
+			Zotero.ProgressWindow.changeHeadline("Saving to ",
+				response.id ? "treesource-collection.png" : "treesource-library.png",
+				response.name+"\u2026");
+		}, function(e) {
+			if (e.value && e.value.libraryEditable === false) {
+				new Zotero.ProgressWindow.ErrorMessage("collectionNotEditable");
+				Zotero.ProgressWindow.startCloseTimer(8000);
 			} else {
-				if (response.libraryEditable === false) {
-					new Zotero.ProgressWindow.ErrorMessage("collectionNotEditable");
-					Zotero.ProgressWindow.startCloseTimer(8000);
-				}
-				Zotero.ProgressWindow.changeHeadline("Saving to ",
-					response.id ? "treesource-collection.png" : "treesource-library.png",
-					response.name+"\u2026");
+				Zotero.ProgressWindow.changeHeadline("Saving to zotero.org");
 			}
 		});
 	});
@@ -144,7 +143,7 @@ Zotero.Inject = new function() {
 					Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
 				});
 				_translate.setHandler("select", function(obj, items, callback) {
-					Zotero.Connector_Browser.onSelect(items, function(returnItems) {
+					Zotero.Connector_Browser.onSelect(items).then(function(returnItems) {
 						// if no items selected, close save dialog immediately
 						if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
 							Zotero.Messaging.sendMessage("progressWindow.close", null);
@@ -381,7 +380,8 @@ Zotero.Inject = new function() {
 	
 	this.saveAsWebpage = function (args) {
 		var title = args[0], withSnapshot = args[1];
-		Zotero.Inject.checkActionToServer().then(function(result) {
+		var progress;
+		return Zotero.Inject.checkActionToServer().then(function(result) {
 			if (!result) return;
 			
 			var data = {
@@ -398,35 +398,36 @@ Zotero.Inject = new function() {
 				var image = "webpage";
 			}
 			
-			var progress = new Zotero.ProgressWindow.ItemProgress(
+			progress = new Zotero.ProgressWindow.ItemProgress(
 				Zotero.ItemTypes.getImageSrc(image), title || document.title
 			);
-			Zotero.Connector.callMethodWithCookies("saveSnapshot", data,
-				function(returnValue, status) {
-					if (returnValue === false) {
-						// Client unavailable
-						if (status === 0) {
-							// Attempt saving to server if not pdf
-							if (document.contentType != 'application/pdf') {
-								Zotero.ProgressWindow.changeHeadline('Saving to zotero.org');
-								let itemSaver = new Zotero.Translate.ItemSaver({});
-								itemSaver.saveAsWebpage().then(function(items) {
-									if (items.length) progress.setProgress(100);
-								});
-							} else {
-								new Zotero.ProgressWindow.ErrorMessage("clientRequired");
-							}
-						} else {
-							new Zotero.ProgressWindow.ErrorMessage("unexpectedError");
-						}
-						Zotero.ProgressWindow.startCloseTimer(8000);
-					} else {
-						progress.setProgress(100);
-						Zotero.ProgressWindow.startCloseTimer(2500);
-					}
+			return Zotero.Connector.callMethodWithCookies("saveSnapshot", data)
+		}.bind(this)).then(function(result) {
+			if (progress) {
+				progress.setProgress(100);
+				Zotero.ProgressWindow.startCloseTimer(2500);
+			}
+			return result;
+		}.bind(this), function(e) {
+			var err;
+			// Client unavailable
+			if (e.status === 0) {
+				// Attempt saving to server if not pdf
+				if (document.contentType != 'application/pdf') {
+					Zotero.ProgressWindow.changeHeadline('Saving to zotero.org');
+					let itemSaver = new Zotero.Translate.ItemSaver({});
+					return itemSaver.saveAsWebpage().then(function(items) {
+						if (items.length) progress.setProgress(100);
+					});
+				} else {
+					err = new Zotero.ProgressWindow.ErrorMessage("clientRequired");
 				}
-			);
-		}.bind(this))
+			} else {
+				err = new Zotero.ProgressWindow.ErrorMessage("unexpectedError");
+			}
+			Zotero.ProgressWindow.startCloseTimer(8000);	
+			if (err) throw err;
+		}.bind(this));
 	};
 };
 
@@ -437,7 +438,9 @@ try {
 } catch(e) {}
 
 // don't try to scrape on hidden frames
-if(!isHiddenIFrame && (window.location.protocol === "http:" || window.location.protocol === "https:")) {
+let isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
+let isTestPage = window.location.protocol.includes('-extension:') && window.location.href.includes('/test/');
+if(!isHiddenIFrame && (isWeb || isTestPage)) {
 	var doInject = function () {
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {

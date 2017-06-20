@@ -30,7 +30,16 @@
 
 Zotero.Promise.method = function(fn) {
 	return function() {
-		return Promise.resolve(fn.apply(this, arguments));
+		try {
+			var val = fn.apply(this, arguments);
+			if (val && val.then) {
+				return val;
+			} else {
+				return Promise.resolve(val);
+			}
+		} catch (e) {
+			return Promise.reject(e);
+		}
 	}
 };
 

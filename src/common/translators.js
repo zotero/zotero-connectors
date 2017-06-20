@@ -314,12 +314,10 @@ Zotero.Translators.CodeGetter = function(translators, debugMode) {
 Zotero.Translators.CodeGetter.prototype.getCodeFor = Zotero.Promise.method(function(i) {
 	let translator = this._translators[i];
 	// retrieve code if no code and translator is supported locally
-	if((translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER && !translator.hasOwnProperty("code"))
-			// or if debug mode is enabled (even if unsupported locally)
-			|| (this._debugMode && (!translator.hasOwnProperty("code")
+	if (translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER
 			// or if in debug mode and the code we have came from the repo (which doesn't
 			// include test cases)
-			|| (Zotero.Repo && translator.codeSource === Zotero.Repo.SOURCE_REPO)))) {
+			|| (this._debugMode && translator.codeSource === Zotero.Repo.SOURCE_REPO)) {
 		// get code
 		return translator.getCode().catch((e) => Zotero.debug(`Failed to retrieve code for ${translator.translatorID}`));
 	}

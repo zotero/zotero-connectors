@@ -124,36 +124,29 @@ Zotero.Proxies = new function() {
 	
 	this.loadFromClient = function() {
 		if (Zotero.Prefs.get('proxies.clientChecked')) return;
-		return new Zotero.Promise(function(resolve, reject) {
-			Zotero.Connector.callMethod('proxies', null, function(result) {
-				if (!result) {
-					resolve();
-					return;
-				}
-				
-				for (let proxy of result) {
-					let existingProxy;
-					for (let p of Zotero.Proxies.proxies) {
-						if (proxy.scheme == p.scheme) {
-							existingProxy = p;
-							break;
-						}
-					}
-					if (existingProxy) {
-						// Copy hosts from the client if proxy already exists
-						existingProxy.hosts.push.apply(existingProxy.hosts, proxy.hosts);
-						existingProxy.hosts = Array.from(new Set(existingProxy.hosts));
-					} else {
-						// Otherwise add the proxy
-						Zotero.Proxies.proxies.push(new Zotero.Proxy(proxy));
+		return Zotero.Connector.callMethod('proxies', null).then(function(result) {
+			for (let proxy of result) {
+				let existingProxy;
+				for (let p of Zotero.Proxies.proxies) {
+					if (proxy.scheme == p.scheme) {
+						existingProxy = p;
+						break;
 					}
 				}
-				Zotero.Proxies.storeProxies();
+				if (existingProxy) {
+					// Copy hosts from the client if proxy already exists
+					existingProxy.hosts.push.apply(existingProxy.hosts, proxy.hosts);
+					existingProxy.hosts = Array.from(new Set(existingProxy.hosts));
+				} else {
+					// Otherwise add the proxy
+					Zotero.Proxies.proxies.push(new Zotero.Proxy(proxy));
+				}
+			}
+			Zotero.Proxies.storeProxies();
 
-				Zotero.Prefs.set('proxies.clientChecked', true);
-				resolve(result);
-			});
-		});
+			Zotero.Prefs.set('proxies.clientChecked', true);
+			return result;
+		}, () => 0);
 	}
 	
 
@@ -946,17 +939,10 @@ Zotero.Proxies.Detectors.Juniper = function(details) {
 
 Zotero.Proxies.DNS = new function() {
 	this.getHostnames = function() {
-		var deferred = Zotero.Promise.defer();
-
-		Zotero.Connector.callMethod('getClientHostnames', null, function(hostnames, status) {
-			if (status !== 200) {
-				deferred.reject(status);
-			} else {
-				Zotero.Proxies._clientHostnames = hostnames;
-				deferred.resolve(hostnames);
-			}
+		return Zotero.Connector.callMethod('getClientHostnames', null).then(function(hostnames) {
+			Zotero.Proxies._clientHostnames = hostnames;
+			return hostnames;
 		});
-		return deferred.promise;
 	}
 };
 

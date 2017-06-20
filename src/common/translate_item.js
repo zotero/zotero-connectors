@@ -89,7 +89,6 @@ Zotero.Translate.ItemSaver.prototype = {
 	 *     on failure or attachmentCallback(attachment, progressPercent) periodically during saving.
 	 */
 	saveItems: function (items, attachmentCallback) {
-		var deferred = Zotero.Promise.defer();
 		// first try to save items via connector
 		var payload = { items, uri: this._baseURI };
 		if (Zotero.isSafari) {
@@ -97,30 +96,29 @@ Zotero.Translate.ItemSaver.prototype = {
 			payload.cookie = document.cookie;
 		}
 		payload.proxy = this._proxy && this._proxy.toJSON();
-		Zotero.Connector.callMethodWithCookies("saveItems", payload, function(data, status, errorResponse) {
-			if(data !== false) {
-				Zotero.debug("Translate: Save via Standalone succeeded");
-				var haveAttachments = false;
-				if(data && data.items) {
-					for(var i=0; i<data.items.length; i++) {
-						var attachments = items[i].attachments = data.items[i].attachments;
-						for(var j=0; j<attachments.length; j++) {
-							if(attachments[j].id) {
-								attachmentCallback(attachments[j], 0);
-								haveAttachments = true;
-							}
+		return Zotero.Connector.callMethodWithCookies("saveItems", payload).then(function(data) {
+			Zotero.debug("Translate: Save via Standalone succeeded");
+			var haveAttachments = false;
+			if(data && data.items) {
+				for(var i=0; i<data.items.length; i++) {
+					var attachments = items[i].attachments = data.items[i].attachments;
+					for(var j=0; j<attachments.length; j++) {
+						if(attachments[j].id) {
+							attachmentCallback(attachments[j], 0);
+							haveAttachments = true;
 						}
 					}
 				}
-				deferred.resolve(items);
-				if (haveAttachments) this._pollForProgress(items, attachmentCallback);
-			} else if (status == 0) {
-				deferred.resolve(this._saveToServer(items, attachmentCallback));
-			} else if (errorResponse && errorResponse.libraryEditable !== false) {
-				deferred.reject(new Error(`Zotero responded with ${status}`))
+			}
+			if (haveAttachments) this._pollForProgress(items, attachmentCallback);
+			return items;
+		}.bind(this), function(e) {
+			if (e.status == 0) {
+				return this._saveToServer(items, attachmentCallback);
+			} else {
+				throw e;
 			}
 		}.bind(this));
-		return deferred.promise;
 	},
 	
 	/**
@@ -148,30 +146,28 @@ Zotero.Translate.ItemSaver.prototype = {
 		
 		var nPolls = 0;
 		var poll = function() {
-			Zotero.Connector.callMethod("attachmentProgress", progressIDs, function(currentStatus, status) {
-				if(currentStatus) {
-					for(var i=0; i<attachments.length; i++) {
-						if(currentStatus[i] === 100 || currentStatus[i] === false) {
-							attachmentCallback(attachments[i], currentStatus[i]);
-							attachments.splice(i, 1);
-							progressIDs.splice(i, 1);
-							previousStatus.splice(i, 1);
-							currentStatus.splice(i, 1);
-							i--;
-						} else if(currentStatus[i] !== previousStatus[i]) {
-							attachmentCallback(attachments[i], currentStatus[i]);
-							previousStatus[i] = currentStatus[i];
-						}
-					}
-					
-					if(nPolls++ < 60 && attachments.length) {
-						setTimeout(poll, 1000);
-					}
-				} else {
-					for(var i=0; i<attachments.length; i++) {
-						attachmentCallback(attachments[i], false, "Lost connection to Zotero Standalone");
+			return Zotero.Connector.callMethod("attachmentProgress", progressIDs).then(function(currentStatus) {
+				for(var i=0; i<attachments.length; i++) {
+					if(currentStatus[i] === 100 || currentStatus[i] === false) {
+						attachmentCallback(attachments[i], currentStatus[i]);
+						attachments.splice(i, 1);
+						progressIDs.splice(i, 1);
+						previousStatus.splice(i, 1);
+						currentStatus.splice(i, 1);
+						i--;
+					} else if(currentStatus[i] !== previousStatus[i]) {
+						attachmentCallback(attachments[i], currentStatus[i]);
+						previousStatus[i] = currentStatus[i];
 					}
 				}
+				
+				if(nPolls++ < 60 && attachments.length) {
+					setTimeout(poll, 1000);
+				}
+			}, function() {
+				for(var i=0; i<attachments.length; i++) {
+					attachmentCallback(attachments[i], false, "Lost connection to Zotero Standalone");
+				}	
 			});
 		};
 		poll();

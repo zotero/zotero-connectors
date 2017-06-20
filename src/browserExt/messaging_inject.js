@@ -72,15 +72,18 @@ Zotero.Messaging = new function() {
 						// send message
 						return new Zotero.Promise(function(resolve, reject) {
 							chrome.runtime.sendMessage([messageName, newArgs], function(response) {
+								if (response && response[0] == 'error') {
+									return reject(response[1]);
+								}
 								try {
 									if (messageConfig.inject && messageConfig.inject.postReceive) {
 										response = messageConfig.inject.postReceive.apply(null, response);
 									}
 									if (callbackArg !== null) callback.apply(null, response);
-									resolve.apply(null, response);
+									return resolve.apply(null, response);
 								} catch(e) {
 									Zotero.logError(e);
-									reject(e);
+									return reject(e);
 								}
 							});
 						});

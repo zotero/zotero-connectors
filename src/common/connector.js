@@ -165,7 +165,6 @@ Zotero.Connector = new function() {
 	 */
 	this.callMethod = Zotero.Promise.method(function(options, data, tab) {
 		// Don't bother trying if not online in bookmarklet
-		var deferred = Zotero.Promise.defer();
 		if (Zotero.isBookmarklet && this.isOnline === false) {
 			throw new Zotero.CommunicationError("Zotero Offline", 0);
 		}
@@ -201,15 +200,15 @@ Zotero.Connector = new function() {
 				}
 				if(req.status == 0 || req.status >= 400) {
 					Zotero.debug("Connector: Method "+method+" failed with status "+req.status);
-					deferred.reject(new Zotero.Connector.CommunicationError('Method failed', req.status, val));
+					deferred.reject(new Zotero.Connector.CommunicationError(`Method ${options.method} failed`, req.status));
 					
 					// Check for incompatible version
 					if(req.status === 412) {
 						if(Zotero.Connector_Browser && Zotero.Connector_Browser.onIncompatibleStandaloneVersion) {
 							var standaloneVersion = req.getResponseHeader("X-Zotero-Version");
 							Zotero.Connector_Browser.onIncompatibleStandaloneVersion(Zotero.version, standaloneVersion);
-							throw "Connector: Version mismatch: Connector version "+Zotero.version
-								+", Standalone version "+(standaloneVersion ? standaloneVersion : "<unknown>");
+							deferred.reject("Connector: Version mismatch: Connector version "+Zotero.version
+								+", Standalone version "+(standaloneVersion ? standaloneVersion : "<unknown>"));
 						}
 					}
 				} else {
@@ -237,11 +236,9 @@ Zotero.Connector = new function() {
 			if (headers["Content-Type"] == 'application/json') {
 				data = JSON.stringify(data);
 			}
-			if (data == null || data == undefined) {
-				Zotero.HTTP.doGet(uri, newCallback, headers);
-			} else {
-				Zotero.HTTP.doPost(uri, data, newCallback, headers);
-			}
+			let options = {body: data, headers, successCodes: false};
+			let httpMethod = data == null || data == undefined ? "GET" : "POST";
+			Zotero.HTTP.request(httpMethod, uri, options).then(newCallback);
 		}
 		return deferred.promise;
 	}),
@@ -317,26 +314,17 @@ Zotero.Connector_Debug = new function() {
 	 * Submit data to the server
 	 */
 	this.submitReport = function() {
-		return Zotero.Debug.get().then(function(output){
-			let deferred = Zotero.Promise.defer();
-			Zotero.HTTP.doPost(
-				ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1",
-				output,
-				(xmlhttp) => deferred.resolve(xmlhttp)
-			);
-			return deferred.promise;
+		return Zotero.Debug.get().then(function(body){
+			return Zotero.HTTP.request("POST", ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1", {body});
 		}).then(function(xmlhttp) {
 			if (!xmlhttp.responseXML) {
-				return {status: false, message: 'Invalid response from server'};
+				throw new Error('Invalid response from server');
 			}
 			var reported = xmlhttp.responseXML.getElementsByTagName('reported');
 			if (reported.length != 1) {
-				return {status: false, message: 'The server returned an error. Please try again.'};
-				return;
+				throw new Error('The server returned an error. Please try again.');
 			}
-			
-			var reportID = reported[0].getAttribute('reportID');
-			return {status: true, message: reportID};
+			return reported[0].getAttribute('reportID');
 		});
 	};
 }

@@ -153,7 +153,7 @@ describe("Translation", function() {
 				yield background(function(tabId) {
 					// First-time save
 					var stub1 = sinon.stub(Zotero.Prefs, 'get').returns(true);
-					var stub2 = sinon.stub(Zotero.Connector, "callMethod").rejects({status: 0});
+					var stub2 = sinon.stub(Zotero.Connector, "callMethod").rejects(new Zotero.Connector.CommunicationError('err'));
 					var deferred = Zotero.Promise.defer();
 					chrome.tabs.get(tabId, function(tab) {
 						Zotero.Connector_Browser._saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
@@ -175,17 +175,18 @@ describe("Translation", function() {
 				
 				var items = yield tab.run(function() {
 					var spy = sinon.spy(Zotero.Translate.ItemSaver.prototype, 'saveItems');
-					var stub = sinon.stub(Zotero.HTTP, "doPost").callsFake(function(url, data, cb) {
-						Zotero.debug(`fake post: ${url}`);
-						return cb({status: 200, responseText: JSON.stringify({success: {}})});
-					});
+					var stub1 = sinon.stub(Zotero.HTTP, 'request').resolves(
+						{status: 200, responseText: JSON.stringify({success: {}})}
+					);
+					var stub2 = sinon.stub(Zotero.API, 'getUserInfo').resolves({userID: '', apiKey: ''});
 					document.querySelector('input[name="3"]').click();
 					var deferred = Zotero.Promise.defer();
 					// Allow the button click to propagate
 					setTimeout(function() {
 						spy.lastCall.returnValue.then(deferred.resolve);
 					});
-					return deferred.promise.catch(e => ['error', e]).then(r => {spy.restore(); stub.restore(); return r})
+					return deferred.promise.catch(e => ['error', e])
+						.then(r => {spy.restore(); stub1.restore(); stub2.restore(); return r})
 				});
 				
 				assert.equal(items.length, 1);

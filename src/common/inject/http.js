@@ -84,7 +84,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 			loadingURL = urls.shift();
 			try {
 				Zotero.debug("HTTP.processDocuments: Loading "+loadingURL);
-				if(Zotero.HTTP.isSameOrigin(loadingURL)) {	
+				if (Zotero.HTTP.isSameOrigin(loadingURL)) {	
 					hiddenBrowser.src = loadingURL;
 					
 					if(Zotero.isBookmarklet) {
@@ -107,7 +107,8 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 				} else if(Zotero.isBookmarklet) {
 					throw "HTTP.processDocuments: Cannot perform cross-site request from "+window.parent.location+" to "+loadingURL;
 				} else {
-					Zotero.HTTP.doGet(loadingURL, onCrossSiteLoad);
+					// TODO: sort out error handling
+					Zotero.HTTP.request('GET', loadingURL).then(onCrossSiteLoad, onCrossSiteLoad);
 				}
 			} catch(e) {
 				if(exception) {
@@ -124,7 +125,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 				removeListeners();
 			}
 		} else {
-			if(done) {
+			if (done) {
 				try {
 					done();
 				} catch(e) {

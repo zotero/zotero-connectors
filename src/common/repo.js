@@ -54,7 +54,7 @@ Zotero.Repo = new function() {
 	 * Force updating translators
 	 */
 	var update = this.update = function(reset) {
-		_updateFromStandalone(true, reset);
+		return _updateFromStandalone(true, reset);
 	};
 	
 	/**
@@ -70,26 +70,26 @@ Zotero.Repo = new function() {
 					Zotero.Repo.SOURCE_ZOTERO_STANDALONE
 				]
 			)
-		}).catch(function (e) {
+		}, function () {
 			// Don't fetch from repo in debug mode
 			if (debugMode) {
 				return [false, Zotero.Repo.SOURCE_ZOTERO_STANDALONE]
 			}
 		
-			var deferred = Zotero.Promise.defer();
 			// then try repo
-			Zotero.HTTP.doGet(ZOTERO_CONFIG.REPOSITORY_URL + "code/" + translatorID + "?version=" + Zotero.version,
-				function(xmlhttp) {
-					deferred.resolve(Zotero.Promise.all([
-						_haveCode(
-							xmlhttp.status === 200 ? xmlhttp.responseText : false,
-							translatorID
-						),
-						Zotero.Repo.SOURCE_REPO
-					]));
-				}
-			);	
-			return deferred.promise;
+			let url = `${ZOTERO_CONFIG.REPOSITORY_URL}code/${translatorID}?version=${Zotero.version}`;
+			// TODO: reject promise on failure (needs update to zotero/zotero)
+			return Zotero.HTTP.request("GET", url).then(function(xmlhttp) {
+				return Zotero.Promise.all([
+					_haveCode(xmlhttp.responseText, translatorID),
+					Zotero.Repo.SOURCE_REPO
+				]);
+			}, function() {
+				return Zotero.Promise.all([
+					_haveCode(false, translatorID),
+					Zotero.Repo.SOURCE_REPO
+				]);	
+			});	
 		});
 	});
 	
@@ -140,9 +140,9 @@ Zotero.Repo = new function() {
 			// Standalone always returns all translators without .deleted property
 			_handleResponse(result, true);
 			return !!result;
-		}).catch(function() {
+		}, function() {
 			if (tryRepoOnFailure) {
-				return _updateFromRepo(reset, callback);
+				return _updateFromRepo(reset);
 			} else {
 				throw new Error("Failed to update translator metadata");
 			}
@@ -156,19 +156,15 @@ Zotero.Repo = new function() {
 		var url = ZOTERO_CONFIG.REPOSITORY_URL + "metadata?version=" + Zotero.version + "&last="+
 				(reset ? "0" : Zotero.Prefs.get("connector.repo.lastCheck.repoTime"));
 		
-		var deferred = Zotero.Promise.defer();
-		Zotero.HTTP.doGet(url, function(xmlhttp) {
-			var success = xmlhttp.status === 200;
-			return _handleResponse(success ? JSON.parse(xmlhttp.responseText) : false, reset).then(function() {
-				if (success) {
-					var date = xmlhttp.getResponseHeader("Date");
-					Zotero.Prefs.set("connector.repo.lastCheck.repoTime",
-						Math.floor(Date.parse(date)/1000));
-				}
-				deferred.resolve(!!success);	
-			});
+		return Zotero.HTTP.request('GET', url).then(function(xmlhttp) {
+			var date = xmlhttp.getResponseHeader("Date");
+			Zotero.Prefs.set("connector.repo.lastCheck.repoTime", Math.floor(Date.parse(date)/1000));
+			_handleResponse(JSON.parse(xmlhttp.responseText), reset);
+			return true;
+		}, function() {
+			_handleResponse(false, reset);
+			return false;
 		});
-		return deferred.promise;
 	}
 	
 	/**

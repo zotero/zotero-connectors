@@ -87,10 +87,9 @@ describe('Preferences', function() {
 		it('submits an error report to Zotero.org', Promise.coroutine(function* () {
 			var reportId = '1234567890';
 			yield background(function(reportId) {
-				sinon.stub(Zotero.HTTP, 'doPost').callsFake(function() {
-					// Simulating the callback
-					arguments[2]({responseXML: {getElementsByTagName: () => [{getAttribute: () => reportId}]}});
-				});
+				sinon.stub(Zotero.HTTP, 'request').resolves(
+					{responseXML: {getElementsByTagName: () => [{getAttribute: () => reportId}]}}
+				);
 			}, reportId);
 
 			try {
@@ -106,7 +105,7 @@ describe('Preferences', function() {
 				
 				assert.include(message, reportId);
 			} finally {
-				yield background(() => Zotero.HTTP.doPost.restore());
+				yield background(() => Zotero.HTTP.request.restore());
 			}
 		}));
 		
@@ -114,10 +113,9 @@ describe('Preferences', function() {
 			var debugId = '1234567890';
 			var testDebugLine = 'testDebugLine';
 			yield background(function(debugId) {
-				sinon.stub(Zotero.HTTP, 'doPost').callsFake(function() {
-					// Simulating the callback
-					arguments[2]({responseXML: {getElementsByTagName: () => [{getAttribute: () => debugId}]}});
-				});
+				sinon.stub(Zotero.HTTP, 'request').resolves(
+					{responseXML: {getElementsByTagName: () => [{getAttribute: () => debugId}]}}
+				);
 			}, debugId);
 
 			try {
@@ -141,11 +139,11 @@ describe('Preferences', function() {
 				
 				assert.include(message, `D${debugId}`);
 				var debugLogBody = yield background(function() {
-					return Zotero.HTTP.doPost.firstCall.args[1];
+					return Zotero.HTTP.request.firstCall.args[2].body;
 				});
 				assert.include(debugLogBody, testDebugLine);
 			} finally {
-				yield background(() => Zotero.HTTP.doPost.restore());
+				yield background(() => Zotero.HTTP.request.restore());
 			}		
 		}));
 	});

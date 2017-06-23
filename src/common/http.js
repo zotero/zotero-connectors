@@ -28,8 +28,8 @@
  * @namespace
  */
 Zotero.HTTP = new function() {
-	this.StatusError = function(xmlhttp) {
-		this.message = `HTTP request rejected with status ${xmlhttp.status}`;
+	this.StatusError = function(xmlhttp, url) {
+		this.message = `HTTP request to ${url} rejected with status ${xmlhttp.status}`;
 		this.status = xmlhttp.status;
 		this.responseText = xmlhttp.responseText;
 	};
@@ -75,43 +75,41 @@ Zotero.HTTP = new function() {
 			}
 		}
 		
+		let logBody = '';
 		if (['GET', 'HEAD'].includes(method)) {
 			if (options.body != null) {
 				throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
 			}
 		} else  {
 			options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
+					
+			logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
+					options.body.length > options.logBodyLength ? '...' : '';
+			// TODO: make sure below does its job in every API call instance
+			// Don't display password or session id in console
+			logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
+			logBody = logBody.replace(/password=[^&]+/, 'password=********');
 		}
-		
-		let logBody = `${options.body.substr(0, options.logBodyLength)}` +
-				body.length > options.logBodyLength ? '...' : '';
-		// TODO: make sure below does its job in every API call instance
-		// Don't display password or session id in console
-		logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
-		logBody = logBody.replace(/password=[^&]+/, 'password=********');
-		Zotero.debug(`HTTP ${method} ${url}: ${logBody}`);
+		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
+
 		
 		var xmlhttp = new XMLHttpRequest();
 		xmlhttp.timeout = options.timeout;
-		var promise = this._handleState(xmlhttp);
-		try {
-			xmlhttp.open(method, url, true);
+		var promise = this._attachHandlers(url, xmlhttp, options);
+		
+		xmlhttp.open(method, url, true);
 
-			for (let header in options.headers) {
-				xmlhttp.setRequestHeader(header, options.headers[header]);
-			}
-
-			// Maybe should provide "mimeType" option instead. This is xpcom legacy, where responseCharset
-			// could be controlled manually
-			if (options.responseCharset) {
-				xmlhttp.overrideMimeType("text/plain; charset=" + options.responseCharset);
-			}
-			
-			xmlhttp.send(options.body);
-		} catch(e) {
-			Zotero.logError(e);
-			promise.reject(e);
+		for (let header in options.headers) {
+			xmlhttp.setRequestHeader(header, options.headers[header]);
 		}
+
+		// Maybe should provide "mimeType" option instead. This is xpcom legacy, where responseCharset
+		// could be controlled manually
+		if (options.responseCharset) {
+			xmlhttp.overrideMimeType("text/plain; charset=" + options.responseCharset);
+		}
+		
+		xmlhttp.send(options.body);
 		
 		return promise.then(function(xmlhttp) {
 			if (options.debug) {
@@ -122,11 +120,11 @@ Zotero.HTTP = new function() {
 				(xmlhttp.status < 200 || xmlhttp.status >= 300);
 			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(xmlhttp.status);
 			if (invalidDefaultStatus || invalidStatus) {
-				throw new Zotero.HTTP.StatusError(xmlhttp);
+				throw new Zotero.HTTP.StatusError(xmlhttp, url);
 			}
 			return xmlhttp;
 		});
-	}
+	};
 	/**
 	* Send an HTTP GET request via XMLHTTPRequest
 	*
@@ -175,15 +173,19 @@ Zotero.HTTP = new function() {
 	 * the request is complete. xmlhttp.send() still needs to be called, this just attaches the
 	 * handler
 	 *
-	 * @param {XMLHttpRequest} xmlhttp
+	 * See {@link Zotero.HTTP.request} for parameters
 	 * @private
 	 */
-	this._handleState = function(xmlhttp) {
+	this._attachHandlers = function(url, xmlhttp, options) {
 		var deferred = Zotero.Promise.defer();
 		xmlhttp.onload = () => deferred.resolve(xmlhttp);
-		xmlhttp.onerror = xmlhttp.onabort = function(e) {
-			Zotero.logError(e);
-			deferred.reject(e);
+		xmlhttp.onerror = xmlhttp.onabort = function() {
+			var e = new Zotero.HTTP.StatusError(xmlhttp, url);
+			if (options.successCodes === false) {
+				deferred.resolve(xmlhttp);
+			} else {
+				deferred.reject(e);
+			}
 		};
 		xmlhttp.ontimeout = function() {
 			var e = new Zotero.HTTP.TimeoutError(xmlhttp.timeout);

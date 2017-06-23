@@ -170,7 +170,10 @@ var MESSAGES = {
 		remove: false
 	},
 	Repo: {
-		getTranslatorCode: true,
+		getTranslatorCode: {
+			response: true,
+			background: {minArgs: 2}
+		},
 		update: false
 	}
 };

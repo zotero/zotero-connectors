@@ -69,32 +69,14 @@ Zotero.Errors = new function() {
 				body += key + '=' + encodeURIComponent(parts[key]) + '&';
 			}
 			body = body.substr(0, body.length - 1);
-			var deferred = Zotero.Promise.defer();
-			Zotero.HTTP.doPost("https://www.zotero.org/repo/report", body, function(xmlhttp) {
-				if(!xmlhttp.responseXML){
-					try {
-						if (xmlhttp.status>1000){
-							deferred.resolve({status: false, message: 'No network connection'});
-						}
-						else {
-							deferred.resolve({status: false, message: 'Invalid response from repository'});
-						}
-					}
-					catch (e){
-						deferred.resolve({status: false, message: 'Repository cannot be contacted'});
-					}
-					return;
-				}
-				
+			let options = {body, headers: {'Content-Type': 'application/x-www-form-urlencoded'}};
+			return Zotero.HTTP.request("POST", "https://www.zotero.org/repo/report", options).then(function(xmlhttp) {
 				var reported = xmlhttp.responseXML.getElementsByTagName('reported');
 				if (reported.length != 1) {
-					deferred.resolve({status: false, message: 'Invalid response from repository'});
-					return;
+					throw new Error('Invalid response from repository');
 				}
-				
-				deferred.resolve({status: true, message: reported[0].getAttribute('reportID')});
+				return reported[0].getAttribute('reportID');
 			});
-			return deferred.promise;
 		});
 	}
 }

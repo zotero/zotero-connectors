@@ -65,6 +65,12 @@ Zotero.Messaging = new function() {
 			}
 			
 			var messageParts = messageName.split(MESSAGE_SEPARATOR);
+			var fn = Zotero[messageParts[0]][messageParts[1]];
+			if(!fn) {
+				var e = new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
+				sendResponseCallback(['error', e]);
+				throw e;
+			}
 			var messageConfig = MESSAGES[messageParts[0]][messageParts[1]];
 			
 			if (messageConfig && messageConfig.background) {
@@ -87,6 +93,10 @@ Zotero.Messaging = new function() {
 					}
 					// add a response passthrough callback for the message
 					args[callbackArg] = function() {
+						if (arguments[0] && arguments[0][0] == 'error') {
+							let err = JSON.stringify(arguments[0][1], Object.getOwnPropertyNames(arguments[0][1]));
+							sendResponseCallback([arguments[0][0], err]);
+						}
 						var newArgs = new Array(arguments.length);
 						for(var i=0; i<arguments.length; i++) {
 							newArgs[i] = arguments[i];
@@ -102,8 +112,6 @@ Zotero.Messaging = new function() {
 			args.push(tab);
 			args.push(frameId);
 			
-			var fn = Zotero[messageParts[0]][messageParts[1]];
-			if(!fn) throw new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
 			try {
 				var maybePromise = fn.apply(Zotero[messageParts[0]], args);
 			} catch (e) {

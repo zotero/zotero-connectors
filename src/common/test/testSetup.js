@@ -56,7 +56,7 @@ setTimeout(function() {
 					return fn.apply(null, Array.from(arguments).slice(1));
 				} catch (e) {
 					Zotero.logError(e);
-					return ["error", e.message];
+					throw e;
 				}
 			}
 		}

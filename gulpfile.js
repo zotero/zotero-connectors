@@ -71,6 +71,7 @@ var injectInclude = [
 	'zotero/connectorTypeSchemaData.js',
 	'zotero/utilities.js',
 	'zotero/utilities_translate.js',
+	'utilities.js',
 	'inject/http.js',
 	'inject/progressWindow.js',
 	'inject/translate_inject.js',

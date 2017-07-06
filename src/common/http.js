@@ -95,7 +95,7 @@ Zotero.HTTP = new function() {
 		
 		var xmlhttp = new XMLHttpRequest();
 		xmlhttp.timeout = options.timeout;
-		var promise = this._attachHandlers(url, xmlhttp, options);
+		var promise = Zotero.HTTP._attachHandlers(url, xmlhttp, options);
 		
 		xmlhttp.open(method, url, true);
 

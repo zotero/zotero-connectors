@@ -137,7 +137,7 @@ Zotero.API = new function() {
 		return Zotero.HTTP.request("POST", ZOTERO_CONFIG.OAUTH_ACCESS_URL, options).then(function(xmlhttp) {
 			var data = _decodeFormData(xmlhttp.responseText);
 			var xmlhttp = new XMLHttpRequest();
-			xmlhttp.open("GET", ZOTERO_CONFIG.API_URL+"users/"+encodeURI(data.userID)+
+			xmlhttp.open("GET", ZOTERO_CONFIG.API_URL+"users/"+encodeURI(data['auth-userID'])+
 					"/keys/current", true);
 			xmlhttp.onreadystatechange = function() {
 				if(xmlhttp.readyState != 4) return;
@@ -161,12 +161,12 @@ Zotero.API = new function() {
 						"without modifying your key's permissions."));
 				}
 			
-				localStorage["auth-token"] = data.oauth_token;
-				localStorage["auth-token_secret"] = data.oauth_token_secret;
-				localStorage["auth-userID"] = data.userID;
-				localStorage["auth-username"] = data.username;
+				Zotero.Prefs.set('auth-token', data.oauth_token);
+				Zotero.Prefs.set('auth-token_secret', data.oauth_token_secret);
+				Zotero.Prefs.set('auth-userID', data.userID);
+				Zotero.Prefs.set('auth-username', data.username);
 				
-				return deferred.resolve({"username":data.username, "userID":data.userID});
+				return deferred.resolve({"auth-username": data.username, "auth-userID": data.userID});
 			};
 			xmlhttp.setRequestHeader('Zotero-API-Key', data.oauth_token_secret);
 			xmlhttp.setRequestHeader("Zotero-API-Version", "3");
@@ -187,10 +187,12 @@ Zotero.API = new function() {
 	 * Clears OAuth credentials from localStorage
 	 */
 	this.clearCredentials = function() {
-		delete localStorage["auth-token"];
-		delete localStorage["auth-token_secret"];
-		delete localStorage["auth-userID"];
-		delete localStorage["auth-username"];
+		let keys = ['auth-token', 'auth-token_secret', 'auth-userID', 'auth-username'];
+		// TODO: Remove after all connectors updated
+		for (let key of keys) {
+			delete localStorage[key];
+		}
+		Zotero.Prefs.clear(keys);
 		// TODO revoke key
 	};
 	
@@ -199,11 +201,19 @@ Zotero.API = new function() {
 	 * @param {Function} callback Callback to receive username (or null if none is define)
 	 */
 	this.getUserInfo = Zotero.Promise.method(function() {
-		return localStorage.hasOwnProperty("auth-token")
-			? {username: localStorage["auth-username"],
-			   userID: localStorage["auth-userID"],
-			   apiKey: localStorage["auth-token_secret"]}
-			: null;
+		let keys = ['auth-token_secret', 'auth-userID', 'auth-username'];
+		return Zotero.Prefs.getAsync(keys).catch(function() {
+			// TODO: Remove after all connectors updated
+			if (localStorage.hasOwnProperty("auth-token")) {
+				let info = {};
+				for (let key of keys) {
+					Zotero.Prefs.set(key, localStorage[key]);
+					info[key] = localStorage[key];
+				}
+				return info;
+			}
+			return null;
+		});
 	});
 	
 	/**
@@ -211,58 +221,37 @@ Zotero.API = new function() {
 	 * runs in the injected script.
 	 * @param {Object} payload Item(s) to create, in the object format expected by the server.
 	 * @param {String|null} itemKey Parent item key, or null if a top-level item.
-	 * @param {Function} callback Callback to be executed upon request completion. Passed true if
-	 *     succeeded, or false if failed, along with the response body.
 	 * @param {Boolean} [askForAuth] If askForAuth === false, don't ask for authorization if not 
 	 *     already authorized.
 	 */
-	this.createItem = function(payload, callback, askForAuth) {
-		Zotero.API.getUserInfo().then(function(userInfo) {
+	this.createItem = function(payload, askForAuth) {
+		return Zotero.API.getUserInfo().then(function(userInfo) {
 			if(!userInfo) {
 				if(askForAuth === false) {
-					callback(403, "Not authorized");
-				} else {
-					Zotero.API.authorize(function(status, msg) {
-						if(!status) {
-							Zotero.logError("Translate: Authentication failed with message "+msg);
-							callback(403, "Authentication failed");
-							return;
-						}
-						
-						Zotero.API.createItem(payload, callback, false);
-					});
+					throw new Error("Not authorized");
 				}
-				return;
+				return Zotero.API.authorize().then(function() {
+					return Zotero.API.createItem(payload, false);
+				}, function() {
+					throw new Error("Authentication failed");
+				})
 			}
 			
-			var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo.userID + "/items";
+			var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo['auth-userID'] + "/items";
 			let options = {
 				body: JSON.stringify(payload),
 				headers: {
 					"Content-Type": "application/json",
-					"Zotero-API-Key": userInfo.apiKey,
-					"Zotero-API-Version": "2"
-				},
-				successCodes: false
-			};
-			return Zotero.HTTP.request("POST", url, options).then(function(xmlhttp) {
-				if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
-					callback(xmlhttp.status, xmlhttp.responseText);
-				} else if(askForAuth && xmlhttp.status === 403) {
-					Zotero.API.authorize(function(status, msg) {
-						if(!status) {
-							Zotero.logError("Translate: Authentication failed with message "+msg);
-							callback(403, "Authentication failed");
-							return;
-						}
-						
-						Zotero.API.createItem(payload, callback, false);
-					});
-				} else {
-					var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
-					Zotero.logError("API request failed with "+msg);
-					callback(xmlhttp.status, msg);
+					"Zotero-API-Key": userInfo['auth-token_secret'],
+					"Zotero-API-Version": "3"
 				}
+			};
+			return Zotero.HTTP.request("POST", url, options).then(xhr => xhr.responseText).catch(function(e) {
+				if (askForAuth && xmlhttp.status === 403) {
+					return Zotero.API.createItem(payload, true);
+				}
+				Zotero.logError(e);
+				throw e;
 			});
 		});
 	};
@@ -329,14 +318,14 @@ Zotero.API = new function() {
 				return;
 			}
 			
-			var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo.userID + "/items/" + attachment.key + "/file";
+			var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo['auth-userID'] + "/items/" + attachment.key + "/file";
 			let options = {
 				body: data,
 				headers: {
 					"Content-Type": "application/x-www-form-urlencoded",
 					"If-None-Match": "*",
-					"Zotero-API-Key": userInfo.apiKey,
-					"Zotero-API-Version": "2"
+					"Zotero-API-Key": userInfo['auth-token_secret'],
+					"Zotero-API-Version": "3"
 				}
 			};
 			return Zotero.HTTP.request("POST", url, options).then(function(xmlhttp) {
@@ -368,8 +357,8 @@ Zotero.API = new function() {
 				
 				var xhr = new XMLHttpRequest();
 				xhr.open("POST", response.url, true);
-				xhr.setRequestHeader("Zotero-API-Key", userInfo.apiKey);
-				xhr.setRequestHeader("Zotero-API-Version", 2);
+				xhr.setRequestHeader("Zotero-API-Key", userInfo['auth-token_secret']);
+				xhr.setRequestHeader("Zotero-API-Version", 3);
 				xhr.onloadend = function() {
 					if(this.status !== 200 && this.status !== 201) {
 						var msg = this.status+" ("+this.responseText+")";
@@ -383,8 +372,8 @@ Zotero.API = new function() {
 						headers: {
 							"Content-Type": "application/x-www-form-urlencoded",
 							"If-None-Match": "*",
-							"Zotero-API-Key": userInfo.apiKey,
-							"Zotero-API-Version": "2"
+							"Zotero-API-Key": userInfo['auth-token_secret'],
+							"Zotero-API-Version": "3"
 						},
 						successCodes: false
 					};

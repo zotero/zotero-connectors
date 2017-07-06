@@ -43,7 +43,7 @@ describe("Translation", function() {
 	}));
 	
 	after(Promise.coroutine(function* () {
-		yield tab.close();
+		// yield tab.close();
 	}));
 	
 	describe("Detection", function() {

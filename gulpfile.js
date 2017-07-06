@@ -159,6 +159,12 @@ function reloadChromeExtensionsTab(cb) {
 	});
 }
 
+function replaceScriptsHTML(string, match, scripts) {
+	return string.replace(match,
+		scripts.map((s) => '<script type="text/javascript" src="' + s + '"></script>')
+			.join('\n'));
+}
+
 function processFile() {
 	return through.obj(function(file, enc, cb) {
 		console.log(file.path.slice(file.cwd.length));
@@ -230,10 +236,12 @@ function processFile() {
 						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t')));
 				break;
 			case 'global.html':
-				file.contents = Buffer.from(file.contents.toString()
-					.replace("<!--SCRIPTS-->", 
-						backgroundInclude.map((s) => '<script type="text/javascript" src="' + s + '"></script>')
-							.join('\n')));
+				file.contents = Buffer.from(replaceScriptsHTML(
+					file.contents.toString(), "<!--SCRIPTS-->", backgroundInclude));
+				break;
+			case 'journalArticle-single.html':
+				file.contents = Buffer.from(replaceScriptsHTML(
+					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
 				break;
 			case 'preferences.html':
 				file.contents = Buffer.from(file.contents.toString()
@@ -289,6 +297,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/node_modules.js',
 		'./src/common/preferences/preferences.html',
 		'./src/common/zotero.js',
+		'./src/common/test/**/*',
 		'./src/**/*.jsx'
 	];
 	if (!argv.p) {

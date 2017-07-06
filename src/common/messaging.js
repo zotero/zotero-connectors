@@ -95,7 +95,7 @@ Zotero.Messaging = new function() {
 					args[callbackArg] = function() {
 						if (arguments[0] && arguments[0][0] == 'error') {
 							let err = JSON.stringify(arguments[0][1], Object.getOwnPropertyNames(arguments[0][1]));
-							sendResponseCallback([arguments[0][0], err]);
+							return sendResponseCallback([arguments[0][0], err]);
 						}
 						var newArgs = new Array(arguments.length);
 						for(var i=0; i<arguments.length; i++) {

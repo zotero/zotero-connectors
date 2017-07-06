@@ -64,13 +64,13 @@ Zotero.Utilities.logCallbackError = function(fn) {
  * Converts an item from toArray() format to an array of items in
  * the content=json format used by the server
  * 
- * (for origin see: https://github.com/adomasven/zotero/blob/56f9f04340685edc6d0e2145a655b3cc2eba46fc/chrome/content/zotero/xpcom/utilities.js#L1526-L1526)
+ * (for origin see: https://github.com/zotero/zotero/blob/56f9f043/chrome/content/zotero/xpcom/utilities.js#L1526-L1526)
  * 
  */
-Zotero.Utilities.itemToServerJSON = function(item) {
+Zotero.Utilities.itemToAPIJSON = function(item) {
 	var newItem = {
-			itemKey: Zotero.Utilities.generateObjectKey(),
-			itemVersion: 0
+			key: Zotero.Utilities.generateObjectKey(),
+			version: 0
 		},
 		newItems = [newItem];
 	

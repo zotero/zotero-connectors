@@ -94,7 +94,33 @@ setTimeout(function() {
 		});
 	}
 	else if (typeof mocha != 'undefined') {
-		mocha.run();
+		var runner = mocha.run(function() {
+			var elem = document.createElement('p');
+			elem.setAttribute('id', 'mocha-tests-complete');
+			document.body.appendChild(elem);
+		});
+		
+		// Log results for Selenium access
+		window.testResults = [];
+		var flattenTitles = function(test){
+			let titles = [test.title];
+			while (test.parent.title){
+				titles.push(test.parent.title);
+				test = test.parent;
+			}
+			return titles.reverse();
+		};
+		function logResult(test, error) {
+			try {
+				window.testResults.push({
+					title: flattenTitles(test),
+					error: error && JSON.stringify(error, ['message', 'stack'].concat(Object.keys(error)))});
+			} catch (e) {
+				window.testResults.push({title: flattenTitles(test), error: JSON.stringify(error)});
+			}
+		}
+		runner.on('pass', logResult);
+		runner.on('fail', logResult);
 	}
 }, 250);
 

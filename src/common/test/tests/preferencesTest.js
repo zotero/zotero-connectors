@@ -28,6 +28,10 @@ describe('Preferences', function() {
 	
 	before(Promise.coroutine(function* () {
 		yield tab.init(chrome.extension.getURL('preferences/preferences.html'));
+		if (Zotero.isFirefox) {
+			// Firefox is just very slow
+			yield Promise.delay(200);
+		}
 	}));
 	
 	after(Promise.coroutine(function* () {
@@ -129,12 +133,11 @@ describe('Preferences', function() {
 					sinon.stub(window, 'alert').callsFake(deferred.resolve);
 					document.getElementById('advanced-checkbox-enable-logging').click();
 					document.getElementById('advanced-button-submit-output').click();
-					return deferred.promise.catch(e => ['error', e]).then(function(message) {
+					return deferred.promise.then(function(message) {
 						window.alert.restore();
 						document.getElementById('advanced-button-clear-output').click();
 						return message;
-					});
-					return deferred.promise;
+					}).catch(e => ['error', e]);
 				});
 				
 				assert.include(message, `D${debugId}`);

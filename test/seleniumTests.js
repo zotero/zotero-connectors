@@ -25,6 +25,7 @@
 	***** END LICENSE BLOCK *****
 */
 
+const fs = require('fs');
 const path = require('path');
 const process = require('process');
 const selenium = require('selenium-webdriver');
@@ -32,7 +33,8 @@ const until = require('selenium-webdriver/lib/until');
 const chalk = require('chalk');
 
 const scriptDir = __dirname;
-const rootDir = path.join(scriptDir, '../..');
+const rootDir = path.normalize(path.join(scriptDir, '..'));
+const extensionDir = path.join(rootDir, 'build', 'browserExt');
 
 
 function report(results) {
@@ -78,15 +80,11 @@ results.promise = new Promise(function(resolve, reject) {
 	results.resolve = resolve;
 	results.reject = reject;
 });
-if (process.env['TEST_CHROME'] == 1) {
+if ('TEST_CHROME' in process.env) {
 	require('chromedriver');
-	let chromeDriver = path.join(rootDir, 'webdrivers', 'chromedriver');
-	// process.env['webdriver.chrome.driver'] = chrome_driver
-
 	let caps = selenium.Capabilities.chrome();
 
-	caps.set('chromeOptions', {'args': [`load-extension=${path.join(rootDir, 'build', 'browserExt')}`]});
-	caps.set('binary', chromeDriver);
+	caps.set('chromeOptions', {'args': [`load-extension=${extensionDir}`]});
 	let driver = new selenium.Builder()
 		.withCapabilities(caps)
 		.build();
@@ -97,8 +95,58 @@ if (process.env['TEST_CHROME'] == 1) {
 	}).then(function(extIdElem) {
 		return extIdElem[1].getAttribute('id');
 	}).then(function(extId) {
-		let testUrl = `chrome-extension://${extId}/test/test.html#console`;
-		return driver.get(testUrl);
+		let testUrl = `chrome-extension://${extId}/test/test.html`;
+		return new Promise((resolve) => setTimeout(() => resolve(driver.get(testUrl)), 500));
+	}).then(function() {
+		return driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10000);
+	}).then(function() {
+		return driver.executeScript('return window.testResults');
+	}).catch(results.reject).then(function(testResults) {
+		return driver.quit().then(() => results.resolve(testResults));
+	});
+}
+if ('TEST_FX' in process.env) {
+	require('geckodriver');
+
+	// Building the extension proxy file
+	// https://developer.mozilla.org/en-US/Add-ons/Setting_up_extension_development_environment#Firefox_extension_proxy_file
+	// currently the only functional way of installing webexts
+	try {
+		var profileDir = fs.mkdtempSync('/tmp/fx-profile');
+	} catch (e) {
+		if (e.code !== 'EEXIST') throw e
+	}
+	fs.mkdirSync(path.join(profileDir, 'extensions'));
+	let proxyFile = path.join(profileDir, 'extensions/zotero@chnm.gmu.edu');
+	fs.writeFileSync(proxyFile, extensionDir);
+	const firefox = require('selenium-webdriver/firefox');
+	var profile = new firefox.Profile(profileDir);
+	var options = new firefox.Options();
+	options.setProfile(profile);
+	
+	let driver = new selenium.Builder()
+		.forBrowser('firefox')
+		.setFirefoxOptions(options)
+		.build();
+	
+	driver.get("about:support").then(function() {
+		// Switch to chrome context to get the UUIDs pref
+		driver.setContext(firefox.Context.CHROME);
+		return driver.executeScript(`
+			var prefBranch = Services.prefs.getBranch("");
+			if (!prefBranch.prefHasUserValue('extensions.webextensions.uuids')) return;
+			return ''+prefBranch.getComplexValue('extensions.webextensions.uuids', Components.interfaces.nsISupportsString);
+		`);
+	}).then(function(uuids) {
+		driver.setContext(firefox.Context.CONTENT);
+		if (!uuids) {
+			console.log('Failed to retrieve the extension UUID');
+			throw new Error('Failed to retrieve the extension UUID');
+		}
+		let extId = JSON.parse(uuids)['zotero@chnm.gmu.edu'];
+		let testUrl = `moz-extension://${extId}/test/test.html#console`;
+		// extUUID retrieved, continue in web content
+		return new Promise((resolve) => setTimeout(() => resolve(driver.get(testUrl)), 500));
 	}).then(function() {
 		return driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10000);
 	}).then(function() {

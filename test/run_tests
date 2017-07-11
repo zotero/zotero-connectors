@@ -19,21 +19,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$( dirname "$( dirname $DIR )" )"
+ROOT_DIR="$( dirname "$DIR" )"
 
 function usage {
 	cat >&2 <<DONE
 Usage: $0 -p platforms
 Options
- -p PLATFORMS        Platforms to test (c=Chrome, e=Firefox ESR, f=Firefox, s=Safari)
+ -p PLATFORMS        Platforms to test (c=Chrome, f=Firefox, s=Safari)
+ -s 				 Skip build
 DONE
 	exit 1
 }
 
 # Require at least one platform
 # Can technically pass these in as ENV_VARS instead of args, but undocumented in usage
-if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX_ESR" ]] && [[ -z "$TEST_FX" ]] && [[ -z "$TEST_SAFARI" ]]; then
-	while getopts "p:" opt; do
+if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX" ]] && [[ -z "$TEST_SAFARI" ]]; then
+	while getopts "sp:" opt; do
 		case $opt in
 			p)
 				for i in `seq 0 1 $((${#OPTARG}-1))`
@@ -50,6 +51,9 @@ if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX_ESR" ]] && [[ -z "$TEST_FX" ]] && 
 					esac
 				done
 				;;
+			s)
+				SKIP_BUILD=1
+				;;
 		esac
 		shift $((OPTIND-1)); OPTIND=1
 	done
@@ -59,16 +63,19 @@ if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX_ESR" ]] && [[ -z "$TEST_FX" ]] && 
 	usage
 fi
 
-if [ ! -z "$TEST_FX_ESR" ] || [ ! -z "$TEST_FX" ] || [ ! -z "$TEST_SAFARI" ]; then
+if [ ! -z "$TEST_SAFARI" ]; then
 	echo "Platform unimplemented"
 	exit 1
 fi
 
-if [[ ! -e "$ROOT_DIR/build" ]]; then
-	echo "ERROR: you need to build the connectors first. Run `build.sh`"
-	exit 1;
+if [[ ! -z "$TEST_CHROME" ]]; then
+	export TEST_CHROME
+elif [[ ! -z "$TEST_FX" ]]; then
+	export TEST_FX
 fi
 
-if [[ ! -z "$TEST_CHROME" ]]; then
-	TEST_CHROME=1 "$DIR/seleniumTests.js"
+if [[ -z "$SKIP_BUILD" ]]; then
+	$ROOT_DIR/build.sh -d
 fi
+
+$DIR/seleniumTests.js

@@ -9,15 +9,17 @@ cache:
         - "node_modules"
 matrix:
     include:
-        - addons: 
+        - addons:
             chrome: stable
           env: TEST_CHROME="1"
+        - addons:
+            firefox: latest-unsigned
+          env: TEST_FX="1"
 notifications:
     email: false
 install:
 before_script:
     - export DISPLAY=:99.0
     - sh -e /etc/init.d/xvfb start
-    - ./build.sh -d
 script:
-    - ./scripts/tests/run_tests
+    - ./test/run_tests

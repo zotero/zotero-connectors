@@ -54,7 +54,16 @@ DONE
 	exit 1
 }
 
-BOOKMARKLET=0
+if [[ ! -z "$TEST_CHROME" ]] || [[ ! -z "$TEST_FX_ESR" ]] || [[ ! -z "$TEST_FX" ]]; then
+	BUILD_BROWSER_EXT=1
+elif [[ ! -z $TEST_SAFARI ]]; then
+	BUILD_SAFARI=1
+else
+	BUILD_BROWSER_EXT=1
+	BUILD_SAFARI=1
+fi
+
+BUILD_BOOKMARKLET=0
 while getopts "hv:bd" opt; do
 	case $opt in
 		h)
@@ -64,7 +73,7 @@ while getopts "hv:bd" opt; do
 			VERSION="$OPTARG"
 			;;
 		b)
-			BOOKMARKLET=1
+			BUILD_BOOKMARKLET=1
 			;;
 		d)
 			DEBUG=1
@@ -232,9 +241,9 @@ done
 
 cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
 
-
 # Copy translation-related resources for Chrome/Safari
-for browser in "browserExt" "safari"; do
+function copyResources {
+	browser="$1"
 	if [ "$browser" == "safari" ]; then
 		browser_builddir="$BUILD_DIR/safari.safariextension"
 	else
@@ -289,64 +298,77 @@ for browser in "browserExt" "safari"; do
 		rm -rf "$browser_builddir/tools"
 		rm -rf "$browser_builddir/tests"
 	fi
-done
+}
 
-gulp -v >/dev/null 2>&1 || { echo >&2 "gulp not found -- aborting"; exit 1; }
-
-# Update scripts
-if [ ! -z $DEBUG ]; then
-	gulp process-custom-scripts --version "$VERSION" > "$LOG" 2>&1
-else
-	gulp process-custom-scripts --version "$VERSION" -p > "$LOG" 2>&1
+if [[ $BUILD_BROWSER_EXT == 1 ]]; then
+	copyResources 'browserExt'
+fi
+if [[ $BUILD_SAFARI == 1 ]]; then
+	copyResources 'safari'
 fi
 
-# Transpile Safari JS for Safari 10.0<
-echo "Transpiling Safari JS..." >> "$LOG";
-"$CWD/node_modules/babel-cli/bin/babel.js" "$BUILD_DIR/safari.safariextension/" --out-dir "$BUILD_DIR/safari.safariextension/" -q >> "$LOG" 2>&1
-echo "Transpiled" >> "$LOG";
+if [[ $BUILD_BROWSER_EXT == 1 ]] || [[ $BUILD_SAFARI == 1 ]]; then
+	gulp -v >/dev/null 2>&1 || { echo >&2 "gulp not found -- aborting"; exit 1; }
+
+	# Update scripts
+	if [ ! -z $DEBUG ]; then
+		gulp process-custom-scripts --version "$VERSION" > "$LOG" 2>&1
+	else
+		gulp process-custom-scripts --version "$VERSION" -p > "$LOG" 2>&1
+	fi
+fi
+
+if [[ $BUILD_SAFARI == 1 ]]; then
+	# Transpile Safari JS for Safari 10.0<
+	echo "Transpiling Safari JS..." >> "$LOG";
+	"$CWD/node_modules/babel-cli/bin/babel.js" "$BUILD_DIR/safari.safariextension/" --out-dir "$BUILD_DIR/safari.safariextension/" -q >> "$LOG" 2>&1
+	echo "Transpiled" >> "$LOG";
+fi
 
 echo "done"
 
-# Build Safari extension
-if [ -e "$SAFARI_PRIVATE_KEY" -a -e "$XAR_EXECUTABLE" ]; then
-	echo -n "Building Safari extension..."
-	rm -f "$SAFARI_EXT"
-	
-	# Make a temporary directory
-	TMP_BUILD_DIR="/tmp/zotero-connector-safari-build"
-	rm -rf "$TMP_BUILD_DIR"
-	mkdir "$TMP_BUILD_DIR"
-	
-	# Get size of signature
-	SIGSIZE=`: | openssl dgst -sign "$SAFARI_PRIVATE_KEY" -binary | wc -c`
-	
-	# Make XAR
-	pushd "$BUILD_DIR" > /dev/null
-	if "$XAR_EXECUTABLE" -cf "$SAFARI_EXT" --distribution "`basename \"$BUILD_DIR/safari.safariextension\"`" &&
-		popd > /dev/null &&
-		# Make signature data
-		"$XAR_EXECUTABLE" --sign -f "$SAFARI_EXT" \
-			--data-to-sign "$TMP_BUILD_DIR/safari_sha1.dat" \
-			--sig-size $SIGSIZE \
-			--cert-loc="$SAFARI_EXT_CERTIFICATE" \
-			--cert-loc="$SAFARI_AUX_CERTIFICATE1" \
-			--cert-loc="$SAFARI_AUX_CERTIFICATE2" >> "$LOG" 2>&1 &&
-		# Sign signature data
-		(echo "3021300906052B0E03021A05000414" | xxd -r -p; cat "$TMP_BUILD_DIR/safari_sha1.dat") \
-			| openssl rsautl -sign -inkey "$SAFARI_PRIVATE_KEY" > "$TMP_BUILD_DIR/signature.dat" &&
-		# Inject signature
-		"$XAR_EXECUTABLE" --inject-sig "$TMP_BUILD_DIR/signature.dat" -f "$SAFARI_EXT" >> "$LOG" 2>&1
-	then
-		echo "succeeded"
+if [[ $BUILD_SAFARI == 1 ]]; then
+	# Build Safari extension
+	if [ -e "$SAFARI_PRIVATE_KEY" -a -e "$XAR_EXECUTABLE" ]; then
+		echo -n "Building Safari extension..."
+		rm -f "$SAFARI_EXT"
+		
+		# Make a temporary directory
+		TMP_BUILD_DIR="/tmp/zotero-connector-safari-build"
+		rm -rf "$TMP_BUILD_DIR"
+		mkdir "$TMP_BUILD_DIR"
+		
+		# Get size of signature
+		SIGSIZE=`: | openssl dgst -sign "$SAFARI_PRIVATE_KEY" -binary | wc -c`
+		
+		# Make XAR
+		pushd "$BUILD_DIR" > /dev/null
+		if "$XAR_EXECUTABLE" -cf "$SAFARI_EXT" --distribution "`basename \"$BUILD_DIR/safari.safariextension\"`" &&
+			popd > /dev/null &&
+			# Make signature data
+			"$XAR_EXECUTABLE" --sign -f "$SAFARI_EXT" \
+				--data-to-sign "$TMP_BUILD_DIR/safari_sha1.dat" \
+				--sig-size $SIGSIZE \
+				--cert-loc="$SAFARI_EXT_CERTIFICATE" \
+				--cert-loc="$SAFARI_AUX_CERTIFICATE1" \
+				--cert-loc="$SAFARI_AUX_CERTIFICATE2" >> "$LOG" 2>&1 &&
+			# Sign signature data
+			(echo "3021300906052B0E03021A05000414" | xxd -r -p; cat "$TMP_BUILD_DIR/safari_sha1.dat") \
+				| openssl rsautl -sign -inkey "$SAFARI_PRIVATE_KEY" > "$TMP_BUILD_DIR/signature.dat" &&
+			# Inject signature
+			"$XAR_EXECUTABLE" --inject-sig "$TMP_BUILD_DIR/signature.dat" -f "$SAFARI_EXT" >> "$LOG" 2>&1
+		then
+			echo "succeeded"
+		else
+			echo "failed"
+		fi
+		rm -rf "$TMP_BUILD_DIR"
 	else
-		echo "failed"
+		echo "No Safari certificate found; not building Safari extension"
 	fi
-	rm -rf "$TMP_BUILD_DIR"
-else
-	echo "No Safari certificate found; not building Safari extension"
 fi
 
-if [ $BOOKMARKLET -eq 1 ]; then
+if [ $BUILD_BOOKMARKLET == 1 ]; then
 	echo -n "Building bookmarklet..."
 	
 	# Make bookmarklet

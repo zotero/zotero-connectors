@@ -15,6 +15,9 @@ matrix:
         - addons:
             firefox: latest-unsigned
           env: TEST_FX="1"
+        - addons:
+            firefox: latest-esr
+          env: TEST_FX="1"
 notifications:
     email: false
 install:

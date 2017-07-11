@@ -41,7 +41,6 @@ if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX" ]] && [[ -z "$TEST_SAFARI" ]]; th
 				do
 					case ${OPTARG:i:1} in
 						c) TEST_CHROME=1;;
-						e) TEST_FX_ESR=1;;
 						f) TEST_FX=1;;
 						s) TEST_SAFARI=1;;
 						*)
@@ -59,7 +58,7 @@ if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX" ]] && [[ -z "$TEST_SAFARI" ]]; th
 	done
 fi
 
-if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX_ESR" ]] && [[ -z "$TEST_FX" ]] && [[ -z "$TEST_SAFARI" ]]; then
+if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX" ]] && [[ -z "$TEST_SAFARI" ]]; then
 	usage
 fi
 

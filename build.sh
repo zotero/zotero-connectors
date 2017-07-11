@@ -54,7 +54,7 @@ DONE
 	exit 1
 }
 
-if [[ ! -z "$TEST_CHROME" ]] || [[ ! -z "$TEST_FX_ESR" ]] || [[ ! -z "$TEST_FX" ]]; then
+if [[ ! -z "$TEST_CHROME" ]] || [[ ! -z "$TEST_FX" ]]; then
 	BUILD_BROWSER_EXT=1
 elif [[ ! -z $TEST_SAFARI ]]; then
 	BUILD_SAFARI=1

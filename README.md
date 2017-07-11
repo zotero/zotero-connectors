@@ -26,7 +26,7 @@ OR
 
 1. Get and install the [Mozilla web-ext tool](https://github.com/mozilla/web-ext)
 1. `cd` to project root
-1. `web-ext -s ./build/browserExt/ run`
+1. `./scripts/firefox/run_xpi`
 
 ### Safari
 
@@ -55,7 +55,7 @@ As files are changed, the connectors will be rebuilt automatically and Chrome wi
 1. `npm install`
 1. `build.sh -d`
 1. `gulp watch`
-1. `web-ext -s ./build/browserExt/ run` (in a different terminal window)
+1. `./scripts/firefox/run_xpi` (in a different terminal window)
 
 As files are changed, the connectors will be rebuilt automatically and Firefox will reload the extension.
 
@@ -76,6 +76,16 @@ in the browser being developed for.
 * [Google Chrome](https://www.google.com/intl/en/chrome/browser/) or [Chromium](http://www.chromium.org/)
 * xar with [patch for building Safari extensions](https://code.google.com/p/xar/issues/detail?id=76)
 
+# Tests
+
+To run tests locally, build the extension with the -d flag, and then run
+
+```$bash
+$ ./test/run_tests -p c
+```
+
+Test files are located at `src/common/test`. See `src/common/test/testSetup.js` for 
+test framework documentation
 
 # Developing
 

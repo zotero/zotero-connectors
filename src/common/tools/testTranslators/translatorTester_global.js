@@ -51,9 +51,9 @@ Zotero.TranslatorTester.runTests = function(translator, type, instanceID, tab) {
 Zotero.TranslatorTester.onLoad = function(callback, tab) {
 	if(_tabData[tab.id]) {
 		var tabData = _tabData[tab.id];
-		callback([tabData.instance.translator, tabData.instance.type, tabData.test]);
+		return [tabData.instance.translator, tabData.instance.type, tabData.test];
 	} else {
-		callback(false);
+		return false;
 	}
 }
 
@@ -90,8 +90,9 @@ Zotero.TranslatorTester.runAutomatedTesting = new function() {
 		window.setTimeout(function() {
 			Zotero_TranslatorTesters.runAllTests(4, {}, function(data) {
 				isRunning = false;
-				Zotero.HTTP.doPost("http://127.0.0.1:23119/provo/save", JSON.stringify(data),
-						function() {}, {"Content-Type":"application/json"});
+				Zotero.HTTP.request('POST', `${ZOTERO_CONFIG.CONNECTOR_SERVER_URL}provo/save`, {
+					body: JSON.stringify(data),
+					headers: {"Content-Type":"application/json"}})
 			});
 		}, 60000);
 	};

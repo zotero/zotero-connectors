@@ -179,26 +179,33 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	 * @inner
 	 */
 	var onCrossSiteLoad = function(xmlhttp) {
-		// add iframe
-		var iframe = document.createElement("iframe");
-		iframe.style.display = "none";
-		// ban script execution
-		iframe.setAttribute("sandbox", "allow-same-origin allow-forms");
-		document.body.appendChild(iframe);
+		var iframe = Zotero.Browser.createHiddenBrowser();
+		iframe.setAttribute("sandbox", "allow-same-origin allow-forms allow-scripts");
+		
+		// NOTE: This is where the event flow continues
+		iframe.onload = () => process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView);
 		
 		// load cross-site data into iframe
 		var doc = iframe.contentDocument;
-		try {
-			// Firefox throws a security error here so we use iframe.srcdoc
-			// Unfortunately Edge 15 still does not support srcdoc.
-			// See http://caniuse.com/#feat=iframe-srcdoc
-			doc.open();
-			doc.write(xmlhttp.responseText);
-			doc.close();
-		} catch (e) {
-			iframe.srcdoc = xmlhttp.responseText;
+		// HACKS1: Wrapping the document in proxy magic.
+		doc = Zotero.Browser.wrapDoc(doc, loadingURL);
+		if (Zotero.isFirefox) {
+			try {
+				// HACKS2: Doing this seems to prevent the security error in Firefox.
+				doc.documentElement.innerHTML = xmlhttp.responseText;
+			} catch (e) {
+				Zotero.logError(e);
+			}
+		} else {
+			try {
+				doc.open();
+				doc.write(xmlhttp.responseText);
+				doc.close();
+			} catch (e) {
+				Zotero.logError(e);
+			}
 		}
-		process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView);
+		
 	}
 	
 	/**
@@ -279,4 +286,36 @@ Zotero.Browser = {
 	"deleteHiddenBrowser":function(hiddenBrowser) {
 		document.body.removeChild(hiddenBrowser);
 	}
-}
+};
+
+/**
+ * Adds a ES6 Proxied location attribute
+ * @param doc
+ * @param docUrl
+ */
+Zotero.Browser.wrapDoc = function(doc, docUrl) {
+	let url = require('url');
+	docUrl = url.parse(docUrl);
+	docUrl.toString = () => this.href;
+	let wrappedDoc = new Proxy(doc, {get: function(t, prop) {
+		if (prop === 'location') {
+			return docUrl;
+		} else if(prop == 'evaluate') {
+			// If you pass the document itself into doc.evaluate as the second argument
+			// it fails, because it receives a proxy, which isn't of type `Node` for some reason.
+			// Native code magic.
+			return function() {
+				if (arguments[1] == wrappedDoc) {
+					arguments[1] = t;
+				}
+				return t[prop].apply(t, arguments)
+			}
+		} else {
+			if (typeof t[prop] == 'function') {
+				return t[prop].bind(t);
+			}
+			return t[prop];
+		}
+	}});
+	return wrappedDoc;
+};

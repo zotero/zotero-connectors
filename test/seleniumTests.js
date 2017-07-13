@@ -148,7 +148,7 @@ if ('TEST_FX' in process.env) {
 		// extUUID retrieved, continue in web content
 		return new Promise((resolve) => setTimeout(() => resolve(driver.get(testUrl)), 500));
 	}).then(function() {
-		return driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10000);
+		return driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10*60*1000);
 	}).then(function() {
 		return driver.executeScript('return window.testResults');
 	}).catch(results.reject).then(function(testResults) {

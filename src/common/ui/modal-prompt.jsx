@@ -134,11 +134,8 @@ Zotero.ui.ModalPrompt = React.createClass({
 		var component = this;
 		links.forEach(function (link) {
 			link.onclick = function (event) {
-				component.props.onClose(component.state, event);
 				let href = this.getAttribute('href');
-				// Allow prompt to close before opening tab, which avoids a flash
-				// in Chrome when returning to the tab
-				setTimeout(() => Zotero.Connector_Browser.openTab(href), 50);
+				Zotero.Connector_Browser.openTab(href);
 				return false;
 			};
 		});

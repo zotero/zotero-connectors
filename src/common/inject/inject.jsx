@@ -293,7 +293,6 @@ Zotero.Inject = new function() {
 		}
 	};
 
-	// TODO: Add "For more information" with link to blog post
 	this.firstUsePrompt = function () {
 		return this.confirm({
 			title: "You’ve installed the Zotero Connector!",
@@ -301,9 +300,8 @@ Zotero.Inject = new function() {
 			button2Text: "",
 			message: `
 				The Zotero Connector enables you to save references to Zotero from your web browser in a single click.<br><br>
-				<em><strong>Looking for your Zotero data?</strong> If you were previously using Zotero for Firefox, you’ll need to <a href="https://www.zotero.org/download/">download</a> the standalone Zotero application to access your local Zotero data going forward.</em>
-			`,
-			clickOutsideToClose: true
+				<strong>Looking for your Zotero data?</strong> If you were previously using Zotero for Firefox, you’ll need to <a href="https://www.zotero.org/download/">download</a> the standalone Zotero application to access your local Zotero data going forward. See <a href="https://www.zotero.org/blog/a-unified-zotero-experience/">A Unified Zotero Experience</a> for more information.
+			`
 		});
 	};
 	

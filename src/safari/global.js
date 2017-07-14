@@ -240,6 +240,14 @@ Zotero.Connector_Browser = new function() {
 // register handlers
 safari.application.addEventListener("command", Zotero.Connector_Browser.onPerformCommand, false);
 safari.application.addEventListener("validate", Zotero.Connector_Browser.onValidateCommand, false);
+safari.application.addEventListener('activate', function(e) {
+	Zotero.Connector.reportActiveURL(e.target.url);
+}, true);
+safari.application.addEventListener('navigate', function(e) {
+	if (e.target == safari.application.activeBrowserWindow.activeTab) {
+		Zotero.Connector.reportActiveURL(e.target.url);
+	}
+}, true);
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
 
 // initialize

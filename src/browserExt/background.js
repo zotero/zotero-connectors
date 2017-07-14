@@ -544,12 +544,14 @@ Zotero.Connector_Browser = new function() {
 		_clearInfoForTab(tabID);
 		// Rerun translation
 		Zotero.Messaging.sendMessage("pageModified", null, tab);
+		tab.active && Zotero.Connector.reportActiveURL(tab.url);
 	});
 	
 	chrome.tabs.onActivated.addListener(function(activeInfo) {
 		chrome.tabs.get(activeInfo.tabId, Zotero.Utilities.logCallbackError(function(tab) {
 			Zotero.debug("Connector_Browser: onActivated for " + tab.url);
 			Zotero.Connector_Browser.onTabActivated(tab);
+			Zotero.Connector.reportActiveURL(tab.url);
 		}));
 	});
 

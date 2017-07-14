@@ -23,6 +23,7 @@
     ***** END LICENSE BLOCK *****
 */
 
+// TODO: refactor this class
 Zotero.Connector = new function() {
 	const CONNECTOR_API_VERSION = 2;
 	
@@ -32,6 +33,7 @@ Zotero.Connector = new function() {
 	// http, so pinging Standalone at http://127.0.0.1 fails.
 	// Disable for all browsers, except IE, which may be used frequently with ZSA
 	this.isOnline = Zotero.isBookmarklet && !Zotero.isIE ? false : null;
+	this.shouldReportActiveURL = true;
 	
 	/**
 	 * Checks if Zotero is online and passes current status to callback
@@ -129,10 +131,26 @@ Zotero.Connector = new function() {
 				fail();
 			}
 		} else {
-			Zotero.Connector.callMethod("ping", {}, function(status) {
-				callback(status !== false);
-			});
+			Zotero.Connector.ping().then(() => callback(true)).catch(() => callback(false));
 		}
+	}
+
+	this.reportActiveURL = function(url) {
+		if (!this.isOnline || !this.shouldReportActiveURL) return;
+		
+		let payload = {data: {activeURL: url}};
+		this.ping(payload);
+	}
+	
+	this.ping = function(payload={}) {
+		var deferred = Zotero.Promise.defer();
+		Zotero.Connector.callMethod("ping", payload, function(response, status) {
+			Zotero.Connector.shouldReportActiveURL = response && response.prefs && response.prefs.shouldReportActiveURL;
+			
+			if (response === false) return deferred.reject(status);
+			return deferred.resolve(response);
+		});
+		return deferred.promise;
 	}
 	
 	/**

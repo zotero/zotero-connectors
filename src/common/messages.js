@@ -174,6 +174,7 @@ var MESSAGES = {
 	Prefs: 
 		{
 			set: false,
+			getAll: true,
 			getAsync: true
 		},
 	Proxies: 

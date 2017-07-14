@@ -203,6 +203,7 @@ Zotero.Prefs = new function() {
 		"automaticSnapshots": true,
 		"connector.repo.lastCheck.localTime": 0,
 		"connector.repo.lastCheck.repoTime": 0,
+		"connector.url": ZOTERO_CONFIG.CONNECTOR_SERVER_URL,
 		"capitalizeTitles": false,
 		"interceptKnownFileTypes": true,
 		"allowedInterceptHosts": [],

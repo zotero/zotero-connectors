@@ -44,8 +44,8 @@ const argv = require('yargs')
 
 var injectInclude = [
 	'node_modules.js',
-	'zotero.js',
 	'zotero_config.js',
+	'zotero.js',
 	'promise.js',
 	'http.js',
 	'proxy.js',
@@ -94,8 +94,8 @@ injectIncludeBrowserExt.push.apply(injectIncludeBrowserExt, injectIncludeLast);
 
 var backgroundInclude = [
 	'node_modules.js',
-	'zotero.js',
 	'zotero_config.js',
+	'zotero.js',
 	'promise.js',
 	'errors_webkit.js',
 	'api.js',

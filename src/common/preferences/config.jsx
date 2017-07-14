@@ -78,7 +78,7 @@ Zotero_Preferences_Config.Row = React.createClass({
 		if (typeof value == 'object') value = JSON.stringify(value);
 		
 		if (typeof value == 'boolean') {
-			value = !value;
+			value = `${!value}`;
 		} else {
 			value = window.prompt('', value);
 			if (value === null) return;

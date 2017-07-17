@@ -45,7 +45,8 @@
 	"applications": {
 		"gecko": {
 			"id": "zotero@chnm.gmu.edu",
-			"update_url": "https://www.zotero.org/download/connector/firefox/updates.json"
+			"update_url": "https://www.zotero.org/download/connector/firefox/updates.json",
+			"strict_min_version": "51"
 		}
 	}
 }

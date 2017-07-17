@@ -150,7 +150,7 @@ Zotero.Proxies = new function() {
 				if (response == 2) {
 					return Zotero.Messaging.sendMessage('confirm', {
 						title: 'Only add proxies linked from your library, school, or corporate website',
-						message: 'Adding other proxies allows malicious sites to masquarade as sites you trust.<br/></br>'
+						message: 'Adding other proxies allows malicious sites to masquerade as sites you trust.<br/></br>'
 							+ 'Adding this proxy will allow Zotero to recognize items from proxied pages and will automatically '
 							+ `redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxiedHost}.`,
 						button1Text: 'Add Proxy',

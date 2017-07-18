@@ -704,12 +704,11 @@ Zotero.Proxy.prototype.toProper = function(m) {
 	
 	// Replace `-` with `.` in https to support EZProxy HttpsHyphens.
 	// Potentially troublesome with domains that contain dashes
-	if (this.dotsToHyphens || (this.dotsToHyphens == undefined) && scheme == "https://") {
+	if (this.dotsToHyphens ||
+		(this.dotsToHyphens == undefined && scheme == "https://") ||
+		!properURL.includes('.')) {
 		properURL = properURL.replace(/-/g, '.');
 	}
-	
-	// Replace 
-	properURL.replace(/-/g, '.');
 
 	if (this.indices["%p"]) {
 		properURL += m[this.parameters.indexOf("%p")+1];

@@ -71,7 +71,10 @@ Zotero.Proxies = new function() {
 			}
 			return proxy;
 		});
-
+		
+		if (this.transparent) {
+			Zotero.Proxies.loadFromClient();
+		}
 	};
 	
 	this.loadPrefs = function() {
@@ -118,6 +121,36 @@ Zotero.Proxies = new function() {
 			}.bind(this));
 		}
 	};
+	
+	this.loadFromClient = function() {
+		if (Zotero.Prefs.get('proxies.clientChecked')) return;
+		return new Zotero.Promise(function(resolve, reject) {
+			Zotero.Connector.callMethod('proxies', null, function(result) {
+				if (!result) reject(result);
+				
+				for (let proxy of result) {
+					let existingProxy;
+					for (let p of Zotero.Proxies.proxies) {
+						if (proxy.scheme == p.scheme) {
+							existingProxy = p;
+							break;
+						}
+					}
+					if (existingProxy) {
+						// Copy hosts from the client if proxy already exists
+						existingProxy.hosts.push.apply(existingProxy.hosts, proxy.hosts);
+					} else {
+						// Otherwise add the proxy
+						Zotero.Proxies.proxies.push(new Zotero.Proxy(proxy));
+					}
+				}
+				Zotero.Proxies.storeProxies();
+
+				Zotero.Prefs.set('proxies.clientChecked', true);
+				resolve(result);
+			});
+		});
+	}
 	
 
 	/**

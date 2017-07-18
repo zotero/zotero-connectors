@@ -216,7 +216,8 @@ Zotero.Prefs = new function() {
 		"proxies.showRedirectNotification": true,
 		"proxies.disableByDomain": false,
 		"proxies.disableByDomainString": '.edu',
-		"proxies.proxies": []
+		"proxies.proxies": [],
+		"proxies.clientChecked": false
 	};
 	
 	

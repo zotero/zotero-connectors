@@ -139,6 +139,7 @@ Zotero.Proxies = new function() {
 					if (existingProxy) {
 						// Copy hosts from the client if proxy already exists
 						existingProxy.hosts.push.apply(existingProxy.hosts, proxy.hosts);
+						existingProxy.hosts = Array.from(new Set(existingProxy.hosts));
 					} else {
 						// Otherwise add the proxy
 						Zotero.Proxies.proxies.push(new Zotero.Proxy(proxy));

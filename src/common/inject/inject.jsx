@@ -50,6 +50,10 @@ if(isTopWindow) {
 			if (status !== 200) {
 				Zotero.ProgressWindow.changeHeadline("Saving to zotero.org");
 			} else {
+				if (response.editable === false) {
+					new Zotero.ProgressWindow.ErrorMessage("collectionNotEditable");
+					Zotero.ProgressWindow.startCloseTimer(8000);
+				}
 				Zotero.ProgressWindow.changeHeadline("Saving to ",
 					response.id ? "treesource-collection.png" : "treesource-library.png",
 					response.name+"\u2026");

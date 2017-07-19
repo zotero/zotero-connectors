@@ -108,9 +108,12 @@ var Zotero = new function() {
 	 */
 	this.initInject = function() {
 		Zotero.isInject = true;
-		Zotero.Debug.init();
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
+		Zotero.Prefs.loadNamespace('translators');
+		return Zotero.Prefs.loadNamespace('debug').then(function() {
+			Zotero.Debug.init();
+		});
 	};
 	
 	
@@ -217,16 +220,29 @@ Zotero.Prefs = new function() {
 		"proxies.disableByDomain": false,
 		"proxies.disableByDomainString": '.edu',
 		"proxies.proxies": [],
-		"proxies.clientChecked": false
+		"proxies.clientChecked": false,
+		
+		"translators.attachSupplementary": false,
+		"translators.supplementaryAsLink": false,
+		"translators.RIS.import.ignoreUnknown": true,
+		"translators.RIS.import.keepID": false,
+		"translators.ACS.highResPDF": 0,
+		"translators.BibTeX.export.dontProtectInitialCase": false,
+		
 	};
 	
+	this._preloaded = {};
 	
 	this.get = function(pref) {
+		if (Zotero.isInject) {
+			if (!(pref in this._preloaded)) throw new Error(`Prefs.get: ${pref} not preloaded`);
+			return this._preloaded[pref];
+		}
 		try {
 			if("pref-"+pref in localStorage) return JSON.parse(localStorage["pref-"+pref]);
 		} catch(e) {}
 		if (DEFAULTS.hasOwnProperty(pref)) return DEFAULTS[pref];
-		throw "Zotero.Prefs: Invalid preference "+pref;
+		throw new Error("Zotero.Prefs: Invalid preference "+pref);
 	};
 	
 	this.getAll = function() {
@@ -256,6 +272,21 @@ Zotero.Prefs = new function() {
 				reject(e);
 			}
 		});
+	};
+
+	/**
+	 * Pre-load a namespace of prefs that can then be accessed synchronously
+	 *
+	 * (Currently relevant on injected pages, but after switch to asynchronous
+	 * chrome.storage will be relevant everywhere)
+	 * @param namespace
+	 */
+	this.loadNamespace = function(namespace) {
+		return this.getAll().then(function(prefs) {
+			let keys = Object.keys(prefs);
+			keys.filter((key) => key.indexOf(namespace) === 0)
+				.forEach((key) => this._preloaded[key] = JSON.parse(prefs[key]));
+		}.bind(this));
 	};
 	
 	this.set = function(pref, value) {

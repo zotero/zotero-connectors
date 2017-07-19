@@ -97,7 +97,7 @@ Zotero.Translate.ItemSaver.prototype = {
 			payload.cookie = document.cookie;
 		}
 		payload.proxy = this._proxy && this._proxy.toJSON();
-		Zotero.Connector.callMethodWithCookies("saveItems", payload, function(data, status) {
+		Zotero.Connector.callMethodWithCookies("saveItems", payload, function(data, status, errorResponse) {
 			if(data !== false) {
 				Zotero.debug("Translate: Save via Standalone succeeded");
 				var haveAttachments = false;
@@ -116,7 +116,7 @@ Zotero.Translate.ItemSaver.prototype = {
 				if (haveAttachments) this._pollForProgress(items, attachmentCallback);
 			} else if (status == 0) {
 				deferred.resolve(this._saveToServer(items, attachmentCallback));
-			} else {
+			} else if (errorResponse && errorResponse.libraryEditable !== false) {
 				deferred.reject(new Error(`Zotero responded with ${status}`))
 			}
 		}.bind(this));

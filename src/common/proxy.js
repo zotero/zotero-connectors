@@ -126,7 +126,10 @@ Zotero.Proxies = new function() {
 		if (Zotero.Prefs.get('proxies.clientChecked')) return;
 		return new Zotero.Promise(function(resolve, reject) {
 			Zotero.Connector.callMethod('proxies', null, function(result) {
-				if (!result) reject(result);
+				if (!result) {
+					resolve();
+					return;
+				}
 				
 				for (let proxy of result) {
 					let existingProxy;

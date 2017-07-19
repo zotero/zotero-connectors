@@ -138,14 +138,14 @@ Zotero.Connector = new function() {
 	this.reportActiveURL = function(url) {
 		if (!this.isOnline || !this.shouldReportActiveURL) return;
 		
-		let payload = {data: {activeURL: url}};
+		let payload = { activeURL: url };
 		this.ping(payload);
 	}
 	
 	this.ping = function(payload={}) {
 		var deferred = Zotero.Promise.defer();
 		Zotero.Connector.callMethod("ping", payload, function(response, status) {
-			Zotero.Connector.shouldReportActiveURL = response && response.prefs && response.prefs.shouldReportActiveURL;
+			Zotero.Connector.shouldReportActiveURL = response && response.prefs && response.prefs.reportActiveURL;
 			
 			if (response === false) return deferred.reject(status);
 			return deferred.resolve(response);

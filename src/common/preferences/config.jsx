@@ -35,30 +35,57 @@ var Zotero_Preferences_Config = {
 
 Zotero_Preferences_Config.Table = React.createClass({
 	getInitialState() {
-		return {filter: ''};
+		return {filter: '', prefs: Object.keys(this.props.prefs)};
 	},
 
 	filter(event) {
 		this.setState({filter: event.target.value});
 	},
+	
+	addPref() {
+		let name = prompt('Enter the preference name');
+		if (name === null) return;
+		let value = prompt('Enter the preference value');
+		if (value === null) return;
+		try {
+			var parsedValue = JSON.parse(value);
+		} catch (e) {
+			parsedValue = value;
+		}
+		Zotero.Prefs.set(name, parsedValue);
+		this.setState(state => ({prefs: state.prefs.concat([name])}));
+	},
+	
+	resetPref(name) {
+		if (confirm('Do you want to reset this preference to its default value?')) {
+			Zotero.Prefs.clear(name);
+			Zotero.Prefs.getAsync(name).then(() => this.forceUpdate()).catch(function(e) {
+				this.setState(state => ({prefs: state.prefs.filter(p => p != name)}));
+			}.bind(this));
+		}
+	},
 
 	render() {
 		let rows = [];
-		let keys = Object.keys(this.props.prefs).sort();
+		let keys = this.state.prefs.sort();
 		if (this.state.filter.length) {
 			keys = keys.filter((k) => k.includes(this.state.filter));
 		}
 		for (let key of keys) {
-			rows.push(<Zotero_Preferences_Config.Row name={key} key={key}/>)
+			rows.push(<Zotero_Preferences_Config.Row name={key} key={key} reset={this.resetPref.bind(this, key)}/>)
 		}
 		return (
 			<div>
-				<input className="form-control" type="search" placeholder="Filter" onChange={this.filter}/>
+				<div style={{display: "flex"}}>
+					<input className="form-control" type="search" placeholder="Filter" onChange={this.filter}/>
+					<a style={{alignSelf: 'center'}} href="javascript:void(0);" onClick={this.addPref}>Add Preference</a>
+				</div>
 				<table className="table table-hover">
 					<thead>
 						<tr>
 							<th width="25%">Preference</th>
-							<th width="75%">Value</th>
+							<th>Value</th>
+							<th width="110px"></th>
 						</tr>
 					</thead>
 					<tbody>{rows}</tbody>
@@ -75,21 +102,21 @@ Zotero_Preferences_Config.Row = React.createClass({
 	
 	edit() {
 		Zotero.Prefs.getAsync(this.props.name).then(function(value) {
-		if (typeof value == 'object') value = JSON.stringify(value);
-		
-		if (typeof value == 'boolean') {
-			value = `${!value}`;
-		} else {
-			value = window.prompt('', value);
-			if (value === null) return;
-		}
-		try {
-			var parsedValue = JSON.parse(value);
-		} catch (e) {
-			parsedValue = value;
-		}
-		Zotero.Prefs.set(this.props.name, parsedValue);
-		this.setState({value});	
+			if (typeof value == 'object') value = JSON.stringify(value);
+			
+			if (typeof value == 'boolean') {
+				value = `${!value}`;
+			} else {
+				value = window.prompt('', value);
+				if (value === null) return;
+			}
+			try {
+				var parsedValue = JSON.parse(value);
+			} catch (e) {
+				parsedValue = value;
+			}
+			Zotero.Prefs.set(this.props.name, parsedValue);
+			this.setState({value});	
 		}.bind(this));
 	},
 
@@ -107,6 +134,7 @@ Zotero_Preferences_Config.Row = React.createClass({
 			<tr onDoubleClick={this.edit} data-name={this.props.name} className="config-row">
 				<td>{this.props.name}</td>
 				<td>{this.state.value}</td>
+				<td><a href="javascript:void(0);" onClick={this.props.reset}>Reset</a></td>
 			</tr>
 		)
 	}

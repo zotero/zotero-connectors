@@ -175,7 +175,8 @@ var MESSAGES = {
 		{
 			set: false,
 			getAll: true,
-			getAsync: true
+			getAsync: true,
+			clear: false
 		},
 	Proxies: 
 		{

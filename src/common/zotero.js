@@ -221,14 +221,6 @@ Zotero.Prefs = new function() {
 		"proxies.disableByDomainString": '.edu',
 		"proxies.proxies": [],
 		"proxies.clientChecked": false,
-		
-		"translators.attachSupplementary": false,
-		"translators.supplementaryAsLink": false,
-		"translators.RIS.import.ignoreUnknown": true,
-		"translators.RIS.import.keepID": false,
-		"translators.ACS.highResPDF": 0,
-		"translators.BibTeX.export.dontProtectInitialCase": false,
-		
 	};
 	
 	this._preloaded = {};
@@ -293,4 +285,9 @@ Zotero.Prefs = new function() {
 		Zotero.debug("Setting "+pref+" to "+JSON.stringify(value));
 		localStorage["pref-"+pref] = JSON.stringify(value);
 	};
+
+	this.clear = function(pref) {
+		if (Array.isArray(pref)) return pref.forEach((p) => this.clear(p));
+		delete localStorage[`pref-${pref}`];
+	}
 }

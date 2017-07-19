@@ -7,6 +7,16 @@ table {
 	table-layout: fixed;
 }
 
+a {
+	text-decoration: none;
+	white-space: nowrap;
+	margin: 0 0.5em 0 1em;
+}
+
+td {
+	overflow-wrap: break-word;
+}
+
 /*!
  * Bootstrap v3.3.7 (http://getbootstrap.com)
  * Copyright 2011-2017 Twitter, Inc.

@@ -110,7 +110,8 @@ var Zotero = new function() {
 		Zotero.isInject = true;
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
-		Zotero.Prefs.loadNamespace('translators');
+		Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
+			'reportTranslationFailure', 'capitalizeTitles']);
 		return Zotero.Prefs.loadNamespace('debug').then(function() {
 			Zotero.Debug.init();
 		});
@@ -271,13 +272,16 @@ Zotero.Prefs = new function() {
 	 *
 	 * (Currently relevant on injected pages, but after switch to asynchronous
 	 * chrome.storage will be relevant everywhere)
-	 * @param namespace
+	 * @param namespace {String|String[]}
 	 */
-	this.loadNamespace = function(namespace) {
+	this.loadNamespace = function(namespaces) {
+		if (! Array.isArray(namespaces)) namespaces = [namespaces];
 		return this.getAll().then(function(prefs) {
 			let keys = Object.keys(prefs);
-			keys.filter((key) => key.indexOf(namespace) === 0)
-				.forEach((key) => this._preloaded[key] = JSON.parse(prefs[key]));
+			for (let namespace of namespaces) {
+				keys.filter((key) => key.indexOf(namespace) === 0)
+					.forEach((key) => this._preloaded[key] = JSON.parse(prefs[key]));
+			}
 		}.bind(this));
 	};
 	

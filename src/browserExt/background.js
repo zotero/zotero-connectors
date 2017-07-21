@@ -410,12 +410,12 @@ Zotero.Connector_Browser = new function() {
 	
 	function _showPDFIcon(tab) {
 		chrome.browserAction.setIcon({
-			tabId:tab.id,
-			path:Zotero.ItemTypes.getImageSrc("webpage-gray")
+			tabId: tab.id,
+			path: chrome.extension.getURL('images/pdf.png')
 		});
 		chrome.browserAction.setTitle({
-			tabId:tab.id,
-			title:"Save to Zotero (PDF)"
+			tabId: tab.id,
+			title: "Save to Zotero (PDF)"
 		});
 	}
 	

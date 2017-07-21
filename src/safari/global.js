@@ -223,7 +223,7 @@ Zotero.Connector_Browser = new function() {
 	}
 
 	function _showPDFIcon() {
-		_zoteroButton.image = Zotero.ItemTypes.getImageSrc("webpage-gray").replace('images/', 'images/toolbar/');
+		_zoteroButton.image = safari.extension.baseURI + "images/toolbar/pdf.png";
 		_zoteroButton.toolTip = "Save to Zotero (PDF)";
 	}
 

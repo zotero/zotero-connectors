@@ -46,19 +46,21 @@
 			Zotero_Connector_Browser.openTab(safari.extension.baseURI + "preferences/preferences.html");
 			safari.self.hide();
 		};
-		document.getElementById('zotero-save-page-with-snapshot').onclick = function () {
+		var saveWithSnapshotElem = document.getElementById('zotero-save-page-with-snapshot');
+		saveWithSnapshotElem.onclick = function () {
 			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
 			Zotero_Connector_Browser.saveAsWebpage(true);
 			safari.self.hide();
 		};
-		document.getElementById('zotero-save-page-without-snapshot').onclick = function () {
+		var saveWithoutSnapshotElem = document.getElementById('zotero-save-page-without-snapshot');
+		saveWithoutSnapshotElem.onclick = function () {
 			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
 			Zotero_Connector_Browser.saveAsWebpage(false);
 			safari.self.hide();
 		};
 
 		safari.application.addEventListener('popover', function (event) {
-			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
+			var Zotero = safari.extension.globalPage.contentWindow.Zotero;
 			setTimeout(function () {
 				safari.self.height = document.documentElement.offsetHeight;
 				let width = 0;
@@ -77,12 +79,22 @@
 				li.parentNode.removeChild(li);
 			}
 
-			if (Zotero_Connector_Browser.activeTab.contentType == 'application/pdf') {
+			var withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
+				Zotero.Prefs.get('automaticSnapshots');
+			if (withSnapshot) {
+				document.getElementsByTagName('menu')[0]
+					.insertBefore(saveWithSnapshotElem.parentNode, saveWithoutSnapshotElem.parentNode);
+			} else {
+				document.getElementsByTagName('menu')[0]
+					.insertBefore(saveWithoutSnapshotElem.parentNode, saveWithSnapshotElem.parentNode);
+			}
+
+			if (Zotero.Connector_Browser.activeTab.contentType == 'application/pdf') {
 				document.getElementById('zotero-save-page-with-snapshot').textContent = "Save to Zotero (PDF)";
 				document.getElementById('zotero-save-page-without-snapshot').style.display = 'none';
 			}
 
-			var translators = Zotero_Connector_Browser.activeTab.translators;
+			var translators = Zotero.Connector_Browser.activeTab.translators;
 			if (!translators || event.target.identifier != 'zotero-translatorSelector') return;
 
 			var menu = document.getElementsByTagName('menu')[0];
@@ -96,7 +108,7 @@
 				a.setAttribute('href', 'javascript:void(0);');
 				a.textContent = "Save to Zotero (" + translator.label + ")";
 				a.onclick = function () {
-					Zotero_Connector_Browser.saveWithTranslator(i);
+					Zotero.Connector_Browser.saveWithTranslator(i);
 					safari.self.hide();
 				};
 

@@ -204,7 +204,7 @@ Zotero.Prefs = new function() {
 		"debug.level": 5,
 		"debug.time": false,
 		"downloadAssociatedFiles": true,
-		"automaticSnapshots": true,
+		"automaticSnapshots": true, // only affects saves to zotero.org. saves to client governed by pref in the client
 		"connector.repo.lastCheck.localTime": 0,
 		"connector.repo.lastCheck.repoTime": 0,
 		"connector.url": ZOTERO_CONFIG.CONNECTOR_SERVER_URL,

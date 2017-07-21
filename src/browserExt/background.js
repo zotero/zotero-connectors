@@ -435,22 +435,30 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _showWebpageContextMenuItem() {
-		chrome.contextMenus.create({
+		var fns = [];
+		fns.push(() => chrome.contextMenus.create({
 			id: "zotero-context-menu-webpage-withSnapshot-save",
 			title: "Save to Zotero (Web Page with Snapshot)",
 			onclick: function (info, tab) {
 				_saveAsWebpage(tab, true);
 			},
 			contexts: ['page', 'browser_action']
-		});
-		chrome.contextMenus.create({
+		}));
+		fns.push(() => chrome.contextMenus.create({
 			id: "zotero-context-menu-webpage-withoutSnapshot-save",
 			title: "Save to Zotero (Web Page without Snapshot)",
 			onclick: function (info, tab) {
 				_saveAsWebpage(tab, false);
 			},
 			contexts: ['page', 'browser_action']
-		});
+		}));
+		// Swap order if automatic snapshots disabled
+		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
+			Zotero.Prefs.get('automaticSnapshots');
+		if (!withSnapshot) {
+			fns = [fns[1], fns[0]];
+		}
+		fns.forEach((fn) => fn());
 	}
 	
 	function _showPDFContextMenuItem() {
@@ -491,7 +499,9 @@ Zotero.Connector_Browser = new function() {
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
 			_saveWithTranslator(tab, 0);
 		} else {
-			_saveAsWebpage(tab, true);
+			let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
+				Zotero.Prefs.get('automaticSnapshots');
+			_saveAsWebpage(tab, withSnapshot);
 		}
 	}
 	

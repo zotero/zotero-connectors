@@ -145,7 +145,10 @@ Zotero.Connector = new function() {
 	this.ping = function(payload={}) {
 		var deferred = Zotero.Promise.defer();
 		Zotero.Connector.callMethod("ping", payload, function(response, status) {
-			Zotero.Connector.shouldReportActiveURL = response && response.prefs && response.prefs.reportActiveURL;
+			if (response && 'prefs' in response) {
+				Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
+				Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
+			}
 			
 			if (response === false) return deferred.reject(status);
 			return deferred.resolve(response);

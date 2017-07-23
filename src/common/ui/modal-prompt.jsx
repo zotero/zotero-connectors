@@ -241,7 +241,13 @@ Zotero.ui.ModalPrompt = React.createClass({
 				}}>
 					{this.props.title}
 				</h2>
-				<p style={{color: 'inherit', margin: "0 0 1em 0"}} className="z-popup-body">{message}</p>
+				<p className="z-popup-body" style={{
+					color: 'inherit',
+					fontWeight: 'initial',
+					margin: "0 0 1em 0"
+				}}>
+					{message}
+				</p>
 				{checkbox}
 				{input}
 				<div className="z-popup-buttons" style={{

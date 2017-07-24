@@ -399,13 +399,13 @@ Zotero.Connector_Browser = new function() {
 	
 	function _showWebpageIcon(tab) {
 		chrome.browserAction.setIcon({
-			tabId:tab.id,
-			path:Zotero.ItemTypes.getImageSrc("webpage-gray")
+			tabId: tab.id,
+			path: Zotero.ItemTypes.getImageSrc("webpage-gray")
 		});
-		chrome.browserAction.setTitle({
-			tabId:tab.id,
-			title:"Save to Zotero (Web Page with Snapshot)"
-		});
+		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
+			Zotero.Prefs.get('automaticSnapshots');
+		let title = `Save to Zotero (Web Page ${withSnapshot ? 'with' : 'without'} Snapshot)`;
+		chrome.browserAction.setTitle({tabId: tab.id, title});
 	}
 	
 	function _showPDFIcon(tab) {

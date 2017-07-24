@@ -95,12 +95,13 @@ var Zotero = new function() {
 			// IE and the likes? Who knows
 			this.platform = 'win';
 		}
-		
-		
-		Zotero.Debug.init();
-		Zotero.Messaging.init();
-		Zotero.Connector_Types.init();
-		Zotero.Repo.init();
+
+		return Zotero.Prefs.init().then(function() {
+			Zotero.Debug.init();
+			Zotero.Messaging.init();
+			Zotero.Connector_Types.init();
+			Zotero.Repo.init();
+		});
 	};
 	
 	/**
@@ -214,6 +215,7 @@ Zotero.Prefs = new function() {
 		"firstUse": true,
 		"firstSaveToServer": true,
 		"reportTranslationFailure": true,
+		"translatorMetadata": [],
 		
 		"proxies.transparent": true,
 		"proxies.autoRecognize": true,
@@ -224,29 +226,29 @@ Zotero.Prefs = new function() {
 		"proxies.clientChecked": false,
 	};
 	
-	this._preloaded = {};
+	this.syncStorage = {};
+
+	/**
+	 * Should override per browser and load data into this.syncStorage
+	 */
+	this.init = function() {throw new Error("Prefs initialization not overriden");};
 	
 	this.get = function(pref) {
-		if (Zotero.isInject) {
-			if (!(pref in this._preloaded)) throw new Error(`Prefs.get: ${pref} not preloaded`);
-			return this._preloaded[pref];
-		}
 		try {
-			if("pref-"+pref in localStorage) return JSON.parse(localStorage["pref-"+pref]);
-		} catch(e) {}
-		if (DEFAULTS.hasOwnProperty(pref)) return DEFAULTS[pref];
-		throw new Error("Zotero.Prefs: Invalid preference "+pref);
+			if (!(pref in this.syncStorage)) throw new Error(`Prefs.get: ${pref} not preloaded`);
+			return this.syncStorage[pref];
+		} catch (e) {
+			if (DEFAULTS.hasOwnProperty(pref)) return DEFAULTS[pref];
+			if (Zotero.isBackground) {
+				throw new Error("Zotero.Prefs: Invalid preference "+pref);
+			} else {
+				throw e;
+			}
+		}
 	};
 	
 	this.getAll = function() {
-		let prefs = Object.assign({}, localStorage);
-		for (let k of Object.keys(prefs)) {
-			if (k.substr(0, 'pref-'.length) == 'pref-') {
-				prefs[k.substr('pref-'.length)] = prefs[k];
-			}
-			delete prefs[k];
-		}
-		return Zotero.Promise.resolve(Object.assign({}, DEFAULTS, prefs));
+		return Zotero.Promise.resolve(Object.assign({}, DEFAULTS, this.syncStorage));
 	};
 	
 	this.getAsync = function(pref) {
@@ -268,30 +270,39 @@ Zotero.Prefs = new function() {
 	};
 
 	/**
-	 * Pre-load a namespace of prefs that can then be accessed synchronously
+	 * Pre-load a namespace of prefs that can then be accessed synchronously.
+	 * Only needed in injected code
 	 *
-	 * (Currently relevant on injected pages, but after switch to asynchronous
-	 * chrome.storage will be relevant everywhere)
 	 * @param namespace {String|String[]}
 	 */
 	this.loadNamespace = function(namespaces) {
+		if (Zotero.isBackground) throw new Error('trying to load namespace in background. all prefs are available via the sync API');
 		if (! Array.isArray(namespaces)) namespaces = [namespaces];
 		return this.getAll().then(function(prefs) {
 			let keys = Object.keys(prefs);
 			for (let namespace of namespaces) {
 				keys.filter((key) => key.indexOf(namespace) === 0)
-					.forEach((key) => this._preloaded[key] = JSON.parse(prefs[key]));
+					.forEach((key) => this.syncStorage[key] = prefs[key]);
 			}
 		}.bind(this));
 	};
-	
+
+	/**
+	 * Should override per browser
+	 * @param pref
+	 * @param value
+	 */
 	this.set = function(pref, value) {
 		Zotero.debug("Setting "+pref+" to "+JSON.stringify(value));
-		localStorage["pref-"+pref] = JSON.stringify(value);
+		this.syncStorage[pref] = value;
 	};
 
+	/**
+	 * Should override per browser
+	 * @param pref
+	 */
 	this.clear = function(pref) {
 		if (Array.isArray(pref)) return pref.forEach((p) => this.clear(p));
-		delete localStorage[`pref-${pref}`];
+		delete this.syncStorage[pref];
 	}
 }

@@ -12,7 +12,7 @@
 		"default_title": "Save to Zotero"
 	},
 	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies", 
-		"webRequest", "webRequestBlocking", "webNavigation"],
+		"webRequest", "webRequestBlocking", "webNavigation", "storage"],
 	"background": {
 		"scripts": [
 			/*BACKGROUND SCRIPTS*/,

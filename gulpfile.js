@@ -97,6 +97,7 @@ var backgroundInclude = [
 	'zotero_config.js',
 	'zotero.js',
 	'promise.js',
+	'prefs.js',
 	'errors_webkit.js',
 	'api.js',
 	'http.js',

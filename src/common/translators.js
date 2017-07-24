@@ -44,9 +44,9 @@ Zotero.Translators = new function() {
 	this.init = function(translators) {
 		if(!translators) {
 			translators = [];
-			if((Zotero.isBrowserExt || Zotero.isSafari) && localStorage["translatorMetadata"]) {
+			if((Zotero.isBrowserExt || Zotero.isSafari) && Zotero.Prefs.get("translatorMetadata")) {
 				try {
-					translators = JSON.parse(localStorage["translatorMetadata"]);
+					translators = Zotero.Prefs.get("translatorMetadata");
 					if(typeof translators !== "object") {
 						translators = [];
 					}
@@ -290,9 +290,8 @@ Zotero.Translators = new function() {
 		
 		// Store
 		if (Zotero.isBrowserExt || Zotero.isSafari) {
-			var serialized = JSON.stringify(serializedTranslators);
-			localStorage["translatorMetadata"] = serialized;
-			Zotero.debug("Translators: Saved updated translator list ("+serialized.length+" characters)");
+			Zotero.Prefs.set('translatorMetadata', serializedTranslators);
+			Zotero.debug("Translators: Saved updated translator list ("+serializedTranslators.length+" translators)");
 		}
 		
 		// Reinitialize

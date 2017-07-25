@@ -72,7 +72,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 		if("removeEventListener" in hiddenBrowser) {
 			hiddenBrowser.removeEventListener("load", onFrameLoad, false);
 		}
-		if(!dontDelete) Zotero.Browser.removeHiddenBrowser(hiddenBrowser);
+		if(!dontDelete) Zotero.Browser.deleteHiddenBrowser(hiddenBrowser);
 	}
 	
 	/**
@@ -108,6 +108,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 					throw "HTTP.processDocuments: Cannot perform cross-site request from "+window.parent.location+" to "+loadingURL;
 				} else {
 					// TODO: sort out error handling
+					dontDelete = true;
 					Zotero.HTTP.request('GET', loadingURL).then(onCrossSiteLoad, onCrossSiteLoad);
 				}
 			} catch(e) {
@@ -122,6 +123,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 					Zotero.logError(e);
 				}
 				
+			} finally {
 				removeListeners();
 			}
 		} else {
@@ -180,11 +182,13 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	 * @inner
 	 */
 	var onCrossSiteLoad = function(xmlhttp) {
-		var iframe = Zotero.Browser.createHiddenBrowser();
+		var iframe = hiddenBrowser;
 		iframe.setAttribute("sandbox", "allow-same-origin allow-forms allow-scripts");
 		
-		// NOTE: This is where the event flow continues
-		iframe.onload = () => process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView);
+		if (!Zotero.isChrome) {
+			// NOTE: This is where the event flow continues
+			iframe.onload = () => process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView);
+		}
 		
 		// load cross-site data into iframe
 		var doc = iframe.contentDocument;
@@ -207,7 +211,10 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 			}
 		}
 		
-	}
+		if (Zotero.isChrome) {
+			process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView)
+		}
+	};
 	
 	/**
 	 * Callback to be executed when a page load completes
@@ -258,7 +265,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 }
 
 Zotero.Browser = {
-	"createHiddenBrowser":function() {
+	createHiddenBrowser: function() {
 		var hiddenBrowser = document.createElement("iframe");
 		if(!Zotero.isBookmarklet) {
 			hiddenBrowser.style.display = "none";
@@ -284,7 +291,7 @@ Zotero.Browser = {
 		document.body.appendChild(hiddenBrowser);
 		return hiddenBrowser;
 	},
-	"deleteHiddenBrowser":function(hiddenBrowser) {
+	deleteHiddenBrowser: function(hiddenBrowser) {
 		document.body.removeChild(hiddenBrowser);
 	}
 };

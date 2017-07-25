@@ -42,13 +42,16 @@ describe("HTTP", function() {
 				var deferred = Zotero.Promise.defer();
 				sinon.stub(Zotero.HTTP, 'isSameOrigin').returns(false);
 				Zotero.HTTP.processDocuments(url, function(doc) {
-					let content = doc.querySelector('.csl-entry').innerText;
-					let location = doc.location.href;
-					deferred.resolve([content, location])
+					try {
+						let content = doc.querySelector('.csl-entry').innerText;
+						let location = doc.location.href;
+						deferred.resolve([content, location])
+					} catch (e) {
+						deferred.reject(e);
+					}
 				});
 				
-				Zotero.HTTP.isSameOrigin.restore();
-				return deferred.promise;
+				return deferred.promise.then(response => {Zotero.HTTP.isSameOrigin.restore(); return response});
 			}, url);
 			
 			assert.include(content, 'Rosenzweig');

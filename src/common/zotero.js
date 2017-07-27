@@ -248,7 +248,9 @@ Zotero.Prefs = new function() {
 	};
 	
 	this.getAll = function() {
-		return Zotero.Promise.resolve(Object.assign({}, DEFAULTS, this.syncStorage));
+		let prefs = Object.assign({}, DEFAULTS, this.syncStorage);
+		delete prefs['translatorMetadata'];
+		return Zotero.Promise.resolve(prefs);
 	};
 	
 	this.getAsync = function(pref) {

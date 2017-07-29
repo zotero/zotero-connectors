@@ -62,33 +62,35 @@ Zotero.Connector_Browser = new function() {
 	 * Called to display select items dialog
 	 */
 	this.onSelect = function(items, callback, tab) {
-		chrome.windows.get(tab.windowId, null, function (win) {
-			var width = 600;
-			var height = 325;
-			var left = Math.floor(win.left + (win.width / 2) - (width / 2));
-			var top = Math.floor(win.top + (win.height / 2) - (height / 2));
-			
-			chrome.windows.create(
-				{
-					url: chrome.extension.getURL("itemSelector/itemSelector.html")
-						+ "#" + encodeURIComponent(JSON.stringify([tab.id, items]))
-						// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
-						.replace(/%3A/g, 'ZOTEROCOLON'),
-					height: height,
-					width: width,
-					top: top,
-					left: left,
-					type: 'popup'
-				},
-				function (win) {
-					// Fix positioning in Chrome when window is on second monitor
-					// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
-					if (Zotero.isChrome && win.left < left) {
-						chrome.windows.update(win.id, { left: left });
+		return new Zotero.Promise(function(resolve) {
+			chrome.windows.get(tab.windowId, null, function (win) {
+				var width = 600;
+				var height = 325;
+				var left = Math.floor(win.left + (win.width / 2) - (width / 2));
+				var top = Math.floor(win.top + (win.height / 2) - (height / 2));
+				
+				chrome.windows.create(
+					{
+						url: chrome.extension.getURL("itemSelector/itemSelector.html")
+							+ "#" + encodeURIComponent(JSON.stringify([tab.id, items]))
+							// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
+							.replace(/%3A/g, 'ZOTEROCOLON'),
+						height: height,
+						width: width,
+						top: top,
+						left: left,
+						type: 'popup'
+					},
+					function (win) {
+						// Fix positioning in Chrome when window is on second monitor
+						// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
+						if (Zotero.isChrome && win.left < left) {
+							chrome.windows.update(win.id, { left: left });
+						}
+						_tabInfo[tab.id].selectCallback = resolve;
 					}
-					_tabInfo[tab.id].selectCallback = callback;
-				}
-			);
+				);
+			});
 		});
 	}
 	
@@ -350,11 +352,11 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _isDisabledForURL(url) {
-		return url.includes('chrome://') || url.includes('about:') || url.includes('-extension://');
+		return url.includes('chrome://') || url.includes('about:') || (url.includes('-extension://') && !url.includes('/test/'));
 	}
 	
 	function _showZoteroStatus(tabID) {
-		Zotero.Connector.checkIsOnline(function(isOnline) {
+		Zotero.Connector.checkIsOnline().then(function(isOnline) {
 			var icon, title;
 			if (isOnline) {
 				icon = "images/zotero-new-z-16px.png";
@@ -426,7 +428,7 @@ Zotero.Connector_Browser = new function() {
 				title: _getTranslatorLabel(translators[i]),
 				onclick: (function (i) {
 					return function (info, tab) {
-						_saveWithTranslator(tab, i);
+						Zotero.Connector_Browser._saveWithTranslator(tab, i);
 					};
 				})(i),
 				contexts: ['page', 'browser_action']
@@ -440,7 +442,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-webpage-withSnapshot-save",
 			title: "Save to Zotero (Web Page with Snapshot)",
 			onclick: function (info, tab) {
-				_saveAsWebpage(tab, true);
+				Zotero.Connector_Browser._saveAsWebpage(tab, true);
 			},
 			contexts: ['page', 'browser_action']
 		}));
@@ -448,7 +450,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-webpage-withoutSnapshot-save",
 			title: "Save to Zotero (Web Page without Snapshot)",
 			onclick: function (info, tab) {
-				_saveAsWebpage(tab, false);
+				Zotero.Connector_Browser._saveAsWebpage(tab, false);
 			},
 			contexts: ['page', 'browser_action']
 		}));
@@ -466,7 +468,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-pdf-save",
 			title: "Save to Zotero (PDF)",
 			onclick: function (info, tab) {
-				_saveAsWebpage(tab);
+				Zotero.Connector_Browser._saveAsWebpage(tab);
 			},
 			contexts: ['all']
 		});
@@ -497,26 +499,26 @@ Zotero.Connector_Browser = new function() {
 			});
 		}
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
-			_saveWithTranslator(tab, 0);
+			Zotero.Connector_Browser._saveWithTranslator(tab, 0);
 		} else {
 			let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
 				Zotero.Prefs.get('automaticSnapshots');
-			_saveAsWebpage(tab, withSnapshot);
+			Zotero.Connector_Browser._saveAsWebpage(tab, withSnapshot);
 		}
 	}
 	
-	function _saveWithTranslator(tab, i) {
+	this._saveWithTranslator = function(tab, i) {
 		// Set frameId to null - send message to all frames
 		// There is code to figure out which frame should translate with instanceID.
-		Zotero.Messaging.sendMessage("translate", [
+		return Zotero.Messaging.sendMessage("translate", [
 			_tabInfo[tab.id].instanceID,
 			_tabInfo[tab.id].translators[i].translatorID
 		], tab, null);
 	}
 	
-	function _saveAsWebpage(tab, withSnapshot) {
+	this._saveAsWebpage = function(tab, withSnapshot) {
 		if (tab.id != -1) {
-			Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, withSnapshot], tab);
+			return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, withSnapshot], tab);
 		}
 		// Handle right-click on PDF overlay, which exists in a weird non-tab state
 		else {

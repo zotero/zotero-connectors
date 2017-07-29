@@ -1,0 +1,28 @@
+dist: trusty
+sudo: false
+language: node_js
+node_js:
+    - "node"
+cache:
+    directories:
+        - "build"
+        - "node_modules"
+matrix:
+    include:
+        - addons:
+            chrome: stable
+          env: TEST_CHROME="1"
+        - addons:
+            firefox: latest-unsigned
+          env: TEST_FX="1"
+        - addons:
+            firefox: latest-esr
+          env: TEST_FX="1"
+notifications:
+    email: false
+install:
+before_script:
+    - export DISPLAY=:99.0
+    - sh -e /etc/init.d/xvfb start
+script:
+    - ./test/run_tests

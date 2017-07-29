@@ -35,20 +35,26 @@ Zotero.Repo = new function() {
 	 * Try to retrieve translator metadata from Zotero Standalone and initialize repository check
 	 * timer
 	 */
-	this.init = function() {
-		// get time of next check
-		_nextCheck = Zotero.Prefs.get("connector.repo.lastCheck.localTime")
-			+ZOTERO_CONFIG.REPOSITORY_CHECK_INTERVAL*1000;
-		
-		// update from standalone, but only cascade to repo if we are overdue
-		_updateFromStandalone(_nextCheck <= Date.now());
+	this.init = new function() {
+		var promise;
+		return function() {
+			// get time of next check
+			_nextCheck = Zotero.Prefs.get("connector.repo.lastCheck.localTime")
+				+ZOTERO_CONFIG.REPOSITORY_CHECK_INTERVAL*1000;
+				
+			if (promise) return promise;
+			// update from standalone, but only cascade to repo if we are overdue
+			// TODO: make update/cascade to repo explicit
+			promise = _updateFromStandalone(_nextCheck <= Date.now());
+			return promise.catch(() => 0).then(() => promise = null);
+		}
 	};
 	
 	/**
 	 * Force updating translators
 	 */
 	var update = this.update = function(reset) {
-		_updateFromStandalone(true, reset);
+		return _updateFromStandalone(true, reset);
 	};
 	
 	/**
@@ -56,48 +62,35 @@ Zotero.Repo = new function() {
 	 * @param {String} translatorID ID of the translator to retrieve code for
 	 */
 	this.getTranslatorCode = Zotero.Promise.method(function (translatorID, debugMode) {
-		var deferred = Zotero.Promise.defer();
-		
 		// try standalone
-		Zotero.Connector.callMethod("getTranslatorCode", {"translatorID":translatorID}, function(result) {
-			if(result) {
-				deferred.resolve(
-					Zotero.Promise.all(
-						[
-							_haveCode(result, translatorID),
-							Zotero.Repo.SOURCE_ZOTERO_STANDALONE
-						]
-					)
-				);
-				return;
-			}
+		return Zotero.Connector.callMethod("getTranslatorCode", {"translatorID":translatorID}).then(function(result) {
+			return Zotero.Promise.all(
+				[
+					_haveCode(result, translatorID),
+					Zotero.Repo.SOURCE_ZOTERO_STANDALONE
+				]
+			)
+		}, function () {
 			// Don't fetch from repo in debug mode
 			if (debugMode) {
-				deferred.resolve([false, Zotero.Repo.SOURCE_ZOTERO_STANDALONE]);
-				return;
+				return [false, Zotero.Repo.SOURCE_ZOTERO_STANDALONE]
 			}
-			
-			
-			// then try repo
-			Zotero.HTTP.doGet(
-				ZOTERO_CONFIG.REPOSITORY_URL + "code/" + translatorID + "?version=" + Zotero.version,
-				function(xmlhttp) {
-					deferred.resolve(
-						Zotero.Promise.all(
-							[
-								_haveCode(
-									xmlhttp.status === 200 ? xmlhttp.responseText : false,
-									translatorID
-								),
-								Zotero.Repo.SOURCE_REPO
-							]
-						)
-					);
-				}
-			);
-		});
 		
-		return deferred.promise;
+			// then try repo
+			let url = `${ZOTERO_CONFIG.REPOSITORY_URL}code/${translatorID}?version=${Zotero.version}`;
+			// TODO: reject promise on failure (needs update to zotero/zotero)
+			return Zotero.HTTP.request("GET", url).then(function(xmlhttp) {
+				return Zotero.Promise.all([
+					_haveCode(xmlhttp.responseText, translatorID),
+					Zotero.Repo.SOURCE_REPO
+				]);
+			}, function() {
+				return Zotero.Promise.all([
+					_haveCode(false, translatorID),
+					Zotero.Repo.SOURCE_REPO
+				]);	
+			});	
+		});
 	});
 	
 	/**
@@ -142,14 +135,16 @@ Zotero.Repo = new function() {
 	 * @param {Boolean} [tryRepoOnFailure] If true, run _updateFromRepo() if standalone cannot be
 	 *                                     contacted
 	 */
-	function _updateFromStandalone(tryRepoOnFailure, reset, callback) {
-		Zotero.Connector.callMethod("getTranslators", {}, function(result) {
-			if(!result && tryRepoOnFailure) {
-				_updateFromRepo(reset, callback);
+	function _updateFromStandalone(tryRepoOnFailure, reset) {
+		return Zotero.Connector.callMethod("getTranslators", {}).then(function(result) {
+			// Standalone always returns all translators without .deleted property
+			_handleResponse(result, true);
+			return !!result;
+		}, function() {
+			if (tryRepoOnFailure) {
+				return _updateFromRepo(reset);
 			} else {
-				// Standalone always returns all translators without .deleted property
-				_handleResponse(result, true);
-				if(callback) callback(!!result);
+				throw new Error("Failed to update translator metadata");
 			}
 		});
 	}
@@ -157,20 +152,18 @@ Zotero.Repo = new function() {
 	/**
 	 * Retrieve metadata from repository
 	 */
-	function _updateFromRepo(reset, callback) {
+	function _updateFromRepo(reset) {
 		var url = ZOTERO_CONFIG.REPOSITORY_URL + "metadata?version=" + Zotero.version + "&last="+
 				(reset ? "0" : Zotero.Prefs.get("connector.repo.lastCheck.repoTime"));
 		
-		Zotero.HTTP.doGet(url, function(xmlhttp) {
-			var success = xmlhttp.status === 200;
-			_handleResponse(success ? JSON.parse(xmlhttp.responseText) : false, reset);
-			
-			if(success) {
-				var date = xmlhttp.getResponseHeader("Date");
-				Zotero.Prefs.set("connector.repo.lastCheck.repoTime",
-					Math.floor(Date.parse(date)/1000));
-			}
-			if(callback) callback(!!result);
+		return Zotero.HTTP.request('GET', url).then(function(xmlhttp) {
+			var date = xmlhttp.getResponseHeader("Date");
+			Zotero.Prefs.set("connector.repo.lastCheck.repoTime", Math.floor(Date.parse(date)/1000));
+			_handleResponse(JSON.parse(xmlhttp.responseText), reset);
+			return true;
+		}, function() {
+			_handleResponse(false, reset);
+			return false;
 		});
 	}
 	

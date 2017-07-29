@@ -6,16 +6,30 @@
     "babel-plugin-transform-react-jsx": "^6.8.0",
     "babel-preset-babili": "0.0.2",
     "babel-preset-es2015": "^6.8.0",
+    "bluebird": "^3.5.0",
     "browserify": "^13.1.0",
+    "chai": "^4.0.2",
+    "chalk": "^2.0.1",
+    "chromedriver": "^2.30.1",
+    "geckodriver": "^1.7.1",
     "gulp": "^3.9.0",
     "gulp-plumber": "^1.1.0",
+    "mocha": "^3.4.2",
     "react": "^15.3.2",
     "react-dom": "^15.3.2",
-    "semver-compare": "^1.0.0",
+    "selenium-webdriver": "^3.4.0",
+    "sinon": "^2.3.4",
     "through2": "^2.0.1",
     "yargs": "^6.0.0"
   },
   "babel": {
-	"presets": [["es2015", { "modules": false }]]
+    "presets": [
+      [
+        "es2015",
+        {
+          "modules": false
+        }
+      ]
+    ]
   }
 }

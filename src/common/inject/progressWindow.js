@@ -207,8 +207,9 @@ Zotero.ProgressWindow = new function() {
 	 * Initializes and shows the progress div
 	 */
 	this.show = function() {
-		if(container) return;
+		if (container) return;
 		container = doc.createElement('div');
+		container.id = 'zotero-progress-window';
 		container.style.cssText = cssDivClearString;
 		for(var i in cssBox) container.style[i] = cssBox[i];
 		

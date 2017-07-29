@@ -65,6 +65,12 @@ Zotero.Messaging = new function() {
 			}
 			
 			var messageParts = messageName.split(MESSAGE_SEPARATOR);
+			var fn = Zotero[messageParts[0]][messageParts[1]];
+			if(!fn) {
+				var e = new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
+				sendResponseCallback(['error', e]);
+				throw e;
+			}
 			var messageConfig = MESSAGES[messageParts[0]][messageParts[1]];
 			
 			if (messageConfig && messageConfig.background) {
@@ -76,35 +82,51 @@ Zotero.Messaging = new function() {
 			if (shouldRespond) {
 				var callbackArg = messageConfig.callbackArg || args.length-1;
 
-				// TODO: maybe not needed
-				if (args[callbackArg] !== null && args[callbackArg] !== undefined) {
-					// Just append the callback if it is not there as is the case for promisified functions
-					!messageConfig.callbackArg && args.push(0);
-					callbackArg = (messageConfig.callbackArg ? messageConfig.callbackArg : args.length-1); 
-				}
-				// add a response passthrough callback for the message
-				args[callbackArg] = function() {
-					var newArgs = new Array(arguments.length);
-					for(var i=0; i<arguments.length; i++) {
-						newArgs[i] = arguments[i];
+				// TODO: make this not awful
+				// sendMessage is used to notify top frame, but the callback arg messes with tab injection
+				if (messageParts[1] != 'sendMessage') {
+					// TODO: maybe not needed
+					if (args[callbackArg] !== null && args[callbackArg] !== undefined) {
+						// Just append the callback if it is not there as is the case for promisified functions
+						!messageConfig.callbackArg && args.push(0);
+						callbackArg = (messageConfig.callbackArg ? messageConfig.callbackArg : args.length-1); 
 					}
-					
-					if (messageConfig.background && messageConfig.background.preSend) {
-						newArgs = messageConfig.background.preSend.apply(null, newArgs);
+					// add a response passthrough callback for the message
+					args[callbackArg] = function() {
+						if (arguments[0] && arguments[0][0] == 'error') {
+							let err = JSON.stringify(arguments[0][1], Object.getOwnPropertyNames(arguments[0][1]));
+							return sendResponseCallback([arguments[0][0], err]);
+						}
+						var newArgs = new Array(arguments.length);
+						for(var i=0; i<arguments.length; i++) {
+							newArgs[i] = arguments[i];
+						}
+						
+						if (messageConfig.background && messageConfig.background.preSend) {
+							newArgs = messageConfig.background.preSend.apply(null, newArgs);
+						}
+						sendResponseCallback(newArgs);
 					}
-					sendResponseCallback(newArgs);
 				}
 			}
 			args.push(tab);
 			args.push(frameId);
 			
-			var fn = Zotero[messageParts[0]][messageParts[1]];
-			if(!fn) throw new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
-			var maybePromise = fn.apply(Zotero[messageParts[0]], args);
+			try {
+				var maybePromise = fn.apply(Zotero[messageParts[0]], args);
+			} catch (e) {
+				if (shouldRespond) {
+					args[callbackArg](['error', e]);
+				}
+			}
 			// If you thought the message passing system wasn't complicated enough as it were,
 			// now background page functions can return promises too 👍
-			if (maybePromise && maybePromise.then) {
-				maybePromise.then(args[callbackArg]);
+			if (shouldRespond) {
+				if (maybePromise && maybePromise.then) {
+					maybePromise.then(args[callbackArg]).catch(e => args[callbackArg](['error', e]));
+				} else {
+					args[callbackArg](maybePromise);
+				}
 			}
 		} catch(e) {
 			Zotero.logError(e);

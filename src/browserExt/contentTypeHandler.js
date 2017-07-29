@@ -170,30 +170,22 @@ Zotero.ContentTypeHandler = {
 					if (type == 'csl') {
 						options.method = 'installStyle';
 						options.queryString = 'origin=' + encodeURIComponent(details.url);
-						Zotero.Connector.callMethod(options, this.response, function(result, status, response) {
-							if (result) {
-								Zotero.Messaging.sendMessage('progressWindow.itemProgress',
-									[chrome.extension.getURL('images/csl-style.png'), result.name, null, 100], tab);
-							} else if (status == 404) {
+						return Zotero.Connector.callMethod(options, this.response).then(function(result) {
+							Zotero.Messaging.sendMessage('progressWindow.itemProgress',
+								[chrome.extension.getURL('images/csl-style.png'), result.name, null, 100], tab);
+							return Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
+						}, function(e) {
+							if (e.status == 404) {
 								return Zotero.Messaging.sendMessage('progressWindow.done',
 									[false, 'upgradeClient'], tab);
 							} else {
 								return Zotero.Messaging.sendMessage('progressWindow.done',
 									[false, 'clientRequired'], tab);
 							}
-							Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
 						});
 					} else {
 						options.method = 'import';
-						Zotero.Connector.callMethod(options, this.response, function(result, status) {
-							if (status == 404) {
-								return Zotero.Messaging.sendMessage('progressWindow.done',
-									[false, 'upgradeClient'], tab);
-							}
-							if (status < 200 || status > 400) {
-								return Zotero.Messaging.sendMessage('progressWindow.done',
-									[false, 'clientRequired'], tab);
-							}
+						return Zotero.Connector.callMethod(options, this.response).then(function(result) {
 							Zotero.Messaging.sendMessage('progressWindow.show', 
 								`Imported ${result.length} item` + (result.length > 1 ? 's' : ''), tab);
 							for (let i = 0; i < result.length && i < 20; i++) {
@@ -202,6 +194,15 @@ Zotero.ContentTypeHandler = {
 									[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, null, 100], tab);
 							}
 							Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
+						}, function(e) {
+							if (e.status == 404) {
+								return Zotero.Messaging.sendMessage('progressWindow.done',
+									[false, 'upgradeClient'], tab);
+							}
+							else if (e.status < 200 || status >= 400) {
+								return Zotero.Messaging.sendMessage('progressWindow.done',
+									[false, 'clientRequired'], tab);
+							}
 						});
 					}
 				};

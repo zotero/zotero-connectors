@@ -75,6 +75,12 @@ Zotero.Messaging = new function() {
 							if (messageConfig) {
 								var requestID = Math.floor(Math.random() * 1e12);
 								_callbacks[requestID] = function (response) {
+									if (response && response[0] == 'error') {
+										response[1] = JSON.parse(response[1]);
+										let e = new Error(response[1].message);
+										for (let key in response[1]) e[key] = response[1][key];
+										return reject(e);
+									}
 									try {
 										if (messageConfig.inject && messageConfig.inject.postReceive) {
 											response = messageConfig.inject.postReceive.apply(null, response);
@@ -115,7 +121,7 @@ Zotero.Messaging = new function() {
 				
 				var callback = _callbacks[event.message[0]];
 				// if no function matching, message must have been for another instance in this tab
-				if(!callback) return;
+				if (!callback) return;
 				delete _callbacks[event.message[0]];
 
 				// run callback

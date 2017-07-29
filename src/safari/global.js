@@ -73,9 +73,11 @@ Zotero.Connector_Browser = new function() {
 	 * Called to display select items dialog
 	 */
 	this.onSelect = function(items, callback, tab) {
+		var deferred = Zotero.Promise.defer();
 		var newTab = safari.application.openBrowserWindow().activeTab;
 		newTab.url = safari.extension.baseURI+"itemSelector/itemSelector.html#"+encodeURIComponent(JSON.stringify([tab.id, items]));
-		_selectCallbacksForTabIDs[tab.id] = callback;
+		_selectCallbacksForTabIDs[tab.id] = deferred.resolve;
+		return deferred.promise;
 	}
 	
 	/**
@@ -200,7 +202,7 @@ Zotero.Connector_Browser = new function() {
 	
 	function _showZoteroStatus() {
 		_zoteroButton.disabled = true;
-		Zotero.Connector.checkIsOnline(function(isOnline) {
+		Zotero.Connector.checkIsOnline().then(function(isOnline) {
 			if (isOnline) {
 				_zoteroButton.image = safari.extension.baseURI+"images/toolbar/zotero-new-z-16px.png";
 				_zoteroButton.toolTip = "Zotero is Online";

@@ -71,6 +71,7 @@ var injectInclude = [
 	'zotero/connectorTypeSchemaData.js',
 	'zotero/utilities.js',
 	'zotero/utilities_translate.js',
+	'utilities.js',
 	'inject/http.js',
 	'inject/progressWindow.js',
 	'inject/translate_inject.js',
@@ -129,7 +130,10 @@ var backgroundInclude = [
 if (!argv.p) {
 	backgroundInclude.push('tools/testTranslators/translatorTester_messages.js',
 		'tools/testTranslators/translatorTester.js',
-		'tools/testTranslators/translatorTester_global.js');
+		'tools/testTranslators/translatorTester_global.js',
+		'test/messages.js',
+		'test/testSetup.js',
+		'lib/sinon.js');
 }
 var backgroundIncludeBrowserExt = backgroundInclude.concat([
 	'webRequestIntercept.js',
@@ -153,6 +157,12 @@ function reloadChromeExtensionsTab(cb) {
 			exec('chrome-cli open chrome://extensions && chrome-cli reload')
 		}
 	});
+}
+
+function replaceScriptsHTML(string, match, scripts) {
+	return string.replace(match,
+		scripts.map((s) => '<script type="text/javascript" src="' + s + '"></script>')
+			.join('\n'));
 }
 
 function processFile() {
@@ -226,14 +236,16 @@ function processFile() {
 						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t')));
 				break;
 			case 'global.html':
-				file.contents = Buffer.from(file.contents.toString()
-					.replace("<!--SCRIPTS-->", 
-						backgroundInclude.map((s) => '<script type="text/javascript" src="' + s + '"></script>')
-							.join('\n')));
+				file.contents = Buffer.from(replaceScriptsHTML(
+					file.contents.toString(), "<!--SCRIPTS-->", backgroundInclude));
+				break;
+			case 'journalArticle-single.html':
+				file.contents = Buffer.from(replaceScriptsHTML(
+					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
 				break;
 			case 'preferences.html':
 				file.contents = Buffer.from(file.contents.toString()
-					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/, argv.p ? '' : '$1'));
+					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/g, argv.p ? '' : '$1'));
 				break;
 			case 'Info.plist':
 				file.contents = Buffer.from(file.contents.toString()
@@ -277,7 +289,7 @@ gulp.task('watch-chrome', function () {
 });
 
 gulp.task('process-custom-scripts', function() {
-	gulp.src([
+	let sources = [
 		'./src/browserExt/background.js',
 		'./src/browserExt/manifest.json', 
 		'./src/safari/global.html',
@@ -285,8 +297,13 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/node_modules.js',
 		'./src/common/preferences/preferences.html',
 		'./src/common/zotero.js',
+		'./src/common/test/**/*',
 		'./src/**/*.jsx'
-	]).pipe(plumber())
+	];
+	if (!argv.p) {
+		sources.push('./src/common/test/**/*.js');	
+	}
+	gulp.src(sources).pipe(plumber())
 		.pipe(processFile())
 		.pipe(gulp.dest((data) => data.base));
 });

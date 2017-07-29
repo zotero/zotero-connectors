@@ -40,6 +40,7 @@ var Zotero_Preferences = {
 	content: {},
 	visiblePaneName: null,
 	init: function() {
+		Zotero.isPreferences = true;
 		Zotero.Messaging.init();
 		
 		var panesDiv = document.getElementById("panes");
@@ -104,16 +105,15 @@ var Zotero_Preferences = {
 	 */
 	refreshData: function() {
 		// get errors
-		Zotero.Errors.getErrors().then(function(errors) {
+		return Zotero.Errors.getErrors().then(function(errors) {
 			if(errors.length) {
 				document.getElementById('advanced-no-errors').style.display = "none";
 				document.getElementById('advanced-have-errors').style.display = "block";
 				document.getElementById('advanced-textarea-errors').textContent = errors.join("\n\n");
 			}
-		});
-		
-		// get debug logging info
-		Zotero.Connector_Debug.count(function(count) {
+			// get debug logging info
+			return Zotero.Connector_Debug.count();
+		}).then(function(count) {
 			document.getElementById('advanced-span-lines-logged').textContent = count.toString();
 			toggleDisabled(document.getElementById('advanced-button-view-output'), !count);
 			toggleDisabled(document.getElementById('advanced-button-clear-output'), !count);
@@ -150,7 +150,7 @@ Zotero_Preferences.General = {
 		Zotero.Prefs.getAsync("automaticSnapshots").then(function(status) {
 			document.getElementById('general-checkbox-automaticSnapshots').checked = !!status;
 		});
-		Zotero.API.getUserInfo(Zotero_Preferences.General.updateAuthorization);
+		Zotero.API.getUserInfo().then(Zotero_Preferences.General.updateAuthorization);
 
 	},
 
@@ -169,12 +169,11 @@ Zotero_Preferences.General = {
 	 * Authorizes the user
 	 */
 	authorize: function() {
-		Zotero.API.authorize(function(status, data) {
-			if(status) {
-				Zotero_Preferences.General.updateAuthorization(data);
-			} else {
-				alert("Authorization could not be completed.\n\n"+data);
-			}
+		Zotero.API.authorize().then(function(data) {
+			Zotero_Preferences.General.updateAuthorization(data);
+		}, function(e) {
+			if (e.message.includes('cancelled')) return;
+			alert("Authorization could not be completed.\n\n"+e.message)
 		});
 	},
 
@@ -258,6 +257,8 @@ Zotero_Preferences.Advanced = {
 	clearDebugOutput: function() {
 		Zotero.Debug.clear();
 		Zotero_Preferences.refreshData();
+		var textarea = document.getElementById("advanced-textarea-debug");
+		textarea.style.display = 'none';
 	},
 
 	/**
@@ -267,16 +268,14 @@ Zotero_Preferences.Advanced = {
 		var submitOutputButton = document.getElementById('advanced-button-submit-output');
 		toggleDisabled(submitOutputButton, true);
 		
-		Zotero.Connector_Debug.submitReport(function(status, message) {
-			if(status) {
-				alert("Your debug output has been submitted.\n\n"
-					+ `The Debug ID is D${message}.`);
-			} else {
-				alert(`An error occurred submitting your debug output.\n\n${message}\n\n`+
-					'Please check your internet connection.');
-			}
-			toggleDisabled(submitOutputButton, false);
-		});
+		return Zotero.Connector_Debug.submitReport().then(function(reportID) {
+			alert("Your debug output has been submitted.\n\n"
+				+ `The Debug ID is D${reportID}.`);
+		}, function(e) {
+			alert(`An error occurred submitting your debug output.\n\n${e.message}\n\n`+
+				'Please check your internet connection. If the problem persists, '+
+				'please post a message to the Zotero Forums (forums.zotero.org).');
+		}).then(() => toggleDisabled(submitOutputButton, false));
 	},
 
 	/**
@@ -286,19 +285,16 @@ Zotero_Preferences.Advanced = {
 		var reportErrorsButton = document.getElementById('advanced-button-report-errors');
 		toggleDisabled(reportErrorsButton, true);
 		
-		Zotero.Errors.sendErrorReport(function(status, message) {
-			if(status) {
-				alert(`Your error report has been submitted.\n\nReport ID: ${message}\n\n`+
-					'Please post a message to the Zotero Forums (forums.zotero.org) with this Report '+
-					'ID, a description of the problem, and any steps necessary to reproduce it.\n\n'+
-					'Error reports are not reviewed unless referred to in the forums.');
-			} else {
-				alert(`An error occurred submitting your error report.\n\n${message}\n\n`+
-					'Please check your internet connection. If the problem persists, '+
-					'please post a message to the Zotero Forums (forums.zotero.org).');
-			}
-			toggleDisabled(reportErrorsButton, false);
-		});
+		return Zotero.Errors.sendErrorReport().then(function(reportID) {
+			alert(`Your error report has been submitted.\n\nReport ID: ${reportID}\n\n`+
+				'Please post a message to the Zotero Forums (forums.zotero.org) with this Report '+
+				'ID, a description of the problem, and any steps necessary to reproduce it.\n\n'+
+				'Error reports are not reviewed unless referred to in the forums.');
+		}, function(e) {
+			alert(`An error occurred submitting your error report.\n\n${e.message}\n\n`+
+				'Please check your internet connection. If the problem persists, '+
+				'please post a message to the Zotero Forums (forums.zotero.org).');
+		}).then(() => toggleDisabled(reportErrorsButton, false));
 	}
 };
 
@@ -311,7 +307,7 @@ Zotero_Preferences.Components.ClientStatus = React.createClass({
 	},
 	
 	checkStatus: function() {
-		Zotero.Connector.checkIsOnline(function(status) {
+		return Zotero.Connector.checkIsOnline().then(function(status) {
 			this.setState({available: status});
 		}.bind(this));
 	},

@@ -23,23 +23,28 @@
     ***** END LICENSE BLOCK *****
 */
 
-MESSAGES["TranslatorTester"] = {
-	"onLoad": {
-		"preSend":function(data) {
-			if (data) {
-				data[0] = Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES)
-			}
-			return [data];
+MESSAGES.TranslatorTester = {
+	onLoad: {
+		response: true,
+		background: {
+			preSend: function(data) {
+				if (data) {
+					data[0] = Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES)
+				}
+				return [data];
+			},
 		},
-		"postReceive":function(data) {
-			if (data) {
-				data[0] = new Zotero.Translator(data[0]);
+		inject: {
+			postReceive: function(data) {
+				if (data) {
+					data[0] = new Zotero.Translator(data[0]);
+				}
+				return [data];
 			}
-			return [data];
 		}
 	},
-	"debug":false,
-	"runTests":false,
-	"testComplete":false,
-	"runAutomatedTesting":false
+	debug: false,
+	runTests: false,
+	testComplete: false,
+	runAutomatedTesting: false
 };

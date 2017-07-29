@@ -1,5 +1,7 @@
 # Zotero Connectors
 
+[![Build Status](https://travis-ci.org/zotero/zotero-connectors.svg?branch=master)](https://travis-ci.org/zotero/zotero-connectors)
+
 ## Building
 
 1. `git clone --recursive https://github.com/zotero/zotero-connectors.git`

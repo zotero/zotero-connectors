@@ -46,17 +46,16 @@ if(isTopWindow) {
 		if (headline) {
 			return Zotero.ProgressWindow.changeHeadline(headline);
 		}
-		return Zotero.Connector.callMethod("getSelectedCollection", {}).then(function(response, status) {
+		return Zotero.Connector.callMethod("getSelectedCollection", {}).then(function(response) {
 			Zotero.ProgressWindow.changeHeadline("Saving to ",
 				response.id ? "treesource-collection.png" : "treesource-library.png",
 				response.name+"\u2026");
-		}, function(e) {
-			if (e.value && e.value.libraryEditable === false) {
+			if (response.libraryEditable === false) {
 				new Zotero.ProgressWindow.ErrorMessage("collectionNotEditable");
 				Zotero.ProgressWindow.startCloseTimer(8000);
-			} else {
-				Zotero.ProgressWindow.changeHeadline("Saving to zotero.org");
 			}
+		}, function() {
+			Zotero.ProgressWindow.changeHeadline("Saving to zotero.org");
 		});
 	});
 	var itemProgress = {};

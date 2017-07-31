@@ -200,7 +200,7 @@ Zotero.Connector = new function() {
 				}
 				if(req.status == 0 || req.status >= 400) {
 					Zotero.debug("Connector: Method "+method+" failed with status "+req.status);
-					deferred.reject(new Zotero.Connector.CommunicationError(`Method ${options.method} failed`, req.status));
+					deferred.reject(new Zotero.Connector.CommunicationError(`Method ${options.method} failed`, req.status, val));
 					
 					// Check for incompatible version
 					if(req.status === 412) {
@@ -208,7 +208,7 @@ Zotero.Connector = new function() {
 							var standaloneVersion = req.getResponseHeader("X-Zotero-Version");
 							Zotero.Connector_Browser.onIncompatibleStandaloneVersion(Zotero.version, standaloneVersion);
 							deferred.reject("Connector: Version mismatch: Connector version "+Zotero.version
-								+", Standalone version "+(standaloneVersion ? standaloneVersion : "<unknown>"));
+								+", Standalone version "+(standaloneVersion ? standaloneVersion : "<unknown>", val));
 						}
 					}
 				} else {

@@ -163,7 +163,7 @@ Zotero.Connector = new function() {
 	 * @param {Object} data - RPC data to POST. If null or undefined, a GET request is sent.
 	 * @param {Function} callback - Function to be called when requests complete.
 	 */
-	this.callMethod = Zotero.Promise.method(function(options, data, tab) {
+	this.callMethod = Zotero.Promise.method(function(options, data, cb, tab) {
 		// Don't bother trying if not online in bookmarklet
 		if (Zotero.isBookmarklet && this.isOnline === false) {
 			throw new Zotero.CommunicationError("Zotero Offline", 0);
@@ -250,7 +250,7 @@ Zotero.Connector = new function() {
 	 * @param {String|Object} options. See documentation above
 	 * @param	{Object} data RPC data. See documentation above.
 	 */
-	this.callMethodWithCookies = function(options, data, tab) {
+	this.callMethodWithCookies = function(options, data, cb, tab) {
 		if (Zotero.isBrowserExt && !Zotero.isBookmarklet) {
 			return new Zotero.Promise(function(resolve) {
 				chrome.cookies.getAll({url: tab.url}, resolve);
@@ -272,11 +272,11 @@ Zotero.Connector = new function() {
 				// Cookie URI needed to set up the cookie sandbox on standalone
 				data.uri = tab.url;
 				
-				return this.callMethod(options, data, tab);
+				return this.callMethod(options, data, cb, tab);
 			}.bind(this));
 		}
 		
-		return this.callMethod(options, data, tab);
+		return this.callMethod(options, data, cb, tab);
 	}
 }
 

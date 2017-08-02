@@ -125,8 +125,8 @@ Zotero.Inject = new function() {
 				// back to the callback due to backwards compat code in translate.js
 				(async function() {
 					try {
-						let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
-						if (response.libraryEditable === false) {
+						let response = await Zotero.Connector.getSelectedCollection();
+						if (response.library.editable === false) {
 							return callback([]);
 						}
 					} catch (e) {

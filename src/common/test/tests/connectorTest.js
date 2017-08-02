@@ -65,4 +65,43 @@ describe('Connector', function() {
 			throw new Error('Expected error not thrown');
 		}));
 	});
+		
+	describe('#getSelectedCollection()', function() {
+		it('throws if Zotero is offline', Promise.coroutine(function* () {
+			try {
+				yield background(function() {
+					Zotero.Connector.isOnline = false;
+					return Zotero.Connector.getSelectedCollection()
+				});
+			} catch (e) {
+				assert.equal(e.status, 0);
+				return;
+			}
+			throw new Error('Error not thrown');
+		}));
+	
+		it('gets an SSE result if SSE available', Promise.coroutine(function*() {
+			let s = yield background(function() {
+				Zotero.Connector.isOnline = true;
+				Zotero.Connector.SSE.available = true;
+				Zotero.Connector._selected = {collection: 'selected'};
+				return Zotero.Connector.getSelectedCollection()
+			});
+			assert.equal(s, 'selected');
+		}));
+		it('calls Zotero if SSE unavailable', Promise.coroutine(function*() {
+			let call = yield background(function() {
+				Zotero.Connector.isOnline = true;
+				Zotero.Connector.SSE.available = false;
+				Zotero.Connector._selected = {collection: 'selected'};
+				sinon.stub(Zotero.Connector, 'callMethod');
+				return Zotero.Connector.getSelectedCollection().then(function() {
+					let call = Zotero.Connector.callMethod.lastCall;
+					Zotero.Connector.callMethod.restore();
+					return call
+				});
+			});
+			assert.equal(call.args[0], 'getSelectedCollection');	
+		}));
+	});
 });

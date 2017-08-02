@@ -120,7 +120,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	 */
 	async function updateFromClient(prefix) {
 		try {
-			var response = await Zotero.Connector.callMethod("getSelectedCollection", {})
+			var response = await Zotero.Connector.getSelectedCollection();
 		}
 		catch (e) {
 			// TODO: Shouldn't this be coupled to the actual save process?
@@ -131,14 +131,14 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		// If we're reshowing the current session's popup, override the selected location with the
 		// last successful tarGet, since the selected collection in the client might have changed
 		if (lastSuccessfulTarget) {
-			response.id = lastSuccessfulTarget.id;
-			response.name = lastSuccessfulTarget.name;
-			response.libraryEditable = true;
+			response.collection.id = lastSuccessfulTarget.id;
+			response.collection.name = lastSuccessfulTarget.name;
+			response.library.editable = true;
 		}
 		
 		// Disable target selector for read-only library (which normally shouldn't happen,
 		// because the client switches automatically to My Library)
-		if (response.libraryEditable === false) {
+		if (response.library.editable === false) {
 			response.targets = undefined;
 			addError("collectionNotEditable");
 			startCloseTimer(8000);
@@ -147,7 +147,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		
 		var id;
 		// Legacy response for libraries
-		if (!response.id) {
+		if (!response.collection.id) {
 			id = "L" + response.libraryID;
 		}
 		// Legacy response for collections

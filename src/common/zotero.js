@@ -227,6 +227,7 @@ var Zotero = window.Zotero = new function() {
 			await Zotero.i18n.init();
 			Zotero.Repo.init();
 			Zotero.Proxies.init();
+			Zotero.Connector.init();
 		}
 		if (Zotero.isBrowserExt) {
 			await Zotero.GoogleDocsPluginManager.init();

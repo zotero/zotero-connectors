@@ -24,53 +24,98 @@
 */
 
 // TODO: refactor this class
-Zotero.Connector = new function() {
-	const CONNECTOR_API_VERSION = 2;
+Zotero.Connector = {
+	_CONNECTOR_API_VERSION: 2,
 	
-	var _ieStandaloneIframeTarget, _ieConnectorCallbacks;
-	this.isOnline = (Zotero.isSafari || Zotero.isFirefox) ? false : null;
-	this.shouldReportActiveURL = true;
-	this.clientVersion = '';
+	// As of Chrome 38 (and corresponding Opera version 24?) pages loaded over
+	// https (i.e. the zotero bookmarklet iframe) can not send requests over
+	// http, so pinging Standalone at http://127.0.0.1 fails.
+	// Disable for all browsers, except IE, which may be used frequently with ZSA
+	isOnline: Zotero.isBookmarklet && !Zotero.isIE ? false : null,
+	_shouldReportActiveURL: true,
+	_selected: {collection: null, library: null, item: null},
+	clientVersion: '',
+
+	init: function() {
+		this.addEventListener('init', { notify: function(data) {
+			this._selected = data.selected;
+		}.bind(this) });
+		this.addEventListener('select', { notify: function(data) {
+			Object.assign(this._selected, data);
+		}.bind(this) });
+		
+		Zotero.Connector.SSE.init();
+	},
 	
 	/**
 	 * Checks if Zotero is online and passes current status to callback
 	 * @param {Function} callback
 	 */
-	this.checkIsOnline = async function() {
+	checkIsOnline: async function() {
 		// Only check once in bookmarklet
-		if(Zotero.isBookmarklet && this.isOnline !== null) {
+		if (Zotero.isBookmarklet && this.isOnline !== null) {
+			return this.isOnline;
+		}
+		
+		// If SSE is available then we can return current status too
+		if (Zotero.Connector.SSE.available) {
 			return this.isOnline;
 		}
 
-		return this.ping({}).catch(function(e) {
-			if (e.status == 0) {
+		try {
+			return await Zotero.Connector.ping("ping", {});
+		}
+		catch (e) {
+			if (e.status === 0) {
 				return false;
 			}
-			throw e;
-		});
-	};
+			throw e
+		}
+	},
 
-	this.reportActiveURL = function(url) {
-		if (!this.isOnline || !this.shouldReportActiveURL) return;
+	reportActiveURL: function (url) {
+		if (!this.isOnline || !this._shouldReportActiveURL) return;
 		
 		let payload = { activeURL: url };
 		this.ping(payload);
-	}
+	},
 	
-	this.ping = function(payload={}) {
+	ping: function (payload={}) {
 		return Zotero.Connector.callMethod("ping", payload).then(function(response) {
 			if (response && 'prefs' in response) {
-				Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
+				Zotero.Connector._shouldReportActiveURL = !!response.prefs.reportActiveURL;
 				Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
 			}
 			return response || {};
 		});
-	}
+	},
 	
-	this.getClientVersion = async function() {
+	getSelectedCollection: async function() {
+		if (!Zotero.Connector.isOnline) {
+			throw new this.CommunicationError('Zotero is Offline');
+		} else if (Zotero.Connector.SSE.available) {
+			return this._selected;
+		} else {
+			return this.callMethod('getSelectedCollection', {}).then(function(response) {
+				let selected = {
+					library: {
+						id: response.libraryID,
+						name: response.libraryName,
+						editable: response.libraryEditable,
+					}
+				};
+				selected.collection = { id: response.id, name: response.name };
+				selected.id = response.id || response.libraryID;
+				selected.name = response.name;
+				return selected;
+			});
+		}
+	},
+	
+	getClientVersion: async function() {
 		let isOnline = await this.checkIsOnline();
 		return isOnline && this.clientVersion;
-	}
+	},
 	
 	/**
 	 * Sends the XHR to execute an RPC call.
@@ -84,7 +129,9 @@ Zotero.Connector = new function() {
 	 * @param {Object} data - RPC data to POST. If null or undefined, a GET request is sent.
 	 * @param {Function} callback - Function to be called when requests complete.
 	 */
-	this.callMethod = async function(options, data, tab) {
+	callMethod: async function(options, data, tab) {
+		// TODO: make this default behaviour once people switch to SSE enabled Zotero
+		// and prompt if Zotero.isOnline but SSE unavailable - i.e. fairly old version of Zotero is running
 		// Don't bother trying if not online in bookmarklet
 		if (Zotero.isBookmarklet && this.isOnline === false) {
 			throw new Zotero.Connector.CommunicationError("Zotero Offline", 0);
@@ -96,7 +143,7 @@ Zotero.Connector = new function() {
 		var headers = Object.assign({
 				"Content-Type":"application/json",
 				"X-Zotero-Version":Zotero.version,
-				"X-Zotero-Connector-API-Version":CONNECTOR_API_VERSION
+				"X-Zotero-Connector-API-Version":Zotero.Connector._CONNECTOR_API_VERSION
 			}, options.headers || {});
 		var timeout = "timeout" in options ? options.timeout : 15000;
 		var queryString = options.queryString ? ("?" + options.queryString) : "";
@@ -170,7 +217,7 @@ Zotero.Connector = new function() {
 	 * @param {String|Object} options. See documentation above
 	 * @param	{Object} data RPC data. See documentation above.
 	 */
-	this.callMethodWithCookies = function(options, data, tab) {
+	callMethodWithCookies: function(options, data, tab) {
 		if (Zotero.isBrowserExt && !Zotero.isBookmarklet) {
 			let cookieParams = {
 				url: tab.url
@@ -229,6 +276,70 @@ Zotero.Connector.CommunicationError = function (message, status=0, value='') {
 }
 Zotero.Connector.CommunicationError.prototype = new Error;
 
+
+Zotero.Connector.SSE = {
+	_listeners: {},
+	available: false,
+
+	init: function() {
+		this._evtSrc = new EventSource(ZOTERO_CONFIG.CONNECTOR_SERVER_URL + 'connector/sse');
+		this._evtSrc.onerror = this._onError.bind(this);
+		this._evtSrc.onmessage = this._onMessage.bind(this);
+		this._evtSrc.onopen = this._onOpen.bind(this);
+	},
+	
+	_onError: function(e) {
+		this._evtSrc.close();
+		delete this._evtSrc;
+		
+		if (Zotero.Connector.isOnline) {
+			Zotero.Connector.isOnline = false;
+			Zotero.Connector_Browser.onStateChange(false);
+			Zotero.debug('Zotero client went offline');
+		}
+
+		if (e.target.readyState != 1) {
+			// Attempt to reconnect every 10 secs
+			return setTimeout(this.init.bind(this), 10000);
+		}
+		// Immediately attempt to reconnect in case of a simple HTTP timeout
+		this.init();
+	},
+	
+	_onMessage: function(e) {
+		var data = JSON.parse(e.data);
+		Zotero.debug(`SSE event '${data.event}':${JSON.stringify(data.data).substr(0, 100)}`);
+		if (data.event in this._listeners) {
+			this._listeners[data.event].forEach((l) => l.notify(data.data));
+		}
+	},
+	
+	_onOpen: function() {
+		this.available = true;
+		Zotero.Connector.ping();
+		Zotero.debug('Zotero client is online');
+	},
+	
+	_addEventListener: function(event, fn) {
+		if (event in this._listeners) {
+			this._listeners[event].push(fn);
+		} else {
+			this._listeners[event] = [fn];
+		}
+		return fn;
+	},
+	
+	_removeEventListener: function(event, fn) {
+		if (event in this._listeners) {
+			this._listeners[event] = this._listeners[event].filter((l) => l !== listener);
+		}
+	}
+};
+Zotero.Connector.addEventListener = Zotero.Connector.SSE._addEventListener.bind(Zotero.Connector.SSE);
+Zotero.Connector.removeEventListener = Zotero.Connector.SSE._removeEventListener.bind(Zotero.Connector.SSE);
+
+
+// TODO: this does not belong here in the slightest
 Zotero.Connector_Debug = new function() {
 	/**
 	 * Call a callback depending upon whether debug output is being stored

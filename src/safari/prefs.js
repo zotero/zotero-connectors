@@ -49,7 +49,7 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 				for(var i=0; i<pref.length; i++) {
 					prefData[pref[i]] = Zotero.Prefs.getAsync(pref[i]);
 				}
-				resolve(prefData);
+				resolve(Zotero.Promise.all(prefData));
 			} else {
 				resolve(localStorage[`pref-${pref}`]);
 			}	

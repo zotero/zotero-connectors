@@ -681,6 +681,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			contents = "The currently selected collection is not editable. "
 				+ "Please select a different collection in Zotero.";
 		}
+		else if (err === "cannotAttach") {
+			contents = "Zotero could not attach current page to currently selected items. "
+				+ "Please select a single item in Zotero.";
+		}
 		else if (err === "clientRequired") {
 			contents = "This item could not be saved because Zotero is not open or is unreachable. "
 				+ "Please open Zotero and try again.";

@@ -444,7 +444,11 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Update status and tooltip of Zotero button
 	 */
-	this._updateExtensionUI = function (tab) {
+	this._updateExtensionUI = function(tab) {
+		if (!tab) {
+			return chrome.tabs.query( { lastFocusedWindow: true, active: true }, 
+				(tabs) => tabs.length && this._updateExtensionUI(tabs[0]));
+		}
 		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) return _showFirstUseUI(tab);
 		if (!tab.active) return;
 		browser.contextMenus.removeAll();
@@ -497,6 +501,8 @@ Zotero.Connector_Browser = new function() {
 		if (showProxyMenu) {
 			_showProxyContextMenuItems(tab.url);
 		}
+		
+		_showSSEContextMenuItems();
 		
 		if (Zotero.isFirefox) {
 			_showPreferencesContextMenuItem();
@@ -731,6 +737,40 @@ Zotero.Connector_Browser = new function() {
 		});
 	}
 	
+	function _showSSEContextMenuItems() {
+		let SSEAvailable = Zotero.Connector.SSE.available && Zotero.Connector.isOnline;
+		// Don't even bother with the context menu options if SSE is not available
+		if (SSEAvailable) {
+			let singleItemSelected = Zotero.Connector.selected.items.length == 1;
+			let item = singleItemSelected && Zotero.Connector.selected.items[0];
+			let itemIsAttachment = ['attachment', 'note'].includes(item.type);
+			chrome.contextMenus.create({
+				type: "separator",
+				id: "zotero-context-menu-sse-separator",
+				contexts: ['all']
+			});
+			chrome.contextMenus.create({
+				id: "zotero-context-menu-attach-snapshot",
+				title: "Attach Snapshot of Current Page",
+				// Disable if a non-viable item is selected
+				enabled: singleItemSelected && !itemIsAttachment,
+				onclick: function (info, tab) {
+					Zotero.Connector_Browser._saveAsAttachment(tab, false);
+				},
+				contexts: ['all'],
+			});
+			chrome.contextMenus.create({
+				id: "zotero-context-menu-attach-link",
+				title: "Attach Link of Current Page",
+				enabled: singleItemSelected && !itemIsAttachment,
+				onclick: function (info, tab) {
+					Zotero.Connector_Browser._saveAsAttachment(tab, true);
+				},
+				contexts: ['all'],
+			});
+		}
+	}
+	
 	function _browserAction(tab) {
 		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) {
 			Zotero.Messaging.sendMessage("firstUse", null, tab)
@@ -782,6 +822,11 @@ Zotero.Connector_Browser = new function() {
 			null
 		);
 	}
+
+	this.saveAsAttachment = function(tab, link=false) {
+		return Zotero.Messaging.sendMessage("saveAsAttachment",
+			[tab.title, link, Zotero.Connector.selected.items[0]], tab);
+	}
 	
 	this.saveAsWebpage = function(tab, frameId, options) {
 		if (Zotero.isFirefox && Zotero.browserMajorVersion >= 60 && _tabInfo[tab.id].isPDF) {
@@ -802,6 +847,11 @@ Zotero.Connector_Browser = new function() {
 				}
 			);
 		}
+	},
+	
+	this._saveAsAttachment = function(tab, link=false) {
+		return Zotero.Messaging.sendMessage("saveAsAttachment",
+			[tab.title, link, Zotero.Connector.selected.items[0]], tab);
 	}
 	
 	function _getTranslatorLabel(translator) {

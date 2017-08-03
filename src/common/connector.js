@@ -33,16 +33,18 @@ Zotero.Connector = {
 	// Disable for all browsers, except IE, which may be used frequently with ZSA
 	isOnline: Zotero.isBookmarklet && !Zotero.isIE ? false : null,
 	_shouldReportActiveURL: true,
-	_selected: {collection: null, library: null, item: null},
+	selected: {collection: null, library: null, item: null},
 	clientVersion: '',
 
 	init: function() {
-		this.addEventListener('init', { notify: function(data) {
-			this._selected = data.selected;
-		}.bind(this) });
-		this.addEventListener('select', { notify: function(data) {
-			Object.assign(this._selected, data);
-		}.bind(this) });
+		this.addEventListener('init', {notify: function(data) {
+			this.selected = data.selected;
+			Zotero.Connector_Browser._updateExtensionUI();
+		}.bind(this)});
+		this.addEventListener('select', {notify: function(data) {
+			Object.assign(this.selected, data);
+			Zotero.Connector_Browser._updateExtensionUI();
+		}.bind(this)});
 		
 		Zotero.Connector.SSE.init();
 	},
@@ -94,7 +96,7 @@ Zotero.Connector = {
 		if (!Zotero.Connector.isOnline) {
 			throw new this.CommunicationError('Zotero is Offline');
 		} else if (Zotero.Connector.SSE.available) {
-			return this._selected;
+			return this.selected;
 		} else {
 			return this.callMethod('getSelectedCollection', {}).then(function(response) {
 				let selected = {

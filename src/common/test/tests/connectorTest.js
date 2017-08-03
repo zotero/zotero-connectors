@@ -84,21 +84,20 @@ describe('Connector', function() {
 			let s = yield background(function() {
 				Zotero.Connector.isOnline = true;
 				Zotero.Connector.SSE.available = true;
-				Zotero.Connector._selected = {collection: 'selected'};
+				Zotero.Connector.selected = {collection: 'selected'};
 				return Zotero.Connector.getSelectedCollection()
 			});
-			assert.equal(s, 'selected');
+			assert.deepEqual(s, {collection: 'selected'});
 		}));
 		it('calls Zotero if SSE unavailable', Promise.coroutine(function*() {
 			let call = yield background(function() {
 				Zotero.Connector.isOnline = true;
 				Zotero.Connector.SSE.available = false;
-				Zotero.Connector._selected = {collection: 'selected'};
-				sinon.stub(Zotero.Connector, 'callMethod');
+				sinon.stub(Zotero.Connector, 'callMethod').resolves({name: 'selected'});
 				return Zotero.Connector.getSelectedCollection().then(function() {
 					let call = Zotero.Connector.callMethod.lastCall;
 					Zotero.Connector.callMethod.restore();
-					return call
+					return call;
 				});
 			});
 			assert.equal(call.args[0], 'getSelectedCollection');	

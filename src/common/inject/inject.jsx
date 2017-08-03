@@ -591,6 +591,58 @@ Zotero.Inject = new function() {
 			fn();
 		});
 	}
+	
+	this.saveAsAttachment = function (args) {
+		var [title, link, item] = args;
+		var progress;
+		
+		var data = {
+			title,
+			url: document.location.toString(),
+			cookie: document.cookie,
+			html: document.documentElement.innerHTML,
+			link
+		};
+
+		if (document.contentType == 'application/pdf') {
+			data.pdf = true;
+		}
+		if (link) {
+			var image = 'attachment-link';
+		} else if (data.pdf) {
+			var image = "attachment-pdf";
+		} else {
+			var image = "webpage";
+		}
+		
+		progress = new Zotero.ProgressWindow.ItemProgress(
+			Zotero.ItemTypes.getImageSrc(image), title || document.title
+		);
+		Zotero.ProgressWindow.changeHeadline(`Attaching a ${link ? 'link' : 'snapshot'} to `, `treeitem-${item.type}.png`, item.title);
+		return Zotero.Connector.callMethodWithCookies("attachSnapshot", data)
+		.then(function(result) {
+			if (progress) {
+				progress.setProgress(100);
+				Zotero.ProgressWindow.startCloseTimer(2500);
+			}
+			return result;
+		}.bind(this), function(e) {
+			var err;
+			// Client unavailable
+			if (e.status === 0) {
+				err = new Zotero.ProgressWindow.ErrorMessage("clientRequired");
+			} else if (e.value && e.value.libraryEditable === false) {
+				err = new Zotero.ProgressWindow.ErrorMessage("collectionNotEditable");
+			} else if (e.value && e.value.itemsSelected != 1) {
+				// This should really never occur since the option is disabled when multiple items are selected
+				err = new Zotero.ProgressWindow.ErrorMessage("cannotAttach");
+			} else {
+				err = new Zotero.ProgressWindow.ErrorMessage("unexpectedError");
+			}
+			Zotero.ProgressWindow.startCloseTimer(8000);	
+			if (err) throw err;
+		}.bind(this));
+	};
 };
 
 // check whether this is a hidden browser window being used for scraping
@@ -627,6 +679,7 @@ if(!isHiddenIFrame) {
 				Zotero.Inject.saveAsWebpage(data);
 			}
 		});
+		Zotero.Messaging.addMessageListener("saveAsAttachment", Zotero.Inject.saveAsAttachment);
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {
 			Zotero.Inject.init(true);

@@ -69,7 +69,12 @@ var Zotero = new function() {
 		this.version = safari.extension.bundleVersion;
 	}
 	
-	this.Promise = window.Promise;
+	// window.Promise and Promise differ (somehow) in Firefox and when certain
+	// async promise resolution conditions arise upon calling Zotero.Promise.all().then(result => )
+	// somehow the result array doesn't properly have result[1] bound, even though
+	// Array.from(result)[1] is there. Magic of code.
+	// this.Promise = window.Promise;
+	this.Promise = Promise;
 	
 	/**
 	 * Initializes Zotero services for the global page in Chrome or Safari

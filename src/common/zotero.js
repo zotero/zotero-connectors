@@ -106,6 +106,10 @@ var Zotero = new function() {
 			Zotero.Messaging.init();
 			Zotero.Connector_Types.init();
 			Zotero.Repo.init();
+			if (Zotero.isBrowserExt) {
+				Zotero.WebRequestIntercept.init();
+				Zotero.Proxies.init();
+			}
 		});
 	};
 	

@@ -578,6 +578,3 @@ Zotero.Connector_Browser = new function() {
 }
 
 Zotero.initGlobal();
-// BrowserExt specific
-Zotero.WebRequestIntercept.init();
-Zotero.Proxies.init();

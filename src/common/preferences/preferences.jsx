@@ -69,7 +69,9 @@ var Zotero_Preferences = {
 		Zotero_Preferences.Advanced.init();
 
 		if (Zotero.isBrowserExt) {
-			Zotero_Preferences.Proxies.init();
+			Zotero.Prefs.loadNamespace('proxies').then(function() {
+				Zotero_Preferences.Proxies.init();
+			});
 		}
 		
 		Zotero_Preferences.refreshData();

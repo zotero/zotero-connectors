@@ -91,10 +91,10 @@ Zotero.API = new function() {
 				});
 			} else if (Zotero.isSafari) {
 				var newTab = safari.application.openBrowserWindow().activeTab;
-				newTab.addEventListener('close', Zotero.API.onAuthorizationCancel);
+				newTab.addEventListener('close', Zotero.API.onAuthorizationCancel.bind(this));
 				newTab.url = url;
 			}
-		}, function(e) {
+		}.bind(this), function(e) {
 			Zotero.logError(`OAuth request failed with ${e.status}; response was ${e.responseText}`);
 			return this._deferred.reject(new Error("An invalid response was received from the Zotero server"));
 		}.bind(this));

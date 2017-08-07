@@ -28,7 +28,10 @@
  */
 Zotero.Prefs = Object.assign(Zotero.Prefs, {
 	init: Zotero.Promise.method(function() {
-		let prefs = Object.assign({}, localStorage);
+		let prefs = {};
+		for (let key in localStorage) {
+			prefs[key] = localStorage[key];
+		}
 		for (let k of Object.keys(prefs)) {
 			if (k.substr(0, 'pref-'.length) == 'pref-') {
 				prefs[k.substr('pref-'.length)] = JSON.parse(prefs[k]);
@@ -42,20 +45,6 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 		}
 	}),
 
-	getAsync: function(pref) {
-		return new Zotero.Promise(function(resolve, reject) {
-			if (typeof pref === "object") {
-				var prefData = {};
-				for(var i=0; i<pref.length; i++) {
-					prefData[pref[i]] = Zotero.Prefs.getAsync(pref[i]);
-				}
-				resolve(Zotero.Promise.all(prefData));
-			} else {
-				resolve(localStorage[`pref-${pref}`]);
-			}	
-		});
-	},
-	
 	set: Zotero.Promise.method(function(pref, value) {
 		Zotero.debug("Setting "+pref+" to "+JSON.stringify(value).substr(0, 100));
 		this.syncStorage[pref] = value;

@@ -129,7 +129,12 @@ Zotero.Connector = new function() {
 				fail();
 			}
 		} else {
-			return Zotero.Connector.ping("ping", {});
+			return this.ping({}).catch(function(e) {
+				if (e.status == 0) {
+					return false;
+				}
+				throw e
+			});
 		}
 		return deferred.promise;
 	});
@@ -199,9 +204,6 @@ Zotero.Connector = new function() {
 					}
 				}
 				if(req.status == 0 || req.status >= 400) {
-					Zotero.debug("Connector: Method "+method+" failed with status "+req.status);
-					deferred.reject(new Zotero.Connector.CommunicationError(`Method ${options.method} failed`, req.status, val));
-					
 					// Check for incompatible version
 					if(req.status === 412) {
 						if(Zotero.Connector_Browser && Zotero.Connector_Browser.onIncompatibleStandaloneVersion) {
@@ -211,6 +213,9 @@ Zotero.Connector = new function() {
 								+", Standalone version "+(standaloneVersion ? standaloneVersion : "<unknown>", val));
 						}
 					}
+					
+					Zotero.debug("Connector: Method "+method+" failed with status "+req.status);
+					deferred.reject(new Zotero.Connector.CommunicationError(`Method ${options.method} failed`, req.status, val));
 				} else {
 					Zotero.debug("Connector: Method "+method+" succeeded");
 					deferred.resolve(val);

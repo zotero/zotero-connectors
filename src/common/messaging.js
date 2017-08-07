@@ -94,7 +94,12 @@ Zotero.Messaging = new function() {
 					// add a response passthrough callback for the message
 					args[callbackArg] = function() {
 						if (arguments[0] && arguments[0][0] == 'error') {
-							let err = JSON.stringify(arguments[0][1]);
+							let err = arguments[0][1];
+							err = JSON.stringify(Object.assign({
+								name: err.name,
+								message: err.message,
+								stack: err.stack
+							}, err));
 							return sendResponseCallback([arguments[0][0], err]);
 						}
 						var newArgs = new Array(arguments.length);

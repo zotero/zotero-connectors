@@ -35,6 +35,7 @@ var TRANSLATOR_CACHING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["brow
 Zotero.Translators = new function() {
 	var _cache, _translators;
 	var _initialized = false;
+	var _fullFrameDetectionWhitelist = ['resolver.ebscohost.com', 'classics.uc.edu/nestor'];
 	
 	/**
 	 * Initializes translator cache, loading all relevant translators into memory
@@ -144,6 +145,13 @@ Zotero.Translators = new function() {
 	 *     an array of functions for converting URLs from proper to proxied forms
 	 */
 	this.getWebTranslatorsForLocation = Zotero.Promise.method(function (URI, rootURI) {
+		// Hopefully a temporary hard-coded list
+		for (let str of _fullFrameDetectionWhitelist) {
+			if (URI.includes(str)) {
+				rootURI = URI;
+				break;
+			}
+		}
 		var isFrame = URI !== rootURI;
 		if(!_initialized) Zotero.Translators.init();
 		var allTranslators = _cache["web"];

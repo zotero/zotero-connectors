@@ -115,7 +115,9 @@ Zotero.Messaging = new function() {
 				}
 			}
 			args.push(tab);
-			args.push(frameId);
+			if (messageParts[1] != 'sendMessage') {
+				args.push(frameId);
+			}
 			
 			try {
 				var maybePromise = fn.apply(Zotero[messageParts[0]], args);

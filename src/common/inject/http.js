@@ -122,8 +122,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 				} else {
 					Zotero.logError(e);
 				}
-				
-			} finally {
+
 				removeListeners();
 			}
 		} else {

@@ -36,6 +36,27 @@ describe("HTTP", function() {
 	});
 	
 	describe("#processDocuments()", function() {
+		it('succeeds when loading a same-origin page', Promise.coroutine(function* () {
+			let url = 'http://zotero-static.s3.amazonaws.com/test.html';
+			let [content, location] = yield tab.run(function(url) {
+				var deferred = Zotero.Promise.defer();
+				sinon.stub(Zotero.HTTP, 'isSameOrigin').returns(true);
+				Zotero.HTTP.processDocuments(url, function(doc) {
+					try {
+						let content = doc.querySelector('.csl-entry').innerText;
+						let location = doc.location.href;
+						deferred.resolve([content, location])
+					} catch (e) {
+						deferred.reject(e);
+					}
+				});
+				
+				return deferred.promise.then(response => {Zotero.HTTP.isSameOrigin.restore(); return response});
+			}, url);
+			
+			assert.include(content, 'Rosenzweig');
+			assert.equal(location, url);
+		}));
 		it('succeeds when loading a cross-origin page', Promise.coroutine(function* () {
 			let url = chrome.extension.getURL('test/data/journalArticle-single.html');
 			let [content, location] = yield tab.run(function(url) {

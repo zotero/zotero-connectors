@@ -38,19 +38,24 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 	
 	migrate: Zotero.Promise.method(function() {
 		if (!localStorage.length) return;
-		let prefs = Object.assign({}, localStorage);
-		for (let k of Object.keys(prefs)) {
-			if (k.substr(0, 'pref-'.length) == 'pref-') {
-				prefs[k.substr('pref-'.length)] = JSON.parse(prefs[k]);
+		try {
+			let prefs = Object.assign({}, localStorage);
+			for (let k of Object.keys(prefs)) {
+				if (k.substr(0, 'pref-'.length) == 'pref-') {
+					prefs[k.substr('pref-'.length)] = JSON.parse(prefs[k]);
+				}
+				delete prefs[k];
 			}
-			delete prefs[k];
+			return new Zotero.Promise(resolve => chrome.storage.local.set(prefs, resolve)).then(function() {
+				return new Zotero.Promise(resolve => chrome.storage.local.set(
+					{translatorMetadata: JSON.parse(localStorage['translatorMetadata'])}, resolve));
+			}).then(function() {
+				localStorage.clear();
+			});
+		} catch (e) {
+			Zotero.debug('Attempting to migrate prefs threw an error');
+			Zotero.logError(e);
 		}
-		return new Zotero.Promise(resolve => chrome.storage.local.set(prefs, resolve)).then(function() {
-			return new Zotero.Promise(resolve => chrome.storage.local.set(
-				{translatorMetadata: JSON.parse(localStorage['translatorMetadata'])}, resolve));
-		}).then(function() {
-			localStorage.clear();
-		});
 	}),
 	
 	set: function(pref, value) {

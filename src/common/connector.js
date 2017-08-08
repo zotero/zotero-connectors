@@ -152,8 +152,7 @@ Zotero.Connector = new function() {
 				Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
 				Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
 			}
-			
-			return response;
+			return response || {};
 		});
 	}
 	

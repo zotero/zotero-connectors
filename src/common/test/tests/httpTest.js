@@ -25,9 +25,9 @@
 
 describe("HTTP", function() {
 	var tab = new Tab();
+	let url = 'http://zotero-static.s3.amazonaws.com/test.html';
 	
 	before(Promise.coroutine(function* () {
-		let url = 'http://zotero-static.s3.amazonaws.com/test.html';
 		yield tab.init(url);
 	}));
 	
@@ -35,7 +35,7 @@ describe("HTTP", function() {
 		tab.close();
 	});
 	
-	describe("#processDocuments", function() {
+	describe("#processDocuments()", function() {
 		it('succeeds when loading a cross-origin page', Promise.coroutine(function* () {
 			let url = chrome.extension.getURL('test/data/journalArticle-single.html');
 			let [content, location] = yield tab.run(function(url) {
@@ -57,5 +57,25 @@ describe("HTTP", function() {
 			assert.include(content, 'Rosenzweig');
 			assert.equal(location, url);
 		}));
+	});
+	
+	describe('#request()', function() {
+		describe('POST', function() {
+			it('Adds a Content-Type header if not present', Promise.coroutine(function* () {
+				let args = yield background(function(url) {
+					let spy = sinon.spy(XMLHttpRequest.prototype, 'setRequestHeader');
+					return Zotero.HTTP.request("POST", url, {body: 'test=test'}).then(function(xhr) {
+						let args = spy.args;
+						spy.restore();
+						return args;
+					});
+				}, url);
+				let hasContentType = false;
+				for (let arg of args) {
+					hasContentType = hasContentType || arg[0] == 'Content-Type';
+				}
+				assert.isTrue(hasContentType);
+			}));
+		});
 	});
 });

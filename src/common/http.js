@@ -80,8 +80,17 @@ Zotero.HTTP = new function() {
 			if (options.body != null) {
 				throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
 			}
-		} else  {
+		} else if(options.body) {
 			options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
+			
+			if (!options.headers) options.headers = {};
+			if (!options.headers["Content-Type"]) {
+				options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+			}
+			else if (options.headers["Content-Type"] == 'multipart/form-data') {
+				// Allow XHR to set Content-Type with boundary for multipart/form-data
+				delete options.headers["Content-Type"];
+			}
 					
 			logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
 					options.body.length > options.logBodyLength ? '...' : '';

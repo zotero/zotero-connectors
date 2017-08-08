@@ -126,6 +126,11 @@ setTimeout(function() {
 
 if (typeof mocha != 'undefined') {
 	// test.html
+	/**
+	 * @param code {Function|String}
+	 * @params {Object} ... parameters to be passed into the function to be run
+	 * @returns {Promise} return value of the function
+	 */
 	var background = Promise.coroutine(function* (code) {
 		if (typeof code == 'function') {
 			arguments[0] = code.toString();

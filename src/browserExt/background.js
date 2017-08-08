@@ -57,6 +57,22 @@ Zotero.Connector_Browser = new function() {
 		
 		_updateExtensionUI(tab);
 	}
+
+	/**
+	 * If there's a frame with a PDF mimeType this gets invoked
+	 * @param frameURL
+	 * @param tabId
+	 */
+	this.onPDFFrame = function(frameURL, frameId, tabId) {
+		if (_tabInfo[tabId] && _tabInfo[tabId].translators.length) {
+			return;
+		}
+		chrome.tabs.get(tabId, function(tab) {
+			_tabInfo[tab.id] = {translators: [], isPDF: true, frameId};
+			Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+			_updateExtensionUI(tab);
+		});
+	}
 	
 	/**
 	 * Called to display select items dialog
@@ -315,7 +331,7 @@ Zotero.Connector_Browser = new function() {
 			_showTranslatorIcon(tab, translators[0]);
 			_showTranslatorContextMenuItem(translators);
 		} else if (isPDF) {
-			_showPDFIcon(tab);
+			Zotero.Connector_Browser._showPDFIcon(tab);
 		} else {
 			_showWebpageIcon(tab);
 		}
@@ -410,7 +426,7 @@ Zotero.Connector_Browser = new function() {
 		chrome.browserAction.setTitle({tabId: tab.id, title});
 	}
 	
-	function _showPDFIcon(tab) {
+	this._showPDFIcon = function(tab) {
 		chrome.browserAction.setIcon({
 			tabId: tab.id,
 			path: chrome.extension.getURL('images/pdf.png')
@@ -501,9 +517,13 @@ Zotero.Connector_Browser = new function() {
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
 			Zotero.Connector_Browser._saveWithTranslator(tab, 0);
 		} else {
-			let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-				Zotero.Prefs.get('automaticSnapshots');
-			Zotero.Connector_Browser._saveAsWebpage(tab, withSnapshot);
+			if (_tabInfo[tab.id] && _tabInfo[tab.id].isPDF) {
+				Zotero.Connector_Browser._saveAsWebpage(tab, _tabInfo[tab.id].frameId, true);
+			} else {
+				let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
+					Zotero.Prefs.get('automaticSnapshots');
+				Zotero.Connector_Browser._saveAsWebpage(tab, 0, withSnapshot);
+			}
 		}
 	}
 	
@@ -516,9 +536,9 @@ Zotero.Connector_Browser = new function() {
 		], tab, null);
 	}
 	
-	this._saveAsWebpage = function(tab, withSnapshot) {
+	this._saveAsWebpage = function(tab, frameId, withSnapshot) {
 		if (tab.id != -1) {
-			return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, withSnapshot], tab);
+			return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, withSnapshot], tab, frameId);
 		}
 		// Handle right-click on PDF overlay, which exists in a weird non-tab state
 		else {

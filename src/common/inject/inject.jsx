@@ -129,15 +129,6 @@ Zotero.Inject = new function() {
 			if(!_translate) {
 				var me = this;
 				_translate = new Zotero.Translate.Web();
-				_translate.setHandler("translators", function(obj, translators) {
-					me.translators = {};
-					for (let translator of translators) {
-						me.translators[translator.translatorID] = translator;
-					}
-					
-					translators = translators.map(function(translator) {return translator.serialize(TRANSLATOR_PASSING_PROPERTIES)});
-					Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
-				});
 				_translate.setHandler("select", function(obj, items, callback) {
 					Zotero.Connector_Browser.onSelect(items).then(function(returnItems) {
 						// if no items selected, close save dialog immediately
@@ -182,9 +173,27 @@ Zotero.Inject = new function() {
 				}, false);
 			}
 			_translate.setDocument(document);
-			return _translate.getTranslators(true);
+			return _translate.getTranslators(true).then(function(translators) {
+				if (!translators.length && Zotero.isSafari) {
+					return Zotero.Inject.checkPDFFrames();
+				}
+				me.translators = {};
+				for (let translator of translators) {
+					me.translators[translator.translatorID] = translator;
+				}
+				
+				translators = translators.map(function(translator) {return translator.serialize(TRANSLATOR_PASSING_PROPERTIES)});
+				Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
+			});
 		} catch(e) {
 			Zotero.logError(e);
+		}
+	};
+	
+	this.checkPDFFrames = function() {
+		if (!isTopWindow) {
+			document.contentType == 'application/pdf';
+			return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
 		}
 	};
 	
@@ -376,8 +385,8 @@ Zotero.Inject = new function() {
 	};
 	
 	this.saveAsWebpage = function (args) {
-		var title = args[0], withSnapshot = args[1];
-		var progress;
+		var title = args[0] || document.title, withSnapshot = args[1];
+		var image;
 		return Zotero.Inject.checkActionToServer().then(function(result) {
 			if (!result) return;
 			
@@ -390,20 +399,19 @@ Zotero.Inject = new function() {
 			
 			if (document.contentType == 'application/pdf') {
 				data.pdf = true;
-				var image = "attachment-pdf";
+				image = "attachment-pdf";
 			} else {
-				var image = "webpage";
+				image = "webpage";
 			}
-			
-			progress = new Zotero.ProgressWindow.ItemProgress(
-				Zotero.ItemTypes.getImageSrc(image), title || document.title
-			);
+
+			Zotero.Messaging.sendMessage("progressWindow.show", null);
+			Zotero.Messaging.sendMessage("progressWindow.itemSaving",
+				[Zotero.ItemTypes.getImageSrc(image), title, title]);
 			return Zotero.Connector.callMethodWithCookies("saveSnapshot", data)
 		}.bind(this)).then(function(result) {
-			if (progress) {
-				progress.setProgress(100);
-				Zotero.ProgressWindow.startCloseTimer(2500);
-			}
+			Zotero.Messaging.sendMessage("progressWindow.itemProgress",
+				[Zotero.ItemTypes.getImageSrc(image), title, title, 100]);
+			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			return result;
 		}.bind(this), function(e) {
 			var err;
@@ -411,18 +419,16 @@ Zotero.Inject = new function() {
 			if (e.status === 0) {
 				// Attempt saving to server if not pdf
 				if (document.contentType != 'application/pdf') {
-					Zotero.ProgressWindow.changeHeadline('Saving to zotero.org');
 					let itemSaver = new Zotero.Translate.ItemSaver({});
 					return itemSaver.saveAsWebpage().then(function(items) {
 						if (items.length) progress.setProgress(100);
 					});
 				} else {
-					err = new Zotero.ProgressWindow.ErrorMessage("clientRequired");
+					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
 				}
-			} else {
-				err = new Zotero.ProgressWindow.ErrorMessage("unexpectedError");
+			} else if (!e.value || e.value.libraryEditable != false) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
 			}
-			Zotero.ProgressWindow.startCloseTimer(8000);	
 			if (err) throw err;
 		}.bind(this));
 	};
@@ -457,9 +463,6 @@ if(!isHiddenIFrame && (isWeb || isTestPage)) {
 		// initialize
 		Zotero.initInject();
 		
-		// Send page load event to clear current save icon/data
-		if(isTopWindow) Zotero.Connector_Browser.onPageLoad();
-	
 		if(document.readyState !== "complete") {
 			window.addEventListener("load", function(e) {
 				if(e.target !== document) return;

@@ -205,6 +205,7 @@ MESSAGES.COHTTP = {
 if(Zotero.isSafari) {
 	MESSAGES.API.createItem = true;
 	MESSAGES.API.uploadAttachment = false;
+	MESSAGES.Connector_Browser.onPDFFrame = false;
 	// Override, because tests don't work in Safari and this causes errors in normal function
 	MESSAGES.Messaging.sendMessage = false;
 }

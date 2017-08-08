@@ -37,8 +37,8 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 	}),
 	
 	migrate: Zotero.Promise.method(function() {
-		if (!localStorage.length) return;
 		try {
+			if (!localStorage.length) return;
 			let prefs = Object.assign({}, localStorage);
 			for (let k of Object.keys(prefs)) {
 				if (k.substr(0, 'pref-'.length) == 'pref-') {
@@ -54,7 +54,10 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 			});
 		} catch (e) {
 			Zotero.debug('Attempting to migrate prefs threw an error');
-			Zotero.logError(e);
+			// Let's not, since this will log on every start for firefox people with
+			// dom.storage.enabled: false
+			// Zotero.logError(e);
+			Zotero.debug(e.message);
 		}
 	}),
 	

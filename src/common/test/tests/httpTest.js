@@ -37,7 +37,7 @@ describe("HTTP", function() {
 	
 	describe("#processDocuments()", function() {
 		it('succeeds when loading a same-origin page', Promise.coroutine(function* () {
-			let url = 'http://zotero-static.s3.amazonaws.com/test.html';
+			let url = 'http://zotero-static.s3.amazonaws.com/test.html?t';
 			let [content, location] = yield tab.run(function(url) {
 				var deferred = Zotero.Promise.defer();
 				sinon.stub(Zotero.HTTP, 'isSameOrigin').returns(true);

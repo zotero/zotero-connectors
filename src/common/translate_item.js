@@ -104,6 +104,7 @@ Zotero.Translate.ItemSaver.prototype = {
 					var attachments = items[i].attachments = data.items[i].attachments;
 					for(var j=0; j<attachments.length; j++) {
 						if(attachments[j].id) {
+							if (!attachments[j].title) attachments[j].title = 'Attachment';
 							attachmentCallback(attachments[j], 0);
 							haveAttachments = true;
 						}

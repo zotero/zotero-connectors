@@ -321,14 +321,20 @@ Zotero.Connector.SSE = {
 		Zotero.Connector.ping();
 		Zotero.debug('Zotero client is online');
 	},
-	
-	_addEventListener: function(event, fn) {
+
+	/**
+	 * @param {String} event
+	 * @param {Object} listener - {notify: function(data){} }
+	 * @returns listener
+	 * @private
+	 */
+	_addEventListener: function(event, listener) {
 		if (event in this._listeners) {
-			this._listeners[event].push(fn);
+			this._listeners[event].push(listener);
 		} else {
-			this._listeners[event] = [fn];
+			this._listeners[event] = [listener];
 		}
-		return fn;
+		return listener;
 	},
 	
 	_removeEventListener: function(event, fn) {

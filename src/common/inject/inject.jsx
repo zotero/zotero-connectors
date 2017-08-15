@@ -175,7 +175,9 @@ Zotero.Inject = new function() {
 			_translate.setDocument(document);
 			return _translate.getTranslators(true).then(function(translators) {
 				if (!translators.length && Zotero.isSafari) {
-					return Zotero.Inject.checkPDFFrames();
+					if (!isTopWindow && document.contentType == 'application/pdf') {
+						return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
+					}
 				}
 				me.translators = {};
 				for (let translator of translators) {
@@ -187,13 +189,6 @@ Zotero.Inject = new function() {
 			});
 		} catch(e) {
 			Zotero.logError(e);
-		}
-	};
-	
-	this.checkPDFFrames = function() {
-		if (!isTopWindow) {
-			document.contentType == 'application/pdf';
-			return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
 		}
 	};
 	

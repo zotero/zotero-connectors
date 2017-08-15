@@ -67,13 +67,12 @@ Zotero.ContentTypeHandler = {
 			return;
 		}
 		
-		let URI = url.parse(details.url);
 		let contentType = details.responseHeadersObject['content-type'].split(';')[0];
 		if (Zotero.ContentTypeHandler.cslContentTypes.has(contentType)) {
-			return this.handleStyle(details);
+			return Zotero.ContentTypeHandler.handleStyle(details);
 		} else if (Zotero.Prefs.get('interceptKnownFileTypes') && 
 				Zotero.ContentTypeHandler.importContentTypes.has(contentType)) {
-			return this.handleImportContent(details);
+			return Zotero.ContentTypeHandler.handleImportContent(details);
 		} else if (contentType == 'application/pdf') {
 			setTimeout(() => Zotero.Connector_Browser.onPDFFrame(details.url, details.frameId, details.tabId));
 		}
@@ -93,6 +92,7 @@ Zotero.ContentTypeHandler = {
 	},
 	
 	handleImportContent: function(details) {
+		let URI = url.parse(details.url);
 		let hosts = Zotero.Prefs.get('allowedInterceptHosts');
 		let isEnabledHost = hosts.indexOf(URI.host) != -1;
 		if (isEnabledHost) {

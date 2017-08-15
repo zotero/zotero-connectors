@@ -35,7 +35,7 @@ var TRANSLATOR_CACHING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["brow
 Zotero.Translators = new function() {
 	var _cache, _translators;
 	var _initialized = false;
-	var _fullFrameDetectionWhitelist = ['resolver.ebscohost.com', 'classics.uc.edu/nestor'];
+	var _fullFrameDetectionWhitelist = ['resolver.ebscohost.com'];
 	
 	/**
 	 * Initializes translator cache, loading all relevant translators into memory
@@ -144,12 +144,18 @@ Zotero.Translators = new function() {
 	 * @return {Promise<Array[]>} - A promise for a 2-item array containing an array of translators and
 	 *     an array of functions for converting URLs from proper to proxied forms
 	 */
-	this.getWebTranslatorsForLocation = Zotero.Promise.method(function (URI, rootURI) {
-		// Hopefully a temporary hard-coded list
-		for (let str of _fullFrameDetectionWhitelist) {
-			if (URI.includes(str)) {
-				rootURI = URI;
-				break;
+	this.getWebTranslatorsForLocation = Zotero.Promise.method(function (URI, rootURI, callback) {
+		if (callback) {
+			// If callback is present then this call is coming from an injected frame,
+			// so we may as well treat it as if it's a root-frame
+			rootURI = URI;
+		} else {
+			// Hopefully a temporary hard-coded list
+			for (let str of _fullFrameDetectionWhitelist) {
+				if (URI.includes(str)) {
+					rootURI = URI;
+					break;
+				}
 			}
 		}
 		var isFrame = URI !== rootURI;

@@ -53,7 +53,7 @@ Zotero.Connector_Browser = new function() {
 		}
 		
 		var isPDF = contentType == 'application/pdf';
-		_tabInfo[tab.id] = {translators, instanceID, isPDF};
+		_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {}, {translators, instanceID, isPDF});
 		
 		_updateExtensionUI(tab);
 	}
@@ -168,9 +168,19 @@ Zotero.Connector_Browser = new function() {
 		if (_isDisabledForURL(tab.url) || _isDisabledForURL(url)) {
 			return;
 		}
-		// Always inject in the top-frame
 		if (frameId == 0) {
+			// Always inject in the top-frame
 			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+		} else {
+			if (!(tab.id in _tabInfo)) {
+				_tabInfo[tab.id] = {};
+			}
+			if (!_tabInfo[tab.id].frameChecked) {
+				// Also in the first frame detected
+				// See https://github.com/zotero/zotero-connectors/issues/156
+				_tabInfo[tab.id].frameChecked = true;
+				return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+			}
 		}
 		return Zotero.Translators.getWebTranslatorsForLocation(url, tab.url).then(function(translators) {
 			if (translators[0].length == 0) {
@@ -363,7 +373,11 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Removes information about a specific tab
 	 */
-	function _clearInfoForTab(tabID) {
+	function _clearInfoForTab(tabID, changeInfo) {
+		if (tabID in _tabInfo) {
+			_tabInfo[tabID].frameChecked = false;
+		}
+		if(!changeInfo.url) return;
 		delete _tabInfo[tabID];
 	}
 	
@@ -570,10 +584,10 @@ Zotero.Connector_Browser = new function() {
 	chrome.tabs.onRemoved.addListener(_clearInfoForTab);
 
 	chrome.tabs.onUpdated.addListener(function(tabID, changeInfo, tab) {
+		_clearInfoForTab(tabID, changeInfo);
 		_updateExtensionUI(tab);
 		if(!changeInfo.url) return;
 		Zotero.debug("Connector_Browser: URL changed for tab " + tab.url);
-		_clearInfoForTab(tabID);
 		// Rerun translation
 		Zotero.Messaging.sendMessage("pageModified", null, tab);
 		tab.active && Zotero.Connector.reportActiveURL(tab.url);

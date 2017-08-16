@@ -31,7 +31,9 @@ Zotero.HTTP = new function() {
 	this.StatusError = function(xmlhttp, url) {
 		this.message = `HTTP request to ${url} rejected with status ${xmlhttp.status}`;
 		this.status = xmlhttp.status;
-		this.responseText = xmlhttp.responseText;
+		if (xmlhttp.responseType == '' || xmlhttp.responseType == 'text') {
+			this.responseText = xmlhttp.responseText;
+		}
 	};
 	this.StatusError.prototype = Object.create(Error.prototype);
 
@@ -50,7 +52,8 @@ Zotero.HTTP = new function() {
 	 *         <li>headers - Object of HTTP headers to send with the request</li>
 	 *         <li>debug - Log response text and status code</li>
 	 *         <li>logBodyLength - Length of request body to log</li>
-	 *         <li>timeout - Request timeout specified in milliseconds [default 15000]
+	 *         <li>timeout - Request timeout specified in milliseconds [default 15000]</li>
+	 *         <li>responseType - The response type of the request from the XHR spec</li>
 	 *         <li>responseCharset - The charset the response should be interpreted as</li>
 	 *         <li>successCodes - HTTP status codes that are considered successful, or FALSE to allow all</li>
 	 *     </ul>
@@ -66,6 +69,7 @@ Zotero.HTTP = new function() {
 			debug: false,
 			logBodyLength: 1024,
 			timeout: 15000,
+			responseType: '',
 			responseCharset: null,
 			successCodes: null
 		}, options);
@@ -114,7 +118,9 @@ Zotero.HTTP = new function() {
 		for (let header in options.headers) {
 			xmlhttp.setRequestHeader(header, options.headers[header]);
 		}
-
+		
+		xmlhttp.responseType = options.responseType || '';
+		
 		// Maybe should provide "mimeType" option instead. This is xpcom legacy, where responseCharset
 		// could be controlled manually
 		if (options.responseCharset) {
@@ -125,7 +131,12 @@ Zotero.HTTP = new function() {
 		
 		return promise.then(function(xmlhttp) {
 			if (options.debug) {
-				Zotero.debug(`HTTP ${xmlhttp.status} response: ${xmlhttp.responseText}`);
+				if (xmlhttp.responseType == '' || xmlhttp.responseType == 'text') {
+					Zotero.debug(`HTTP ${xmlhttp.status} response: ${xmlhttp.responseText}`);
+				}
+				else {
+					Zotero.debug(`HTTP ${xmlhttp.status} response`);
+				}
 			}	
 			
 			let invalidDefaultStatus = options.successCodes === null &&

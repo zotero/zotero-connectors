@@ -239,10 +239,6 @@ function processFile() {
 				file.contents = Buffer.from(replaceScriptsHTML(
 					file.contents.toString(), "<!--SCRIPTS-->", backgroundInclude));
 				break;
-			case 'journalArticle-single.html':
-				file.contents = Buffer.from(replaceScriptsHTML(
-					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
-				break;
 			case 'preferences.html':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/g, argv.p ? '' : '$1'));
@@ -259,6 +255,10 @@ function processFile() {
 				// Stream needs to be converted to a buffer because of complicated stream cloning quantum bugs
 				browserify(file).bundle((err, buf) => {file.contents = buf; addFiles(file)});
 				break;
+		}
+		if (file.path.includes('test/data') && file.path.includes('.html')) {
+			file.contents = Buffer.from(replaceScriptsHTML(
+				file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
 		}
 		
 		if (!asyncAddFiles) {

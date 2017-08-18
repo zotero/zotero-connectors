@@ -206,7 +206,9 @@ if (typeof mocha != 'undefined') {
 		}),
 		
 		close: Promise.coroutine(function* () {
-			yield new Promise((resolve) => chrome.tabs.remove(this.tabId, resolve));
+			yield background(function(tabId) {
+				return new Promise((resolve) => chrome.tabs.remove(tabId, resolve));
+			}, this.tabId);
 			delete this.tabId;
 		})
 	};

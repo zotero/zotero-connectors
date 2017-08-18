@@ -328,7 +328,7 @@ Zotero.Connector_Browser = new function() {
 		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) return _showFirstUseUI(tab);
 		chrome.contextMenus.removeAll();
 
-		if (_isDisabledForURL(tab.url)) {
+		if (_isDisabledForURL(tab.url, true)) {
 			_showZoteroStatus();
 			return;
 		} else {
@@ -381,8 +381,8 @@ Zotero.Connector_Browser = new function() {
 		delete _tabInfo[tabID];
 	}
 	
-	function _isDisabledForURL(url) {
-		return url.includes('chrome://') || url.includes('about:') || (url.includes('-extension://') && !url.includes('/test/'));
+	function _isDisabledForURL(url, excludeTests) {
+		return url.includes('chrome://') || url.includes('about:') || (url.includes('-extension://') && (excludeTests && !url.includes('/test/data/')));
 	}
 	
 	function _showZoteroStatus(tabID) {

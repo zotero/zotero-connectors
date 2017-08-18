@@ -35,6 +35,7 @@ const chalk = require('chalk');
 const scriptDir = __dirname;
 const rootDir = path.normalize(path.join(scriptDir, '..'));
 const extensionDir = path.join(rootDir, 'build', 'browserExt');
+const KEEP_BROWSER_OPEN = 'KEEP_BROWSER_OPEN' in process.env;
 
 
 function report(results) {
@@ -83,8 +84,13 @@ results.promise = new Promise(function(resolve, reject) {
 if ('TEST_CHROME' in process.env) {
 	require('chromedriver');
 	let caps = selenium.Capabilities.chrome();
+	
+	let options = {'args': [`load-extension=${extensionDir}`]};
+	if ('BROWSER_EXECUTABLE' in process.env) {
+		options['binary'] = process.env['BROWSER_EXECUTABLE']
+	}
 
-	caps.set('chromeOptions', {'args': [`load-extension=${extensionDir}`]});
+	caps.set('chromeOptions', options);
 	let driver = new selenium.Builder()
 		.withCapabilities(caps)
 		.build();
@@ -102,6 +108,9 @@ if ('TEST_CHROME' in process.env) {
 	}).then(function() {
 		return driver.executeScript('return window.testResults');
 	}).catch(results.reject).then(function(testResults) {
+		if (KEEP_BROWSER_OPEN) {
+			return results.resolve(testResults);
+		}
 		return driver.quit().then(() => results.resolve(testResults));
 	});
 }
@@ -123,6 +132,9 @@ if ('TEST_FX' in process.env) {
 	var profile = new firefox.Profile(profileDir);
 	var options = new firefox.Options();
 	options.setProfile(profile);
+	if ('BROWSER_EXECUTABLE' in process.env) {
+		options.setBinary(process.env['BROWSER_EXECUTABLE'])
+	}
 	
 	let driver = new selenium.Builder()
 		.forBrowser('firefox')
@@ -152,6 +164,9 @@ if ('TEST_FX' in process.env) {
 	}).then(function() {
 		return driver.executeScript('return window.testResults');
 	}).catch(results.reject).then(function(testResults) {
+		if (KEEP_BROWSER_OPEN) {
+			return results.resolve(testResults);
+		}
 		return driver.quit().then(() => results.resolve(testResults));
 	});
 }

@@ -25,38 +25,44 @@ function usage {
 	cat >&2 <<DONE
 Usage: $0 -p platforms
 Options
- -p PLATFORMS        Platforms to test (c=Chrome, f=Firefox, s=Safari)
- -s 				 Skip build
+ -p PLATFORMS       [Required] Platforms to test (c=Chrome, f=Firefox, s=Safari)
+ -s                 Skip build
+ -x PATH            Path to browser executable
+ -c                 Keep the browser open after tests have finished
 DONE
 	exit 1
 }
 
 # Require at least one platform
 # Can technically pass these in as ENV_VARS instead of args, but undocumented in usage
-if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX" ]] && [[ -z "$TEST_SAFARI" ]]; then
-	while getopts "sp:" opt; do
-		case $opt in
-			p)
-				for i in `seq 0 1 $((${#OPTARG}-1))`
-				do
-					case ${OPTARG:i:1} in
-						c) TEST_CHROME=1;;
-						f) TEST_FX=1;;
-						s) TEST_SAFARI=1;;
-						*)
-							echo "$0: Invalid platform option ${OPTARG:i:1}"
-							usage
-							;;
-					esac
-				done
-				;;
-			s)
-				SKIP_BUILD=1
-				;;
-		esac
-		shift $((OPTIND-1)); OPTIND=1
-	done
-fi
+while getopts "sp:x:c" opt; do
+	case $opt in
+		p)
+			for i in `seq 0 1 $((${#OPTARG}-1))`
+			do
+				case ${OPTARG:i:1} in
+					c) TEST_CHROME=1;;
+					f) TEST_FX=1;;
+					s) TEST_SAFARI=1;;
+					*)
+						echo "$0: Invalid platform option ${OPTARG:i:1}"
+						usage
+						;;
+				esac
+			done
+			;;
+		s)
+			SKIP_BUILD=1
+			;;
+		x)
+			export BROWSER_EXECUTABLE=$OPTARG
+			;;
+		c)
+			export KEEP_BROWSER_OPEN=1
+			;;
+	esac
+	shift $((OPTIND-1)); OPTIND=1
+done
 
 if [[ -z "$TEST_CHROME" ]] && [[ -z "$TEST_FX" ]] && [[ -z "$TEST_SAFARI" ]]; then
 	usage

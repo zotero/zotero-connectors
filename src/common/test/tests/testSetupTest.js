@@ -43,7 +43,15 @@ describe('TestSetup', function() {
 				return;
 			}
 			throw new Error('Error not thrown');
-		}));	
+		}));
+		it('throws an error when the passed function returns a rejected promise', Promise.coroutine(function *() {
+			try {
+				yield executor(function() {return Promise.reject(new Error('test'))})
+			} catch (e) {
+				return;
+			}
+			throw new Error('Error not thrown');
+		}));
 	}
 
 	describe('#background()', function() {

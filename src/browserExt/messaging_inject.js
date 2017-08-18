@@ -102,7 +102,14 @@ Zotero.Messaging = new function() {
 				let response = _messageListeners[request[0]](request[1]);
 				// Handle promises
 				if (response && response.then) {
-					response.then(sendResponseCallback);
+					response.then(sendResponseCallback, function(err) {
+						err = JSON.stringify(Object.assign({
+							name: err.name,
+							message: err.message,
+							stack: err.stack
+						}, err));
+						sendResponseCallback(['error', err])
+					});
 					return true;
 				} else {
 					sendResponseCallback(response)

@@ -128,7 +128,7 @@ function makeClickHandler(checkbox) {
 
 // "Inline JavaScript will not be executed." Thanks, Google, for this mess.
 document.getElementById("select").onclick = function() { setAllCheckStates(true) };
-document.getElementById("deselect").onclick = function() { setAllCheckStates(true) };
+document.getElementById("deselect").onclick = function() { setAllCheckStates(false) };
 document.getElementById("ok").onclick = ok;
 document.getElementById("cancel").onclick = cancel;
 load();

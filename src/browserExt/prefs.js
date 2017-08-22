@@ -38,7 +38,7 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 	
 	migrate: Zotero.Promise.method(function() {
 		return new Zotero.Promise(function(resolve) {
-			if (!localStorage.length) resolve;
+			if (!localStorage.length) resolve();
 			let prefs = Object.assign({}, localStorage);
 			for (let k of Object.keys(prefs)) {
 				if (k.substr(0, 'pref-'.length) == 'pref-') {

@@ -343,7 +343,7 @@ Zotero.Translators.CodeGetter.prototype.getCodeFor = Zotero.Promise.method(funct
 	if (translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER
 			// or if in debug mode and the code we have came from the repo (which doesn't
 			// include test cases)
-			|| (this._debugMode && translator.codeSource === Zotero.Repo.SOURCE_REPO)) {
+			|| (this._debugMode && Zotero.Repo && translator.codeSource === Zotero.Repo.SOURCE_REPO)) {
 		// get code
 		return translator.getCode().catch((e) => Zotero.debug(`Failed to retrieve code for ${translator.translatorID}`));
 	}

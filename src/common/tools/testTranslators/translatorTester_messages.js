@@ -31,7 +31,7 @@ MESSAGES.TranslatorTester = {
 				if (data) {
 					data[0] = Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES)
 				}
-				return [data];
+				return data;
 			},
 		},
 		inject: {
@@ -39,7 +39,7 @@ MESSAGES.TranslatorTester = {
 				if (data) {
 					data[0] = new Zotero.Translator(data[0]);
 				}
-				return [data];
+				return data;
 			}
 		}
 	},

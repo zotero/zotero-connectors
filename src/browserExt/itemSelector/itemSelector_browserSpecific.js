@@ -29,8 +29,8 @@
 function sendMessage() {
 	if(responseSent) return;
 	responseSent = true;
-	chrome.runtime.sendMessage(["selectDone", [tabID, items]]);
-	chrome.windows.getCurrent(function (win) {
-		chrome.windows.remove(win.id);
+	browser.runtime.sendMessage(["selectDone", [tabID, items]]);
+	browser.windows.getCurrent().then(function (win) {
+		browser.windows.remove(win.id);
 	});
 }

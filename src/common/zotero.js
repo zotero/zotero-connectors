@@ -64,7 +64,7 @@ var Zotero = new function() {
 	}
 	
 	if (this.isBrowserExt) {
-		this.version = chrome.runtime.getManifest().version;
+		this.version = browser.runtime.getManifest().version;
 	} else if (this.isSafari) {
 		this.version = safari.extension.bundleVersion;
 	}
@@ -83,7 +83,7 @@ var Zotero = new function() {
 		Zotero.isBackground = true;
 		
 		if (Zotero.isBrowserExt) {
-			chrome.runtime.getPlatformInfo(function (info) {
+			browser.runtime.getPlatformInfo().then(function (info) {
 				switch (info.os) {
 					case 'mac':
 					case 'win':

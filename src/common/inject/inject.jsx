@@ -46,7 +46,7 @@ if(isTopWindow) {
 		if (headline) {
 			return Zotero.ProgressWindow.changeHeadline(headline);
 		}
-		return Zotero.Connector.callMethod("getSelectedCollection", {}).then(function(response) {
+		Zotero.Connector.callMethod("getSelectedCollection", {}).then(function(response) {
 			Zotero.ProgressWindow.changeHeadline("Saving to ",
 				response.id ? "treesource-collection.png" : "treesource-library.png",
 				response.name+"\u2026");
@@ -127,7 +127,6 @@ Zotero.Inject = new function() {
 			if(document.location == "about:blank") return;
 
 			if(!_translate) {
-				var me = this;
 				_translate = new Zotero.Translate.Web();
 				_translate.setHandler("select", function(obj, items, callback) {
 					Zotero.Connector_Browser.onSelect(items).then(function(returnItems) {
@@ -179,14 +178,14 @@ Zotero.Inject = new function() {
 						return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
 					}
 				}
-				me.translators = {};
+				this.translators = {};
 				for (let translator of translators) {
-					me.translators[translator.translatorID] = translator;
+					this.translators[translator.translatorID] = translator;
 				}
 				
 				translators = translators.map(function(translator) {return translator.serialize(TRANSLATOR_PASSING_PROPERTIES)});
 				Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
-			});
+			}.bind(this));
 		} catch(e) {
 			Zotero.logError(e);
 		}

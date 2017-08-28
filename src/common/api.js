@@ -86,8 +86,8 @@ Zotero.API = new function() {
 			
 			// open
 			if (Zotero.isBrowserExt) {
-				chrome.windows.create({ url: url, height: 600, width: 900, type: 'popup' }, function(window) {
-					chrome.windows.onRemoved.addListener(id => id == window.id && Zotero.API.onAuthorizationCancel());
+				browser.windows.create({ url: url, height: 600, width: 900, type: 'popup' }).then(function(window) {
+					browser.windows.onRemoved.addListener(id => id == window.id && Zotero.API.onAuthorizationCancel());
 				});
 			} else if (Zotero.isSafari) {
 				var newTab = safari.application.openBrowserWindow().activeTab;
@@ -113,7 +113,7 @@ Zotero.API = new function() {
 		let deferred = this._deferred;
 		this._deferred = null;
 		if(Zotero.isBrowserExt) {
-			chrome.tabs.remove(tab.id);
+			browser.tabs.remove(tab.id);
 		} else if(Zotero.isSafari) {
 			tab.close();
 		}

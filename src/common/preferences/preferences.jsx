@@ -194,7 +194,7 @@ Zotero_Preferences.General = {
 		if(Zotero.isSafari) {
 			window.open(safari.extension.baseURI+"tools/testTranslators/testTranslators.html", "translatorTester");
 		} else if(Zotero.isBrowserExt) {
-			window.open(chrome.extension.getURL("tools/testTranslators/testTranslators.html"), "translatorTester");
+			window.open(browser.extension.getURL("tools/testTranslators/testTranslators.html"), "translatorTester");
 		}
 	}
 };

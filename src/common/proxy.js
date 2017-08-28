@@ -570,7 +570,7 @@ Zotero.Proxies = new function() {
 	 * @param {Number} timeout
 	 */
 	function _showNotification(title, message, actions, timeout) {
-		// chrome.notifications.create({
+		// browser.notifications.create({
 		// 	type: 'basic',
 		// 	title,
 		// 	message,

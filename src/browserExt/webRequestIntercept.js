@@ -42,10 +42,10 @@ Zotero.WebRequestIntercept = {
 
 	init: function() {
 		let types = ["main_frame", "sub_frame"];
-		chrome.webRequest.onBeforeSendHeaders.addListener(Zotero.WebRequestIntercept.handleRequest('beforeSendHeaders'), {urls: ['<all_urls>'], types}, ['blocking', 'requestHeaders']);
-		chrome.webRequest.onErrorOccurred.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
-		chrome.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
-		chrome.webRequest.onHeadersReceived.addListener(Zotero.WebRequestIntercept.handleRequest('headersReceived'), {urls: ['<all_urls>'], types}, ['blocking', 'responseHeaders']);
+		browser.webRequest.onBeforeSendHeaders.addListener(Zotero.WebRequestIntercept.handleRequest('beforeSendHeaders'), {urls: ['<all_urls>'], types}, ['blocking', 'requestHeaders']);
+		browser.webRequest.onErrorOccurred.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
+		browser.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
+		browser.webRequest.onHeadersReceived.addListener(Zotero.WebRequestIntercept.handleRequest('headersReceived'), {urls: ['<all_urls>'], types}, ['blocking', 'responseHeaders']);
 
 		Zotero.WebRequestIntercept.addListener('beforeSendHeaders', Zotero.WebRequestIntercept.storeRequestHeaders)
 	},

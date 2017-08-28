@@ -30,14 +30,14 @@
 Zotero.Prefs = Object.assign(Zotero.Prefs, {
 	init: Zotero.Promise.method(function() {
 		return this.migrate().then(function() {
-			return new Zotero.Promise(resolve => chrome.storage.local.get(null, resolve));
+			return browser.storage.local.get(null);
 		}.bind(this)).then(function(prefs) {
 			this.syncStorage = prefs;
 		}.bind(this));
 	}),
 	
 	migrate: Zotero.Promise.method(function() {
-		return new Zotero.Promise(function(resolve) {
+		return new Zotero.Promise(function(resolve, reject) {
 			if (!localStorage.length) resolve();
 			let prefs = Object.assign({}, localStorage);
 			for (let k of Object.keys(prefs)) {
@@ -45,16 +45,15 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 					prefs[k.substr('pref-'.length)] = JSON.parse(prefs[k]);
 				}
 				delete prefs[k];
-			}
-			chrome.storage.local.set(prefs, resolve)
+			}	
+			browser.storage.local.set(prefs).then(resolve, reject);
 		}).then(function() {
 			if ('translatorMetadata' in localStorage) {
-				return new Zotero.Promise(resolve => chrome.storage.local.set(
-					{translatorMetadata: JSON.parse(localStorage['translatorMetadata'])}, resolve));
+				return browser.storage.local.set(
+					{translatorMetadata: JSON.parse(localStorage['translatorMetadata'])});
 			}
-		}).then(function() {
-			localStorage.clear();
-		}).catch(function(e) {
+		}).then(() => localStorage.clear())
+		.catch(function(e) {
 			Zotero.debug('Attempting to migrate prefs threw an error');
 			// Let's not, since this will log on every start for firefox people with
 			// dom.storage.enabled: false
@@ -69,16 +68,12 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 		prefs[pref] = value;
 
 		this.syncStorage[pref] = value;
-		return new Zotero.Promise(function(resolve) {
-			chrome.storage.local.set(prefs, resolve);
-		});
+		return browser.storage.local.set(prefs);
 	},
 
 	clear: function(pref) {
 		if (Array.isArray(pref)) return Zotero.Promise.all(pref.map((p) => this.clear(p)));
 		delete this.syncStorage[pref];
-		return new Zotero.Promise(function(resolve) {
-			chrome.storage.local.remove(pref, resolve);
-		});
+		return browser.storage.local.remove(pref);
 	}
 });

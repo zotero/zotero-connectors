@@ -49,17 +49,6 @@ Zotero.Utilities.debounce = function(fn, delay) {
 	};
 }
 
-Zotero.Utilities.logCallbackError = function(fn) {
-	return function() {
-		try {
-			return fn.apply(this, arguments);
-		} catch (e) {
-			Zotero.logError(e);
-			throw e;
-		}
-	}
-}
-
 /**
  * Converts an item from toArray() format to an array of items in
  * the content=json format used by the server

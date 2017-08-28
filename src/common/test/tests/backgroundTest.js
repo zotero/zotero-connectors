@@ -36,7 +36,7 @@ describe('Connector_Browser', function() {
 					stub.callsFake(deferred.resolve);
 					return deferred.promise;
 				});
-				yield tab.init(chrome.extension.getURL('test/data/framePDF.html'));
+				yield tab.init(browser.extension.getURL('test/data/framePDF.html'));
 				yield bgPromise;
 				let tabId = yield background(function() {
 					let tabId = Zotero.Connector_Browser._showPDFIcon.args[0][0].id;
@@ -44,8 +44,8 @@ describe('Connector_Browser', function() {
 				});
 				assert.equal(tabId, tab.tabId);
 			} finally {
+				yield background(() => Zotero.Connector_Browser._showPDFIcon.restore());
 				yield tab.close();
-				yield background(() => Zotero.Connector_Browser._showPDFIcon.restore())
 			}
 		}));
 	});

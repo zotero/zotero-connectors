@@ -46,101 +46,51 @@ Zotero.Messaging = new function() {
 	 * Handles a message to the global process received from the injected script in Chrome or Safari
 	 * @param {String} messageName The name of the message received
 	 * @param {Array} args Arguments for to be passed to the function corresponding to this message
-	 * @param {Function} sendResponseCallback Callback to be executed when data is available
 	 * @param {TabObject} tab 
 	 * @param {Number} frameId not available in safari
 	 */
-	this.receiveMessage = function(messageName, args, sendResponseCallback, tab, frameId) {
-		try {
-			//Zotero.debug("Messaging: Received message: "+messageName);
-			if (!Array.isArray(args)) {
-				args = [args];
-			}
-			
-			// first see if there is a message listener
-			if(_messageListeners[messageName]) {
-				_messageListeners[messageName](args, tab, frameId);
-				// return false, indicating that `sendResponseCallback won't be called
-				return false;
-			}
-			
-			var messageParts = messageName.split(MESSAGE_SEPARATOR);
-			var fn = Zotero[messageParts[0]][messageParts[1]];
-			if(!fn) {
-				var e = new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
-				sendResponseCallback(['error', e]);
-				throw e;
-			}
-			var messageConfig = MESSAGES[messageParts[0]][messageParts[1]];
-			
-			if (messageConfig && messageConfig.background) {
-				while (messageConfig.background.minArgs > args.length) {
-					args.push(undefined);
-				}
-			}
-			var shouldRespond = messageConfig && messageConfig.response !== false;
-			if (shouldRespond) {
-				var callbackArg = messageConfig.callbackArg || args.length-1;
-
-				// TODO: make this not awful
-				// sendMessage is used to notify top frame, but the callback arg messes with tab injection
-				if (messageParts[1] != 'sendMessage') {
-					// TODO: maybe not needed
-					if (args[callbackArg] !== null && args[callbackArg] !== undefined) {
-						// Just append the callback if it is not there as is the case for promisified functions
-						!messageConfig.callbackArg && args.push(0);
-						callbackArg = (messageConfig.callbackArg ? messageConfig.callbackArg : args.length-1); 
-					}
-					// add a response passthrough callback for the message
-					args[callbackArg] = function() {
-						if (arguments[0] && arguments[0][0] == 'error') {
-							let err = arguments[0][1];
-							err = JSON.stringify(Object.assign({
-								name: err.name,
-								message: err.message,
-								stack: err.stack
-							}, err));
-							return sendResponseCallback([arguments[0][0], err]);
-						}
-						var newArgs = new Array(arguments.length);
-						for(var i=0; i<arguments.length; i++) {
-							newArgs[i] = arguments[i];
-						}
-						
-						if (messageConfig.background && messageConfig.background.preSend) {
-							newArgs = messageConfig.background.preSend.apply(null, newArgs);
-						}
-						sendResponseCallback(newArgs);
-					}
-				}
-			}
-			args.push(tab);
-			if (messageParts[1] != 'sendMessage') {
-				args.push(frameId);
-			}
-			
-			try {
-				var maybePromise = fn.apply(Zotero[messageParts[0]], args);
-			} catch (e) {
-				if (shouldRespond) {
-					args[callbackArg](['error', e]);
-				}
-			}
-			// If you thought the message passing system wasn't complicated enough as it were,
-			// now background page functions can return promises too 👍
-			if (shouldRespond) {
-				if (maybePromise && maybePromise.then) {
-					maybePromise.then(args[callbackArg]).catch(e => args[callbackArg](['error', e]));
-				} else {
-					args[callbackArg](maybePromise);
-				}
-			}
-		} catch(e) {
-			Zotero.logError(e);
+	this.receiveMessage = Zotero.Promise.method(function(messageName, args, tab, frameId) {
+		//Zotero.debug("Messaging: Received message: "+messageName);
+		if (!Array.isArray(args)) {
+			args = [args];
 		}
-		// Return a value, indicating whether `sendResponseCallback` will be called
-		return shouldRespond;
-	}
+		
+		// first see if there is a message listener
+		if(_messageListeners[messageName]) {
+			return _messageListeners[messageName](args, tab, frameId);
+		}
+		
+		var messageParts = messageName.split(MESSAGE_SEPARATOR);
+		var fn = Zotero[messageParts[0]][messageParts[1]];
+		if(!fn) {
+			var e = new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
+			throw e;
+		}
+		var messageConfig = MESSAGES[messageParts[0]][messageParts[1]];
+		
+		if (messageConfig && messageConfig.background) {
+			while (messageConfig.background.minArgs > args.length) {
+				args.push(undefined);
+			}
+		}
+		args.push(tab);
+		// Calls from inject pages to sendMessage are intended to go to top-frame
+		if (messageParts[1] != 'sendMessage') {
+			args.push(frameId);
+		}
+		
+		var promise = fn.apply(Zotero[messageParts[0]], args);
+		if (typeof promise != "object" || typeof promise.then !== "function") promise = Zotero.Promise.resolve(promise);
+		var shouldRespond = messageConfig && messageConfig.response !== false;
+		if (shouldRespond) {
+			return promise.then(function(response) {
+				if (messageConfig.background && messageConfig.background.preSend) {
+					response = messageConfig.background.preSend(response);
+				}
+				return response;
+			});
+		}
+	});
 	
 	/**
 	 * Sends a message to a tab
@@ -153,23 +103,23 @@ Zotero.Messaging = new function() {
 		// Use the promise or response callback in BrowserExt for advanced functionality
 		else if(Zotero.isBrowserExt) {
 			// Get current tab if not provided
-			if (!tab) return new Zotero.Promise(function(resolve) {
-				chrome.tabs.query({active: true, lastFocusedWindow: true},
-					(tabs) => resolve(this.sendMessage(messageName, args, tabs[0], frameId)));
-			}.bind(this));
+			if (!tab) {
+				return browser.tabs.query({active: true, lastFocusedWindow: true})
+				.then((tabs) => this.sendMessage(messageName, args, tabs[0], frameId));
+			}
 			let options = {};
 			if (typeof(frameId) == 'number') options = {frameId};
-			// Firefox returns a promise
-			if (Zotero.isFirefox) {
-				// Firefox throws an error when the receiving end doesn't exist (e.g. before injection)
-				return browser.tabs.sendMessage(tab.id, [messageName, args], options)
-					.catch(() => undefined);
-			}
-			else {
-				let deferred = Zotero.Promise.defer();
-				chrome.tabs.sendMessage(tab.id, [messageName, args], options, deferred.resolve);
-				return deferred.promise;
-			}
+			
+			return browser.tabs.sendMessage(tab.id, [messageName, args], options).catch(() => undefined)
+			.then(function(response) {
+				if (response && response[0] == 'error') {
+					response[1] = JSON.parse(response[1]);
+					let e = new Error(response[1].message);
+					for (let key in response[1]) e[key] = response[1][key];
+					throw e;
+				} 
+				return response;
+			});
 		} else if(Zotero.isSafari) {
 			// Use current tab if not provided
 			tab = tab || safari.application.activeBrowserWindow.activeTab;
@@ -214,19 +164,36 @@ Zotero.Messaging = new function() {
 			
 			window.postMessage([null, "structuredCloneTest", null], window.location.href);
 		} else if(Zotero.isBrowserExt) {
-			chrome.runtime.onMessage.addListener(function(request, sender, sendResponseCallback) {
-				// See `sendResponse` notes for return value
-				// https://developer.chrome.com/extensions/runtime#event-onMessage
-				return Zotero.Messaging.receiveMessage(request[0], request[1], sendResponseCallback, sender.tab, sender.frameId);
+			browser.runtime.onMessage.addListener(function(request, sender) {
+				return Zotero.Messaging.receiveMessage(request[0], request[1], sender.tab, sender.frameId)
+				.catch(function(err) {
+					Zotero.logError(err);
+					err = JSON.stringify(Object.assign({
+						name: err.name,
+						message: err.message,
+						stack: err.stack
+					}, err));
+					return ['error', err];
+				});
 			});
 		} else if(Zotero.isSafari) {
 			safari.application.addEventListener("message", function(event) {
 				var tab = event.target;
 				_ensureSafariTabID(tab);
-				Zotero.Messaging.receiveMessage(event.name, event.message[1], function(data) {
+				function dispatchResponse(response) {
 					tab.page.dispatchMessage(event.name+MESSAGE_SEPARATOR+"Response",
-							[event.message[0], data], tab);
-				}, tab);
+						[event.message[0], response], tab);
+				}
+				Zotero.Messaging.receiveMessage(event.name, event.message[1], tab)
+				.then(dispatchResponse, function(err) {
+					Zotero.logError(err);
+					err = JSON.stringify(Object.assign({
+						name: err.name,
+						message: err.message,
+						stack: err.stack
+					}, err));
+					return dispatchResponse(['error', err]);
+				});
 			}, false);
 		}
 	}

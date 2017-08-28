@@ -34,7 +34,7 @@ Zotero.Messaging = new function() {
 	 * Add a message listener
 	 */
 	this.addMessageListener = function(messageName, callback) {
-		_messageListeners[messageName] = callback;
+		_messageListeners[messageName] = Zotero.Promise.method(callback);
 	}
 	
 	/**
@@ -70,53 +70,51 @@ Zotero.Messaging = new function() {
 						}
 						
 						// send message
-						return new Zotero.Promise(function(resolve, reject) {
-							chrome.runtime.sendMessage([messageName, newArgs], function(response) {
-								if (response && response[0] == 'error') {
-									response[1] = JSON.parse(response[1]);
-									let e = new Error(response[1].message);
-									for (let key in response[1]) e[key] = response[1][key];
-									return reject(e);
+						return browser.runtime.sendMessage([messageName, newArgs]).then(function(response) {
+							if (response && response[0] == 'error') {
+								response[1] = JSON.parse(response[1]);
+								let e = new Error(response[1].message);
+								for (let key in response[1]) e[key] = response[1][key];
+								throw e;
+							}
+							try {
+								if (messageConfig.inject && messageConfig.inject.postReceive) {
+									response = messageConfig.inject.postReceive(response);
 								}
-								try {
-									if (messageConfig.inject && messageConfig.inject.postReceive) {
-										response = messageConfig.inject.postReceive.apply(null, response);
-									}
-									if (callbackArg !== null) callback.apply(null, response);
-									return resolve.apply(null, response);
-								} catch(e) {
-									Zotero.logError(e);
-									return reject(e);
-								}
-							});
+								if (callbackArg !== null) callback(response);
+								return response;
+							} catch(e) {
+								Zotero.logError(e);
+								throw e;
+							}
+						}, function(e) {
+							// Unclear what to do with these. Chrome doesn't have error instance defined
+							// and these could be simply messages saying that no response was received for
+							// calls that didn't expect a resposne either.
+							// Either way, if we should be at least expecting a response and get an error we 
+							// throw
+							if (messageConfig && messageConfig.response !== false) {
+								Zotero.logError(e);
+								throw e;
+							}
 						});
 					};
 				};
 			}
 		}
 				
-		chrome.runtime.onMessage.addListener(function(request, sender, sendResponseCallback) {
+		browser.runtime.onMessage.addListener(function(request, sender) {
 			if (typeof request !== "object" || !request.length || !_messageListeners[request[0]]) return;
-			try {
-				Zotero.debug(request[0] + " message received in injected page " + window.location.href);
-				let response = _messageListeners[request[0]](request[1]);
-				// Handle promises
-				if (response && response.then) {
-					response.then(sendResponseCallback, function(err) {
-						err = JSON.stringify(Object.assign({
-							name: err.name,
-							message: err.message,
-							stack: err.stack
-						}, err));
-						sendResponseCallback(['error', err])
-					});
-					return true;
-				} else {
-					sendResponseCallback(response)
-				}
-			} catch(e) {
-				Zotero.logError(e);
-			}
+			Zotero.debug(request[0] + " message received in injected page " + window.location.href);
+			return _messageListeners[request[0]](request[1]).catch(function(err) {
+				Zotero.logError(err);
+				err = JSON.stringify(Object.assign({
+					name: err.name,
+					message: err.message,
+					stack: err.stack
+				}, err));
+				return ['error', err]
+			});
 		});
 	}
 }

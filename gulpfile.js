@@ -78,7 +78,7 @@ var injectInclude = [
 	'messages.js',
 	'messaging_inject.js'
 ];
-var injectIncludeBrowserExt = injectInclude.concat(['api.js']);
+var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(injectInclude, ['api.js']);
 var injectIncludeLast;
 if (argv.p) {
 	injectIncludeLast = ['inject/inject.js'];
@@ -135,7 +135,7 @@ if (!argv.p) {
 		'test/testSetup.js',
 		'lib/sinon.js');
 }
-var backgroundIncludeBrowserExt = backgroundInclude.concat([
+var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclude, [
 	'webRequestIntercept.js',
 	'contentTypeHandler.js',
 ]);

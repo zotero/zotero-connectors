@@ -66,15 +66,11 @@ describe('TestSetup', function() {
 		
 		describe('#init()', function() {
 			it('opens a new tab with the specified url', Promise.coroutine(function * () {
-				let url = 'http://www.example.com/';
+				let url = 'http://zotero-static.s3.amazonaws.com/test.html';
 				yield tab.init(url);
 				assert.isOk(tab.tabId);
 				
-				let tabUrl = yield new Promise(function(resolve) {
-					chrome.tabs.get(tab.tabId, function(tab) {
-						resolve(tab.url);
-					});
-				});
+				let tabUrl = yield browser.tabs.get(tab.tabId).then(tab => tab.url);
 				assert.equal(tabUrl, url);
 			}));
 		});
@@ -90,8 +86,11 @@ describe('TestSetup', function() {
 			it('closes the tab', Promise.coroutine(function* () {
 				let tabId = tab.tabId;
 				yield tab.close();
-				let closedTab = yield new Promise((resolve) => chrome.tabs.get(tabId, resolve));
-				assert.isNotOk(closedTab);
+				let closedTab;
+				try {
+					closedTab = yield browser.tabs.get(tabId);
+				} catch (e) {return}
+				assert.isNotOk(closedTab, 'Tab was not closed')
 			}));
 		})
 	});

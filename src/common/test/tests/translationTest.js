@@ -39,7 +39,7 @@ describe("Translation", function() {
 			});
 		});
 		assert.equal(3, translators.length);
-		yield tab.init(chrome.extension.getURL('test/data/journalArticle-single.html'));
+		yield tab.init(browser.extension.getURL('test/data/journalArticle-single.html'));
 	}));
 	
 	after(Promise.coroutine(function* () {
@@ -75,7 +75,7 @@ describe("Translation", function() {
 				var items = yield background(function(tabId) {
 					var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
 					var deferred = Zotero.Promise.defer();
-					chrome.tabs.get(tabId, function(tab) {
+					browser.tabs.get(tabId).then(function(tab) {
 						Zotero.Connector_Browser._saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
 					});
 					return deferred.promise.catch(e => ['error', e]).then((r) => {stub.restore(); return r});
@@ -94,7 +94,7 @@ describe("Translation", function() {
 				yield background(function(tabId) {
 					var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
 					var deferred = Zotero.Promise.defer();
-					chrome.tabs.get(tabId, function(tab) {
+					browser.tabs.get(tabId).then(function(tab) {
 						Zotero.Connector_Browser._saveAsWebpage(tab, false).then(deferred.resolve).catch(deferred.reject);
 					});
 					return deferred.promise.catch(e => ['error', e]).then((r) => {stub.restore(); return r});
@@ -114,7 +114,7 @@ describe("Translation", function() {
 					// prevent reporting translator errors
 					var stub2 = sinon.stub(Zotero.Prefs, 'get').returns(false);
 					var deferred = Zotero.Promise.defer();
-					chrome.tabs.get(tabId, function(tab) {
+					browser.tabs.get(tabId).then(function(tab) {
 						Zotero.Connector_Browser._saveWithTranslator(tab, 0);
 						// This should not be necessary at all, but there's a heisenbug here
 						// The promise is not rejected for ~8 secs on chrome
@@ -155,7 +155,7 @@ describe("Translation", function() {
 					var stub1 = sinon.stub(Zotero.Prefs, 'get').returns(true);
 					var stub2 = sinon.stub(Zotero.Connector, "callMethod").rejects(new Zotero.Connector.CommunicationError('err'));
 					var deferred = Zotero.Promise.defer();
-					chrome.tabs.get(tabId, function(tab) {
+					browser.tabs.get(tabId).then(function(tab) {
 						Zotero.Connector_Browser._saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
 					});
 					deferred.promise.catch(e => ['error', e]).then((r) => {stub1.restore(); stub2.restore(); return r});

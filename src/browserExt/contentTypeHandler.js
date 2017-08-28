@@ -125,7 +125,7 @@ Zotero.ContentTypeHandler = {
 	 */
 	confirm: function(details, message, checkboxText="") {
 		let deferred = Zotero.Promise.defer();
-		chrome.tabs.get(details.tabId, function(tab) {
+		browser.tabs.get(details.tabId).then(function(tab) {
 			// Make sure the scripts to handle the confirmation box are injected
 			Zotero.Connector_Browser.injectTranslationScripts(tab).then(function() {
 				var props = {message};
@@ -146,7 +146,7 @@ Zotero.ContentTypeHandler = {
 				if (!response.button || response.button == 2) {
 					Zotero.ContentTypeHandler.ignoreURL.add(details.url);
 					// Ignore the next request to this url and redirect
-					chrome.tabs.update(tab.id, {url: details.url});
+					browser.tabs.update(tab.id, {url: details.url});
 				}
 				deferred.resolve(response);
 			});	
@@ -159,7 +159,7 @@ Zotero.ContentTypeHandler = {
 	 * Send an XHR request to retrieve and import the file into Standalone
 	 */
 	importFile: function(details, type) {
-		chrome.tabs.get(details.tabId, function(tab) {
+		browser.tabs.get(details.tabId).then(function(tab) {
 			// Make sure scripts injected so we can display the progress window
 			Zotero.Connector_Browser.injectTranslationScripts(tab).then(function() {
 				Zotero.Messaging.sendMessage('progressWindow.show', type == 'csl' ? 'Installing Style' : 'Importing', tab);
@@ -181,7 +181,7 @@ Zotero.ContentTypeHandler = {
 						options.queryString = 'origin=' + encodeURIComponent(details.url);
 						return Zotero.Connector.callMethod(options, this.response).then(function(result) {
 							Zotero.Messaging.sendMessage('progressWindow.itemProgress',
-								[chrome.extension.getURL('images/csl-style.png'), result.name, null, 100], tab);
+								[browser.extension.getURL('images/csl-style.png'), result.name, null, 100], tab);
 							return Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
 						}, function(e) {
 							if (e.status == 404) {

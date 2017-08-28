@@ -58,7 +58,7 @@ describe("HTTP", function() {
 			assert.equal(location, url);
 		}));
 		it('succeeds when loading a cross-origin page', Promise.coroutine(function* () {
-			let url = chrome.extension.getURL('test/data/journalArticle-single.html');
+			let url = browser.extension.getURL('test/data/journalArticle-single.html');
 			let [content, location] = yield tab.run(function(url) {
 				var deferred = Zotero.Promise.defer();
 				sinon.stub(Zotero.HTTP, 'isSameOrigin').returns(false);

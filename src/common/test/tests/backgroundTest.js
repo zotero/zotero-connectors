@@ -34,6 +34,13 @@ describe('Connector_Browser', function() {
 					let stub = sinon.stub(Zotero.Connector_Browser, '_showPDFIcon');
 					var deferred = Zotero.Promise.defer();
 					stub.callsFake(deferred.resolve);
+					
+					// Independent of the online status of Zotero client we need to observer content types
+					// to trigger the onPDFFrame icon, but don't want to affect the already attached
+					// observer state, so we generate a custom function to work with
+					let customObserver = d => Zotero.ContentTypeHandler.observe(d);
+					Zotero.WebRequestIntercept.addListener('headersReceived', customObserver);
+					deferred.promise.then(() => Zotero.WebRequestIntercept.removeListener('headersReceived', customObserver));
 					return deferred.promise;
 				});
 				yield tab.init(browser.extension.getURL('test/data/framePDF.html'));
@@ -44,7 +51,9 @@ describe('Connector_Browser', function() {
 				});
 				assert.equal(tabId, tab.tabId);
 			} finally {
-				yield background(() => Zotero.Connector_Browser._showPDFIcon.restore());
+				yield background(function() {
+					Zotero.Connector_Browser._showPDFIcon.restore()
+				});
 				yield tab.close();
 			}
 		}));

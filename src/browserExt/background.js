@@ -241,7 +241,7 @@ Zotero.Connector_Browser = new function() {
 		function injectRemaining(scripts) {
 			if (scripts.length) {
 				let script = scripts.shift();
-				return browser.tabs.executeScript(tab.id, {file: script, frameId})
+				return browser.tabs.executeScript(tab.id, {file: script, frameId, runAt: 'document_end'})
 				.catch(() => undefined).then(() => injectRemaining(scripts));
 			}
 			return Zotero.Promise.resolve(true);
@@ -252,8 +252,10 @@ Zotero.Connector_Browser = new function() {
 		// http://www.ams.org/mathscinet/search/publdoc.html?pg1=INDI&s1=916336&sort=Newest&vfpref=html&r=1&mx-pid=3439694
 		// with a fresh browser session consistently reproduces the bug. The injection may be partial, but we need to
 		// resolve this promise somehow, so we reject in the event of timeout.
+		// UPDATE 2017-08-29 seems to no longer be the case, but this is a generally nice safeguard that is good to
+		// have. Let's keep an eye out for these failed injections in reports.
 		return Zotero.Promise.all([promise, new Promise(function(resolve, reject) {
-			let timeout = setTimeout(() => reject(new Error ("Script injection timed out")), 3000);
+			let timeout = setTimeout(() => reject(new Error (`Script injection timed out ${tab.url}`)), 3000);
 			resolve(promise.then(function() {
 				clearTimeout(timeout);
 			}));

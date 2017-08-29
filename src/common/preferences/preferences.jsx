@@ -233,7 +233,7 @@ Zotero_Preferences.Advanced = {
 
 
 		document.getElementById("advanced-button-config-editor").onclick = function() {
-			if (confirm("Changing these advanced settings can be harmful to the stability, security and performance of the Zotero Connector and Zotero Client. \nYou should only proceed if you are sure of what you are doing.")) {
+			if (confirm("Changing these advanced settings can be harmful to the stability, security, and performance of the browser and the Zotero Connector. \nYou should only proceed if you are sure of what you are doing.")) {
 				Zotero.Connector_Browser.openConfigEditor();
 			}
 		};

@@ -318,13 +318,6 @@ if [[ $BUILD_BROWSER_EXT == 1 ]] || [[ $BUILD_SAFARI == 1 ]]; then
 	fi
 fi
 
-if [[ $BUILD_SAFARI == 1 ]]; then
-	# Transpile Safari JS for Safari 10.0<
-	echo "Transpiling Safari JS..." >> "$LOG";
-	"$CWD/node_modules/babel-cli/bin/babel.js" "$BUILD_DIR/safari.safariextension/" --out-dir "$BUILD_DIR/safari.safariextension/" -q >> "$LOG" 2>&1
-	echo "Transpiled" >> "$LOG";
-fi
-
 echo "done"
 
 if [[ $BUILD_SAFARI == 1 ]]; then

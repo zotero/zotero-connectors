@@ -128,6 +128,7 @@ var MESSAGES = {
 		injectScripts: true,
 		firstSaveToServerPrompt: true,
 		openTab: false,
+		openConfigEditor: false,
 		openPreferences: false
 	},
 	Connector_Debug: {

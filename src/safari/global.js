@@ -170,6 +170,10 @@ Zotero.Connector_Browser = new function() {
 		safari.application.activeBrowserWindow.openTab().url = url;
 	};
 
+	this.openConfigEditor = function() {
+		Zotero.Connector_Browser.openTab(safari.extension.baseURI + "preferences/config.html");
+	};
+
 	function _isDisabledForURL(url) {
 		return !url || url.indexOf('safari-extension://') == 0 || url.indexOf('file://') == 0;
 	}

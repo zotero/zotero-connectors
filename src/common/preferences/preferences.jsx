@@ -226,6 +226,15 @@ Zotero_Preferences.Advanced = {
 		document.getElementById("advanced-button-reset-translators").onclick = function() { Zotero.Repo.update(true) };
 		document.getElementById("advanced-button-report-errors").onclick = Zotero_Preferences.Advanced.submitErrors;
 
+
+		document.getElementById("advanced-button-config-editor").onclick = function() {
+			if (confirm("Changing these advanced settings can be harmful to the stability, security and performance of the Zotero Connector and Zotero Client. \nYou should only proceed if you are sure of what you are doing.")) {
+				Zotero.Connector_Browser.openConfigEditor();
+			}
+		};
+		if (Zotero.isSafari) {
+			document.getElementById("advanced-group-config-editor").style.display = '';
+		}
 		
 		// get preference values
 		Zotero.Connector_Debug.storing(function(status) {

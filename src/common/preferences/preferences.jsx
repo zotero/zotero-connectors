@@ -232,9 +232,6 @@ Zotero_Preferences.Advanced = {
 				Zotero.Connector_Browser.openConfigEditor();
 			}
 		};
-		if (Zotero.isSafari) {
-			document.getElementById("advanced-group-config-editor").style.display = '';
-		}
 		
 		// get preference values
 		Zotero.Connector_Debug.storing(function(status) {

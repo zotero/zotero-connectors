@@ -279,6 +279,10 @@ Zotero.Connector_Browser = new function() {
 	this.openPreferences = function(paneID, tab) {
 		this.openTab(browser.extension.getURL(`preferences/preferences.html#${paneID}`), tab);
 	};
+	
+	this.openConfigEditor = function(tab) {
+		this.openTab(browser.extension.getURL(`preferences/config.html`), tab);
+	};
 
 	/**
 	 * Display an old-school firefox notification by injecting HTML directly into DOM.

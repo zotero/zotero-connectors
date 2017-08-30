@@ -195,7 +195,7 @@ if (typeof mocha != 'undefined') {
 			if (this.tabId == undefined) {
 				throw new Error('Must run Tab#init() before Tab#close');
 			}
-			return browser.tabs.remove(this.tabId);
+			yield browser.tabs.remove(this.tabId);
 			delete this.tabId;
 		})
 	};

@@ -156,7 +156,8 @@ Zotero.Proxies = new function() {
 	 * @param {Object} details - webRequest details object
 	 */
 	this.observe = function (details, meta) {
-		if (meta.proxyRedirected || Zotero.Proxies._ignoreURLs.has(details.url) || details.statusCode >= 400) {
+		if (meta.proxyRedirected || Zotero.Proxies._ignoreURLs.has(details.url) || details.statusCode >= 400
+			|| details.frameId != 0) {
 			return;
 		}
 		// try to detect a proxy
@@ -218,10 +219,15 @@ Zotero.Proxies = new function() {
 				_showNotification(
 					'New Zotero Proxy Host',
 					`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected to ${requestURI.host}.`,
-					["✕", "Proxy Settings"]
+					["✕", "Proxy Settings", "Don't Proxy This Site"]
 				)
 				.then(function(response) {
 					if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
+					if (response == 2) {
+						proxy.hosts = proxy.hosts.filter((h) => h != host);
+						Zotero.Proxies.save(proxy);
+						return browser.tabs.update(details.tabId, {url: proxy.toProper(details.url)})
+					}
 				});
 			}
 		} else if (Zotero.Proxies.autoRecognize) {
@@ -303,10 +309,17 @@ Zotero.Proxies = new function() {
 			_showNotification(
 				'Zotero Proxy Redirection',
 				`Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxiedURI.host}.`,
-				['✕', 'Proxy Settings']
-			)
-			.then(function(response) {
+				['✕', 'Proxy Settings', "Don't Proxy This Site"]
+			).then(function(response) {
 				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
+				if (response == 2) {
+					let uri = url.parse(details.url);
+					let proxy = Zotero.Proxies.hosts[uri.host]
+					proxy.hosts = proxy.hosts.filter((h) => h != uri.host);
+					Zotero.Proxies.save(proxy);
+					// Don't redirect for hosts associated with frames
+					return browser.tabs.update(details.tabId, {url: details.url})
+				}
 			});
 		}
 

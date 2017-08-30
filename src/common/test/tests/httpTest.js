@@ -24,6 +24,7 @@
 */
 
 describe("HTTP", function() {
+	this.timeout(100000);
 	var tab = new Tab();
 	let url = 'http://zotero-static.s3.amazonaws.com/test.html';
 	
@@ -96,6 +97,20 @@ describe("HTTP", function() {
 					hasContentType = hasContentType || arg[0] == 'Content-Type';
 				}
 				assert.isTrue(hasContentType);
+			}));
+		});
+	});
+
+	describe("COHTTP", function() {
+		describe('#request()', function() {
+			it('responds with correct XHR signature', Promise.coroutine(function* () {
+				let xhr = yield tab.run(function(url) {
+					return Zotero.COHTTP.request('GET', url).then(function(xhr) {
+						return Object.keys(xhr);
+					})
+				}, url);
+				assert.include(xhr, 'responseText');
+				assert.include(xhr, 'status');
 			}));
 		});
 	});

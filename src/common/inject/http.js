@@ -85,6 +85,12 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 			try {
 				Zotero.debug("HTTP.processDocuments: Loading "+loadingURL);
 				if (Zotero.HTTP.isSameOrigin(loadingURL)) {	
+					if(hiddenBrowser.addEventListener) {
+						hiddenBrowser.addEventListener("load", onFrameLoad, false);
+					} else {
+						hiddenBrowser.attachEvent("onload", onFrameLoad);
+					}
+			
 					hiddenBrowser.src = loadingURL;
 					
 					if(Zotero.isBookmarklet) {
@@ -253,12 +259,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 	var prevUrl;
 	
 	var hiddenBrowser = Zotero.Browser.createHiddenBrowser();
-	if(hiddenBrowser.addEventListener) {
-		hiddenBrowser.addEventListener("load", onFrameLoad, false);
-	} else {
-		hiddenBrowser.attachEvent("onload", onFrameLoad);
-	}
-	
+
 	doLoad();
 	return hiddenBrowser;
 }

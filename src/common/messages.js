@@ -86,7 +86,7 @@ var MESSAGES = {
 			},
 			inject: {
 				postReceive: function(translators) {
-					return [translators.map(function(translator) {return new Zotero.Translator(translator)})];
+					return translators.map(function(translator) {return new Zotero.Translator(translator)});
 				}
 			}
 		},
@@ -176,10 +176,10 @@ MESSAGES.COHTTP = {
 		background: {
 			// avoid trying to post responseXML
 			preSend: function(xhr) {
-				return [{responseText: xhr.responseText,
+				return {responseText: xhr.responseText,
 					status: xhr.status,
 					statusText: xhr.statusText,
-					responseHeaders: xhr.getAllResponseHeaders()}];
+					responseHeaders: xhr.getAllResponseHeaders()};
 			},
 		},
 		inject: {
@@ -189,7 +189,7 @@ MESSAGES.COHTTP = {
 					let match = xhr.responseHeaders.match(new RegExp(`^${name}: (.*)$`, 'm'));
 					return match ? match[1] : null;
 				};
-				return [xhr];
+				return xhr;
 			}
 		}
 	}

@@ -478,7 +478,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-webpage-withSnapshot-save",
 			title: "Save to Zotero (Web Page with Snapshot)",
 			onclick: function (info, tab) {
-				Zotero.Connector_Browser._saveAsWebpage(tab, true);
+				Zotero.Connector_Browser._saveAsWebpage(tab, 0, true);
 			},
 			contexts: ['page', 'browser_action']
 		}));
@@ -486,7 +486,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-webpage-withoutSnapshot-save",
 			title: "Save to Zotero (Web Page without Snapshot)",
 			onclick: function (info, tab) {
-				Zotero.Connector_Browser._saveAsWebpage(tab, false);
+				Zotero.Connector_Browser._saveAsWebpage(tab, 0, false);
 			},
 			contexts: ['page', 'browser_action']
 		}));

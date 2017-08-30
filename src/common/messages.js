@@ -107,6 +107,7 @@ var MESSAGES = {
 		}
 	},
 	Debug: {
+		init: false,
 		clear: false,
 		log: {
 			response: false,

@@ -215,8 +215,13 @@ Zotero_Preferences.Advanced = {
 			function() { Zotero.Debug.setStore(this.checked); };
 		document.getElementById("advanced-checkbox-enable-at-startup").onchange =
 			function() { Zotero.Prefs.set('debug.store', this.checked); };
-		document.getElementById("advanced-checkbox-show-in-console").onchange =
-			function() { Zotero.Prefs.set('debug.log', this.checked); };
+		document.getElementById("advanced-checkbox-show-in-console").onchange = function() {
+			Zotero.Prefs.set('debug.log', this.checked);
+			Zotero.Debug.init();
+			// Zotero.Debug.init() sets store to false
+			Zotero.Debug.setStore(document.getElementById("advanced-checkbox-enable-logging").checked);
+			Zotero.Prefs.set('debug.store', document.getElementById("advanced-checkbox-enable-at-startup").checked);
+		};
 		document.getElementById("advanced-checkbox-report-translator-failure").onchange =
 			function() { Zotero.Prefs.set('reportTranslationFailure', this.checked); };
 		document.getElementById("advanced-button-view-output").onclick = Zotero_Preferences.Advanced.viewDebugOutput;

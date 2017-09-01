@@ -46,6 +46,10 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 				}
 				delete prefs[k];
 			}	
+			// If translator metadata migration fails then we need the fetching from repo to
+			// fetch the full list
+			delete prefs["connector.repo.lastCheck.repoTime"];
+			delete prefs["connector.repo.lastCheck.localTime"];
 			browser.storage.local.set(prefs).then(resolve, reject);
 		}).then(function() {
 			if ('translatorMetadata' in localStorage) {

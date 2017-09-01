@@ -36,6 +36,7 @@ Zotero.Translators = new function() {
 	var _cache, _translators;
 	var _initialized = false;
 	var _fullFrameDetectionWhitelist = ['resolver.ebscohost.com'];
+	var _resetAttempted = false;
 	
 	/**
 	 * Initializes translator cache, loading all relevant translators into memory
@@ -76,6 +77,17 @@ Zotero.Translators = new function() {
 					Zotero.logError("Could not load translator "+JSON.stringify(translators[i]));
 				} catch(e) {}
 			}
+		}
+		
+		// Huge number of translator metadata missing. Attempt to reset.
+		// NOTE: If the number of translators significantly decreases (currently at 450ish)
+		// then this will trigger on every translator init.
+		if (Object.keys(_translators).length < 400 && !_resetAttempted) {
+			_resetAttempted = true;
+			Zotero.logError(new Error(`Only ${Object.keys(_translators).length} translators present in cache. Resetting`));
+			Zotero.Prefs.clear("connector.repo.lastCheck.repoTime");
+			Zotero.Prefs.clear("connector.repo.lastCheck.localTime");
+			return Zotero.Repo.init();
 		}
 		
 		// Sort by priority

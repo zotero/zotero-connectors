@@ -13,6 +13,7 @@
 	},
 	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies", 
 		"webRequest", "webRequestBlocking", "webNavigation", "storage"],
+	"optional_permissions": ["management"],
 	"background": {
 		"scripts": [
 			/*BACKGROUND SCRIPTS*/,

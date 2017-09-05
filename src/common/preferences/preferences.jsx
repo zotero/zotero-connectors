@@ -283,9 +283,14 @@ Zotero_Preferences.Advanced = {
 	/**
 	 * Submits debug output to server.
 	 */
-	submitDebugOutput: function() {
+	submitDebugOutput: async function() {
 		var submitOutputButton = document.getElementById('advanced-button-submit-output');
 		toggleDisabled(submitOutputButton, true);
+
+		// We have to request within a user gesture in chrome
+		if (Zotero.isChrome) {
+			await browser.permissions.request({permissions: ['management']});
+		}
 		
 		return Zotero.Connector_Debug.submitReport().then(function(reportID) {
 			alert("Your debug output has been submitted.\n\n"
@@ -300,20 +305,28 @@ Zotero_Preferences.Advanced = {
 	/**
 	 * Submits an error report
 	 */
-	submitErrors: function() {
+	submitErrors: async function() {
 		var reportErrorsButton = document.getElementById('advanced-button-report-errors');
 		toggleDisabled(reportErrorsButton, true);
 		
-		return Zotero.Errors.sendErrorReport().then(function(reportID) {
+		// We have to request within a user gesture in chrome
+		if (Zotero.isChrome) {
+			await browser.permissions.request({permissions: ['management']});
+		}
+		
+		try {
+			var reportID = await Zotero.Errors.sendErrorReport();
 			alert(`Your error report has been submitted.\n\nReport ID: ${reportID}\n\n`+
 				'Please post a message to the Zotero Forums (forums.zotero.org) with this Report '+
 				'ID, a description of the problem, and any steps necessary to reproduce it.\n\n'+
 				'Error reports are not reviewed unless referred to in the forums.');
-		}, function(e) {
+		} catch(e) {
 			alert(`An error occurred submitting your error report.\n\n${e.message}\n\n`+
 				'Please check your internet connection. If the problem persists, '+
 				'please post a message to the Zotero Forums (forums.zotero.org).');
-		}).then(() => toggleDisabled(reportErrorsButton, false));
+		} finally {
+			toggleDisabled(reportErrorsButton, false);
+		}
 	}
 };
 

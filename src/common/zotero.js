@@ -71,8 +71,10 @@ var Zotero = new function() {
 	
 	if (this.isBrowserExt) {
 		this.version = browser.runtime.getManifest().version;
+		this.appName = browser.runtime.getManifest().name;
 	} else if (this.isSafari) {
 		this.version = safari.extension.bundleVersion;
+		this.appName = 'Zotero Connector';
 	}
 	
 	// window.Promise and Promise differ (somehow) in Firefox and when certain
@@ -171,6 +173,17 @@ var Zotero = new function() {
 		var str = '';
 		for (var key in info) {
 			str += key + ' => ' + info[key] + ', ';
+		}
+		if (Zotero.isChrome) {
+			let granted = await browser.permissions.contains({permissions: ['management']});
+			if (granted) {
+				str += 'extensions => ';
+				let extensions = await browser.management.getAll();
+				for (let extension of extensions) {
+					if (!extension.enabled || extension.name == Zotero.appName) continue;
+					str += `${extension.name} (${extension.version}, ${extension.type}), `;
+				}
+			}
 		}
 		str = str.substr(0, str.length - 2);
 		return str;

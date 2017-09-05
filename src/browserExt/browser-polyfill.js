@@ -322,6 +322,24 @@
             "maxArgs": 0
           }
         },
+        "permissions": {
+          "contains": {
+			  "minArgs": 1,
+              "maxArgs": 1
+          },
+          "getAll": {
+            "minArgs": 0,
+            "maxArgs": 0
+          },
+          "remove": {
+            "minArgs": 1,
+            "maxArgs": 1
+          },
+          "request": {
+            "minArgs": 1,
+            "maxArgs": 1
+	      },
+        },
         "runtime": {
           "getBackgroundPage": {
             "minArgs": 0,

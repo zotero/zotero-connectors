@@ -55,29 +55,27 @@ Zotero.Errors = new function() {
 	/**
 	 * Sends an error report to the server
 	 */
-	this.sendErrorReport = function() {
-		return Zotero.getSystemInfo().then(function(info) {
-			var parts = {
-				error: "true",
-				errorData: _output.join('\n'),
-				extraData: '',
-				diagnostic: info
-			};
-			
-			var body = '';
-			for (var key in parts) {
-				body += key + '=' + encodeURIComponent(parts[key]) + '&';
-			}
-			body = body.substr(0, body.length - 1);
-			let options = {body, headers: {'Content-Type': 'application/x-www-form-urlencoded'}};
-			return Zotero.HTTP.request("POST", "https://www.zotero.org/repo/report", options).then(function(xmlhttp) {
-				var reported = xmlhttp.responseXML.getElementsByTagName('reported');
-				if (reported.length != 1) {
-					throw new Error('Invalid response from repository');
-				}
-				return reported[0].getAttribute('reportID');
-			});
-		});
+	this.sendErrorReport = async function() {
+		var info = await Zotero.getSystemInfo();
+		var parts = {
+			error: "true",
+			errorData: _output.join('\n'),
+			extraData: '',
+			diagnostic: info
+		};
+		
+		var body = '';
+		for (var key in parts) {
+			body += key + '=' + encodeURIComponent(parts[key]) + '&';
+		}
+		body = body.substr(0, body.length - 1);
+		let options = {body, headers: {'Content-Type': 'application/x-www-form-urlencoded'}};
+		var xmlhttp = await Zotero.HTTP.request("POST", "https://www.zotero.org/repo/report", options);
+		var reported = xmlhttp.responseXML.getElementsByTagName('reported');
+		if (reported.length != 1) {
+			throw new Error('Invalid response from repository');
+		}
+		return reported[0].getAttribute('reportID');
 	}
 }
 

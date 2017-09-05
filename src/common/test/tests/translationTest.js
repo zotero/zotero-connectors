@@ -211,17 +211,24 @@ describe("Translation", function() {
 		describe('Detection', function() {
 			it('Sets the frame with higher priority translator as the translation target', async function() {
 				try {
-					await background(function() {
-						sinon.spy(Zotero.Connector_Browser, 'onTranslators');
+					let bgTranslatorsLoadedPromise = background(function() {
+						let onTranslators = Zotero.Connector_Browser.onTranslators;
+						let deferred = Zotero.Promise.defer();
+						sinon.stub(Zotero.Connector_Browser, 'onTranslators').callsFake(function(translators) {
+							if (translators.length >= 2) deferred.resolve();
+							return onTranslators.apply(Zotero.Connector_Browser, arguments);
+						});
+						return deferred.promise;
 					});
 					await tab.init(browser.extension.getURL('test/data/top-DOI-frame-COInS.html'));
+					await bgTranslatorsLoadedPromise;
 					
 					var [args, translators, instanceID] = await background(function(tabId) {
 						let args = Zotero.Connector_Browser.onTranslators.args;
 						Zotero.Connector_Browser.onTranslators.restore();
 						
 						let translators = Zotero.Connector_Browser._tabInfo[tabId].translators.map(t => t.label);
-						let instanceID = Zotero.Connector_Browser._tabInfo[tabId].instanceID
+						let instanceID = Zotero.Connector_Browser._tabInfo[tabId].instanceID;
 						return [args, translators, instanceID];
 					}, tab.tabId);
 					

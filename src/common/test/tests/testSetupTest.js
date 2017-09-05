@@ -86,6 +86,8 @@ describe('TestSetup', function() {
 			it('closes the tab', Promise.coroutine(function* () {
 				let tabId = tab.tabId;
 				yield tab.close();
+				// Sometimes takes a bit for the browser to garbage collect the tab
+				yield Zotero.Promise.delay(100);
 				let closedTab;
 				try {
 					closedTab = yield browser.tabs.get(tabId);

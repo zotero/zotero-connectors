@@ -29,6 +29,8 @@ Zotero.Connector_Browser = new function() {
 	var _injectTranslationScripts = [
 		/*INJECT SCRIPTS*/
 	];
+	// Exposed for tests
+	this._tabInfo = _tabInfo;
 	
 	/**
 	 * Called when translators are available for a given page
@@ -43,7 +45,7 @@ Zotero.Connector_Browser = new function() {
 			if (!translators.length) return;
 			
 			if (existingTranslators.length) {
-				let existingTranslatorsHaveHigherPriority = existingTranslators[0].priority > translators[0].priority;
+				let existingTranslatorsHaveHigherPriority = existingTranslators[0].priority < translators[0].priority;
 				if (existingTranslatorsHaveHigherPriority) return;
 				
 				let priorityEqual = translators[0].priority == existingTranslators[0].priority;

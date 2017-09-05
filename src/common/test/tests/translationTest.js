@@ -39,166 +39,199 @@ describe("Translation", function() {
 			});
 		});
 		assert.equal(3, translators.length);
-		yield tab.init(browser.extension.getURL('test/data/journalArticle-single.html'));
 	}));
 	
-	after(Promise.coroutine(function* () {
-		yield tab.close();
-	}));
-	
-	describe("Detection", function() {
-		it('detects expected translators', Promise.coroutine(function* () {
-			var translators = yield tab.run(function() {
-				return Object.keys(Zotero.Inject.translators).map(function(key) {
-					return Zotero.Inject.translators[key].metadata.label;
-				});
-			});
-			assert.deepEqual(['COinS', 'DOI'], translators);
-		}));
-	});
-	
-	describe("Saving", function() {
-		describe("To Zotero", function() {
-			before(Promise.coroutine(function* () {
-				return background(function() {
-					sinon.stub(Zotero.Connector, 'checkIsOnline').resolves(true);
-				});
-			}));
-			
-			after(Promise.coroutine(function* () {
-				return background(function() {
-					Zotero.Connector.checkIsOnline.restore();
-				});	
-			}));
-			
-			it('saves with a translator', Promise.coroutine(function* () {
-				var items = yield background(function(tabId) {
-					var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
-					var deferred = Zotero.Promise.defer();
-					browser.tabs.get(tabId).then(function(tab) {
-						Zotero.Connector_Browser._saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
-					});
-					return deferred.promise.catch(e => ['error', e]).then((r) => {stub.restore(); return r});
-				}, tab.tabId);
-				assert.equal(items.length, 1);
-				assert.equal(items[0].itemType, 'journalArticle');
-				var message = yield tab.run(function() {
-					var message = document.getElementById('zotero-progress-window').textContent;
-					Zotero.ProgressWindow.close();
-					return message;
-				});
-				assert.include(message, items[0].title);
-			}));
+	describe('In the top frame', function() {
+		before(async function() {
+			await tab.init(browser.extension.getURL('test/data/journalArticle-single.html'))
+		});
+		after(async function () {
+			await tab.close();
+		});
 		
-			it('saves as snapshot', Promise.coroutine(function* () {
-				yield background(function(tabId) {
-					var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
-					var deferred = Zotero.Promise.defer();
-					browser.tabs.get(tabId).then(function(tab) {
-						Zotero.Connector_Browser._saveAsWebpage(tab, false).then(deferred.resolve).catch(deferred.reject);
+		describe("Detection", function() {
+			it('detects expected translators', Promise.coroutine(function* () {
+				var translators = yield tab.run(function() {
+					return Object.keys(Zotero.Inject.translators).map(function(key) {
+						return Zotero.Inject.translators[key].metadata.label;
 					});
-					return deferred.promise.catch(e => ['error', e]).then((r) => {stub.restore(); return r});
-				}, tab.tabId);
-				var message = yield tab.run(function() {
-					var message = document.getElementById('zotero-progress-window').textContent;
-					Zotero.ProgressWindow.close();
-					return message;
 				});
-				assert.include(message, "Scarcity or Abundance? Preserving the Past in a Digital Era");	
-			}));
-				
-			it('displays an error message if Zotero responds with an error', Promise.coroutine(function* () {
-				yield background(function(tabId) {
-					var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies")
-						.rejects(new Zotero.Connector.CommunicationError('Err', 500));
-					// prevent reporting translator errors
-					var stub2 = sinon.stub(Zotero.Prefs, 'get').returns(false);
-					var deferred = Zotero.Promise.defer();
-					browser.tabs.get(tabId).then(function(tab) {
-						Zotero.Connector_Browser._saveWithTranslator(tab, 0);
-						// This should not be necessary at all, but there's a heisenbug here
-						// The promise is not rejected for ~8 secs on chrome
-						// unless you switch to the offending tab and open developer tools.
-						// Instead we just wait a little bit to make sure that the progress window on the
-						// tab is updated with the error message
-						setTimeout(deferred.resolve, 200);
-					});
-					return deferred.promise
-						.catch(e => ['error', e])
-						.then((r) => {stub.restore(); stub2.restore(); return r});
-				}, tab.tabId);	
-				var message = yield tab.run(function() {
-					var message = document.getElementById('zotero-progress-window').textContent;
-					Zotero.ProgressWindow.close();
-					return message;
-				});
-				assert.include(message, 'An error occurred while saving this item.');
+				assert.deepEqual(['COinS', 'DOI'], translators);
 			}));
 		});
 		
-		describe("To zotero.org", function() {
-			before(Promise.coroutine(function* () {
-				return background(function() {
-					sinon.stub(Zotero.Connector, 'checkIsOnline').resolves(false);
-				});
-			}));
-			
-			after(Promise.coroutine(function* () {
-				return background(function() {
-					Zotero.Connector.checkIsOnline.restore();
-				});	
-			}));	
-			
-			it('displays a prompt when attempting to save to zotero.org for the first time', Promise.coroutine(function* () {
-				yield background(function(tabId) {
-					// First-time save
-					var stub1 = sinon.stub(Zotero.Prefs, 'get').returns(true);
-					var stub2 = sinon.stub(Zotero.Connector, "callMethod").rejects(new Zotero.Connector.CommunicationError('err'));
-					var deferred = Zotero.Promise.defer();
-					browser.tabs.get(tabId).then(function(tab) {
-						Zotero.Connector_Browser._saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
+		describe("Saving", function() {
+			describe("To Zotero", function() {
+				before(Promise.coroutine(function* () {
+					return background(function() {
+						sinon.stub(Zotero.Connector, 'checkIsOnline').resolves(true);
 					});
-					deferred.promise.catch(e => ['error', e]).then((r) => {stub1.restore(); stub2.restore(); return r});
-				}, tab.tabId);
-				// Waiting for modal-prompt to be displayed
-				yield Zotero.Promise.delay(50);
-				var message = yield tab.run(function() {
-					return document.getElementById('zotero-modal-prompt').textContent;
-				});
-				assert.include(message, 'The Zotero Connector was unable to communicate with the Zotero desktop application.');
-			}));
-			
-			it('saves with a translator', Promise.coroutine(function* () {
-				yield background(function(tabId) {
-					Zotero.Prefs.get.returns(false);
-				}, tab.tabId);
+				}));
 				
-				var items = yield tab.run(function() {
-					var spy = sinon.spy(Zotero.Translate.ItemSaver.prototype, 'saveItems');
-					var stub1 = sinon.stub(Zotero.HTTP, 'request').resolves(
-						{status: 200, responseText: JSON.stringify({success: {}})}
-					);
-					var stub2 = sinon.stub(Zotero.API, 'getUserInfo').resolves({userID: '', apiKey: ''});
-					document.querySelector('input[name="3"]').click();
-					var deferred = Zotero.Promise.defer();
-					// Allow the button click to propagate
-					setTimeout(function() {
-						spy.lastCall.returnValue.then(deferred.resolve);
+				after(Promise.coroutine(function* () {
+					return background(function() {
+						Zotero.Connector.checkIsOnline.restore();
+					});	
+				}));
+				
+				it('saves with a translator', Promise.coroutine(function* () {
+					var items = yield background(function(tabId) {
+						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
+						var deferred = Zotero.Promise.defer();
+						browser.tabs.get(tabId).then(function(tab) {
+							Zotero.Connector_Browser._saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
+						});
+						return deferred.promise.catch(e => ['error', e]).then((r) => {stub.restore(); return r});
+					}, tab.tabId);
+					assert.equal(items.length, 1);
+					assert.equal(items[0].itemType, 'journalArticle');
+					var message = yield tab.run(function() {
+						var message = document.getElementById('zotero-progress-window').textContent;
+						Zotero.ProgressWindow.close();
+						return message;
 					});
-					return deferred.promise.catch(e => ['error', e])
-						.then(r => {spy.restore(); stub1.restore(); stub2.restore(); return r})
-				});
+					assert.include(message, items[0].title);
+				}));
+			
+				it('saves as snapshot', Promise.coroutine(function* () {
+					yield background(function(tabId) {
+						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
+						var deferred = Zotero.Promise.defer();
+						browser.tabs.get(tabId).then(function(tab) {
+							Zotero.Connector_Browser._saveAsWebpage(tab, false).then(deferred.resolve).catch(deferred.reject);
+						});
+						return deferred.promise.catch(e => ['error', e]).then((r) => {stub.restore(); return r});
+					}, tab.tabId);
+					var message = yield tab.run(function() {
+						var message = document.getElementById('zotero-progress-window').textContent;
+						Zotero.ProgressWindow.close();
+						return message;
+					});
+					assert.include(message, "Scarcity or Abundance? Preserving the Past in a Digital Era");	
+				}));
+					
+				it('displays an error message if Zotero responds with an error', Promise.coroutine(function* () {
+					yield background(function(tabId) {
+						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies")
+							.rejects(new Zotero.Connector.CommunicationError('Err', 500));
+						// prevent reporting translator errors
+						var stub2 = sinon.stub(Zotero.Prefs, 'get').returns(false);
+						var deferred = Zotero.Promise.defer();
+						browser.tabs.get(tabId).then(function(tab) {
+							Zotero.Connector_Browser._saveWithTranslator(tab, 0);
+							// This should not be necessary at all, but there's a heisenbug here
+							// The promise is not rejected for ~8 secs on chrome
+							// unless you switch to the offending tab and open developer tools.
+							// Instead we just wait a little bit to make sure that the progress window on the
+							// tab is updated with the error message
+							setTimeout(deferred.resolve, 200);
+						});
+						return deferred.promise
+							.catch(e => ['error', e])
+							.then((r) => {stub.restore(); stub2.restore(); return r});
+					}, tab.tabId);	
+					var message = yield tab.run(function() {
+						var message = document.getElementById('zotero-progress-window').textContent;
+						Zotero.ProgressWindow.close();
+						return message;
+					});
+					assert.include(message, 'An error occurred while saving this item.');
+				}));
+			});
+			
+			describe("To zotero.org", function() {
+				before(Promise.coroutine(function* () {
+					return background(function() {
+						sinon.stub(Zotero.Connector, 'checkIsOnline').resolves(false);
+					});
+				}));
 				
-				assert.equal(items.length, 1);
-				assert.equal(items[0].itemType, 'journalArticle');
-				var message = yield tab.run(function() {
-					var message = document.getElementById('zotero-progress-window').textContent;
-					// Zotero.ProgressWindow.close();
-					return message;
-				});
-				assert.include(message, 'zotero.org');
-				assert.include(message, items[0].title);
-			}));
+				after(Promise.coroutine(function* () {
+					return background(function() {
+						Zotero.Connector.checkIsOnline.restore();
+					});	
+				}));	
+				
+				it('displays a prompt when attempting to save to zotero.org for the first time', Promise.coroutine(function* () {
+					yield background(function(tabId) {
+						// First-time save
+						var stub1 = sinon.stub(Zotero.Prefs, 'get').returns(true);
+						var stub2 = sinon.stub(Zotero.Connector, "callMethod").rejects(new Zotero.Connector.CommunicationError('err'));
+						var deferred = Zotero.Promise.defer();
+						browser.tabs.get(tabId).then(function(tab) {
+							Zotero.Connector_Browser._saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
+						});
+						deferred.promise.catch(e => ['error', e]).then((r) => {stub1.restore(); stub2.restore(); return r});
+					}, tab.tabId);
+					// Waiting for modal-prompt to be displayed
+					yield Zotero.Promise.delay(50);
+					var message = yield tab.run(function() {
+						return document.getElementById('zotero-modal-prompt').textContent;
+					});
+					assert.include(message, 'The Zotero Connector was unable to communicate with the Zotero desktop application.');
+				}));
+				
+				it('saves with a translator', Promise.coroutine(function* () {
+					yield background(function(tabId) {
+						Zotero.Prefs.get.returns(false);
+					}, tab.tabId);
+					
+					var items = yield tab.run(function() {
+						var spy = sinon.spy(Zotero.Translate.ItemSaver.prototype, 'saveItems');
+						var stub1 = sinon.stub(Zotero.HTTP, 'request').resolves(
+							{status: 200, responseText: JSON.stringify({success: {}})}
+						);
+						var stub2 = sinon.stub(Zotero.API, 'getUserInfo').resolves({userID: '', apiKey: ''});
+						document.querySelector('input[name="3"]').click();
+						var deferred = Zotero.Promise.defer();
+						// Allow the button click to propagate
+						setTimeout(function() {
+							spy.lastCall.returnValue.then(deferred.resolve);
+						});
+						return deferred.promise.catch(e => ['error', e])
+							.then(r => {spy.restore(); stub1.restore(); stub2.restore(); return r})
+					});
+					
+					assert.equal(items.length, 1);
+					assert.equal(items[0].itemType, 'journalArticle');
+					var message = yield tab.run(function() {
+						var message = document.getElementById('zotero-progress-window').textContent;
+						// Zotero.ProgressWindow.close();
+						return message;
+					});
+					assert.include(message, 'zotero.org');
+					assert.include(message, items[0].title);
+				}));
+			});
+		});
+		
+	});
+
+	describe("In a child frame", function() {
+		describe('Detection', function() {
+			it('Sets the frame with higher priority translator as the translation target', async function() {
+				try {
+					await background(function() {
+						sinon.spy(Zotero.Connector_Browser, 'onTranslators');
+					});
+					await tab.init(browser.extension.getURL('test/data/top-DOI-frame-COInS.html'));
+					
+					var [args, translators, instanceID] = await background(function(tabId) {
+						let args = Zotero.Connector_Browser.onTranslators.args;
+						Zotero.Connector_Browser.onTranslators.restore();
+						
+						let translators = Zotero.Connector_Browser._tabInfo[tabId].translators.map(t => t.label);
+						let instanceID = Zotero.Connector_Browser._tabInfo[tabId].instanceID
+						return [args, translators, instanceID];
+					}, tab.tabId);
+					
+					assert.isAtLeast(args.length, 2);
+					assert.notEqual(instanceID, 0);
+					assert.deepEqual(['COinS', 'DOI'], translators);
+				} finally {
+					await tab.close();
+				}
+			});
 		});
 	});
 });

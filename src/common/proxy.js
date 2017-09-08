@@ -219,7 +219,7 @@ Zotero.Proxies = new function() {
 				_showNotification(
 					'New Zotero Proxy Host',
 					`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected to ${requestURI.host}.`,
-					["✕", "Proxy Settings", "Don't Proxy This Site"]
+					["✕", "Proxy Settings", "Don’t Proxy This Site"]
 				)
 				.then(function(response) {
 					if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
@@ -309,7 +309,7 @@ Zotero.Proxies = new function() {
 			_showNotification(
 				'Zotero Proxy Redirection',
 				`Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxiedURI.host}.`,
-				['✕', 'Proxy Settings', "Don't Proxy This Site"]
+				['✕', 'Proxy Settings', "Don’t Proxy This Site"]
 			).then(function(response) {
 				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
 				if (response == 2) {

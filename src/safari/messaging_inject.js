@@ -83,10 +83,10 @@ Zotero.Messaging = new function() {
 									}
 									try {
 										if (messageConfig.inject && messageConfig.inject.postReceive) {
-											response = messageConfig.inject.postReceive.apply(null, response);
+											response = messageConfig.inject.postReceive(response);
 										}
-										if (callbackArg !== null) callback.apply(null, response);
-										resolve.apply(null, response);
+										if (callbackArg !== null) callback(response);
+										resolve(response);
 									} catch (e) {
 										Zotero.logError(e);
 										reject(e);

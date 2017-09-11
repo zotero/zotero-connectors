@@ -387,7 +387,7 @@ Zotero.Connector_Browser = new function() {
 		if (tabID in _tabInfo) {
 			_tabInfo[tabID].frameChecked = false;
 		}
-		if(!changeInfo.url) return;
+		if (changeInfo && !changeInfo.url) return;
 		delete _tabInfo[tabID];
 	}
 	

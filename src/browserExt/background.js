@@ -306,6 +306,8 @@ Zotero.Connector_Browser = new function() {
 		if (!tab) {
 			return browser.tabs.query({active: true, lastFocusedWindow: true})
 			.then((tabs) => this.notify(text, buttons, seenTimeout, tabs[0]));
+		} else if (typeof tab === 'number') {
+			return browser.tabs.get(tab).then((tab) => this.notify(text, buttons, seenTimeout, tab));
 		}
 		let timedOut = false;
 		seenTimeout && setTimeout(() => timedOut = true, seenTimeout);

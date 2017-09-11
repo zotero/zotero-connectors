@@ -175,7 +175,8 @@ Zotero.Proxies = new function() {
 			_showNotification(
 				'New Zotero Proxy',
 				`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxiedHost}?`,
-				['✕', 'Proxy Settings', 'Accept']
+				['✕', 'Proxy Settings', 'Accept'],
+				details.tabId
 			)
 			.then(function(response) {
 				if (response == 2) {
@@ -219,7 +220,8 @@ Zotero.Proxies = new function() {
 				_showNotification(
 					'New Zotero Proxy Host',
 					`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected to ${requestURI.host}.`,
-					["✕", "Proxy Settings", "Don’t Proxy This Site"]
+					["✕", "Proxy Settings", "Don’t Proxy This Site"],
+					details.tabId
 				)
 				.then(function(response) {
 					if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
@@ -309,7 +311,8 @@ Zotero.Proxies = new function() {
 			_showNotification(
 				'Zotero Proxy Redirection',
 				`Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxiedURI.host}.`,
-				['✕', 'Proxy Settings', "Don’t Proxy This Site"]
+				['✕', 'Proxy Settings', "Don’t Proxy This Site"],
+				details.tabId
 			).then(function(response) {
 				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
 				if (response == 2) {
@@ -580,9 +583,10 @@ Zotero.Proxies = new function() {
 	 * @param {String} title - notification title (currently unused)
 	 * @param {String} message - notification text
 	 * @param {String[]} actions
+	 * @param {Number} tabId
 	 * @param {Number} timeout
 	 */
-	function _showNotification(title, message, actions, timeout) {
+	function _showNotification(title, message, actions, tabId, timeout) {
 		// browser.notifications.create({
 		// 	type: 'basic',
 		// 	title,
@@ -591,7 +595,7 @@ Zotero.Proxies = new function() {
 		// });
 		Zotero.debug(`NOTIFICATION: ${message}`);
 		actions = actions && actions.map((a) => {return {title: a, dismiss: true}});
-		return Zotero.Connector_Browser.notify(message, actions, timeout);
+		return Zotero.Connector_Browser.notify(message, actions, timeout, tabId);
 	}
 
 };

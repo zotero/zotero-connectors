@@ -104,6 +104,11 @@ Zotero.ui.Notification.prototype = {
 		for (let param in Zotero.ui.Notification.textStyle) {
 			elem.style[param] = Zotero.ui.Notification.textStyle[param];
 		}
+		let margins = ['marginTop', 'marginRight', 'marginLeft'];
+		let bodyStyle = getComputedStyle(doc.body);
+		for (let margin of margins) {
+			elem.style[margin] = '-' + bodyStyle[margin];
+		}
 		this.elems.root = elem;
 		elem.classList.add('zotero-notificaton');
 
@@ -139,12 +144,6 @@ Zotero.ui.Notification.prototype = {
 		
 		doc.body.insertBefore(this.elems.root, doc.body.firstChild);
 		
-		// Hack to use pseudo-class
-		try {
-			document.styleSheets[0].insertRule('.zotero-notification a:hover { color: rgba(0,0,0,0.95) !important; }', 0);
-		}
-		catch (e) {}
-		
 		return this.deferred.promise;
 	},
 	
@@ -157,3 +156,10 @@ Zotero.ui.Notification.prototype = {
 	}
 };
 })();
+
+var style = document.createElement('style');
+style.type = 'text/css';
+style.innerHTML = `
+.zotero-notification a:hover { color: rgba(0,0,0,0.95) !important; }
+`;
+document.getElementsByTagName('head')[0].appendChild(style);

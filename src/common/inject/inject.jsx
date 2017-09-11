@@ -445,7 +445,9 @@ if(!isHiddenIFrame && (isWeb || isTestPage)) {
 			return Zotero.Inject.translate(data[1]);
 		});
 		// add a listener to save as webpage when translators unavailable
-		Zotero.Messaging.addMessageListener("saveAsWebpage", Zotero.Inject.saveAsWebpage);
+		if (isTopWindow) {
+			Zotero.Messaging.addMessageListener("saveAsWebpage", Zotero.Inject.saveAsWebpage);
+		}
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {
 			Zotero.Inject.init(true);
@@ -456,6 +458,9 @@ if(!isHiddenIFrame && (isWeb || isTestPage)) {
 		
 		// initialize
 		Zotero.initInject();
+		
+		// Send page load event to clear current save icon/data
+		if(isTopWindow) Zotero.Connector_Browser.onPageLoad();
 		
 		if(document.readyState !== "complete") {
 			window.addEventListener("load", function(e) {

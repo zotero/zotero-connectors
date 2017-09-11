@@ -166,7 +166,7 @@ Zotero.Connector_Browser = new function() {
 	 * @param url - url of the frame
 	 */
 	this.onFrameLoaded = Zotero.Promise.method(function(tab, frameId, url) {
-		if (_isDisabledForURL(tab.url) || _isDisabledForURL(url)) {
+		if (_isDisabledForURL(tab.url) && frameId == 0 || _isDisabledForURL(url)) {
 			return;
 		}
 		if (frameId == 0) {
@@ -217,7 +217,7 @@ Zotero.Connector_Browser = new function() {
 		});
 		
 		Zotero.Messaging.sendMessage('ping', null, tab, frameId).then(function(response) {
-			if (response) return deferred.resolve();
+			if (response && frameId == 0) return deferred.resolve();
 			Zotero.debug(`Injecting translation scripts into ${frameId} ${tab.url}`);
 			return Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, tab, frameId)
 			.then(deferred.resolve).catch(deferred.reject);
@@ -240,13 +240,28 @@ Zotero.Connector_Browser = new function() {
 		var promises = [];
 		Zotero.debug(`Injecting scripts into ${tab.url} : ${scripts.join(', ')}`);
 		let promise = injectRemaining(scripts);
+		
+		function awaitReady(readyMsg) {
+			return Zotero.Promise.delay(100).then(function() {
+				return Zotero.Messaging.sendMessage(readyMsg, null, tab, frameId).then(function(response) {
+					if (!response) return awaitReady(tab);
+					return true;
+				});
+			});
+		}
+		
 		function injectRemaining(scripts) {
 			if (scripts.length) {
 				let script = scripts.shift();
 				return browser.tabs.executeScript(tab.id, {file: script, frameId, runAt: 'document_end'})
 				.catch(() => undefined).then(() => injectRemaining(scripts));
 			}
-			return Zotero.Promise.resolve(true);
+			let readyMsg = `ready${Date.now()}`;
+			return browser.tabs.executeScript(tab.id, {
+				code: `Zotero.Messaging.addMessageListener('${readyMsg}', () => true)`,
+				frameId,
+				runAt: 'document_end'
+			}).then(() => awaitReady(readyMsg));
 			
 		}
 
@@ -391,8 +406,8 @@ Zotero.Connector_Browser = new function() {
 		delete _tabInfo[tabID];
 	}
 	
-	function _isDisabledForURL(url, excludeTests) {
-		return url.includes('chrome://') || url.includes('about:') || (url.includes('-extension://') && (excludeTests && !url.includes('/test/data/')));
+	function _isDisabledForURL(url, excludeTests=false) {
+		return url.includes('chrome://') || url.includes('about:') || (url.includes('-extension://') && (!excludeTests || !url.includes('/test/data/')));
 	}
 	
 	function _showZoteroStatus(tabID) {

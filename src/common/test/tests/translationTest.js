@@ -223,16 +223,14 @@ describe("Translation", function() {
 					await tab.init(browser.extension.getURL('test/data/top-DOI-frame-COInS.html'));
 					await bgTranslatorsLoadedPromise;
 					
-					var [args, translators, instanceID] = await background(function(tabId) {
-						let args = Zotero.Connector_Browser.onTranslators.args;
+					var [translators, instanceID] = await background(function(tabId) {
 						Zotero.Connector_Browser.onTranslators.restore();
 						
 						let translators = Zotero.Connector_Browser._tabInfo[tabId].translators.map(t => t.label);
 						let instanceID = Zotero.Connector_Browser._tabInfo[tabId].instanceID;
-						return [args, translators, instanceID];
+						return [translators, instanceID];
 					}, tab.tabId);
 					
-					assert.isAtLeast(args.length, 2);
 					assert.notEqual(instanceID, 0);
 					assert.deepEqual(['COinS', 'DOI'], translators);
 				} finally {

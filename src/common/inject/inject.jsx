@@ -459,9 +459,6 @@ if(!isHiddenIFrame && (isWeb || isTestPage)) {
 		// initialize
 		Zotero.initInject();
 		
-		// Send page load event to clear current save icon/data
-		if(isTopWindow) Zotero.Connector_Browser.onPageLoad();
-		
 		if(document.readyState !== "complete") {
 			window.addEventListener("load", function(e) {
 				if(e.target !== document) return;

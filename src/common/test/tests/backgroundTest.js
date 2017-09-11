@@ -54,7 +54,9 @@ describe('Connector_Browser', function() {
 				yield background(function() {
 					Zotero.Connector_Browser._showPDFIcon.restore()
 				});
-				yield tab.close();
+				if (tab.tabId) {
+					yield tab.close();
+				}
 			}
 		}));
 	});

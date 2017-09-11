@@ -73,7 +73,8 @@ var Zotero_Preferences = {
 				Zotero_Preferences.Proxies.init();
 			});
 		}
-		
+
+		Zotero.initDeferred.resolve();
 		Zotero_Preferences.refreshData();
 		window.setInterval(() => Zotero_Preferences.refreshData(), 1000);
 	},

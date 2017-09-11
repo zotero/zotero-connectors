@@ -27,6 +27,12 @@ var Zotero = new function() {
 	this.version = "5.0";
 	this.isConnector = true;
 	this.isFx = false;
+	
+	this.initDeferred = {};
+	this.initDeferred.promise = new Promise(function(resolve, reject) {
+		this.initDeferred.resolve = resolve;
+		this.initDeferred.reject = reject;
+	}.bind(this));
 
 	// Browser check adopted from:
 	// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
@@ -109,6 +115,7 @@ var Zotero = new function() {
 			if (Zotero.isBrowserExt) {
 				Zotero.WebRequestIntercept.init();
 				Zotero.Proxies.init();
+				Zotero.initDeferred.resolve();
 			}
 		});
 	};
@@ -124,6 +131,7 @@ var Zotero = new function() {
 			'reportTranslationFailure', 'capitalizeTitles']);
 		return Zotero.Prefs.loadNamespace('debug').then(function() {
 			Zotero.Debug.init();
+			Zotero.initDeferred.resolve();
 		});
 	};
 	

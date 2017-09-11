@@ -47,48 +47,7 @@
 // Waiting for Zotero.initBackground()/initInject() to run
 // so that Zotero.isBackground/Zotero.isInject are set
 setTimeout(function() {
-	if (Zotero.isBackground) {
-		// background page
-		Zotero.Background = {
-			run: function(code) {
-				try {
-					eval(`var fn = ${code}`);
-					return fn.apply(null, Array.from(arguments).slice(1));
-				} catch (e) {
-					Zotero.logError(e);
-					throw e;
-				}
-			}
-		}
-		Zotero.Background.registeredTabs = {};
-		browser.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-			var deferred = Zotero.Background.registeredTabs[tabId];
-			if (deferred) {
-				if (changeInfo.status == "complete" && !deferred.resolved) {
-					var scripts = [];
-					// Don't try to inject in extension own pages
-					if (!tab.url.includes('-extension://')) {
-						scripts = [ 'lib/sinon.js', 'test/testSetup.js' ];
-					}
-					Zotero.Connector_Browser.injectScripts(scripts, tab).then(function() {
-						deferred.resolved = true;
-						deferred.resolve(tabId);
-					}, function(e) {
-						deferred.resolved = true;
-						deferred.reject(e);
-					});
-				}
-			}
-		});
-	} else if (Zotero.isInject || Zotero.isPreferences) {
-		// injected page
-		Zotero.Messaging.addMessageListener('run', function(args) {
-			let code = args[0];
-			eval(`var fn = ${code}`);
-			return fn.apply(null, args.slice(1));
-		});
-	}
-	else if (typeof mocha != 'undefined') {
+	if (typeof mocha != 'undefined') {
 		var runner = mocha.run(function() {
 			var elem = document.createElement('p');
 			elem.setAttribute('id', 'mocha-tests-complete');
@@ -117,7 +76,55 @@ setTimeout(function() {
 		runner.on('pass', logResult);
 		runner.on('fail', logResult);
 	}
-}, 400);
+}, 500);
+
+Zotero.initDeferred.promise.then(function() {
+	if (Zotero.isBackground) {
+		// background page
+		Zotero.Background = {
+			run: function(code) {
+				try {
+					eval(`var fn = ${code}`);
+					return fn.apply(null, Array.from(arguments).slice(1));
+				} catch (e) {
+					Zotero.logError(e);
+					throw e;
+				}
+			}
+		}
+		Zotero.Background.registeredTabs = {};
+		browser.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+			var deferred = Zotero.Background.registeredTabs[tabId];
+			if (deferred) {
+				if (changeInfo.status == "complete" && !deferred.resolved) {
+					// Don't try to inject in extension own pages
+					if (tab.url.includes('-extension://')) {
+						return Zotero.Promise.delay(1000).then(() => deferred.resolve(tabId));
+					}
+					
+					let scripts = [ 'lib/sinon.js', 'test/testSetup.js' ];
+					return Zotero.Connector_Browser.injectTranslationScripts(tab).then(function() {
+						return Zotero.Connector_Browser.injectScripts(scripts, tab);
+					}).then(function() {
+						deferred.resolved = true;
+						deferred.resolve(tabId);
+					}, function(e) {
+						deferred.resolved = true;
+						deferred.reject(e)
+					});
+				}
+			}
+		});
+	}
+	else if (Zotero.isInject || Zotero.isPreferences) {
+		// injected page
+		Zotero.Messaging.addMessageListener('run', function(args) {
+			let code = args[0];
+			eval(`var fn = ${code}`);
+			return fn.apply(null, args.slice(1));
+		});
+	}
+});
 
 if (typeof mocha != 'undefined') {
 	// test.html
@@ -148,11 +155,6 @@ if (typeof mocha != 'undefined') {
 					});
 					return deferred.promise;
 				}, url);
-				yield Promise.delay(450);
-				if (Zotero.isFirefox) {
-					// Firefox is just slow in injecting..
-					yield Promise.delay(1500);
-				}
 			}
 		}),
 		
@@ -188,6 +190,10 @@ if (typeof mocha != 'undefined') {
 					throw e;
 				}
 				return response;
+			}, function(e) {
+				if (!(e instanceof Error)) {
+					throw new Error(e.message);
+				}
 			});
 		}),
 		

@@ -24,7 +24,6 @@
 */
 
 describe("HTTP", function() {
-	this.timeout(100000);
 	var tab = new Tab();
 	let url = 'http://zotero-static.s3.amazonaws.com/test.html';
 	

@@ -362,9 +362,23 @@ Zotero.Connector_Browser = new function() {
 		
 		var isPDF = _tabInfo[tab.id] && _tabInfo[tab.id].isPDF;
 		var translators = _tabInfo[tab.id] && _tabInfo[tab.id].translators;
+		
+		// Show the save menu if we have more than one save option to show, which is true in all cases
+		// other than for PDFs with no translator
+		var showSaveMenu = (translators && translators.length) || !isPDF;
+		var saveMenuID;
+		if (showSaveMenu) {
+			saveMenuID = "zotero-context-menu-save-menu";
+			browser.contextMenus.create({
+				id: saveMenuID,
+				title: "Save to Zotero",
+				contexts: ['all']
+			});
+		}
+		
 		if (translators && translators.length) {
 			_showTranslatorIcon(tab, translators[0]);
-			_showTranslatorContextMenuItem(translators);
+			_showTranslatorContextMenuItem(translators, saveMenuID);
 		} else if (isPDF) {
 			Zotero.Connector_Browser._showPDFIcon(tab);
 		} else {
@@ -372,9 +386,9 @@ Zotero.Connector_Browser = new function() {
 		}
 		
 		if (isPDF) {
-			_showPDFContextMenuItem();
+			_showPDFContextMenuItem(saveMenuID);
 		} else {
-			_showWebpageContextMenuItem();
+			_showWebpageContextMenuItem(saveMenuID);
 		}
 		
 		if (Zotero.isFirefox) {
@@ -476,7 +490,7 @@ Zotero.Connector_Browser = new function() {
 		});
 	}
 	
-	function _showTranslatorContextMenuItem(translators) {
+	function _showTranslatorContextMenuItem(translators, parentID) {
 		for (var i = 0; i < translators.length; i++) {
 			browser.contextMenus.create({
 				id: "zotero-context-menu-translator-save" + i,
@@ -486,12 +500,13 @@ Zotero.Connector_Browser = new function() {
 						Zotero.Connector_Browser._saveWithTranslator(tab, i);
 					};
 				})(i),
+				parentId: parentID,
 				contexts: ['page', 'browser_action']
 			});
 		}
 	}
 	
-	function _showWebpageContextMenuItem() {
+	function _showWebpageContextMenuItem(parentID) {
 		var fns = [];
 		fns.push(() => browser.contextMenus.create({
 			id: "zotero-context-menu-webpage-withSnapshot-save",
@@ -499,6 +514,7 @@ Zotero.Connector_Browser = new function() {
 			onclick: function (info, tab) {
 				Zotero.Connector_Browser._saveAsWebpage(tab, 0, true);
 			},
+			parentId: parentID,
 			contexts: ['page', 'browser_action']
 		}));
 		fns.push(() => browser.contextMenus.create({
@@ -507,6 +523,7 @@ Zotero.Connector_Browser = new function() {
 			onclick: function (info, tab) {
 				Zotero.Connector_Browser._saveAsWebpage(tab, 0, false);
 			},
+			parentId: parentID,
 			contexts: ['page', 'browser_action']
 		}));
 		// Swap order if automatic snapshots disabled
@@ -518,13 +535,14 @@ Zotero.Connector_Browser = new function() {
 		fns.forEach((fn) => fn());
 	}
 	
-	function _showPDFContextMenuItem() {
+	function _showPDFContextMenuItem(parentID) {
 		browser.contextMenus.create({
 			id: "zotero-context-menu-pdf-save",
 			title: "Save to Zotero (PDF)",
 			onclick: function (info, tab) {
 				Zotero.Connector_Browser._saveAsWebpage(tab);
 			},
+			parentId: parentID,
 			contexts: ['all']
 		});
 	}

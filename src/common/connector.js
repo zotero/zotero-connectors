@@ -45,6 +45,25 @@ Zotero.Connector = {
 			Object.assign(this.selected, data);
 			Zotero.Connector_Browser._updateExtensionUI();
 		}.bind(this)});
+		this.addEventListener('reports', {notify: async function(data) {
+			if ('errors' in data && 'get' in data.errors) {
+				let sysInfo = await Zotero.getSystemInfo();
+				let errors = await Zotero.Errors.getErrors();
+				Zotero.Connector.callMethod('reports', {report: `${sysInfo}\n\n${errors.join('\n\n')}`});
+			}
+			else if ('debug' in data) {
+				if ('get' in data.debug) {
+					let debug = await Zotero.Debug.get();
+					Zotero.Connector.callMethod('reports', {report: debug});
+				}
+				else if ('store' in data.debug) {
+					Zotero.Debug.setStore(data.debug.store)
+				}
+				else if ('clear' in data.debug) {
+					Zotero.Debug.clear();
+				}
+			}
+		}});
 		
 		Zotero.Connector.SSE.init();
 	},
@@ -345,50 +364,3 @@ Zotero.Connector.SSE = {
 };
 Zotero.Connector.addEventListener = Zotero.Connector.SSE._addEventListener.bind(Zotero.Connector.SSE);
 Zotero.Connector.removeEventListener = Zotero.Connector.SSE._removeEventListener.bind(Zotero.Connector.SSE);
-
-
-// TODO: this does not belong here in the slightest
-Zotero.Connector_Debug = new function() {
-	/**
-	 * Call a callback depending upon whether debug output is being stored
-	 */
-	this.storing = function() {
-		return Zotero.Debug.storing;
-	}
-	
-	/**
-	 * Call a callback with the lines themselves
-	 */
-	this.get = function() {
-		return Zotero.Debug.get();
-	};
-		
-	/**
-	 * Call a callback with the number of lines of output
-	 */
-	this.count = function() {
-		return Zotero.Debug.count();
-	}
-	
-	/**
-	 * Submit data to the server
-	 */
-	this.submitReport = async function() {
-		let body = await Zotero.Debug.get();
-		let xmlhttp = await Zotero.HTTP.request("POST", ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1", {body});
-
-		let responseXML;
-		try {
-			let parser = new DOMParser();
-			responseXML = parser.parseFromString(xmlhttp.responseText, "text/xml");
-		}
-		catch (e) {
-			throw new Error('Invalid response from server');
-		}
-		var reported = responseXML.getElementsByTagName('reported');
-		if (reported.length != 1) {
-			throw new Error('The server returned an error. Please try again.');
-		}
-		return reported[0].getAttribute('reportID');
-	};
-}

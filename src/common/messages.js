@@ -115,7 +115,11 @@ var MESSAGES = {
 				minArgs: 4
 			}
 		},
-		setStore: false
+		setStore: false,
+		isStoring: true,
+		get: true,
+		count: true,
+		submitToZotero: true
 	},
 	Connector: {
 		checkIsOnline: true,
@@ -137,16 +141,10 @@ var MESSAGES = {
 		openPreferences: false,
 		bringToFront: true
 	},
-	Connector_Debug: {
-		storing: true,
-		get: true,
-		count: true,
-		submitReport: true
-	},
 	Errors: {
 		log: false,
 		getErrors: true,
-		sendErrorReport: true
+		submitToZotero: true
 	},
 	Messaging: {
 		sendMessage: {

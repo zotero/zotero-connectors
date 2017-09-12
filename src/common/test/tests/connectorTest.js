@@ -46,18 +46,26 @@ describe('Connector', function() {
 		}));
 		
 		it('responds with false when Zotero is offline', Promise.coroutine(function*() {
-			let status = yield background(function() {
+			let status = yield background(async function() {
 				Zotero.HTTP.request.resolves({status: 0});
-				return Zotero.Connector.checkIsOnline();
+				let sseStatus = Zotero.Connector.SSE.available;
+				Zotero.Connector.SSE.available = false;
+				let status = await Zotero.Connector.checkIsOnline();
+				Zotero.Connector.SSE.available = sseStatus;
+				return status
 			});
 			assert.isNotOk(status);
 		}));
 		
 		it('throws when Zotero responds with a non-200 status', Promise.coroutine(function* () {
 			try {
-				yield background(function() {
+				yield background(async function() {
 					Zotero.HTTP.request.resolves({status: 500, getResponseHeader: () => '', responseText: 'Error'});
-					return Zotero.Connector.checkIsOnline();
+					let sseStatus = Zotero.Connector.SSE.available;
+					Zotero.Connector.SSE.available = false;
+					let status = await Zotero.Connector.checkIsOnline();
+					Zotero.Connector.SSE.available = sseStatus;
+					return status
 				});
 			} catch (e) {
 				return

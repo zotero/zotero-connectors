@@ -142,7 +142,7 @@ var Zotero_Preferences = {
 				document.getElementById('advanced-textarea-errors').textContent = errors.join("\n\n");
 			}
 			// get debug logging info
-			return Zotero.Connector_Debug.count();
+			return Zotero.Debug.count();
 		}).then(function(count) {
 			document.getElementById('advanced-span-lines-logged').textContent = count.toString();
 			toggleDisabled(document.getElementById('advanced-button-view-output'), !count);
@@ -228,7 +228,7 @@ Zotero_Preferences.Advanced = {
 	init: function() {
 		
 		document.getElementById("advanced-checkbox-enable-logging").onchange =
-			function() { Zotero.Debug.setStore(this.checked); };
+			function() { Zotero.Debug.setStore(this.checked, true); };
 		document.getElementById("advanced-checkbox-enable-at-startup").onchange =
 			function() { Zotero.Prefs.set('debug.store', this.checked); };
 		document.getElementById("advanced-checkbox-show-in-console").onchange = function() {
@@ -265,7 +265,7 @@ Zotero_Preferences.Advanced = {
 		};
 		
 		// get preference values
-		Zotero.Connector_Debug.storing(function(status) {
+		Zotero.Debug.isStoring().then(function(status) {
 			document.getElementById('advanced-checkbox-enable-logging').checked = !!status;
 		});
 		Zotero.Prefs.getAsync("debug.store").then(function(status) {
@@ -283,7 +283,7 @@ Zotero_Preferences.Advanced = {
 	 * Opens a new window to view debug output.
 	 */
 	viewDebugOutput: function() {
-		Zotero.Connector_Debug.get(function(log) {
+		Zotero.Debug.get().then(function(log) {
 			var textarea = document.getElementById("advanced-textarea-debug");
 			textarea.textContent = log;
 			textarea.style.display = "";
@@ -294,7 +294,7 @@ Zotero_Preferences.Advanced = {
 	 * Clears stored debug output.
 	 */
 	clearDebugOutput: function() {
-		Zotero.Debug.clear();
+		Zotero.Debug.clear(true);
 		Zotero_Preferences.refreshData();
 		var textarea = document.getElementById("advanced-textarea-debug");
 		textarea.style.display = 'none';
@@ -317,7 +317,7 @@ Zotero_Preferences.Advanced = {
 		}
 		
 		try {
-			let reportID = await Zotero.Connector_Debug.submitReport();
+			let reportID = await Zotero.Debug.submitToZotero();
 			let result = await Zotero.ModalPrompt.confirm({
 				message: Zotero.getString('reports_debug_output_submitted', 'D' + reportID).replace(/\n/g, '<br/>'),
 				button1Text: "OK",
@@ -352,7 +352,7 @@ Zotero_Preferences.Advanced = {
 		}
 		
 		try {
-			var reportID = await Zotero.Errors.sendErrorReport();
+			var reportID = await Zotero.Errors.submitToZotero();
 			let result = await Zotero.ModalPrompt.confirm({
 				message: Zotero.getString('reports_report_submitted', reportID).replace(/\n/g, '<br/>'),
 				button1Text: "OK",

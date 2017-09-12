@@ -72,7 +72,7 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Called to display select items dialog
 	 */
-	this.onSelect = function(items, callback, tab) {
+	this.onSelect = function(items, tab) {
 		var deferred = Zotero.Promise.defer();
 		var newTab = safari.application.openBrowserWindow().activeTab;
 		newTab.url = safari.extension.baseURI+"itemSelector/itemSelector.html#"+encodeURIComponent(JSON.stringify([tab.id, items]));

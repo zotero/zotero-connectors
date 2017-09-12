@@ -655,6 +655,8 @@ Zotero.Connector_Browser = new function() {
 	browser.tabs.onRemoved.addListener(_clearInfoForTab);
 
 	browser.tabs.onUpdated.addListener(function(tabID, changeInfo, tab) {
+		// Ignore item selector
+		if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html") === 0)) return;
 		_clearInfoForTab(tabID, changeInfo);
 		_updateExtensionUI(tab);
 		if(!changeInfo.url) return;
@@ -666,6 +668,8 @@ Zotero.Connector_Browser = new function() {
 	
 	browser.tabs.onActivated.addListener(function(activeInfo) {
 		return browser.tabs.get(activeInfo.tabId).then(function(tab) {
+			// Ignore item selector
+			if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html") === 0)) return;
 			Zotero.debug("Connector_Browser: onActivated for " + tab.url);
 			Zotero.Connector_Browser.onTabActivated(tab);
 			Zotero.Connector.reportActiveURL(tab.url);

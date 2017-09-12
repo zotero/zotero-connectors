@@ -366,6 +366,11 @@ Zotero.Connector_Browser = new function() {
 		// Show the save menu if we have more than one save option to show, which is true in all cases
 		// other than for PDFs with no translator
 		var showSaveMenu = (translators && translators.length) || !isPDF;
+		var showProxyMenu = !isPDF
+			&& Zotero.Proxies.proxies.length > 0
+			// Don't show proxy menu if already proxied
+			&& !Zotero.Proxies.proxyToProper(tab.url, true);
+		
 		var saveMenuID;
 		if (showSaveMenu) {
 			saveMenuID = "zotero-context-menu-save-menu";
@@ -389,6 +394,11 @@ Zotero.Connector_Browser = new function() {
 			_showPDFContextMenuItem(saveMenuID);
 		} else {
 			_showWebpageContextMenuItem(saveMenuID);
+		}
+		
+		// If unproxied, show "Reload via Proxy" options
+		if (showProxyMenu) {
+			_showProxyContextMenuItems(tab.url);
 		}
 		
 		if (Zotero.isFirefox) {
@@ -545,6 +555,29 @@ Zotero.Connector_Browser = new function() {
 			parentId: parentID,
 			contexts: ['all']
 		});
+	}
+	
+	function _showProxyContextMenuItems(url) {
+		var parentID = "zotero-context-menu-proxy-reload-menu";
+		browser.contextMenus.create({
+			id: parentID,
+			title: "Reload via Proxy",
+			contexts: ['page', 'browser_action']
+		});
+		
+		var i = 0;
+		for (let proxy of Zotero.Proxies.proxies) {
+			let proxied = proxy.toProxy(url);
+			browser.contextMenus.create({
+				id: `zotero-context-menu-proxy-reload-${i++}`,
+				title: `Reload as ${proxied}`,
+				onclick: function () {
+					browser.tabs.update({ url: proxied });
+				},
+				parentId: parentID,
+				contexts: ['page', 'browser_action']
+			});
+		}
 	}
 	
 	function _showPreferencesContextMenuItem() {

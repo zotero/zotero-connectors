@@ -645,10 +645,6 @@ Zotero.Connector_Browser = new function() {
 	
 	function _getTranslatorLabel(translator) {
 		var translatorName = translator.label;
-		if(translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
-			translatorName += " via Zotero Standalone";
-		}
-		
 		return "Save to Zotero (" + translatorName + ")";
 	}
 	

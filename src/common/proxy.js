@@ -562,7 +562,8 @@ Zotero.Proxies = new function() {
 		 */
 		const hostWhitelist = [
 			/^scholar\.google\.com$/,
-			/^muse\.jhu\.edu$/
+			/^muse\.jhu\.edu$/,
+			/^(www\.)?journals\.uchicago\.edu$/
 		]
 
 		for (var blackPattern of hostBlacklist) {

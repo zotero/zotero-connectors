@@ -335,6 +335,9 @@ Zotero.Proxies = new function() {
 	 * Update proxy and host maps and store proxy settings in storage
 	 */
 	this.save = function(proxy) {
+		proxy.scheme = proxy.scheme.trim()
+		proxy.hosts = proxy.hosts.map(host => host.trim());
+		
 		// If empty or default scheme
 		var invalid = Zotero.Proxies.validate(proxy);
 		if (invalid) {
@@ -378,7 +381,6 @@ Zotero.Proxies = new function() {
 	 *	no error.
 	 */
 	this.validate = function(proxy) {
-		proxy.scheme.trim();
 		if (proxy.scheme.length < 8 || (proxy.scheme.substr(0, 7) != "http://" && proxy.scheme.substr(0, 8) != "https://")) {
 			return ["scheme.noHTTP"];
 		}

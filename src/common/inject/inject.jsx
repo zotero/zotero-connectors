@@ -458,7 +458,9 @@ if(!isHiddenIFrame && (isWeb || isTestPage)) {
 		
 		// initialize
 		Zotero.initInject();
-		
+
+		if (Zotero.isSafari && isTopWindow) Zotero.Connector_Browser.onPageLoad();
+
 		if(document.readyState !== "complete") {
 			window.addEventListener("load", function(e) {
 				if(e.target !== document) return;

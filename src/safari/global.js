@@ -258,7 +258,6 @@ safari.application.addEventListener('activate', function(e) {
 	Zotero.Connector.reportActiveURL(e.target.url);
 }, true);
 safari.application.addEventListener('navigate', function(e) {
-	Zotero.Connector_Browser.onPageLoad(e.target);
 	if (e.target == safari.application.activeBrowserWindow.activeTab) {
 		Zotero.Connector.reportActiveURL(e.target.url);
 	}

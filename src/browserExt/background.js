@@ -240,13 +240,17 @@ Zotero.Connector_Browser = new function() {
 		var promises = [];
 		Zotero.debug(`Injecting scripts into ${tab.url} : ${scripts.join(', ')}`);
 		let promise = injectRemaining(scripts);
+		let timedOut = false;
 		
 		function awaitReady(readyMsg) {
-			return Zotero.Promise.delay(100).then(function() {
-				return Zotero.Messaging.sendMessage(readyMsg, null, tab, frameId).then(function(response) {
-					if (!response) return awaitReady(tab);
-					return true;
-				});
+			if (timedOut) return false;
+			return browser.tabs.sendMessage(tab.id, readyMsg, {frameId: frameId}).catch(() => undefined)
+			.then(function(response) {
+				if (!response) {
+					return Zotero.Promise.delay(100).then(() => awaitReady(tab));
+				}
+				Zotero.debug(`Injection complete ${frameId} : ${tab.url}`);
+				return true;
 			});
 		}
 		
@@ -258,7 +262,12 @@ Zotero.Connector_Browser = new function() {
 			}
 			let readyMsg = `ready${Date.now()}`;
 			return browser.tabs.executeScript(tab.id, {
-				code: `Zotero.Messaging.addMessageListener('${readyMsg}', () => true)`,
+				code: `browser.runtime.onMessage.addListener(function awaitReady(request) {
+					if (request == '${readyMsg}') {
+						browser.runtime.onMessage.removeListener(awaitReady);
+						return Promise.resolve(true);
+					}
+				})`,
 				frameId,
 				runAt: 'document_end'
 			}).then(() => awaitReady(readyMsg));
@@ -272,10 +281,14 @@ Zotero.Connector_Browser = new function() {
 		// UPDATE 2017-08-29 seems to no longer be the case, but this is a generally nice safeguard that is good to
 		// have. Let's keep an eye out for these failed injections in reports.
 		return Zotero.Promise.all([promise, new Promise(function(resolve, reject) {
-			let timeout = setTimeout(() => reject(new Error (`Script injection timed out ${tab.url}`)), 3000);
-			resolve(promise.then(function() {
+			let timeout = setTimeout(function() {
+				reject(new Error (`Script injection timed out ${tab.url}`));
+				timedOut = true;
+			}, 3000);
+			promise.then(function() {
+				resolve();
 				clearTimeout(timeout);
-			}));
+			});
 		})]).then((result) => result[0]);
 		
 	};

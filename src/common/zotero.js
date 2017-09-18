@@ -83,14 +83,16 @@ var Zotero = new function() {
 	this.Promise = Promise;
 	
 	this.migrate = async function() {
-		var [major, minor, patch] = Zotero.Prefs.get('lastVersion').split('.');
+		let lastVersion = Zotero.Prefs.get('lastVersion');
+		Zotero.Prefs.set('lastVersion', Zotero.version);
+		if (lastVersion == '') return;
+		var [major, minor, patch] = lastVersion.split('.');
 		if (patch >= "10" && patch < "22" && Zotero.isBrowserExt) {
 			for (let proxy of Zotero.Proxies.proxies) {
 				proxy.autoAssociate = true;
 			}
 			Zotero.Proxies.storeProxies();
 		}
-		Zotero.Prefs.set('lastVersion', Zotero.version);
 	};
 	
 	/**
@@ -234,7 +236,7 @@ Zotero.Prefs = new function() {
 		"debug.store.limit": 750000,
 		"debug.level": 5,
 		"debug.time": false,
-		"lastVersion": "5.0.21",
+		"lastVersion": "",
 		"downloadAssociatedFiles": true,
 		"automaticSnapshots": true, // only affects saves to zotero.org. saves to client governed by pref in the client
 		"connector.repo.lastCheck.localTime": 0,

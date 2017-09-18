@@ -82,10 +82,21 @@ var Zotero = new function() {
 	// this.Promise = window.Promise;
 	this.Promise = Promise;
 	
+	this.migrate = async function() {
+		var [major, minor, patch] = Zotero.Prefs.get('lastVersion').split('.');
+		if (patch >= "10" && patch < "22" && Zotero.isBrowserExt) {
+			for (let proxy of Zotero.Proxies.proxies) {
+				proxy.autoAssociate = true;
+			}
+			Zotero.Proxies.storeProxies();
+		}
+		Zotero.Prefs.set('lastVersion', Zotero.version);
+	};
+	
 	/**
 	 * Initializes Zotero services for the global page in Chrome or Safari
 	 */
-	this.initGlobal = function() {
+	this.initGlobal = async function() {
 		Zotero.isBackground = true;
 		
 		if (Zotero.isBrowserExt) {
@@ -107,17 +118,19 @@ var Zotero = new function() {
 			this.platform = 'win';
 		}
 
-		return Zotero.Prefs.init().then(function() {
-			Zotero.Debug.init();
-			Zotero.Messaging.init();
-			Zotero.Connector_Types.init();
-			Zotero.Repo.init();
-			if (Zotero.isBrowserExt) {
-				Zotero.WebRequestIntercept.init();
-				Zotero.Proxies.init();
-				Zotero.initDeferred.resolve();
-			}
-		});
+		await Zotero.Prefs.init();
+		
+		Zotero.Debug.init();
+		Zotero.Messaging.init();
+		Zotero.Connector_Types.init();
+		Zotero.Repo.init();
+		if (Zotero.isBrowserExt) {
+			Zotero.WebRequestIntercept.init();
+			Zotero.Proxies.init();
+			Zotero.initDeferred.resolve();
+		}
+
+		await Zotero.migrate();
 	};
 	
 	/**
@@ -221,6 +234,7 @@ Zotero.Prefs = new function() {
 		"debug.store.limit": 750000,
 		"debug.level": 5,
 		"debug.time": false,
+		"lastVersion": "5.0.21",
 		"downloadAssociatedFiles": true,
 		"automaticSnapshots": true, // only affects saves to zotero.org. saves to client governed by pref in the client
 		"connector.repo.lastCheck.localTime": 0,

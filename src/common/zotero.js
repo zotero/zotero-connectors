@@ -85,14 +85,14 @@ var Zotero = new function() {
 	this.migrate = async function() {
 		let lastVersion = Zotero.Prefs.get('lastVersion');
 		Zotero.Prefs.set('lastVersion', Zotero.version);
-		if (lastVersion == '') return;
-		var [major, minor, patch] = lastVersion.split('.');
-		if (patch >= "10" && patch < "22" && Zotero.isBrowserExt) {
+		if (lastVersion == '' && Zotero.Prefs.get('proxies.clientChecked')) {
 			for (let proxy of Zotero.Proxies.proxies) {
 				proxy.autoAssociate = true;
 			}
 			Zotero.Proxies.storeProxies();
 		}
+		// For future migrations
+		// var [major, minor, patch] = lastVersion.split('.');
 	};
 	
 	/**

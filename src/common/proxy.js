@@ -217,7 +217,7 @@ Zotero.Proxies = new function() {
 			
 			let shouldRemapHostToMatchedProxy = false;
 			let associatedProxy = Zotero.Proxies.hosts[host];
-			if (associatedProxy.scheme.substr(0, 5) != 'https') {
+			if (associatedProxy && associatedProxy.scheme.substr(0, 5) != 'https') {
 				let secureAssociatedProxyScheme = associatedProxy.scheme.substr(0, 4) + 's' + associatedProxy.scheme.substr(4);
 				// I.e. if we matched a proxy with a scheme like https://%h.proxy.edu/%p
 				// (which means that we navigated to https://%h/%p) and the host was previously associated with a

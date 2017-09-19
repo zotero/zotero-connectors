@@ -131,8 +131,8 @@ var Zotero = new function() {
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.init();
 			Zotero.Proxies.init();
-			Zotero.initDeferred.resolve();
 		}
+		Zotero.initDeferred.resolve();
 
 		await Zotero.migrate();
 	};

@@ -82,7 +82,7 @@ Zotero.initDeferred.promise.then(function() {
 	if (Zotero.isBackground) {
 		// background page
 		Zotero.Background = {
-			run: function(code) {
+			run: async function(code) {
 				try {
 					eval(`var fn = ${code}`);
 					return fn.apply(null, Array.from(arguments).slice(1));
@@ -93,28 +93,29 @@ Zotero.initDeferred.promise.then(function() {
 			}
 		}
 		Zotero.Background.registeredTabs = {};
-		browser.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-			var deferred = Zotero.Background.registeredTabs[tabId];
-			if (deferred) {
-				if (changeInfo.status == "complete" && !deferred.resolved) {
-					// Don't try to inject in extension own pages
-					if (tab.url.includes('-extension://')) {
-						return Zotero.Promise.delay(1000).then(() => deferred.resolve(tabId));
-					}
-					
-					let scripts = [ 'lib/sinon.js', 'test/testSetup.js' ];
-					return Zotero.Connector_Browser.injectTranslationScripts(tab).then(function() {
-						return Zotero.Connector_Browser.injectScripts(scripts, tab);
-					}).then(function() {
-						deferred.resolved = true;
-						deferred.resolve(tabId);
-					}, function(e) {
-						deferred.resolved = true;
-						deferred.reject(e)
-					});
-				}
+		safari.application.addEventListener('navigate', async function(e) {
+			var tab = e.target;
+			var deferred = Zotero.Background.registeredTabs[tab.id];
+			if (deferred && !deferred.resolved) {
+				// Need the tab to be active for injected scripts to kick in.
+				// Allow some breathing time
+				await Zotero.Promise.delay(200);
+				// Switch back to the test runner
+				safari.application.activeBrowserWindow.tabs[safari.application.activeBrowserWindow.tabs.length-2].activate();
+				deferred.resolved = true;
+				deferred.resolve(tab.id);
 			}
 		});
+		
+		Zotero.Background.getTabById = async function(tabId) {
+			for (let t of safari.application.activeBrowserWindow.tabs) {
+				if (t.id == tabId) {
+					return t;
+				}
+			}	
+		};
+		// N.B. Use this to quickly open the test runner on reloads when developing tests with safari
+		// Zotero.Connector_Browser.openTab(safari.extension.baseURI + "test/test.html?grep=");
 	}
 	else if (Zotero.isInject || Zotero.isPreferences) {
 		// injected page
@@ -140,68 +141,55 @@ if (typeof mocha != 'undefined') {
 		return Zotero.Background.run.apply(null, arguments);
 	});
 	
+	function getExtensionUrl(url) {
+		return safari.extension.baseURI + url;
+	}
+	
 	var Tab = function() {
-		if (Zotero.isSafari) {
-			throw new Error("Testing Safari is currently unsupported :(");
-		}
 	};
 	window.Tab.prototype = {
 		init: Promise.coroutine(function* (url='http://zotero-static.s3.amazonaws.com/test.html') {
-			if (Zotero.isBrowserExt) {
-				this.tabId = yield background(function(url) {
-					var deferred = Zotero.Promise.defer();
-					browser.tabs.create({url, active: false}).then(function(tab) {
-						Zotero.Background.registeredTabs[tab.id] = deferred;
-					});
-					return deferred.promise;
-				}, url);
-			}
+			this.tabId = yield background(function(url) {
+				var tab = safari.application.activeBrowserWindow.openTab();
+				tab.id = Date.now();
+				tab.url = url;
+				var deferred = Zotero.Promise.defer();
+				Zotero.Background.registeredTabs[tab.id] = deferred;
+				return deferred.promise;
+			}, url);
 		}),
 		
 		navigate: Promise.coroutine(function* (url) {
-			if (this.tabId == undefined) {
+			if (!this.tabId) {
 				throw new Error('Must run Tab#init() before Tab#run');
 			}
-			yield background(function(url, tabId) {
+			yield background(async function(tabId, url) {
+				(await Zotero.Background.getTabById(tabId)).url = url;
 				Zotero.Background.registeredTabs[tabId] = Zotero.Background.defer();
-				browser.tabs.update(tabId, {url});
 				return Zotero.Background.registeredTabs[tabId].promise;
-			}, url, this.tabId);
-			yield Promise.delay(450);
-			if (Zotero.isFirefox) {
-				// Firefox is just slow in injecting..
-				yield Promise.delay(1500);
-			}
+			}, this.tabId, url);
 		}),
 		
 		run: Promise.coroutine(function* (code) {
-			if (this.tabId == undefined) {
+			if (!this.tabId) {
 				throw new Error('Must run Tab#init() before Tab#run');
 			}
 			if (typeof code == 'function') {
 				arguments[0] = code.toString();
 			}
-			return browser.tabs.sendMessage(this.tabId, ['run', Array.from(arguments)], {})
-			.then(function(response) {
-				if (response && response[0] == 'error') {
-					response[1] = JSON.parse(response[1]);
-					let e = new Error(response[1].message);
-					for (let key in response[1]) e[key] = response[1][key];
-					throw e;
-				}
-				return response;
-			}, function(e) {
-				if (!(e instanceof Error)) {
-					throw new Error(e.message);
-				}
-			});
+			return background(async function(tabId, args) {
+				return Zotero.Messaging.sendMessage('run', args, (await Zotero.Background.getTabById(tabId)));
+			}, this.tabId, Array.from(arguments));
 		}),
 		
 		close: Promise.coroutine(function* () {
 			if (this.tabId == undefined) {
 				throw new Error('Must run Tab#init() before Tab#close');
 			}
-			yield browser.tabs.remove(this.tabId);
+			yield background(async function(tabId) {
+				(await Zotero.Background.getTabById(tabId)).close();
+			}, this.tabId);
+			yield Zotero.Promise.delay(20);
 			delete this.tabId;
 		})
 	};

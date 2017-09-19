@@ -537,7 +537,7 @@ Zotero.Connector_Browser = new function() {
 				title: _getTranslatorLabel(translators[i]),
 				onclick: (function (i) {
 					return function (info, tab) {
-						Zotero.Connector_Browser._saveWithTranslator(tab, i);
+						Zotero.Connector_Browser.saveWithTranslator(tab, i);
 					};
 				})(i),
 				parentId: parentID,
@@ -552,7 +552,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-webpage-withSnapshot-save",
 			title: "Save to Zotero (Web Page with Snapshot)",
 			onclick: function (info, tab) {
-				Zotero.Connector_Browser._saveAsWebpage(tab, 0, true);
+				Zotero.Connector_Browser.saveAsWebpage(tab, 0, true);
 			},
 			parentId: parentID,
 			contexts: ['page', 'browser_action']
@@ -561,7 +561,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-webpage-withoutSnapshot-save",
 			title: "Save to Zotero (Web Page without Snapshot)",
 			onclick: function (info, tab) {
-				Zotero.Connector_Browser._saveAsWebpage(tab, 0, false);
+				Zotero.Connector_Browser.saveAsWebpage(tab, 0, false);
 			},
 			parentId: parentID,
 			contexts: ['page', 'browser_action']
@@ -580,7 +580,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-pdf-save",
 			title: "Save to Zotero (PDF)",
 			onclick: function (info, tab) {
-				Zotero.Connector_Browser._saveAsWebpage(tab);
+				Zotero.Connector_Browser.saveAsWebpage(tab);
 			},
 			parentId: parentID,
 			contexts: ['all']
@@ -653,19 +653,19 @@ Zotero.Connector_Browser = new function() {
 			});
 		}
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
-			Zotero.Connector_Browser._saveWithTranslator(tab, 0);
+			Zotero.Connector_Browser.saveWithTranslator(tab, 0);
 		} else {
 			if (_tabInfo[tab.id] && _tabInfo[tab.id].isPDF) {
-				Zotero.Connector_Browser._saveAsWebpage(tab, _tabInfo[tab.id].frameId, true);
+				Zotero.Connector_Browser.saveAsWebpage(tab, _tabInfo[tab.id].frameId, true);
 			} else {
 				let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
 					Zotero.Prefs.get('automaticSnapshots');
-				Zotero.Connector_Browser._saveAsWebpage(tab, 0, withSnapshot);
+				Zotero.Connector_Browser.saveAsWebpage(tab, 0, withSnapshot);
 			}
 		}
 	}
 	
-	this._saveWithTranslator = function(tab, i) {
+	this.saveWithTranslator = function(tab, i) {
 		// Set frameId to null - send message to all frames
 		// There is code to figure out which frame should translate with instanceID.
 		return Zotero.Messaging.sendMessage("translate", [
@@ -674,7 +674,7 @@ Zotero.Connector_Browser = new function() {
 		], tab, null);
 	}
 	
-	this._saveAsWebpage = function(tab, frameId, withSnapshot) {
+	this.saveAsWebpage = function(tab, frameId, withSnapshot) {
 		if (tab.id != -1) {
 			return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, withSnapshot], tab, frameId);
 		}

@@ -23,13 +23,17 @@
 	***** END LICENSE BLOCK *****
 */
 
+if (Zotero.isBrowserExt) {
+
 describe("ContentTypeHandler", function() {
 	describe('#observe()', function() {
 		it('calls Zotero.Connector_Browser.onPDFFrame when pdf frame loads', Promise.coroutine(function* () {
 			let args = yield background(function() {
 				var stub = sinon.stub(Zotero.Connector_Browser, 'onPDFFrame');
-				Zotero.ContentTypeHandler.observe({frameId: 1, tabId: 1, url: 'test', method: "GET",
-					responseHeadersObject: {'content-type': 'application/pdf'}});
+				Zotero.ContentTypeHandler.observe({
+					frameId: 1, tabId: 1, url: 'test', method: "GET",
+					responseHeadersObject: {'content-type': 'application/pdf'}
+				});
 				return new Zotero.Promise(function(resolve, reject) {
 					// onPDFFrame called out of observe event loop to not stall the page load
 					// since it's a blocking call
@@ -134,3 +138,5 @@ describe("ContentTypeHandler", function() {
 		});
 	});
 });
+
+}

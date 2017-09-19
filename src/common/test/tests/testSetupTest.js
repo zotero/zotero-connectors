@@ -70,7 +70,13 @@ describe('TestSetup', function() {
 				yield tab.init(url);
 				assert.isOk(tab.tabId);
 				
-				let tabUrl = yield browser.tabs.get(tab.tabId).then(tab => tab.url);
+				if (Zotero.isBrowserExt) {
+					var tabUrl = yield browser.tabs.get(tab.tabId).then(tab => tab.url);
+				} else {
+					tabUrl = yield background(async function(id) {
+						return (await Zotero.Background.getTabById(id)).url
+					}, tab.tabId);
+				}
 				assert.equal(tabUrl, url);
 			}));
 		});

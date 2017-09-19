@@ -216,7 +216,7 @@ Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDe
 			}
 		}
 		
-		if (Zotero.isChrome) {
+		if (Zotero.isChrome || doc.readyState == 'complete') {
 			process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView)
 		}
 	};
@@ -305,24 +305,28 @@ Zotero.Browser.wrapDoc = function(doc, docUrl) {
 	let url = require('url');
 	docUrl = url.parse(docUrl);
 	docUrl.toString = () => this.href;
-	let wrappedDoc = new Proxy(doc, {get: function(t, prop) {
+	// We have to use a spoofed object because Safari defines functions on the doc as
+	// non-configurable and non-writable and the ES6 Proxy throws a TypeError even when you
+	// return the same function
+	let spoofDoc = {};
+	let wrappedDoc = new Proxy(spoofDoc, {get: function (t, prop) {
 		if (prop === 'location') {
 			return docUrl;
-		} else if(prop == 'evaluate') {
+		} else if (prop == 'evaluate') {
 			// If you pass the document itself into doc.evaluate as the second argument
 			// it fails, because it receives a proxy, which isn't of type `Node` for some reason.
 			// Native code magic.
-			return function() {
+			return function () {
 				if (arguments[1] == wrappedDoc) {
-					arguments[1] = t;
+					arguments[1] = doc;
 				}
-				return t[prop].apply(t, arguments)
+				return doc[prop].apply(doc, arguments)
 			}
 		} else {
-			if (typeof t[prop] == 'function') {
-				return t[prop].bind(t);
+			if (typeof doc[prop] == 'function') {
+				return doc[prop].bind(doc);
 			}
-			return t[prop];
+			return doc[prop];
 		}
 	}});
 	return wrappedDoc;

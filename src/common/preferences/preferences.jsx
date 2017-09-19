@@ -144,8 +144,6 @@ Zotero_Preferences.General = {
 			function() { Zotero.Prefs.set('automaticSnapshots', this.checked) };
 		document.getElementById("general-checkbox-downloadAssociatedFiles").onchange =
 			function() { Zotero.Prefs.set('downloadAssociatedFiles', this.checked) };
-		var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
-		if (openTranslatorTesterButton) openTranslatorTesterButton.onclick = Zotero_Preferences.General.openTranslatorTester;
 		
 		Zotero.Prefs.getAsync("downloadAssociatedFiles").then(function(status) {
 			document.getElementById('general-checkbox-downloadAssociatedFiles').checked = !!status;
@@ -233,6 +231,16 @@ Zotero_Preferences.Advanced = {
 		document.getElementById("advanced-button-report-errors").onclick = Zotero_Preferences.Advanced.submitErrors;
 
 
+		var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
+		if (openTranslatorTesterButton) openTranslatorTesterButton.onclick = Zotero_Preferences.General.openTranslatorTester;
+		var testRunnerButton = document.getElementById("advanced-button-open-test-runner");
+		if (testRunnerButton) testRunnerButton.onclick = function() {
+			if (Zotero.isSafari) {
+				Zotero.Connector_Browser.openTab(safari.extension.baseURI + "test/test.html");
+			} else {
+				Zotero.Connector_Browser.openTab(browser.extension.getURL(`test/test.html`));
+			}
+		};
 		document.getElementById("advanced-button-config-editor").onclick = function() {
 			if (confirm("Changing these advanced settings can be harmful to the stability, security, and performance of the browser and the Zotero Connector. \nYou should only proceed if you are sure of what you are doing.")) {
 				Zotero.Connector_Browser.openConfigEditor();

@@ -466,9 +466,14 @@ if(!isHiddenIFrame && (isWeb || isTestPage)) {
 			return Zotero.Inject.translate(data[1]);
 		});
 		// add a listener to save as webpage when translators unavailable
-		if (!Zotero.isSafari || isTopWindow) {
-			Zotero.Messaging.addMessageListener("saveAsWebpage", Zotero.Inject.saveAsWebpage);
-		}
+		Zotero.Messaging.addMessageListener("saveAsWebpage", function(data) {
+			if (Zotero.isSafari) {
+				if (data[0] !== instanceID) return;
+				Zotero.Inject.saveAsWebpage(data[1])
+			} else {
+				Zotero.Inject.saveAsWebpage(data);
+			}
+		});
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {
 			Zotero.Inject.init(true);

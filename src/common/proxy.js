@@ -211,16 +211,31 @@ Zotero.Proxies = new function() {
 			// DEBUG: If a site has a valid hyphen in it, we probably won't redirect it properly,
 			// because we'll add the host with a dot instead and won't match it when the original
 			// unproxied site is loaded with the hyphen.
-			if (proxy.dotsToHyphens) {
+			if (!host.includes('.')) {
 				host = host.replace(/-/g, '.');
+			}
+			
+			let shouldRemapHostToMatchedProxy = false;
+			let associatedProxy = Zotero.Proxies.hosts[host];
+			if (associatedProxy.scheme.substr(0, 5) != 'https') {
+				let secureAssociatedProxyScheme = associatedProxy.scheme.substr(0, 4) + 's' + associatedProxy.scheme.substr(4);
+				// I.e. if we matched a proxy with a scheme like https://%h.proxy.edu/%p
+				// (which means that we navigated to https://%h/%p) and the host was previously associated with a
+				// proxy with a scheme like http://%h.proxy.edu/%p, we remap this host to be mapped to the
+				// https proxy instead
+				shouldRemapHostToMatchedProxy = secureAssociatedProxyScheme == proxy.scheme
 			}
 			// add this host if we know a proxy
 			if (proxy.autoAssociate							// if autoAssociate is on
 				&& details.statusCode < 300					// and query was successful
-				&& !Zotero.Proxies.hosts[host]				// and host is not saved
+				&& (!Zotero.Proxies.hosts[host] || shouldRemapHostToMatchedProxy)		// and host is not saved
 				&& proxy.hosts.indexOf(host) === -1
 				&& !_isBlacklisted(host)					// and host is not blacklisted
 			) {
+				if (shouldRemapHostToMatchedProxy) {
+					associatedProxy.hosts.filter(h => h != host);
+					Zotero.Proxies.save(associatedProxy);
+				}
 				proxy.hosts.push(host);
 				Zotero.Proxies.save(proxy);
 
@@ -266,13 +281,15 @@ Zotero.Proxies = new function() {
 		Zotero.Proxies.updateDisabledByDomain();
 		if (Zotero.Proxies.disabledByDomain) return;
 
-		var proxied = Zotero.Proxies.properToProxy(requestURL, true);
-		if (!proxied) return;
-
-		return _maybeRedirect(details, proxied, meta);
+		return _maybeRedirect(details, proxy, meta);
 	};
 
-	function _maybeRedirect(details, proxied, meta) {
+	function _maybeRedirect(details, proxy, meta) {
+		var proxied = Zotero.Proxies.properToProxy(details.url, true);
+		if (!proxied
+			// Don't redirect https websites via http proxies
+			|| details.url.substr(0, 5) == 'https' && proxied.substr(0, 5) != 'https') return;
+		
 		var proxiedURI = url.parse(proxied);
 		if (details.requestHeadersObject['referer']) {
 			// If the referrer is a proxiable host, we already have access (e.g., we're

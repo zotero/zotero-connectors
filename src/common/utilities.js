@@ -29,6 +29,9 @@
 "use strict";
 
 Zotero.Utilities = Zotero.Utilities || {};
+if (!Zotero.Utilities.Internal) {
+	Zotero.Utilities.Internal = {};
+}
 
 /**
  * Returns a function which will execute `fn` with provided arguments after `delay` miliseconds and not more
@@ -182,6 +185,10 @@ Zotero.Utilities.itemToAPIJSON = function(item) {
 	}
 	
 	return newItems;
+}
+
+Zotero.Utilities.Internal.filterStack = function (stack) {
+	return stack;
 }
 
 })();

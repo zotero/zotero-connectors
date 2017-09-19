@@ -233,7 +233,7 @@ Zotero.Proxies = new function() {
 				&& !_isBlacklisted(host)					// and host is not blacklisted
 			) {
 				if (shouldRemapHostToMatchedProxy) {
-					associatedProxy.hosts.filter(h => h != host);
+					associatedProxy.hosts = associatedProxy.hosts.filter(h => h != host);
 					Zotero.Proxies.save(associatedProxy);
 				}
 				proxy.hosts.push(host);

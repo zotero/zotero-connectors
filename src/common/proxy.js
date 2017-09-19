@@ -205,7 +205,15 @@ Zotero.Proxies = new function() {
 		}
 
 		if (m) {
-			var host = m[proxy.parameters.indexOf("%h")+1];
+			let host = m[proxy.parameters.indexOf("%h")+1];
+			// Unhyphenate host before checking it
+			//
+			// DEBUG: If a site has a valid hyphen in it, we probably won't redirect it properly,
+			// because we'll add the host with a dot instead and won't match it when the original
+			// unproxied site is loaded with the hyphen.
+			if (proxy.dotsToHyphens) {
+				host = host.replace(/-/g, '.');
+			}
 			// add this host if we know a proxy
 			if (proxy.autoAssociate							// if autoAssociate is on
 				&& details.statusCode < 300					// and query was successful
@@ -554,8 +562,7 @@ Zotero.Proxies = new function() {
 			/edu$/,
 			/google\.com$/,
 			/wikipedia\.org$/,
-			// No periods or hyphens (hyphens are used for HTTPS)
-			/^[^.\-]*$/,
+			/^[^.]*$/,
 			/doubleclick\.net$/
 		];
 		/**

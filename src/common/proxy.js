@@ -554,7 +554,8 @@ Zotero.Proxies = new function() {
 			/edu$/,
 			/google\.com$/,
 			/wikipedia\.org$/,
-			/^[^.]*$/,
+			// No periods or hyphens (hyphens are used for HTTPS)
+			/^[^.\-]*$/,
 			/doubleclick\.net$/
 		];
 		/**

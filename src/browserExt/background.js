@@ -596,19 +596,16 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Get the proxies to show for a given URL
 	 *
-	 * This filters the available proxies to match the scheme of the given URL
+	 * This filters the available proxies to skip non-HTTPS proxies for HTTPS URLs
 	 */
 	function _getProxiesForURL(url) {
-		try {
-			return Zotero.Proxies.proxies.filter((proxy) => {
-				var m = proxy.scheme.match(/^[^:]+:/);
-				return m ? url.startsWith(m[0]) : false;
-			});
+		var proxies = Zotero.Proxies.proxies;
+		// If not an HTTPS site, return all proxies
+		if (!url.startsWith('https:')) {
+			return proxies;
 		}
-		catch (e) {
-			Zotero.debug(e, 2);
-			return [];
-		}
+		// Otherwise remove non-HTTPS proxies
+		return proxies.filter(proxy => proxy.scheme.startsWith('https:'));
 	}
 	
 	function _showPreferencesContextMenuItem() {

@@ -380,7 +380,7 @@ Zotero.Connector_Browser = new function() {
 		// other than for PDFs with no translator
 		var showSaveMenu = (translators && translators.length) || !isPDF;
 		var showProxyMenu = !isPDF
-			&& Zotero.Proxies.proxies.length > 0
+			&& _getProxiesForURL(tab.url).length > 0
 			// Don't show proxy menu if already proxied
 			&& !Zotero.Proxies.proxyToProper(tab.url, true);
 		
@@ -579,7 +579,7 @@ Zotero.Connector_Browser = new function() {
 		});
 		
 		var i = 0;
-		for (let proxy of Zotero.Proxies.proxies) {
+		for (let proxy of _getProxiesForURL(url)) {
 			let proxied = proxy.toProxy(url);
 			browser.contextMenus.create({
 				id: `zotero-context-menu-proxy-reload-${i++}`,
@@ -590,6 +590,24 @@ Zotero.Connector_Browser = new function() {
 				parentId: parentID,
 				contexts: ['page', 'browser_action']
 			});
+		}
+	}
+	
+	/**
+	 * Get the proxies to show for a given URL
+	 *
+	 * This filters the available proxies to match the scheme of the given URL
+	 */
+	function _getProxiesForURL(url) {
+		try {
+			return Zotero.Proxies.proxies.filter((proxy) => {
+				var m = proxy.scheme.match(/^[^:]+:/);
+				return m ? url.startsWith(m[0]) : false;
+			});
+		}
+		catch (e) {
+			Zotero.debug(e, 2);
+			return [];
 		}
 	}
 	

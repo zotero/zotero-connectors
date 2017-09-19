@@ -246,8 +246,8 @@ Zotero.API = new function() {
 					"Zotero-API-Version": "3"
 				}
 			};
-			return Zotero.HTTP.request("POST", url, options).then(xhr => xhr.responseText).catch(function(e) {
-				if (askForAuth && xmlhttp.status === 403) {
+			return Zotero.HTTP.request("POST", url, options).then(xhr => xhr.responseText, function(e) {
+				if (askForAuth && e.status === 403) {
 					return Zotero.API.createItem(payload, true);
 				}
 				Zotero.logError(e);

@@ -27,7 +27,7 @@ describe('Preferences', function() {
 	var tab = new Tab();
 	
 	before(Promise.coroutine(function* () {
-		yield tab.init(browser.extension.getURL('preferences/preferences.html'));
+		yield tab.init(getExtensionURL('preferences/preferences.html'));
 		if (Zotero.isFirefox) {
 			// Firefox is just very slow
 			yield Promise.delay(200);

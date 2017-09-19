@@ -61,10 +61,13 @@ Zotero.Messaging = new function() {
 		}
 		
 		var messageParts = messageName.split(MESSAGE_SEPARATOR);
-		var fn = Zotero[messageParts[0]][messageParts[1]];
-		if(!fn) {
-			var e = new Error("Zotero."+messageParts[0]+"."+messageParts[1]+" is not defined");
-			throw e;
+		try {
+			var fn = Zotero[messageParts[0]][messageParts[1]];
+			if (!fn) {
+				throw new Error();
+			}
+		} catch(e) {
+			throw new Error("Zotero." + messageParts[0] + "." + messageParts[1] + " is not defined");
 		}
 		var messageConfig = MESSAGES[messageParts[0]][messageParts[1]];
 		
@@ -121,9 +124,36 @@ Zotero.Messaging = new function() {
 				return response;
 			});
 		} else if(Zotero.isSafari) {
-			// Use current tab if not provided
-			tab = tab || safari.application.activeBrowserWindow.activeTab;
-			tab.page.dispatchMessage(messageName, args);
+			return new Promise(function(resolve, reject) {
+				// Use current tab if not provided
+				tab = tab || safari.application.activeBrowserWindow.activeTab;
+				var messageId = Date.now();
+				var resolved = false;
+
+				// This is like a tiny microcosm of (hopefully properly) self-garbage-collecting response handling
+				tab.page.dispatchMessage('sendMessage', [messageName, messageId, args]);
+				function response(event) {
+					if (event.message[0] === messageId) {
+						safari.application.removeEventListener('message', response, false);
+						resolved = true;
+						let payload = event.message[1];
+						if (payload && payload[0] == 'error') {
+							var errJSON = JSON.parse(payload[1]);
+							let e = new Error(errJSON.message);
+							for (let key in errJSON) e[key] = errJSON[key];
+							reject(e);
+						}
+						resolve(payload);
+					}
+				}
+				safari.application.addEventListener('message', response, false);
+				Zotero.Promise.delay(15000).then(function() {
+					if (!resolved) {
+						safari.application.removeEventListener('message', response, false);
+						reject(new Error('Request timed out'))
+					}
+				});
+			});
 		}
 	}
 	
@@ -178,6 +208,8 @@ Zotero.Messaging = new function() {
 			});
 		} else if(Zotero.isSafari) {
 			safari.application.addEventListener("message", function(event) {
+				// Handled by individual sendMessage handlers
+				if (event.name == 'message') return;
 				var tab = event.target;
 				_ensureSafariTabID(tab);
 				function dispatchResponse(response) {

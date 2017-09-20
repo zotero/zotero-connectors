@@ -174,7 +174,7 @@ Zotero.Proxies = new function() {
 		function notifyNewProxy(proxy, proxiedHost) {
 			_showNotification(
 				'New Zotero Proxy',
-				`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxiedHost}?`,
+				`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxy.toDisplayName()}?`,
 				['✕', 'Proxy Settings', 'Accept'],
 				details.tabId
 			)
@@ -242,7 +242,7 @@ Zotero.Proxies = new function() {
 				let requestURI = url.parse(requestURL);
 				_showNotification(
 					'New Zotero Proxy Host',
-					`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected to ${requestURI.host}.`,
+					`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected through ${proxy.toDisplayName()}.`,
 					["✕", "Proxy Settings", "Don’t Proxy This Site"],
 					details.tabId
 				)
@@ -335,7 +335,7 @@ Zotero.Proxies = new function() {
 		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
 			_showNotification(
 				'Zotero Proxy Redirection',
-				`Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxiedURI.host}.`,
+				`Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxy.toDisplayName()}.`,
 				['✕', 'Proxy Settings', "Don’t Proxy This Site"],
 				details.tabId
 			).then(function(response) {
@@ -795,6 +795,30 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
 	}
 
 	return proxyURL;
+}
+
+/**
+ * Generate a display name for the proxy (e.g., "proxy.example.edu (HTTPS)")
+ *
+ * @param {Object} [options]
+ * @param {Boolean} [options.includeScheme=false] - Include scheme (HTTP/HTTPS) in name
+ * @return {String}
+ */
+Zotero.Proxy.prototype.toDisplayName = function (options = {}) {
+	try {
+		var parts = this.scheme.match(/^([^:]+):\/\/([^\/]+)/);
+		var scheme = parts[1].toUpperCase();
+		var domain = parts[2]
+			// Include part after %h, if it's present
+			.split('%h').pop()
+			// Trim leading punctuation after the %h
+			.match(/\W(.+)/)[1];
+		return options.includeScheme ? `${domain} (${scheme})` : domain;
+	}
+	catch (e) {
+		Zotero.logError(`Invalid proxy ${this.scheme}: ${e}`);
+		return this.scheme;
+	}
 }
 
 /**

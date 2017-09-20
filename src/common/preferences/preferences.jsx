@@ -68,11 +68,9 @@ var Zotero_Preferences = {
 		Zotero_Preferences.General.init();
 		Zotero_Preferences.Advanced.init();
 
-		if (Zotero.isBrowserExt) {
-			Zotero.Prefs.loadNamespace('proxies').then(function() {
-				Zotero_Preferences.Proxies.init();
-			});
-		}
+		Zotero.Prefs.loadNamespace('proxies').then(function() {
+			Zotero_Preferences.Proxies.init();
+		});
 
 		Zotero.initDeferred.resolve();
 		Zotero_Preferences.refreshData();
@@ -200,7 +198,6 @@ Zotero_Preferences.General = {
 
 Zotero_Preferences.Proxies = {
 	init: function() {
-		document.getElementById('pane-proxies').style.display = null;
 		this.proxiesComponent = React.createElement(Zotero_Preferences.Components.ProxySettings, null);
 		ReactDOM.render(this.proxiesComponent, document.getElementById('content-proxies'));
 	}
@@ -379,12 +376,16 @@ Zotero_Preferences.Components.ProxyPreferences = React.createClass({
 	},
 	
 	render: function() {
+		let autoRecognise = '';
+		if (Zotero.isBrowserExt) {
+			autoRecognise = <span><label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label><br/></span>;
+		}
 		return (
 			<div>
 				<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;Enable proxy redirection</label><br/>
 				<div style={{marginLeft: "1em"}}>
-					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label><br/>
 					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;Show a notification when redirecting through a proxy</label><br/>
+					{autoRecognise}
 					<br/>
 					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains<span>*</span></label><br/>
 					<input style={{marginTop: "0.5em", marginLeft: "1.5em"}} type="text" onChange={this.handleTextInputChange} disabled={!this.state.transparent || !this.state.disableByDomain} name="disableByDomainString" defaultValue={this.state.disableByDomainString}/>

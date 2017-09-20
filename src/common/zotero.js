@@ -130,8 +130,8 @@ var Zotero = new function() {
 		Zotero.Repo.init();
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.init();
-			Zotero.Proxies.init();
 		}
+		Zotero.Proxies.init();
 		Zotero.initDeferred.resolve();
 
 		await Zotero.migrate();

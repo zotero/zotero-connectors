@@ -121,7 +121,7 @@ Zotero.Messaging = new function() {
 						}, err));
 						result = ['error', err];
 					}
-					safari.self.tab.dispatchMessage('message', [messageId, result]);
+					safari.self.tab.dispatchMessage('response', [messageId, result]);
 					return;
 				}
 				

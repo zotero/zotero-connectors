@@ -98,7 +98,8 @@ Zotero.Messaging = new function() {
 	/**
 	 * Sends a message to a tab
 	 */
-	this.sendMessage = function(messageName, args, tab, frameId=0) {
+	this.sendMessage = async function(messageName, args, tab, frameId=0) {
+		var response;
 		if(Zotero.isBookmarklet) {
 			window.parent.postMessage((_structuredCloneSupported
 				? [messageName, args] : JSON.stringify([messageName, args])), "*");
@@ -107,53 +108,59 @@ Zotero.Messaging = new function() {
 		else if(Zotero.isBrowserExt) {
 			// Get current tab if not provided
 			if (!tab) {
-				return browser.tabs.query({active: true, lastFocusedWindow: true})
-				.then((tabs) => this.sendMessage(messageName, args, tabs[0], frameId));
+				tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
 			}
 			let options = {};
-			if (typeof(frameId) == 'number') options = {frameId};
+			if (typeof frameId == 'number') options = {frameId};
 			
-			return browser.tabs.sendMessage(tab.id, [messageName, args], options).catch(() => undefined)
-			.then(function(response) {
-				if (response && response[0] == 'error') {
-					response[1] = JSON.parse(response[1]);
-					let e = new Error(response[1].message);
-					for (let key in response[1]) e[key] = response[1][key];
-					throw e;
-				} 
-				return response;
-			});
+			try {
+				response = await browser.tabs.sendMessage(tab.id, [messageName, args], options).catch(() => undefined)
+			} catch (e) {}
+			if (response && response[0] == 'error') {
+				response[1] = JSON.parse(response[1]);
+				let e = new Error(response[1].message);
+				for (let key in response[1]) e[key] = response[1][key];
+				throw e;
+			}
+			return response;
 		} else if(Zotero.isSafari) {
-			return new Promise(function(resolve, reject) {
+			try {
+				var deferred = Zotero.Promise.defer();
 				// Use current tab if not provided
 				tab = tab || safari.application.activeBrowserWindow.activeTab;
 				var messageId = Date.now();
 				var resolved = false;
-
 				// This is like a tiny microcosm of (hopefully properly) self-garbage-collecting response handling
-				tab.page.dispatchMessage('sendMessage', [messageName, messageId, args]);
-				function response(event) {
+				function respond(event) {
 					if (event.message[0] === messageId) {
-						safari.application.removeEventListener('message', response, false);
 						resolved = true;
 						let payload = event.message[1];
 						if (payload && payload[0] == 'error') {
 							var errJSON = JSON.parse(payload[1]);
 							let e = new Error(errJSON.message);
 							for (let key in errJSON) e[key] = errJSON[key];
-							reject(e);
+							deferred.reject(e);
 						}
-						resolve(payload);
+						deferred.resolve(payload);
+					} else if (event.name === 'Connector_Browser.onPageLoad') {
+						deferred.resolve();
 					}
 				}
-				safari.application.addEventListener('message', response, false);
-				Zotero.Promise.delay(15000).then(function() {
+
+				safari.application.addEventListener('message', respond, false);
+
+				tab.page.dispatchMessage('sendMessage', [messageName, messageId, args]);
+				var timeout = setTimeout(function() {
 					if (!resolved) {
-						safari.application.removeEventListener('message', response, false);
-						reject(new Error('Request timed out'))
+						deferred.reject(new Error(`Message ${messageName} response timed out`))
 					}
-				});
-			});
+				}, 120000);
+				response = await deferred.promise;
+			} finally {
+				safari.application.removeEventListener('message', respond, false);
+				clearTimeout(timeout);
+			}
+			return response;
 		}
 	}
 	
@@ -209,7 +216,7 @@ Zotero.Messaging = new function() {
 		} else if(Zotero.isSafari) {
 			safari.application.addEventListener("message", function(event) {
 				// Handled by individual sendMessage handlers
-				if (event.name == 'message') return;
+				if (event.name == 'response') return;
 				var tab = event.target;
 				_ensureSafariTabID(tab);
 				function dispatchResponse(response) {

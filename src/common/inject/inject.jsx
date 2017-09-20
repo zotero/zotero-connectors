@@ -223,7 +223,8 @@ Zotero.Inject = new function() {
 	 * @param components {Object[]} an array of component names to load
 	 * @return {Promise} resolves when components are injected
 	 */
-	this.loadReactComponents = function(components) {
+	this.loadReactComponents = async function(components) {
+		if (Zotero.isSafari) return;
 		var toLoad = [];
 		if (typeof ReactDOM === "undefined") {
 			toLoad = ['lib/react.js', 'lib/react-dom.js'];
@@ -235,8 +236,6 @@ Zotero.Inject = new function() {
 		}
 		if (toLoad.length) {
 			return Zotero.Connector_Browser.injectScripts(toLoad);
-		} else {
-			return Zotero.Promise.resolve();
 		}
 	}
 
@@ -296,14 +295,13 @@ Zotero.Inject = new function() {
 			// The navigation will re-trigger this method from the background script.
 			if (tabStatus != 'complete') return;
 
-			let showNotificationPrompt = function() {
-				return Zotero.Promise.delay(500).then(function() {
-					return Zotero.Inject.loadReactComponents(['Notification']).then(function() {
-						var notification = new Zotero.ui.Notification(text, buttons);
-						if (timeout) setTimeout(notification.dismiss.bind(notification, null, 0), timeout);
-						return notification.show();
-					});
-				}.bind(this));
+			let showNotificationPrompt = async function() {
+				await Zotero.Promise.delay(500);
+				await Zotero.Inject.loadReactComponents(['Notification']);
+				
+				var notification = new Zotero.ui.Notification(text, buttons);
+				if (timeout) setTimeout(notification.dismiss.bind(notification, null, 0), timeout);
+				return notification.show();
 			}.bind(this);
 			
 			// Sequentialize notification display

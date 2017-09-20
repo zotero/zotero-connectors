@@ -227,7 +227,11 @@ var Zotero = new function() {
 			console.error(err);
 		}
 		
-		Zotero.Errors.log(err.message ? err.message : err.toString(), fileName, lineNumber);
+		if (err.stack) {
+			Zotero.Errors.log(err.stack);
+		} else {
+			Zotero.Errors.log(err.message ? err.message : err.toString(), fileName, lineNumber);
+		}
 	};
 }
 

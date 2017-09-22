@@ -407,7 +407,8 @@ Zotero.Inject = new function() {
 				[Zotero.ItemTypes.getImageSrc(image), title, title, 100]);
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			return result;
-		}.bind(this), function(e) {
+		}.bind(this))
+		.catch(function(e) {
 			var err;
 			// Client unavailable
 			if (e.status === 0) {
@@ -420,7 +421,11 @@ Zotero.Inject = new function() {
 				} else {
 					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
 				}
-			} else if (!e.value || e.value.libraryEditable != false) {
+			}
+			// Unexpected error, including a timeout (which we don't want to
+			// result in a save to the server, because it's possible the request
+			// will still be processed)
+			else if (!e.value || e.value.libraryEditable != false) {
 				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
 			}
 			if (err) throw err;

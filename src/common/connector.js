@@ -242,7 +242,13 @@ Zotero.Connector = new function() {
 			}
 			let options = {body: data, headers, successCodes: false};
 			let httpMethod = data == null || data == undefined ? "GET" : "POST";
-			Zotero.HTTP.request(httpMethod, uri, options).then(newCallback);
+			Zotero.HTTP.request(httpMethod, uri, options)
+			.then(newCallback)
+			// Unexpected error, including a timeout
+			.catch(function (e) {
+				Zotero.logError(e);
+				deferred.reject(e);
+			});
 		}
 		return deferred.promise;
 	}),

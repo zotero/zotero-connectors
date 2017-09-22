@@ -60,13 +60,15 @@ Zotero.HTTP = new function() {
 	 */
 	this.request = function(method, url, options = {}) {
 		// Default options
-		options.body = options.body || null;
-		options.headers = options.headers || {};
-		options.debug = options.debug || false;
-		options.logBodyLength = options.logBodyLength || 1024;
-		options.timeout = options.timeout || 15000;
-		options.responseCharset = options.responseCharset || null;
-		options.successCodes = options.successCodes || null;
+		options = Object.assign({
+			body: null,
+			headers: {},
+			debug: false,
+			logBodyLength: 1024,
+			timeout: 15000,
+			responseCharset: null,
+			successCodes: null
+		}, options);
 		
 		if (Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
 			if(Zotero.isBookmarklet) {

@@ -96,7 +96,6 @@ if ('TEST_CHROME' in process.env) {
 		.build();
 	
 	driver.get("chrome://extensions/").then(function() {
-		driver.switchTo().frame(driver.findElement({name: 'extensions'}));
 		return driver.findElements({className: 'extension-list-item-wrapper'});
 	}).then(function(extIdElem) {
 		return extIdElem[1].getAttribute('id');
@@ -104,7 +103,7 @@ if ('TEST_CHROME' in process.env) {
 		let testUrl = `chrome-extension://${extId}/test/test.html`;
 		return new Promise((resolve) => setTimeout(() => resolve(driver.get(testUrl)), 500));
 	}).then(function() {
-		return driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10000);
+		return driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10*60*1000);
 	}).then(function() {
 		return driver.executeScript('return window.testResults');
 	}).catch(results.reject).then(function(testResults) {

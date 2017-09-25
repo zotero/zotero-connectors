@@ -218,7 +218,7 @@ Zotero_Preferences.Advanced = {
 			function() { Zotero.Prefs.set('debug.store', this.checked); };
 		document.getElementById("advanced-checkbox-show-in-console").onchange = function() {
 			Zotero.Prefs.set('debug.log', this.checked);
-			Zotero.Debug.init();
+			Zotero.Debug.bgInit();
 			// Zotero.Debug.init() sets store to false
 			Zotero.Debug.setStore(document.getElementById("advanced-checkbox-enable-logging").checked);
 			Zotero.Prefs.set('debug.store', document.getElementById("advanced-checkbox-enable-at-startup").checked);

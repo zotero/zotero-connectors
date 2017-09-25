@@ -80,3 +80,5 @@ Zotero.Errors = new function() {
 		});
 	}
 }
+
+Zotero.Debug.bgInit = Zotero.Debug.init;

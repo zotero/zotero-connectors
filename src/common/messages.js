@@ -107,7 +107,7 @@ var MESSAGES = {
 		}
 	},
 	Debug: {
-		init: false,
+		bgInit: false,
 		clear: false,
 		log: {
 			response: false,

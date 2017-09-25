@@ -85,7 +85,8 @@ describe("HTTP", function() {
 			it('Adds a Content-Type header if not present', Promise.coroutine(function* () {
 				let args = yield background(function(url) {
 					let spy = sinon.spy(XMLHttpRequest.prototype, 'setRequestHeader');
-					return Zotero.HTTP.request("POST", url, {body: 'test=test'}).then(function(xhr) {
+					return Zotero.HTTP.request("POST", url, {body: 'test=test'}).catch(() => undefined)
+					.then(function() {
 						let args = spy.args;
 						spy.restore();
 						return args;

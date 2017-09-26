@@ -81,7 +81,7 @@ Zotero.ContentTypeHandler = {
 	handleStyle: function(details) {
 		Zotero.ContentTypeHandler.confirm(details, `Add citation style to Zotero?`)
 			.then(function(response) {
-				if (response.button == 1) {
+				if (response && response.button == 1) {
 					Zotero.debug(`ContentTypeHandler: Importing style ${details.url}`);
 					Zotero.ContentTypeHandler.importFile(details, 'csl');
 				}
@@ -102,7 +102,7 @@ Zotero.ContentTypeHandler = {
 			Zotero.ContentTypeHandler.confirm(details, `Import items from ${URI.host} into Zotero?<br/><br/>` +
 				'You can manage automatic file importing in Zotero Connector preferences.',
 				'Always allow for this site').then(function(response) {
-				if (response.button == 1) {
+				if (response && response.button == 1) {
 					Zotero.debug(`ContentTypeHandler: Importing a file ${details.url}`);
 					Zotero.ContentTypeHandler.importFile(details, 'import');
 					if (!isEnabledHost && response.checkboxChecked) {
@@ -123,36 +123,33 @@ Zotero.ContentTypeHandler = {
 	 * @param checkboxText {String} optional checkbox text
 	 * @returns {Promise{Boolean}} whether user clicked OK or Cancel
 	 */
-	confirm: function(details, message, checkboxText="") {
-		let deferred = Zotero.Promise.defer();
-		browser.tabs.get(details.tabId).then(function(tab) {
-			// Make sure the scripts to handle the confirmation box are injected
-			Zotero.Connector_Browser.injectTranslationScripts(tab).then(function() {
-				var props = {message};
-				if (checkboxText.length) {
-					props = {
-						message,
-						checkbox: true,
-						checkboxText
-					}
-				}	
-				return Zotero.Messaging.sendMessage('confirm', props, tab)
-			}).then(function(response) {
-				// If captured URL was pasted on about:blank or other browser pages they respond immediately
-				// with undefined which we treat as cancel here
-				if (!response) {
-					response = {button: 2}
-				}
-				if (!response.button || response.button == 2) {
-					Zotero.ContentTypeHandler.ignoreURL.add(details.url);
-					// Ignore the next request to this url and redirect
-					browser.tabs.update(tab.id, {url: details.url});
-				}
-				deferred.resolve(response);
-			});	
-		});	
+	confirm: async function(details, message, checkboxText="") {
+		let tab = await browser.tabs.get(details.tabId);
+		// Make sure the scripts to handle the confirmation box are injected
+		try {
+			await Zotero.Connector_Browser.injectTranslationScripts(tab);
+		} catch (e) {}
 		
-		return deferred.promise;
+		var props = {message};
+		if (checkboxText.length) {
+			props = {
+				message,
+				checkbox: true,
+				checkboxText
+			}
+		}
+		let response = await Zotero.Messaging.sendMessage('confirm', props, tab);
+		// If captured URL was pasted on about:blank or other browser pages they respond immediately
+		// with undefined which we treat as cancel here
+		if (!response) {
+			response = {button: 2}
+		}
+		if (!response.button || response.button == 2) {
+			Zotero.ContentTypeHandler.ignoreURL.add(details.url);
+			// Ignore the next request to this url and redirect
+			browser.tabs.update(tab.id, {url: details.url});
+		}
+		return response;
 	},
 	
 	/**

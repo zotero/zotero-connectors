@@ -84,18 +84,17 @@ var Zotero = new function() {
 	
 	this.migrate = async function() {
 		let lastVersion = Zotero.Prefs.get('lastVersion');
+		var [major, minor, patch] = lastVersion.split('.');
 		Zotero.Prefs.set('lastVersion', Zotero.version);
-		// If coming from a version before 5.0.22 (when the lastVersion pref was added), reset the
+		// If coming from a version before 5.0.24, reset the
 		// auto-associate setting for all existing proxies, since it wasn't being set properly for
 		// proxies imported from the client
-		if (lastVersion == '' && Zotero.Prefs.get('proxies.clientChecked')) {
+		if ((lastVersion == '' || (major == 5 && minor == 0 && patch < 24)) && Zotero.Prefs.get('proxies.clientChecked')) {
 			for (let proxy of Zotero.Proxies.proxies) {
 				proxy.autoAssociate = true;
 			}
 			Zotero.Proxies.storeProxies();
 		}
-		// For future migrations
-		// var [major, minor, patch] = lastVersion.split('.');
 	};
 	
 	/**

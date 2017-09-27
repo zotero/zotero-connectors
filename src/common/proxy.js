@@ -636,7 +636,7 @@ Zotero.Proxies = new function() {
  */
 Zotero.Proxy = function (json={}) {
 	this.id = json.id || Date.now();
-	this.autoAssociate = !!json.autoAssociate;
+	this.autoAssociate = json.autoAssociate == undefined ? true : !!json.autoAssociate;
 	this.scheme = json.scheme;
 	this.hosts = json.hosts || [];
 	this.dotsToHyphens = !!json.dotsToHyphens;

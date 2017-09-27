@@ -193,7 +193,7 @@ Zotero.Proxies = new function() {
 		Zotero.Proxies._maybeAddHost(details);
 		
 		if (Zotero.Proxies.autoRecognize) {
-			Zotero.Proxies._recogniseProxy(details);
+			Zotero.Proxies._recognizeProxy(details);
 		}
 
 		Zotero.Proxies.updateDisabledByDomain();
@@ -270,7 +270,7 @@ Zotero.Proxies = new function() {
 		}	
 	};
 	
-	this._recogniseProxy = function(details) {
+	this._recognizeProxy = function (details) {
 		async function notifyNewProxy(proxy, proxiedHost) {
 			let response = await _showNotification(
 				'New Zotero Proxy',

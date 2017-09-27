@@ -233,35 +233,23 @@ Zotero.Connector_Browser = new function() {
 	 * @param [frameId=0] {Number] Defaults to top frame
 	 * @returns {Promise} A promise that resolves when all scripts have been injected
 	 */
-	this.injectScripts = function(scripts, tab, frameId=0) {
-		if (! Array.isArray(scripts)) scripts = [scripts];
-		// Make sure we're not changing the original list
-		scripts = Array.from(scripts);
-		var promises = [];
-		Zotero.debug(`Injecting scripts into ${tab.url} : ${scripts.join(', ')}`);
-		let promise = injectRemaining(scripts);
-		let timedOut = false;
-		
-		function awaitReady(readyMsg) {
-			if (timedOut) return false;
-			return browser.tabs.sendMessage(tab.id, readyMsg, {frameId: frameId}).catch(() => undefined)
-			.then(function(response) {
-				if (!response) {
-					return Zotero.Promise.delay(100).then(() => awaitReady(tab));
-				}
-				Zotero.debug(`Injection complete ${frameId} : ${tab.url}`);
-				return true;
-			});
-		}
-		
-		function injectRemaining(scripts) {
-			if (scripts.length) {
-				let script = scripts.shift();
-				return browser.tabs.executeScript(tab.id, {file: script, frameId, runAt: 'document_end'})
-				.catch(() => undefined).then(() => injectRemaining(scripts));
+	this.injectScripts = async function(scripts, tab, frameId=0) {
+		var urlChanged = false;
+		async function injectScripts() {
+			if (! Array.isArray(scripts)) scripts = [scripts];
+			// Make sure we're not changing the original list
+			scripts = Array.from(scripts);
+			Zotero.debug(`Injecting scripts into ${tab.url} : ${scripts.join(', ')}`);
+			let timedOut = false;
+			
+			for (let script of scripts) {
+				await browser.tabs.executeScript(tab.id, {file: script, frameId, runAt: 'document_end'});
+				if (urlChanged) return;
 			}
+			
+			// Send a ready message to confirm successful injection
 			let readyMsg = `ready${Date.now()}`;
-			return browser.tabs.executeScript(tab.id, {
+			await browser.tabs.executeScript(tab.id, {
 				code: `browser.runtime.onMessage.addListener(function awaitReady(request) {
 					if (request == '${readyMsg}') {
 						browser.runtime.onMessage.removeListener(awaitReady);
@@ -270,27 +258,48 @@ Zotero.Connector_Browser = new function() {
 				})`,
 				frameId,
 				runAt: 'document_end'
-			}).then(() => awaitReady(readyMsg));
-			
-		}
-
-		// Unfortunately firefox sometimes neither rejects nor resolves tabs#executeScript(). Testing proxied
-		// http://www.ams.org/mathscinet/search/publdoc.html?pg1=INDI&s1=916336&sort=Newest&vfpref=html&r=1&mx-pid=3439694
-		// with a fresh browser session consistently reproduces the bug. The injection may be partial, but we need to
-		// resolve this promise somehow, so we reject in the event of timeout.
-		// UPDATE 2017-08-29 seems to no longer be the case, but this is a generally nice safeguard that is good to
-		// have. Let's keep an eye out for these failed injections in reports.
-		return Zotero.Promise.all([promise, new Promise(function(resolve, reject) {
+			});
 			let timeout = setTimeout(function() {
-				reject(new Error (`Script injection timed out ${tab.url}`));
 				timedOut = true;
 			}, 3000);
-			promise.then(function() {
-				resolve();
-				clearTimeout(timeout);
-			});
-		})]).then((result) => result[0]);
+			
+			while (true) {
+				// Unfortunately firefox sometimes neither rejects nor resolves tabs#executeScript(). Testing proxied
+				// http://www.ams.org/mathscinet/search/publdoc.html?pg1=INDI&s1=916336&sort=Newest&vfpref=html&r=1&mx-pid=3439694
+				// with a fresh browser session consistently reproduces the bug. The injection may be partial, but we need to
+				// resolve this promise somehow, so we reject in the event of timeout.
+				// UPDATE 2017-08-29 seems to no longer be the case, but this is a generally nice safeguard that is good to
+				// have. Let's keep an eye out for these failed injections in reports.	
+				if (timedOut) throw new Error (`Script injection timed out ${tab.url}`);
+				try {
+					var response = await browser.tabs.sendMessage(tab.id, readyMsg, {frameId: frameId});
+				} catch (e) {}
+				if (!response) {
+					await Zotero.Promise.delay(100);
+				} else {
+					Zotero.debug(`Injection complete ${frameId} : ${tab.url}`);
+					clearTimeout(timeout);
+					return true;
+				}
+			}		
+		}
 		
+		var deferred = Zotero.Promise.defer();
+		function urlChangeListener(tabID, changeInfo) {
+			if (tabID != tab.id || (changeInfo && !changeInfo.url)) return;
+			urlChanged = true;
+			deferred.reject(new Error(`Url changed mid-injection into ${tab.id}-${frameId}`));
+		}
+		browser.tabs.onRemoved.addListener(urlChangeListener);
+		browser.tabs.onUpdated.addListener(urlChangeListener);
+
+		try {
+			await Promise.race([deferred.promise, injectScripts()]);
+		} finally {
+			browser.tabs.onRemoved.removeListener(urlChangeListener);
+			browser.tabs.onUpdated.removeListener(urlChangeListener);
+		}
+
 	};
 
 	this.openTab = function(url, tab) {

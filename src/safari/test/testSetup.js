@@ -107,7 +107,7 @@ Zotero.initDeferred.promise.then(function() {
 			}
 		});
 		
-		Zotero.Background.getTabById = async function(tabId) {
+		Zotero.Background.getTabByID = async function(tabId) {
 			for (let t of safari.application.activeBrowserWindow.tabs) {
 				if (t.id == tabId) {
 					return t;
@@ -141,7 +141,7 @@ if (typeof mocha != 'undefined') {
 		return Zotero.Background.run.apply(null, arguments);
 	});
 	
-	function getExtensionUrl(url) {
+	function getExtensionURL(url) {
 		return safari.extension.baseURI + url;
 	}
 	
@@ -164,7 +164,7 @@ if (typeof mocha != 'undefined') {
 				throw new Error('Must run Tab#init() before Tab#run');
 			}
 			yield background(async function(tabId, url) {
-				(await Zotero.Background.getTabById(tabId)).url = url;
+				(await Zotero.Background.getTabByID(tabId)).url = url;
 				Zotero.Background.registeredTabs[tabId] = Zotero.Background.defer();
 				return Zotero.Background.registeredTabs[tabId].promise;
 			}, this.tabId, url);
@@ -178,7 +178,7 @@ if (typeof mocha != 'undefined') {
 				arguments[0] = code.toString();
 			}
 			return background(async function(tabId, args) {
-				return Zotero.Messaging.sendMessage('run', args, (await Zotero.Background.getTabById(tabId)));
+				return Zotero.Messaging.sendMessage('run', args, (await Zotero.Background.getTabByID(tabId)));
 			}, this.tabId, Array.from(arguments));
 		}),
 		
@@ -187,7 +187,7 @@ if (typeof mocha != 'undefined') {
 				throw new Error('Must run Tab#init() before Tab#close');
 			}
 			yield background(async function(tabId) {
-				(await Zotero.Background.getTabById(tabId)).close();
+				(await Zotero.Background.getTabByID(tabId)).close();
 			}, this.tabId);
 			yield Zotero.Promise.delay(20);
 			delete this.tabId;

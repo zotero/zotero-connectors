@@ -118,7 +118,7 @@ Zotero.initDeferred.promise.then(function() {
 				}
 			}
 		});
-		Zotero.Background.getTabById = async function(tabId) {
+		Zotero.Background.getTabByID = async function(tabId) {
 			return browser.tabs.get(tabId);
 		};
 	}
@@ -145,7 +145,7 @@ if (typeof mocha != 'undefined') {
 		}
 		return Zotero.Background.run.apply(null, arguments);
 	});
-	function getExtensionUrl(url) {
+	function getExtensionURL(url) {
 		return browser.extension.getURL(url);
 	}
 	

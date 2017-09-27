@@ -46,13 +46,13 @@ describe('Connector_Browser', function() {
 					return deferred.promise;
 				});
 				await Zotero.Promise.delay(30);
-				await tab.init(getExtensionUrl('test/data/framePDF.html'));
+				await tab.init(getExtensionURL('test/data/framePDF.html'));
 				await bgPromise;
 				let tabId = await background(async function(tabId) {
 					if (Zotero.isBrowserExt) {
 						return Zotero.Connector_Browser._showPDFIcon.args[0][0].id;
 					} else {
-						return (await Zotero.Background.getTabById(tabId)).isPDFFrame ? tabId : -1;
+						return (await Zotero.Background.getTabByID(tabId)).isPDFFrame ? tabId : -1;
 					}
 				}, tab.tabId);
 				assert.equal(tabId, tab.tabId);

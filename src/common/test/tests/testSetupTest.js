@@ -74,7 +74,7 @@ describe('TestSetup', function() {
 					var tabUrl = yield browser.tabs.get(tab.tabId).then(tab => tab.url);
 				} else {
 					tabUrl = yield background(async function(id) {
-						return (await Zotero.Background.getTabById(id)).url
+						return (await Zotero.Background.getTabByID(id)).url
 					}, tab.tabId);
 				}
 				assert.equal(tabUrl, url);

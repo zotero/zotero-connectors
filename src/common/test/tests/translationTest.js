@@ -43,7 +43,7 @@ describe("Translation", function() {
 	
 	describe('In the top frame', function() {
 		before(async function() {
-			await tab.init(getExtensionUrl('test/data/journalArticle-single.html'))
+			await tab.init(getExtensionURL('test/data/journalArticle-single.html'))
 		});
 		after(async function () {
 			await tab.close();
@@ -77,7 +77,7 @@ describe("Translation", function() {
 				it('saves with a translator', async function () {
 					var items = await background(async function(tabId) {
 						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
-						let tab = await Zotero.Background.getTabById(tabId);
+						let tab = await Zotero.Background.getTabByID(tabId);
 						try {
 							return Zotero.Connector_Browser.saveWithTranslator(tab, 0)
 						} finally {
@@ -122,7 +122,7 @@ describe("Translation", function() {
 				it('saves as snapshot', async function () {
 					await background(async function(tabId) {
 						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
-						let tab = await Zotero.Background.getTabById(tabId);
+						let tab = await Zotero.Background.getTabByID(tabId);
 						try {
 							await Zotero.Connector_Browser.saveAsWebpage(tab, false);
 						} finally {
@@ -144,7 +144,7 @@ describe("Translation", function() {
 							.rejects(new Zotero.Connector.CommunicationError('Err', 500));
 						// prevent reporting translator errors
 						var stub2 = sinon.stub(Zotero.Prefs, 'get').returns(false);
-						var tab = await Zotero.Background.getTabById(tabId);
+						var tab = await Zotero.Background.getTabByID(tabId);
 						try {
 							await Zotero.Connector_Browser.saveWithTranslator(tab, 0);
 						}
@@ -183,7 +183,7 @@ describe("Translation", function() {
 							// First-time save
 							sinon.stub(Zotero.Prefs, 'get').returns(true);
 							var deferred = Zotero.Promise.defer();
-							var tab = await Zotero.Background.getTabById(tabId);
+							var tab = await Zotero.Background.getTabByID(tabId);
 							Zotero.Connector_Browser.saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
 						}, tab.tabId);
 						// Waiting for modal-prompt to be displayed
@@ -265,7 +265,7 @@ describe("Translation", function() {
 						});
 						return deferred.promise;
 					});
-					await tab.init(getExtensionUrl('test/data/top-DOI-frame-COInS.html'));
+					await tab.init(getExtensionURL('test/data/top-DOI-frame-COInS.html'));
 					await bgTranslatorsLoadedPromise;
 					
 					var [translators, instanceID] = await background(async function(tabId) {
@@ -276,7 +276,7 @@ describe("Translation", function() {
 							translators = Zotero.Connector_Browser._tabInfo[tabId].translators.map(t => t.label);
 							instanceID = Zotero.Connector_Browser._tabInfo[tabId].instanceID;
 						} else {
-							let tab = await Zotero.Background.getTabById(tabId);
+							let tab = await Zotero.Background.getTabByID(tabId);
 							translators = tab.translators.map(t => t.label);
 							instanceID = tab.instanceID;
 						}

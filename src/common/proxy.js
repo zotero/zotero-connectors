@@ -372,6 +372,11 @@ Zotero.Proxies = new function() {
 
 		// Otherwise, redirect.
 		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
+			for (var proxy of Zotero.Proxies.proxies) {
+				if (proxy.regexp) {
+					if (proxy.regexp.exec(details.url)) break;
+				}
+			}
 			_showNotification(
 				'Zotero Proxy Redirection',
 				`Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxy.toDisplayName()}.`,

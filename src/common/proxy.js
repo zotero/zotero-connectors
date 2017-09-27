@@ -283,7 +283,7 @@ Zotero.Proxies = new function() {
 					title: 'Only add proxies linked from your library, school, or corporate website',
 					message: 'Adding other proxies allows malicious sites to masquerade as sites you trust.<br/></br>'
 					+ 'Adding this proxy will allow Zotero to recognize items from proxied pages and will automatically '
-					+ `redirect future requests to ${proxy.hosts[proxy.hosts.length - 1]} through ${proxiedHost}.`,
+					+ `redirect future requests to ${proxy.hosts[proxy.hosts.length - 1]} through ${proxy.toDisplayName()}.`,
 					button1Text: 'Add Proxy',
 					button2Text: 'Cancel'
 				});

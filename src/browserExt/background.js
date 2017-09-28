@@ -242,7 +242,10 @@ Zotero.Connector_Browser = new function() {
 			let timedOut = false;
 			
 			for (let script of scripts) {
-				yield browser.tabs.executeScript(tab.id, {file: script, frameId, runAt: 'document_end'});
+				// Firefox returns an error for unstructured data being returned from scripts
+				// We are forced to catch these, even though when sometimes they may be legit errors
+				yield browser.tabs.executeScript(tab.id, {file: script, frameId, runAt: 'document_end'})
+					.catch(() => undefined);
 			}
 			
 			// Send a ready message to confirm successful injection

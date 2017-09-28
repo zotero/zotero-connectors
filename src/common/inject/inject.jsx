@@ -128,7 +128,13 @@ Zotero.Inject = new function() {
 
 			if(!_translate) {
 				_translate = new Zotero.Translate.Web();
-				_translate.setHandler("select", function(obj, items, callback) {
+				_translate.setHandler("select", async function(obj, items, callback) {
+					if (await Zotero.Connector.checkIsOnline) {
+						let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
+						if (response.libraryEditable === false) {
+							return callback([]);
+						}
+					}
 					Zotero.Connector_Browser.onSelect(items).then(function(returnItems) {
 						// if no items selected, close save dialog immediately
 						if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {

@@ -155,67 +155,68 @@ Zotero.ContentTypeHandler = {
 	/**
 	 * Send an XHR request to retrieve and import the file into Standalone
 	 */
-	importFile: function(details, type) {
-		browser.tabs.get(details.tabId).then(function(tab) {
-			// Make sure scripts injected so we can display the progress window
-			Zotero.Connector_Browser.injectTranslationScripts(tab).then(function() {
-				Zotero.Messaging.sendMessage('progressWindow.show', type == 'csl' ? 'Installing Style' : 'Importing', tab);
+	importFile: async function(details, type) {
+		var tab = await browser.tabs.get(details.tabId);
+		// Make sure scripts injected so we can display the progress window
+		await Zotero.Connector_Browser.injectTranslationScripts(tab);
+		Zotero.Messaging.sendMessage('progressWindow.show', type == 'csl' ? 'Installing Style' : 'Importing', tab);
+	
+		var xhr = new XMLHttpRequest();
+		// If the original request method was POST, this is likely to fail, because
+		// we do not send the request body. For discussion see
+		// https://github.com/zotero/zotero-connectors/pull/59#discussion_r93317639
+		xhr.open(details.method, details.url);
+		xhr.onreadystatechange = async function() {
+			if(xhr.readyState !== 4) return;
 			
-				var xhr = new XMLHttpRequest();
-				// If the original request method was POST, this is likely to fail, because
-				// we do not send the request body. For discussion see
-				// https://github.com/zotero/zotero-connectors/pull/59#discussion_r93317639
-				xhr.open(details.method, details.url);
-				xhr.onreadystatechange = function() {
-					if(xhr.readyState !== 4) return;
-					
-					if (this.status < 200 || this.status >= 400) {
-						throw Error(`IMPORT: Retrieving ${details.url} failed with status ${this.status}.\nResponse body:\n${this.responseText}`);
-					}
-					let options = { headers: {"Content-Type": this.getResponseHeader('Content-Type')} };
-					if (type == 'csl') {
-						options.method = 'installStyle';
-						options.queryString = 'origin=' + encodeURIComponent(details.url);
-						return Zotero.Connector.callMethod(options, this.response).then(function(result) {
-							Zotero.Messaging.sendMessage('progressWindow.itemProgress',
-								[browser.extension.getURL('images/csl-style.png'), result.name, null, 100], tab);
-							return Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
-						}, function(e) {
-							if (e.status == 404) {
-								return Zotero.Messaging.sendMessage('progressWindow.done',
-									[false, 'upgradeClient'], tab);
-							} else {
-								return Zotero.Messaging.sendMessage('progressWindow.done',
-									[false, 'clientRequired'], tab);
-							}
-						});
+			if (this.status < 200 || this.status >= 400) {
+				throw Error(`IMPORT: Retrieving ${details.url} failed with status ${this.status}.\nResponse body:\n${this.responseText}`);
+			}
+			let options = { headers: {"Content-Type": this.getResponseHeader('Content-Type')} };
+			if (type == 'csl') {
+				options.method = 'installStyle';
+				options.queryString = 'origin=' + encodeURIComponent(details.url);
+				try {
+					let result = await Zotero.Connector.callMethod(options, this.response);
+					Zotero.Messaging.sendMessage('progressWindow.itemProgress',
+						[browser.extension.getURL('images/csl-style.png'), result.name, null, 100], tab);
+					return Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
+				}
+				catch(e) {
+					if (e.status == 404) {
+						return Zotero.Messaging.sendMessage('progressWindow.done',
+							[false, 'upgradeClient'], tab);
 					} else {
-						options.method = 'import';
-						return Zotero.Connector.callMethod(options, this.response).then(function(result) {
-							Zotero.Messaging.sendMessage('progressWindow.show', 
-								`Imported ${result.length} item` + (result.length > 1 ? 's' : ''), tab);
-							for (let i = 0; i < result.length && i < 20; i++) {
-								let item = result[i];
-								Zotero.Messaging.sendMessage('progressWindow.itemProgress',
-									[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, null, 100], tab);
-							}
-							Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
-						}, function(e) {
-							if (e.status == 404) {
-								return Zotero.Messaging.sendMessage('progressWindow.done',
-									[false, 'upgradeClient'], tab);
-							}
-							else if (e.status < 200 || status >= 400) {
-								return Zotero.Messaging.sendMessage('progressWindow.done',
-									[false, 'clientRequired'], tab);
-							}
-						});
+						return Zotero.Messaging.sendMessage('progressWindow.done',
+							[false, 'clientRequired'], tab);
 					}
-				};
-				xhr.send();		
-			});
-		});
-		
+				}
+			} else {
+				options.method = 'import';
+				try {
+					let result = await Zotero.Connector.callMethod(options, this.response);
+					Zotero.Messaging.sendMessage('progressWindow.show', 
+						`Imported ${result.length} item` + (result.length > 1 ? 's' : ''), tab);
+					for (let i = 0; i < result.length && i < 20; i++) {
+						let item = result[i];
+						Zotero.Messaging.sendMessage('progressWindow.itemProgress',
+							[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, null, 100], tab);
+					}
+					Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
+				}
+				catch(e) {
+					let err = 'clientRequired';
+					if (e.status == 404) {
+						err = 'upgradeClient';
+					}
+					else if (e.status == 500 && e.value && e.value.libraryEditable === false) {
+						err = 'collectionNotEditable';
+					}
+					return Zotero.Messaging.sendMessage('progressWindow.done', [false, err], tab);
+				}
+			}
+		};
+		xhr.send();		
 	}
 };
 })();

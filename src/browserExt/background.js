@@ -234,8 +234,7 @@ Zotero.Connector_Browser = new function() {
 	 * @returns {Promise} A promise that resolves when all scripts have been injected
 	 */
 	this.injectScripts = async function(scripts, tab, frameId=0) {
-		var urlChanged = false;
-		async function injectScripts() {
+		function* injectScripts() {
 			if (! Array.isArray(scripts)) scripts = [scripts];
 			// Make sure we're not changing the original list
 			scripts = Array.from(scripts);
@@ -243,13 +242,12 @@ Zotero.Connector_Browser = new function() {
 			let timedOut = false;
 			
 			for (let script of scripts) {
-				await browser.tabs.executeScript(tab.id, {file: script, frameId, runAt: 'document_end'});
-				if (urlChanged) return;
+				yield browser.tabs.executeScript(tab.id, {file: script, frameId, runAt: 'document_end'});
 			}
 			
 			// Send a ready message to confirm successful injection
 			let readyMsg = `ready${Date.now()}`;
-			await browser.tabs.executeScript(tab.id, {
+			yield browser.tabs.executeScript(tab.id, {
 				code: `browser.runtime.onMessage.addListener(function awaitReady(request) {
 					if (request == '${readyMsg}') {
 						browser.runtime.onMessage.removeListener(awaitReady);
@@ -259,47 +257,54 @@ Zotero.Connector_Browser = new function() {
 				frameId,
 				runAt: 'document_end'
 			});
-			let timeout = setTimeout(function() {
-				timedOut = true;
-			}, 3000);
 			
 			while (true) {
-				// Unfortunately firefox sometimes neither rejects nor resolves tabs#executeScript(). Testing proxied
-				// http://www.ams.org/mathscinet/search/publdoc.html?pg1=INDI&s1=916336&sort=Newest&vfpref=html&r=1&mx-pid=3439694
-				// with a fresh browser session consistently reproduces the bug. The injection may be partial, but we need to
-				// resolve this promise somehow, so we reject in the event of timeout.
-				// UPDATE 2017-08-29 seems to no longer be the case, but this is a generally nice safeguard that is good to
-				// have. Let's keep an eye out for these failed injections in reports.	
-				if (timedOut) throw new Error (`Script injection timed out ${tab.url}`);
 				try {
-					var response = await browser.tabs.sendMessage(tab.id, readyMsg, {frameId: frameId});
+					var response = yield browser.tabs.sendMessage(tab.id, readyMsg, {frameId: frameId});
 				} catch (e) {}
 				if (!response) {
-					await Zotero.Promise.delay(100);
+					yield Zotero.Promise.delay(100);
 				} else {
 					Zotero.debug(`Injection complete ${frameId} : ${tab.url}`);
-					clearTimeout(timeout);
 					return true;
 				}
 			}		
 		}
-		
-		var deferred = Zotero.Promise.defer();
+		var timedOut = Zotero.Promise.defer();
+		let timeout = setTimeout(function() {
+			timedOut.reject(new Error (`Script injection timed out ${tab.id}-${frameId}`))
+		}, 1000);
+
+		var urlChanged = Zotero.Promise.defer();
 		function urlChangeListener(tabID, changeInfo) {
 			if (tabID != tab.id || (changeInfo && !changeInfo.url)) return;
-			urlChanged = true;
-			deferred.reject(new Error(`Url changed mid-injection into ${tab.id}-${frameId}`));
+			urlChanged.reject(new Error(`Url changed mid-injection into ${tab.id}-${frameId}`))
 		}
 		browser.tabs.onRemoved.addListener(urlChangeListener);
 		browser.tabs.onUpdated.addListener(urlChangeListener);
 
+		// This is a bit complex, but we need to cut off script injection as soon as we notice an
+		// interruption condition, such as a timeout or url change, otherwise we get partial injections
 		try {
-			await Promise.race([deferred.promise, injectScripts()]);
+			var iter = injectScripts();
+			var val = iter.next();
+			while (true) {
+				if (val.done) {
+					return val.value;
+				}
+				if (val.value.then) {
+					// Will either throw from the first two, or return from the third one
+					let nextVal = await Promise.race([timedOut.promise, urlChanged.promise, val.value]);
+					val = iter.next(nextVal);
+				} else {
+					val = iter.next(val.value);
+				}
+			}
 		} finally {
 			browser.tabs.onRemoved.removeListener(urlChangeListener);
 			browser.tabs.onUpdated.removeListener(urlChangeListener);
+			clearTimeout(timeout);
 		}
-
 	};
 
 	this.openTab = function(url, tab) {

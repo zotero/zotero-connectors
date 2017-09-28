@@ -129,10 +129,16 @@ Zotero.Inject = new function() {
 			if(!_translate) {
 				_translate = new Zotero.Translate.Web();
 				_translate.setHandler("select", async function(obj, items, callback) {
-					if (await Zotero.Connector.checkIsOnline) {
+					try {
 						let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
 						if (response.libraryEditable === false) {
 							return callback([]);
+						}
+					} catch (e) {
+						// Zotero is online but an error occured anyway, so let's log it and display
+						// the dialog just in case
+						if (e.status != 0) {
+							Zotero.logError(e);
 						}
 					}
 					Zotero.Connector_Browser.onSelect(items).then(function(returnItems) {

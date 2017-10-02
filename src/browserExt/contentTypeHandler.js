@@ -84,6 +84,8 @@ Zotero.ContentTypeHandler = {
 				if (response && response.button == 1) {
 					Zotero.debug(`ContentTypeHandler: Importing style ${details.url}`);
 					Zotero.ContentTypeHandler.importFile(details, 'csl');
+				} else {
+					Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, details.url);
 				}
 			}
 		);
@@ -109,10 +111,18 @@ Zotero.ContentTypeHandler = {
 						hosts.push(URI.host);
 					}
 					Zotero.Prefs.set('allowedInterceptHosts', hosts);
+				} else {
+					Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, details.url);
 				}
 			});
 		}
 		return {redirectUrl: 'javascript:'};	
+	},
+	
+	_redirectToOriginal: function(tabId, url) {
+		Zotero.ContentTypeHandler.ignoreURL.add(url);
+		// Ignore the next request to this url and redirect
+		browser.tabs.update(tabId, {url});
 	},
 	
 	/**
@@ -125,10 +135,6 @@ Zotero.ContentTypeHandler = {
 	 */
 	confirm: async function(details, message, checkboxText="") {
 		let tab = await browser.tabs.get(details.tabId);
-		// Make sure the scripts to handle the confirmation box are injected
-		try {
-			await Zotero.Connector_Browser.injectTranslationScripts(tab);
-		} catch (e) {}
 		
 		var props = {message};
 		if (checkboxText.length) {
@@ -144,11 +150,7 @@ Zotero.ContentTypeHandler = {
 		if (!response) {
 			response = {button: 2}
 		}
-		if (!response.button || response.button == 2) {
-			Zotero.ContentTypeHandler.ignoreURL.add(details.url);
-			// Ignore the next request to this url and redirect
-			browser.tabs.update(tab.id, {url: details.url});
-		}
+
 		return response;
 	},
 	
@@ -158,7 +160,6 @@ Zotero.ContentTypeHandler = {
 	importFile: async function(details, type) {
 		var tab = await browser.tabs.get(details.tabId);
 		// Make sure scripts injected so we can display the progress window
-		await Zotero.Connector_Browser.injectTranslationScripts(tab);
 		Zotero.Messaging.sendMessage('progressWindow.show', type == 'csl' ? 'Installing Style' : 'Importing', tab);
 	
 		var xhr = new XMLHttpRequest();

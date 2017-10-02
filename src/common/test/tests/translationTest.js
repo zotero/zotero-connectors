@@ -92,6 +92,31 @@ describe("Translation", function() {
 					});
 					assert.include(message, items[0].title);
 				}));
+				
+				it('saves with a translator that uses the select dialog', Promise.coroutine(function* () {
+					var items = yield background(async function(tabId) {
+						var stub1 = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
+						var stub2 = sinon.stub(Zotero.Connector_Browser, "onSelect").callsFake(function(items) {
+							return items;
+						});
+						try {
+							var tab = await browser.tabs.get(tabId);
+							var items = await Zotero.Connector_Browser._saveWithTranslator(tab, 1);
+						} finally {
+							stub1.restore();
+							stub2.restore();
+						}
+						return items;
+					}, tab.tabId);
+					assert.equal(items.length, 1);
+					assert.equal(items[0].itemType, 'journalArticle');
+					var message = yield tab.run(function() {
+						var message = document.getElementById('zotero-progress-window').textContent;
+						Zotero.ProgressWindow.close();
+						return message;
+					});
+					assert.include(message, items[0].title);
+				}));
 			
 				it('saves as snapshot', Promise.coroutine(function* () {
 					yield background(function(tabId) {

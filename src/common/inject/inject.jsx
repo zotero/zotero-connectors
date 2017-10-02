@@ -128,26 +128,30 @@ Zotero.Inject = new function() {
 
 			if(!_translate) {
 				_translate = new Zotero.Translate.Web();
-				_translate.setHandler("select", async function(obj, items, callback) {
-					try {
-						let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
-						if (response.libraryEditable === false) {
-							return callback([]);
+				_translate.setHandler("select", function(obj, items, callback) {
+					// If the handler returns a non-undefined value then it is passed
+					// back to the callback due to backwards compat code in translate.js
+					(async function() {
+						try {
+							let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
+							if (response.libraryEditable === false) {
+								return callback([]);
+							}
+						} catch (e) {
+							// Zotero is online but an error occured anyway, so let's log it and display
+							// the dialog just in case
+							if (e.status != 0) {
+								Zotero.logError(e);
+							}
 						}
-					} catch (e) {
-						// Zotero is online but an error occured anyway, so let's log it and display
-						// the dialog just in case
-						if (e.status != 0) {
-							Zotero.logError(e);
-						}
-					}
-					Zotero.Connector_Browser.onSelect(items).then(function(returnItems) {
-						// if no items selected, close save dialog immediately
-						if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
-							Zotero.Messaging.sendMessage("progressWindow.close", null);
-						}
-						callback(returnItems);
-					});
+						Zotero.Connector_Browser.onSelect(items).then(function(returnItems) {
+							// if no items selected, close save dialog immediately
+							if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
+								Zotero.Messaging.sendMessage("progressWindow.close", null);
+							}
+							callback(returnItems);
+						});					
+					})();
 				});
 				_translate.setHandler("itemSaving", function(obj, item) {
 					// this relays an item from this tab to the top level of the window
@@ -462,7 +466,7 @@ if(!isHiddenIFrame && (isWeb || isTestPage)) {
 			return Zotero.Inject.translate(data[1]);
 		});
 		// add a listener to save as webpage when translators unavailable
-		if (isTopWindow) {
+		if (!Zotero.isSafari || isTopWindow) {
 			Zotero.Messaging.addMessageListener("saveAsWebpage", Zotero.Inject.saveAsWebpage);
 		}
 		// add listener to rerun detection on page modifications

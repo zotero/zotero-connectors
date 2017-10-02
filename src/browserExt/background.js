@@ -276,7 +276,7 @@ Zotero.Connector_Browser = new function() {
 		var timedOut = Zotero.Promise.defer();
 		let timeout = setTimeout(function() {
 			timedOut.reject(new Error (`Script injection timed out ${tab.id}-${frameId}`))
-		}, 1000);
+		}, 5000);
 
 		var urlChanged = Zotero.Promise.defer();
 		function urlChangeListener(tabID, changeInfo) {

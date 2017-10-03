@@ -101,7 +101,7 @@ describe("Translation", function() {
 							return items;
 						});
 						try {
-							var tab = await Zotero.Background.getTabById(tabId);
+							var tab = await Zotero.Background.getTabByID(tabId);
 							var items = await Zotero.Connector_Browser.saveWithTranslator(tab, 1);
 						} finally {
 							stub1.restore();

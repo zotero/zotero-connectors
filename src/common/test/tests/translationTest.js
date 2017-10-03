@@ -79,10 +79,11 @@ describe("Translation", function() {
 						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
 						let tab = await Zotero.Background.getTabByID(tabId);
 						try {
-							return Zotero.Connector_Browser.saveWithTranslator(tab, 0)
+							var items = await Zotero.Connector_Browser.saveWithTranslator(tab, 0)
 						} finally {
 							stub.restore();
 						}
+						return items;
 					}, tab.tabId);
 					assert.equal(items.length, 1);
 					assert.equal(items[0].itemType, 'journalArticle');

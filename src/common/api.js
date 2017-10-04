@@ -224,36 +224,39 @@ Zotero.API = new function() {
 	 * @param {Boolean} [askForAuth] If askForAuth === false, don't ask for authorization if not 
 	 *     already authorized.
 	 */
-	this.createItem = function(payload, askForAuth) {
-		return Zotero.API.getUserInfo().then(function(userInfo) {
-			if(!userInfo) {
-				if(askForAuth === false) {
-					throw new Error("Not authorized");
-				}
-				return Zotero.API.authorize().then(function() {
-					return Zotero.API.createItem(payload, false);
-				}, function() {
-					throw new Error("Authentication failed");
-				})
+	this.createItem = async function(payload, askForAuth) {
+		var userInfo = await Zotero.API.getUserInfo();
+		if(!userInfo) {
+			if(askForAuth === false) {
+				throw new Error("Not authorized");
 			}
-			
-			var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo['auth-userID'] + "/items";
-			let options = {
-				body: JSON.stringify(payload),
-				headers: {
-					"Content-Type": "application/json",
-					"Zotero-API-Key": userInfo['auth-token_secret'],
-					"Zotero-API-Version": "3"
-				}
-			};
-			return Zotero.HTTP.request("POST", url, options).then(xhr => xhr.responseText).catch(function(e) {
-				if (askForAuth && xmlhttp.status === 403) {
-					return Zotero.API.createItem(payload, true);
-				}
-				Zotero.logError(e);
-				throw e;
-			});
-		});
+			return Zotero.API.authorize().then(function() {
+				return Zotero.API.createItem(payload, false);
+			}, function() {
+				throw new Error("Authentication failed");
+			})
+		}
+		
+		var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo['auth-userID'] + "/items";
+		var options = {
+			body: JSON.stringify(payload),
+			headers: {
+				"Content-Type": "application/json",
+				"Zotero-API-Key": userInfo['auth-token_secret'],
+				"Zotero-API-Version": "3"
+			}
+		};
+		try {
+			var xhr = await Zotero.HTTP.request("POST", url, options);
+			return xhr.responseText;
+		}
+		catch(e) {
+			if (askForAuth && e.status === 403) {
+				return Zotero.API.createItem(payload, true);
+			}
+			Zotero.logError(e);
+			throw e;
+		};
 	};
 	
 	/**

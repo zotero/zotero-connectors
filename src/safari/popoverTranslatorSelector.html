@@ -89,7 +89,8 @@
 					.insertBefore(saveWithoutSnapshotElem.parentNode, saveWithSnapshotElem.parentNode);
 			}
 
-			if (Zotero.Connector_Browser.activeTab.contentType == 'application/pdf') {
+			if (Zotero.Connector_Browser.activeTab.contentType == 'application/pdf' ||
+				Zotero.Connector_Browser.activeTab.isPDFFrame) {
 				document.getElementById('zotero-save-page-with-snapshot').textContent = "Save to Zotero (PDF)";
 				document.getElementById('zotero-save-page-without-snapshot').style.display = 'none';
 			}

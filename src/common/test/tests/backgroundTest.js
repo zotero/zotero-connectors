@@ -27,7 +27,7 @@ describe('Connector_Browser', function() {
 	var tab = new Tab();
 	
 	describe('onPDFFrame', function() {
-		it('sets icon to PDF if no translators present', Promise.coroutine(function* () {
+		it('sets icon to PDF if no translators present', async function () {
 			try {
 				let bgPromise = background(function() {
 					Zotero.Prefs.set('firstUse', false);
@@ -35,29 +35,35 @@ describe('Connector_Browser', function() {
 					var deferred = Zotero.Promise.defer();
 					stub.callsFake(deferred.resolve);
 					
-					// Independent of the online status of Zotero client we need to observer content types
-					// to trigger the onPDFFrame icon, but don't want to affect the already attached
-					// observer state, so we generate a custom function to work with
-					let customObserver = d => Zotero.ContentTypeHandler.observe(d);
-					Zotero.WebRequestIntercept.addListener('headersReceived', customObserver);
-					deferred.promise.then(() => Zotero.WebRequestIntercept.removeListener('headersReceived', customObserver));
+					if (Zotero.isBrowserExt) {
+						// Independent of the online status of Zotero client we need to observer content types
+						// to trigger the onPDFFrame icon, but don't want to affect the already attached
+						// observer state, so we generate a custom function to work with
+						let customObserver = details => Zotero.ContentTypeHandler.observe(details);
+						Zotero.WebRequestIntercept.addListener('headersReceived', customObserver);
+						deferred.promise.then(() => Zotero.WebRequestIntercept.removeListener('headersReceived', customObserver));
+					}
 					return deferred.promise;
 				});
-				yield tab.init(browser.extension.getURL('test/data/framePDF.html'));
-				yield bgPromise;
-				let tabId = yield background(function() {
-					let tabId = Zotero.Connector_Browser._showPDFIcon.args[0][0].id;
-					return tabId;
-				});
+				await Zotero.Promise.delay(30);
+				await tab.init(getExtensionURL('test/data/framePDF.html'));
+				await bgPromise;
+				let tabId = await background(async function(tabId) {
+					if (Zotero.isBrowserExt) {
+						return Zotero.Connector_Browser._showPDFIcon.args[0][0].id;
+					} else {
+						return (await Zotero.Background.getTabByID(tabId)).isPDFFrame ? tabId : -1;
+					}
+				}, tab.tabId);
 				assert.equal(tabId, tab.tabId);
 			} finally {
-				yield background(function() {
+				await background(function() {
 					Zotero.Connector_Browser._showPDFIcon.restore()
 				});
 				if (tab.tabId) {
-					yield tab.close();
+					await tab.close();
 				}
 			}
-		}));
+		});
 	});
 });

@@ -78,7 +78,6 @@ var injectInclude = [
 	'messages.js',
 	'messaging_inject.js'
 ];
-var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(injectInclude, ['api.js']);
 var injectIncludeLast;
 if (argv.p) {
 	injectIncludeLast = ['inject/inject.js'];
@@ -90,8 +89,11 @@ if (argv.p) {
 		'tools/testTranslators/translatorTester_inject.js'
 	];
 }
-injectInclude.push.apply(injectInclude, injectIncludeLast);
-injectIncludeBrowserExt.push.apply(injectIncludeBrowserExt, injectIncludeLast);
+var injectIncludeSafari = [].concat(injectInclude, ['ui/notification.js'], injectIncludeLast);
+var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(injectInclude, ['api.js'], injectIncludeLast);
+if (!argv.p) {
+	injectIncludeSafari = injectIncludeSafari.concat(['lib/sinon.js', 'test/testSetup.js'])
+}
 
 var backgroundInclude = [
 	'node_modules.js',
@@ -193,12 +195,20 @@ function processFile() {
 		var addFiles = function(file) {
 			// Amend paths
 			if (type === 'common' || type === 'browserExt') {
+				if (file.path.includes('test/data') && file.path.includes('.html')) {
+					file.contents = Buffer.from(replaceScriptsHTML(
+						file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
+				}
 				var f = file.clone({contents: false});
 				f.path = parts.slice(0, i-1).join('/') + '/build/browserExt/' + parts.slice(i+1).join('/');
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);
 			}
 			if (type === 'common' || type === 'safari') {
+				if (file.path.includes('test/data') && file.path.includes('.html')) {
+					file.contents = Buffer.from(replaceScriptsHTML(
+						file.contents.toString(), "<!--SCRIPTS-->", injectIncludeSafari.map(s => `../../${s}`)));
+				}
 				f = file.clone({contents: false});
 				f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/' + parts.slice(i+1).join('/');
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
@@ -238,7 +248,7 @@ function processFile() {
 			case 'Info.plist':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("<!--SCRIPTS-->",
-						injectInclude.map((s) => `<string>${s}</string>`).join('\n\t\t\t\t'))
+						injectIncludeSafari.map((s) => `<string>${s}</string>`).join('\n\t\t\t\t'))
 					.replace(/(<key>(?:CFBundleShortVersionString|CFBundleVersion)<\/key>\s*)<string>[^<]*<\/string>/g,
 						 '$1<string>'+argv.version+'</string>'));
 				break;
@@ -247,10 +257,6 @@ function processFile() {
 				// Stream needs to be converted to a buffer because of complicated stream cloning quantum bugs
 				browserify(file).bundle((err, buf) => {file.contents = buf; addFiles(file)});
 				break;
-		}
-		if (file.path.includes('test/data') && file.path.includes('.html')) {
-			file.contents = Buffer.from(replaceScriptsHTML(
-				file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
 		}
 		
 		if (!asyncAddFiles) {

@@ -82,7 +82,7 @@ Zotero.initDeferred.promise.then(function() {
 	if (Zotero.isBackground) {
 		// background page
 		Zotero.Background = {
-			run: function(code) {
+			run: async function(code) {
 				try {
 					eval(`var fn = ${code}`);
 					return fn.apply(null, Array.from(arguments).slice(1));
@@ -99,7 +99,10 @@ Zotero.initDeferred.promise.then(function() {
 				if (changeInfo.status == "complete" && !deferred.resolved) {
 					// Don't try to inject in extension own pages
 					if (tab.url.includes('-extension://')) {
-						return Zotero.Promise.delay(1000).then(() => deferred.resolve(tabId));
+						return Zotero.Promise.delay(1000).then(function() {
+							deferred.resolved = true;
+							deferred.resolve(tabId)
+						});
 					}
 					
 					let scripts = [ 'lib/sinon.js', 'test/testSetup.js' ];
@@ -115,6 +118,9 @@ Zotero.initDeferred.promise.then(function() {
 				}
 			}
 		});
+		Zotero.Background.getTabByID = async function(tabId) {
+			return browser.tabs.get(tabId);
+		};
 	}
 	else if (Zotero.isInject || Zotero.isPreferences) {
 		// injected page
@@ -139,6 +145,9 @@ if (typeof mocha != 'undefined') {
 		}
 		return Zotero.Background.run.apply(null, arguments);
 	});
+	function getExtensionURL(url) {
+		return browser.extension.getURL(url);
+	}
 	
 	var Tab = function() {
 		if (Zotero.isSafari) {

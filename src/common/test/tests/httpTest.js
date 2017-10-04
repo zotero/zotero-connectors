@@ -57,9 +57,9 @@ describe("HTTP", function() {
 			assert.include(content, 'Rosenzweig');
 			assert.equal(location, url);
 		}));
-		it('succeeds when loading a cross-origin page', Promise.coroutine(function* () {
-			let url = browser.extension.getURL('test/data/journalArticle-single.html');
-			let [content, location] = yield tab.run(function(url) {
+		it('succeeds when loading a cross-origin page', async function () {
+			let url = getExtensionURL('test/data/journalArticle-single.html');
+			let [content, location] = await tab.run(function(url) {
 				var deferred = Zotero.Promise.defer();
 				sinon.stub(Zotero.HTTP, 'isSameOrigin').returns(false);
 				Zotero.HTTP.processDocuments(url, function(doc) {
@@ -77,7 +77,7 @@ describe("HTTP", function() {
 			
 			assert.include(content, 'Rosenzweig');
 			assert.equal(location, url);
-		}));
+		});
 	});
 	
 	describe('#request()', function() {

@@ -34,37 +34,49 @@ Zotero.Connector_Browser = new function() {
 	 * Called when a new page has been loaded to clear previous translators
 	 */
 	this.onPageLoad = function(tab) {
-		if(tab.translators) {
-			tab.translators = null;
-		}
 		_updateButtonStatus();
+		if (Zotero.Proxies.transparent) {
+			Zotero.Proxies.onPageLoadSafari(tab);
+		}
+	};
+	
+	/**
+	 * If there's a frame with a PDF mimeType this gets invoked
+	 * @param frameURL
+	 * @param tabId
+	 */
+	this.onPDFFrame = function(frameURL, instanceID, tab) {
+		if (tab.translators && tab.translators.length) {
+			return;
+		}
+		tab.isPDFFrame = true;
+		tab.instanceID = instanceID;
+		_updateButtonStatus(tab);
 	}
+	
 	
 	/**
 	 * Called when translators are available for a given page
 	 */
 	this.onTranslators = function(translators, instanceID, contentType, tab) {
-		var oldTranslators = tab.translators;
+		if (!translators.length) return;
 		tab.contentType = contentType;
 		
 		let existingTranslators = tab.translators;
 		// If translators already exist for tab we need to figure out if the new translators
 		// are more important/higher priority
-		if (existingTranslators) {
-			if (!translators.length) return;
+		if (existingTranslators && existingTranslators.length) {
+			let existingTranslatorsHaveHigherPriority = existingTranslators[0].priority < translators[0].priority;
+			if (existingTranslatorsHaveHigherPriority) return;
 			
-			if (existingTranslators.length) {
-				let existingTranslatorsHaveHigherPriority = existingTranslators[0].priority > translators[0].priority;
-				if (existingTranslatorsHaveHigherPriority) return;
-				
-				let priorityEqual = translators[0].priority == existingTranslators[0].priority;
-				let newTranslatorsAreFromTopFrame = instanceID == 0;
-				if (priorityEqual && !newTranslatorsAreFromTopFrame) return;
-			}	
+			let priorityEqual = translators[0].priority == existingTranslators[0].priority;
+			let newTranslatorsAreFromTopFrame = instanceID == 0;
+			if (priorityEqual && !newTranslatorsAreFromTopFrame) return;
 		}
 		
 		tab.translators = translators;
 		tab.instanceID = instanceID;
+		tab.isPDFFrame = false;
 
 		_updateButtonStatus();
 	}
@@ -96,11 +108,11 @@ Zotero.Connector_Browser = new function() {
 		var tab = safari.application.activeBrowserWindow.activeTab;
 		if (command === "zotero-button") {
 			if(tab.translators && tab.translators.length) {
-				Zotero.Connector_Browser.saveWithTranslator(0);
+				Zotero.Connector_Browser.saveWithTranslator(tab, 0);
 			} else {
 				var withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
 					Zotero.Prefs.get('automaticSnapshots');
-				Zotero.Connector_Browser.saveAsWebpage(withSnapshot);
+				Zotero.Connector_Browser.saveAsWebpage(tab, withSnapshot);
 			}
 		} else if (command === "zotero-preferences") {
 			Zotero.Connector_Browser.openTab(safari.extension.baseURI+"preferences/preferences.html");
@@ -153,29 +165,64 @@ Zotero.Connector_Browser = new function() {
 		_incompatibleVersionMessageShown = true;
 	}
 
-	this.saveWithTranslator = function(i) {
-		var tab = safari.application.activeBrowserWindow.activeTab;
-		tab.page.dispatchMessage("translate",
-				[tab.instanceID, tab.translators[i].translatorID]);
+	this.saveWithTranslator = function(tab, i) {
+		return Zotero.Messaging.sendMessage("translate", [tab.instanceID, tab.translators[i].translatorID], tab);
 	}
 
-	this.saveAsWebpage = function (withSnapshot) {
-		let tab = safari.application.activeBrowserWindow.activeTab;
+	this.saveAsWebpage = function(tab, withSnapshot) {
 		let title = tab.title.split('/');
 		title = title[title.length-1];
-		tab.page.dispatchMessage("saveAsWebpage", [title, withSnapshot]);
+		return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.instanceID || 0, [title, withSnapshot]], tab);
 	}
 
 	this.openTab = function(url) {
 		safari.application.activeBrowserWindow.openTab().url = url;
 	};
 
+	this.openPreferences = function(paneID) {
+		Zotero.Connector_Browser.openTab(safari.extension.baseURI + `preferences/preferences.html#${paneID}`);
+	};
+
 	this.openConfigEditor = function() {
 		Zotero.Connector_Browser.openTab(safari.extension.baseURI + "preferences/config.html");
 	};
+	
+	
+	/**
+	 * Display an old-school firefox notification by injecting HTML directly into DOM.
+	 * This has a side-effect of navigation (user-initiated or JS-redirect-based)
+	 * removing the notification so we keep on re-injecting it into DOM.
+	 *
+	 * The timeout argument specifies how long the notification has to be displayed for
+	 * without navigation, before it is considered "seen" and further navigation on the tab
+	 * will not make it re-appear.
+	 *
+	 * @param {String} text
+	 * @param {String[]} buttons - labels for buttons
+	 * @param {Number} [seenTimeout=5000]
+	 * @param {Tab} [tab=currentTab]
+	 * @returns {Promise{Number}} button pressed idx or undefined if timed-out and navigated away from
+	 */
+	this.notify = async function(text, buttons, seenTimeout=5000, tab=null) {
+		await Zotero.Promise.delay(1000);
+		// Get current tab if not provided
+		if (!tab) {
+			tab = safari.application.activeBrowserWindow.activeTab;
+		}
+		let timedOut = false;
+		seenTimeout && setTimeout(() => timedOut = true, seenTimeout);
+		var response = await Zotero.Messaging.sendMessage('notify', [text, buttons, null, 'complete'], tab);
+		if (response != undefined || timedOut) return response;
 
-	function _isDisabledForURL(url) {
-		return !url || url.indexOf('safari-extension://') == 0 || url.indexOf('file://') == 0;
+		// Tab url changed or tab got removed, hence the undefined response
+		// Wait a sec to not run a busy-waiting loop
+		await Zotero.Promise.delay(1000);
+		return this.notify(text, buttons, seenTimeout, tab);
+	}
+		
+
+	function _isDisabledForURL(url, excludeTests=false) {
+		return !url || url.includes('file://') || (url.includes('-extension://') && (!excludeTests || !url.includes('/test/data/')));
 	}
 
 	/**
@@ -187,7 +234,7 @@ Zotero.Connector_Browser = new function() {
 		if (!_zoteroButton) return;
 		
 		var tab = safari.application.activeBrowserWindow.activeTab;
-		if (_isDisabledForURL(tab.url)) {
+		if (_isDisabledForURL(tab.url, true)) {
 			_showZoteroStatus();
 			return;
 		}
@@ -197,8 +244,8 @@ Zotero.Connector_Browser = new function() {
 
 		if (translators && translators.length) {
 			_showTranslatorIcon(translators[0]);
-		} else if (isPDF) {
-			_showPDFIcon();
+		} else if (isPDF || tab.isPDFFrame) {
+			Zotero.Connector_Browser._showPDFIcon();
 		} else {
 			_showWebpageIcon();
 		}
@@ -236,7 +283,7 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 
-	function _showPDFIcon() {
+	this._showPDFIcon = function() {
 		_zoteroButton.image = safari.extension.baseURI + "images/toolbar/pdf.png";
 		_zoteroButton.toolTip = "Save to Zotero (PDF)";
 	}
@@ -257,9 +304,13 @@ safari.application.addEventListener("validate", Zotero.Connector_Browser.onValid
 safari.application.addEventListener('activate', function(e) {
 	Zotero.Connector.reportActiveURL(e.target.url);
 }, true);
-safari.application.addEventListener('navigate', function(e) {
+safari.application.addEventListener('beforeNavigate', function(e) {
 	if (e.target == safari.application.activeBrowserWindow.activeTab) {
 		Zotero.Connector.reportActiveURL(e.target.url);
+	}
+	if (e.target.translators) {
+		e.target.translators = null;
+		e.target.isPDFFrame = false;
 	}
 }, true);
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);

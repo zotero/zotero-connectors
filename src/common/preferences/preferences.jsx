@@ -68,11 +68,9 @@ var Zotero_Preferences = {
 		Zotero_Preferences.General.init();
 		Zotero_Preferences.Advanced.init();
 
-		if (Zotero.isBrowserExt) {
-			Zotero.Prefs.loadNamespace('proxies').then(function() {
-				Zotero_Preferences.Proxies.init();
-			});
-		}
+		Zotero.Prefs.loadNamespace('proxies').then(function() {
+			Zotero_Preferences.Proxies.init();
+		});
 
 		Zotero.initDeferred.resolve();
 		Zotero_Preferences.refreshData();
@@ -144,8 +142,6 @@ Zotero_Preferences.General = {
 			function() { Zotero.Prefs.set('automaticSnapshots', this.checked) };
 		document.getElementById("general-checkbox-downloadAssociatedFiles").onchange =
 			function() { Zotero.Prefs.set('downloadAssociatedFiles', this.checked) };
-		var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
-		if (openTranslatorTesterButton) openTranslatorTesterButton.onclick = Zotero_Preferences.General.openTranslatorTester;
 		
 		Zotero.Prefs.getAsync("downloadAssociatedFiles").then(function(status) {
 			document.getElementById('general-checkbox-downloadAssociatedFiles').checked = !!status;
@@ -202,7 +198,6 @@ Zotero_Preferences.General = {
 
 Zotero_Preferences.Proxies = {
 	init: function() {
-		document.getElementById('pane-proxies').style.display = null;
 		this.proxiesComponent = React.createElement(Zotero_Preferences.Components.ProxySettings, null);
 		ReactDOM.render(this.proxiesComponent, document.getElementById('content-proxies'));
 	}
@@ -233,6 +228,16 @@ Zotero_Preferences.Advanced = {
 		document.getElementById("advanced-button-report-errors").onclick = Zotero_Preferences.Advanced.submitErrors;
 
 
+		var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
+		if (openTranslatorTesterButton) openTranslatorTesterButton.onclick = Zotero_Preferences.General.openTranslatorTester;
+		var testRunnerButton = document.getElementById("advanced-button-open-test-runner");
+		if (testRunnerButton) testRunnerButton.onclick = function() {
+			if (Zotero.isSafari) {
+				Zotero.Connector_Browser.openTab(safari.extension.baseURI + "test/test.html");
+			} else {
+				Zotero.Connector_Browser.openTab(browser.extension.getURL(`test/test.html`));
+			}
+		};
 		document.getElementById("advanced-button-config-editor").onclick = function() {
 			if (confirm("Changing these advanced settings can be harmful to the stability, security, and performance of the browser and the Zotero Connector. \nYou should only proceed if you are sure of what you are doing.")) {
 				Zotero.Connector_Browser.openConfigEditor();
@@ -371,12 +376,16 @@ Zotero_Preferences.Components.ProxyPreferences = React.createClass({
 	},
 	
 	render: function() {
+		let autoRecognise = '';
+		if (Zotero.isBrowserExt) {
+			autoRecognise = <span><label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label><br/></span>;
+		}
 		return (
 			<div>
 				<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;Enable proxy redirection</label><br/>
 				<div style={{marginLeft: "1em"}}>
-					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label><br/>
 					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;Show a notification when redirecting through a proxy</label><br/>
+					{autoRecognise}
 					<br/>
 					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains<span>*</span></label><br/>
 					<input style={{marginTop: "0.5em", marginLeft: "1.5em"}} type="text" onChange={this.handleTextInputChange} disabled={!this.state.transparent || !this.state.disableByDomain} name="disableByDomainString" defaultValue={this.state.disableByDomainString}/>

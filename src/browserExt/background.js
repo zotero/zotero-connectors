@@ -279,8 +279,8 @@ Zotero.Connector_Browser = new function() {
 		}, 5000);
 
 		var urlChanged = Zotero.Promise.defer();
-		function urlChangeListener(tabID, changeInfo) {
-			if (tabID != tab.id || (changeInfo && !changeInfo.url)) return;
+		function urlChangeListener(tabID, changeInfo, changeTab) {
+			if (tabID != tab.id || (changeInfo && changeTab.url == tab.url)) return;
 			urlChanged.reject(new Error(`Url changed mid-injection into ${tab.id}-${frameId}`))
 		}
 		browser.tabs.onRemoved.addListener(urlChangeListener);

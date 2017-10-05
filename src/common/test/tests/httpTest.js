@@ -25,7 +25,7 @@
 
 describe("HTTP", function() {
 	var tab = new Tab();
-	let url = 'http://zotero-static.s3.amazonaws.com/test.html';
+	let url = 'https://zotero-static.s3.amazonaws.com/test.html';
 	
 	before(Promise.coroutine(function* () {
 		yield tab.init(url);
@@ -37,47 +37,41 @@ describe("HTTP", function() {
 	
 	describe("#processDocuments()", function() {
 		it('succeeds when loading a same-origin page', Promise.coroutine(function* () {
-			let url = 'http://zotero-static.s3.amazonaws.com/test.html?t';
+			let url = 'https://zotero-static.s3.amazonaws.com/test.html?t';
 			let [content, location] = yield tab.run(function(url) {
-				var deferred = Zotero.Promise.defer();
-				sinon.stub(Zotero.HTTP, 'isSameOrigin').returns(true);
-				Zotero.HTTP.processDocuments(url, function(doc) {
-					try {
-						let content = doc.querySelector('.csl-entry').innerText;
-						let location = doc.location.href;
-						deferred.resolve([content, location])
-					} catch (e) {
-						deferred.reject(e);
+				return Zotero.HTTP.processDocuments(
+					url,
+					function (doc) {
+						var content = doc.querySelector('.csl-entry').innerText;
+						var location = doc.location.href;
+						return [content, location];
 					}
-				});
-				
-				return deferred.promise.then(response => {Zotero.HTTP.isSameOrigin.restore(); return response});
+				)
+				// Get results of first process
+				.then(vals => vals[0]);
 			}, url);
 			
 			assert.include(content, 'Rosenzweig');
 			assert.equal(location, url);
 		}));
-		it('succeeds when loading a cross-origin page', async function () {
-			let url = getExtensionURL('test/data/journalArticle-single.html');
-			let [content, location] = await tab.run(function(url) {
-				var deferred = Zotero.Promise.defer();
-				sinon.stub(Zotero.HTTP, 'isSameOrigin').returns(false);
-				Zotero.HTTP.processDocuments(url, function(doc) {
-					try {
-						let content = doc.querySelector('.csl-entry').innerText;
-						let location = doc.location.href;
-						deferred.resolve([content, location])
-					} catch (e) {
-						deferred.reject(e);
+		
+		it('succeeds when loading a cross-origin page', Promise.coroutine(function* () {
+			let url = 'http://zotero-static.s3.amazonaws.com/test.html';
+			let [content, location] = yield tab.run(function(url) {
+				return Zotero.HTTP.processDocuments(
+					url,
+					function (doc) {
+						var content = doc.querySelector('.csl-entry').innerText;
+						var location = doc.location.href;
+						return [content, location];
 					}
-				});
-				
-				return deferred.promise.then(response => {Zotero.HTTP.isSameOrigin.restore(); return response});
+				)
+				.then(vals => vals[0]);
 			}, url);
 			
 			assert.include(content, 'Rosenzweig');
 			assert.equal(location, url);
-		});
+		}));
 	});
 	
 	describe('#request()', function() {
@@ -100,7 +94,7 @@ describe("HTTP", function() {
 			}));
 		});
 	});
-
+	
 	describe("COHTTP", function() {
 		describe('#request()', function() {
 			it('responds with correct XHR signature', Promise.coroutine(function* () {
@@ -113,5 +107,20 @@ describe("HTTP", function() {
 				assert.include(xhr, 'status');
 			}));
 		});
+	});
+	
+	describe("#wrapDocument()", function () {
+		it("should allow document itself to be passed to document.evaluate()", Promise.coroutine(function* () {
+			var content = yield background(function (url) {
+				var url = "https://zotero-static.s3.amazonaws.com/test.html?t";
+				return Zotero.HTTP.request("GET", url, { responseType: 'document' })
+				.then(function (xmlhttp) {
+					var doc = Zotero.HTTP.wrapDocument(xmlhttp.response, url);
+					var div = doc.evaluate('//div', doc, null, XPathResult.ANY_TYPE, null).iterateNext();
+					return div.textContent;
+				});
+			});
+			assert.include(content, 'Rosenzweig');
+		}));
 	});
 });

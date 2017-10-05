@@ -55,213 +55,59 @@ Zotero.HTTP.isLessSecure = function(url) {
 }
  
 /**
- * Load one or more documents in a hidden iframe
+ * Load one or more documents via XMLHttpRequest
  *
- * @param {String|String[]} urls URL(s) of documents to load
- * @param {Function} processor Callback to be executed for each document loaded
- * @param {Function} done Callback to be executed after all documents have been loaded
- * @param {Function} exception Callback to be executed if an exception occurs
+ * This should stay in sync with the equivalent function in the client
+ *
+ * @param {String|String[]} urls - URL(s) of documents to load
+ * @param {Function} processor - Callback to be executed for each document loaded
+ * @return {Promise<Array>} - A promise for an array of results from the processor runs
  */
-Zotero.HTTP.processDocuments = function(urls, processor, done, exception, dontDelete) {
-	var loadingURL;
-	
-	/**
-	 * Removes event listener for the load event and deletes the hidden browser
-	 */
-	var removeListeners = function() {
-		if("removeEventListener" in hiddenBrowser) {
-			hiddenBrowser.removeEventListener("load", onFrameLoad, false);
-		}
-		if(!dontDelete) Zotero.Browser.deleteHiddenBrowser(hiddenBrowser);
+Zotero.HTTP.processDocuments = async function (urls, processor) {
+	// Handle old signature: urls, processor, onDone, onError
+	if (arguments.length > 2) {
+		Zotero.debug("Zotero.HTTP.processDocuments() now takes only 2 arguments -- update your code");
+		var onDone = arguments[2];
+		var onError = arguments[3];
 	}
 	
-	/**
-	 * Loads the next page
-	 * @inner
-	 */
-	var doLoad = function() {
-		if(urls.length) {
-			loadingURL = urls.shift();
-			try {
-				Zotero.debug("HTTP.processDocuments: Loading "+loadingURL);
-				if (Zotero.HTTP.isSameOrigin(loadingURL)) {	
-					if(hiddenBrowser.addEventListener) {
-						hiddenBrowser.addEventListener("load", onFrameLoad, false);
-					} else {
-						hiddenBrowser.attachEvent("onload", onFrameLoad);
-					}
-			
-					hiddenBrowser.src = loadingURL;
-					
-					if(Zotero.isBookmarklet) {
-						// Hack to disable window.alert() on iframe loads
-						var id = window.setInterval(function() {
-							var win;
-							if(hiddenBrowser.contentWindow) {
-								win = hiddenBrowser.contentWindow;
-							} else if(hiddenBrowser.contentDocument) {
-								win = hiddenBrowser.contentDocument.window;
-							}
-							
-							if(win) {
-								if(hiddenBrowser.contentWindow.location == "about:blank") return;
-								hiddenBrowser.contentWindow.alert = function() {};
-							}
-							window.clearInterval(id);
-						}, 0);
-					}
-				} else if(Zotero.isBookmarklet) {
-					throw "HTTP.processDocuments: Cannot perform cross-site request from "+window.parent.location+" to "+loadingURL;
-				} else {
-					// TODO: sort out error handling
-					dontDelete = true;
-					Zotero.HTTP.request('GET', loadingURL).then(onCrossSiteLoad, onCrossSiteLoad);
-				}
-			} catch(e) {
-				if(exception) {
-					try {
-						exception(e);
-					} catch(e) {
-						Zotero.logError(e);
-					}
-					return;
-				} else {
-					Zotero.logError(e);
-				}
-
-				removeListeners();
+	if (typeof urls == "string") urls = [urls];
+	var funcs = urls.map(url => () => {
+		return Zotero.HTTP.request(
+			"GET",
+			url,
+			{
+				responseType: 'document'
 			}
-		} else {
-			if (done) {
-				try {
-					done();
-				} catch(e) {
-					Zotero.logError(done);
-				}
-			}
-			
-			removeListeners();
-		}
-	};
+		)
+		.then((xhr) => {
+			var doc = Zotero.HTTP.wrapDocument(xhr.response, url);
+			return processor(doc, url);
+		});
+	});
 	
-	/**
-	 * Process a loaded document
-	 * @inner
-	 */
-	var process = function(newLoc, newDoc, newWin) {
+	// Run processes serially
+	// TODO: Add some concurrency?
+	var f;
+	var results = [];
+	while (f = funcs.shift()) {
 		try {
-			if(newLoc === "about:blank") return;
-			Zotero.debug("HTTP.processDocuments: "+newLoc+" has been loaded");
-			if(newLoc !== prevUrl) {	// Just in case it fires too many times
-				prevUrl = newLoc;
-				
-				// ugh ugh ugh ugh
-				if(Zotero.isIE) installXPathIfNecessary(newWin);
-				
-				try {
-					processor(newDoc, newLoc);
-				} catch(e) {
-					Zotero.logError(e);
-				}
-				
-				doLoad();
+			results.push(await f());
+		}
+		catch (e) {
+			if (onError) {
+				onError(e);
 			}
-		} catch(e) {
-			if(exception) {
-				try {
-					exception(e);
-				} catch(e) {
-					Zotero.logError(e);
-				}
-			} else {
-				Zotero.logError(e);
-			}
-			
-			removeListeners();
-			return;
+			throw e;
 		}
 	}
 	
-	/**
-	 * Callback to be executed when a page is retrieved via cross-site XHR
-	 * @inner
-	 */
-	var onCrossSiteLoad = function(xmlhttp) {
-		var iframe = hiddenBrowser;
-		iframe.setAttribute("sandbox", "allow-same-origin allow-forms allow-scripts");
-		
-		if (!Zotero.isChrome) {
-			// NOTE: This is where the event flow continues
-			iframe.onload = () => process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView);
-		}
-		
-		// load cross-site data into iframe
-		var doc = iframe.contentDocument;
-		// HACKS1: Wrapping the document in proxy magic.
-		doc = Zotero.Browser.wrapDoc(doc, loadingURL);
-		if (Zotero.isFirefox) {
-			try {
-				// HACKS2: Doing this seems to prevent the security error in Firefox.
-				doc.documentElement.innerHTML = xmlhttp.responseText;
-			} catch (e) {
-				Zotero.logError(e);
-			}
-		} else {
-			try {
-				doc.open();
-				doc.write(xmlhttp.responseText);
-				doc.close();
-			} catch (e) {
-				Zotero.logError(e);
-			}
-		}
-		
-		if (Zotero.isChrome || doc.readyState == 'complete') {
-			process(loadingURL, doc, iframe.contentWindow || iframe.contentDocument.defaultView)
-		}
-	};
+	// Deprecated
+	if (onDone) {
+		onDone();
+	}
 	
-	/**
-	 * Callback to be executed when a page load completes
-	 * @inner
-	 */
-	var onFrameLoad = function() {
-		var newWin = hiddenBrowser.contentWindow, newDoc, newLoc;
-		try {
-			if(newWin) {
-				newDoc = newWin.document;
-			} else {
-				newDoc = hiddenBrowser.contentDocument;
-				newWin = newDoc.defaultView;
-			}
-			newLoc = newDoc.documentURI || newWin.location.toString();
-		} catch(e) {
-			e = "Same origin HTTP request redirected to a different origin not handled";
-			
-			if(exception) {
-				try {
-					exception(e);
-				} catch(e) {
-					Zotero.logError(e);
-				}
-			} else {
-				Zotero.logError(e);
-			}
-			
-			removeListeners();
-			return;
-		}
-		process(newLoc, newDoc, newWin);
-	};
-	
-	if(typeof(urls) == "string") urls = [urls];
-	
-	var prevUrl;
-	
-	var hiddenBrowser = Zotero.Browser.createHiddenBrowser();
-
-	doLoad();
-	return hiddenBrowser;
+	return results;
 }
 
 Zotero.Browser = {
@@ -294,40 +140,4 @@ Zotero.Browser = {
 	deleteHiddenBrowser: function(hiddenBrowser) {
 		document.body.removeChild(hiddenBrowser);
 	}
-};
-
-/**
- * Adds a ES6 Proxied location attribute
- * @param doc
- * @param docUrl
- */
-Zotero.Browser.wrapDoc = function(doc, docUrl) {
-	let url = require('url');
-	docUrl = url.parse(docUrl);
-	docUrl.toString = () => this.href;
-	// We have to use a spoofed object because Safari defines functions on the doc as
-	// non-configurable and non-writable and the ES6 Proxy throws a TypeError even when you
-	// return the same function
-	let spoofDoc = {};
-	let wrappedDoc = new Proxy(spoofDoc, {get: function (t, prop) {
-		if (prop === 'location') {
-			return docUrl;
-		} else if (prop == 'evaluate') {
-			// If you pass the document itself into doc.evaluate as the second argument
-			// it fails, because it receives a proxy, which isn't of type `Node` for some reason.
-			// Native code magic.
-			return function () {
-				if (arguments[1] == wrappedDoc) {
-					arguments[1] = doc;
-				}
-				return doc[prop].apply(doc, arguments)
-			}
-		} else {
-			if (typeof doc[prop] == 'function') {
-				return doc[prop].bind(doc);
-			}
-			return doc[prop];
-		}
-	}});
-	return wrappedDoc;
 };

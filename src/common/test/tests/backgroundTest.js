@@ -23,7 +23,11 @@
 	***** END LICENSE BLOCK *****
 */
 
-describe('Connector_Browser', function() {
+/**
+ * https://github.com/zotero/zotero-connectors/pull/193 effectively reverts
+ * https://github.com/zotero/zotero-connectors/issues/152
+ */
+describe.skip('Connector_Browser', function() {
 	var tab = new Tab();
 	
 	describe('onPDFFrame', function() {
@@ -31,7 +35,11 @@ describe('Connector_Browser', function() {
 			try {
 				let bgPromise = background(function() {
 					Zotero.Prefs.set('firstUse', false);
-					let stub = sinon.stub(Zotero.Connector_Browser, '_showPDFIcon');
+					if (Zotero.isBrowserExt) {
+						var stub = sinon.stub(Zotero.Extension.Button, 'showPDFIcon');
+					} else {
+						stub = sinon.stub(Zotero.Connector_Browser, '_showPDFIcon');
+					}
 					var deferred = Zotero.Promise.defer();
 					stub.callsFake(deferred.resolve);
 					
@@ -50,16 +58,20 @@ describe('Connector_Browser', function() {
 				await bgPromise;
 				let tabId = await background(async function(tabId) {
 					if (Zotero.isBrowserExt) {
-						return Zotero.Connector_Browser._showPDFIcon.args[0][0].id;
+						return Zotero.Extension.Button.showPDFIcon.args[0][0].id;
 					} else {
 						return (await Zotero.Background.getTabByID(tabId)).isPDFFrame ? tabId : -1;
 					}
 				}, tab.tabId);
 				assert.equal(tabId, tab.tabId);
 			} finally {
-				await background(function() {
-					Zotero.Connector_Browser._showPDFIcon.restore()
-				});
+					await background(function () {
+						if (Zotero.isBrowserExt) {
+							Zotero.Extension.Button.showPDFIcon.restore()
+						} else {
+							Zotero.Connector_Browser._showPDFIcon.restore();
+						}
+					});
 				if (tab.tabId) {
 					await tab.close();
 				}

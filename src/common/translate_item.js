@@ -88,13 +88,16 @@ Zotero.Translate.ItemSaver.prototype = {
 	 *     save progress. The callback will be called as attachmentCallback(attachment, false, error)
 	 *     on failure or attachmentCallback(attachment, progressPercent) periodically during saving.
 	 */
-	saveItems: function (items, attachmentCallback) {
+	saveItems: async function (items, attachmentCallback) {
+		items = await this._filterAttachments(items);
+
 		// first try to save items via connector
 		var payload = { items, uri: this._baseURI };
 		if (Zotero.isSafari) {
 			// This is the best in terms of cookies we can do in Safari
 			payload.cookie = document.cookie;
 		}
+
 		payload.proxy = this._proxy && this._proxy.toJSON();
 		return Zotero.Connector.callMethodWithCookies("saveItems", payload).then(function(data) {
 			Zotero.debug("Translate: Save via Standalone succeeded");
@@ -122,6 +125,32 @@ Zotero.Translate.ItemSaver.prototype = {
   			}
   			throw e;
 		}.bind(this));
+	},
+
+	/**
+	 * Filters away attachments from items per user prefs
+	 * 
+	 * @param items
+	 * @returns {Promise.<Array>}
+	 * @private
+	 */
+	_filterAttachments: async function(items) {
+		let prefs = await Zotero.Prefs.getAsync(["downloadAssociatedFiles", "automaticSnapshots"]);
+		for (let item of items) {
+			item.attachments = item.attachments.filter(function(attachment) {
+				let isSnapshot = false;
+				if (attachment.mimeType) {
+					switch (attachment.mimeType.toLowerCase()) {
+						case "text/html":
+						case "application/xhtml+xml":
+							isSnapshot = true;
+					}
+				}
+
+				return (isSnapshot && prefs.automaticSnapshots) || (!isSnapshot && prefs.downloadAssociatedFiles);
+			});
+		}	
+		return items;
 	},
 	
 	/**
@@ -257,11 +286,6 @@ Zotero.Translate.ItemSaver.prototype = {
 					case "application/xhtml+xml":
 						isSnapshot = true;
 				}
-			}
-
-			if ((isSnapshot && !prefs.automaticSnapshots) || (!isSnapshot && !prefs.downloadAssociatedFiles)) {
-				// Skip attachment due to prefs
-				continue;
 			}
 			
 			let deferredHeadersProcessed = Zotero.Promise.defer();

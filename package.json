@@ -1,5 +1,9 @@
 {
   "name": "zotero-connectors",
+  "scripts": {
+    "start": "./build.sh -d && gulp watch",
+    "build": "./build.sh -d"
+  },
   "devDependencies": {
     "babel-cli": "^6.16.0",
     "babel-core": "^6.16.0",

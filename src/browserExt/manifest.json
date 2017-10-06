@@ -16,7 +16,12 @@
 	"optional_permissions": ["management"],
 	"background": {
 		"scripts": [
+			"browser-polyfill.js",
 			/*BACKGROUND SCRIPTS*/,
+			"webRequestIntercept.js",
+			"contentTypeHandler.js",
+			"native-ui.js",
+			"script-injection.js",
 			"background.js"
 		]
 	},

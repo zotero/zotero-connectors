@@ -26,17 +26,16 @@
 Zotero.Connector_Browser = new function() {
 	var _tabInfo = {};
 	var _incompatibleVersionMessageShown;
-	var _injectTranslationScripts = [
-		/*INJECT SCRIPTS*/
-	];
-	// Exposed for tests
 	this._tabInfo = _tabInfo;
+
+	// Exposed for injected script access
+	this.injectScripts = Zotero.Extension.ScriptInjection.injectScripts;
 	
 	/**
 	 * Called when translators are available for a given page
 	 */
 	this.onTranslators = function(translators, instanceID, contentType, tab, frameId) {
-		_enableForTab(tab.id);
+		browser.browserAction.enable(tab.id);
 
 		let existingTranslators = _tabInfo[tab.id] && _tabInfo[tab.id].translators;
 		// If translators already exist for tab we need to figure out if the new translators
@@ -57,7 +56,7 @@ Zotero.Connector_Browser = new function() {
 		var isPDF = contentType == 'application/pdf';
 		_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {injections: {}}, {translators, instanceID, isPDF});
 		
-		_updateExtensionUI(tab);
+		Zotero.Connector_Browser.updateExtensionUI(tab);
 	}
 
 	/**
@@ -71,8 +70,8 @@ Zotero.Connector_Browser = new function() {
 		}
 		browser.tabs.get(tabId).then(function(tab) {
 			_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {injections: {}}, {translators: [], isPDF: true, frameId});
-			Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
-			_updateExtensionUI(tab);
+			Zotero.Extension.ScriptInjection.injectTranslationScripts(tab, frameId);
+			Zotero.Connector_Browser.updateExtensionUI(tab);
 		});
 	}
 	
@@ -140,7 +139,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	this.onTabActivated = function(tab) {
-		_updateExtensionUI(tab);
+		Zotero.Connector_Browser.updateExtensionUI(tab);
 	};
 	
 	/**
@@ -166,7 +165,7 @@ Zotero.Connector_Browser = new function() {
 	 * @param url - url of the frame
 	 */
 	this.onFrameLoaded = Zotero.Promise.method(function(tab, frameId, url) {
-		if (_isDisabledForURL(tab.url) && frameId == 0 || _isDisabledForURL(url)) {
+		if (this.isDisabledForURL(tab.url) && frameId == 0 || this.isDisabledForURL(url)) {
 			return;
 		}
 		Zotero.debug("Connector_Browser: onFrameLoaded for " + tab.url + "; " + url);
@@ -181,7 +180,7 @@ Zotero.Connector_Browser = new function() {
 				// Also in the first frame detected
 				// See https://github.com/zotero/zotero-connectors/issues/156
 				_tabInfo[tab.id].frameChecked = true;
-				return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+				return Zotero.Extension.ScriptInjection.injectTranslationScripts(tab, frameId);
 			}
 		}
 		// Frame url shouldn't ever match the tab url but sometimes it does and causes weird
@@ -196,143 +195,13 @@ Zotero.Connector_Browser = new function() {
 				return;
 			}
 			Zotero.debug(translators[0].length+  " translators found. Injecting into [tab.url, url]: " + tab.url + " , " + url);
-			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+			return Zotero.Extension.ScriptInjection.injectTranslationScripts(tab, frameId);
 		});
 	});
 	
 	this.isIncognito = function(tab) {
 		return tab.incognito;
 	}
-
-	/**
-	 * Checks whether translation scripts are already injected into a frame and if not - injects
-	 * @param tab {Object}
-	 * @param [frameId=0] {Number] Defaults to top frame
-	 * @returns {Promise} A promise that resolves when all scripts have been injected
-	 */
-	this.injectTranslationScripts = function(tab, frameId=0) {
-		// Prevent triggering multiple times
-		let key = tab.id+'-'+frameId;
-		let deferred = this.injectTranslationScripts[key];
-		if (deferred) {
-			Zotero.debug(`Translation Inject: Script injection already in progress for ${key}`);
-			return deferred.promise;
-		}
-		deferred = Zotero.Promise.defer();
-		this.injectTranslationScripts[key] = deferred;
-		deferred.promise.catch(function(e) {
-			Zotero.debug(`Translation Inject: Script injection rejected ${key}`);
-			Zotero.debug(e.message);
-		}).then(function() {
-			delete Zotero.Connector_Browser.injectTranslationScripts[key];
-		});
-		
-		Zotero.Messaging.sendMessage('ping', null, tab, frameId).then(function(response) {
-			if (response && frameId == 0) return deferred.resolve();
-			Zotero.debug(`Injecting translation scripts into ${frameId} ${tab.url}`);
-			return Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, tab, frameId)
-			.then(deferred.resolve).catch(deferred.reject);
-		});
-		return deferred.promise;
-	};
-	
-	this.INJECTION_TIMEOUT = 10000;
-
-	/**
-	 * Injects custom scripts
-	 * 
-	 * @param scripts {Object[]} array of scripts to inject
-	 * @param tab {Object}
-	 * @param [frameId=0] {Number] Defaults to top frame
-	 * @returns {Promise} A promise that resolves when all scripts have been injected
-	 */
-	this.injectScripts = async function(scripts, tab, frameId=0) {
-		function* injectScripts() {
-			if (! Array.isArray(scripts)) scripts = [scripts];
-			// Make sure we're not changing the original list
-			scripts = Array.from(scripts);
-			Zotero.debug(`Inject: Injecting scripts into ${frameId} - ${tab.url} : ${scripts.join(', ')}`);
-			
-			for (let script of scripts) {
-				// Firefox returns an error for unstructured data being returned from scripts
-				// We are forced to catch these, even though when sometimes they may be legit errors
-				yield browser.tabs.executeScript(tab.id, {file: script, frameId, runAt: 'document_end'})
-					.catch(() => undefined);
-			}
-			
-			// Send a ready message to confirm successful injection
-			let readyMsg = `ready${Date.now()}`;
-			yield browser.tabs.executeScript(tab.id, {
-				code: `browser.runtime.onMessage.addListener(function awaitReady(request) {
-					if (request == '${readyMsg}') {
-						browser.runtime.onMessage.removeListener(awaitReady);
-						return Promise.resolve(true);
-					}
-				})`,
-				frameId,
-				runAt: 'document_end'
-			});
-			
-			while (true) {
-				try {
-					var response = yield browser.tabs.sendMessage(tab.id, readyMsg, {frameId: frameId});
-				} catch (e) {}
-				if (!response) {
-					yield Zotero.Promise.delay(100);
-				} else {
-					Zotero.debug(`Inject: Complete ${frameId} - ${tab.url}`);
-					return true;
-				}
-			}		
-		}
-		var timedOut = Zotero.Promise.defer();
-		let timeout = setTimeout(function() {
-			timedOut.reject(new Error (`Inject: Timed out ${frameId} - ${tab.url} after ${this.INJECTION_TIMEOUT}ms`))
-		}.bind(this), this.INJECTION_TIMEOUT);
-		
-		// Prevent triggering multiple times
-		let deferred = _tabInfo[tab.id].injections[frameId];
-		if (deferred) {
-			Zotero.debug(`Inject: Script injection already in progress for ${frameId} - ${tab.url}`);
-			await deferred.promise;
-		}
-		deferred = Zotero.Promise.defer();
-		_tabInfo[tab.id].injections[frameId] = deferred;
-		
-		function tabRemovedListener(tabID) {
-			if (tabID != tab.id) return;
-			deferred.reject(new Error(`Inject: Tab removed mid-injection into ${frameId} - ${tab.url}`))
-		}
-		browser.tabs.onRemoved.addListener(tabRemovedListener);
-
-		// This is a bit complex, but we need to cut off script injection as soon as we notice an
-		// interruption condition, such as a timeout or url change, otherwise we get partial injections
-		try {
-			var iter = injectScripts();
-			var val = iter.next();
-			while (true) {
-				if (val.done) {
-					return val.value;
-				}
-				if (val.value.then) {
-					// Will either throw from the first two, or return from the third one
-					let nextVal = await Promise.race([
-						timedOut.promise,
-						deferred.promise,
-						val.value
-					]);
-					val = iter.next(nextVal);
-				} else {
-					val = iter.next(val.value);
-				}
-			}
-		} finally {
-			browser.tabs.onRemoved.removeListener(tabRemovedListener);
-			deferred.resolve();
-			delete _tabInfo[tab.id].injections[frameId];
-			clearTimeout(timeout);
-		}
-	};
 
 	this.openTab = function(url, tab) {
 		if (tab) {
@@ -395,75 +264,10 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Update status and tooltip of Zotero button
 	 */
-	function _updateExtensionUI(tab) {
-		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) return _showFirstUseUI(tab);
-		browser.contextMenus.removeAll();
-
-		if (_isDisabledForURL(tab.url, true)) {
-			_showZoteroStatus();
-			return;
-		} else {
-			_enableForTab(tab.id);
-		}
-		
-		var isPDF = _tabInfo[tab.id] && _tabInfo[tab.id].isPDF;
-		var translators = _tabInfo[tab.id] && _tabInfo[tab.id].translators;
-		
-		// Show the save menu if we have more than one save option to show, which is true in all cases
-		// other than for PDFs with no translator
-		var showSaveMenu = (translators && translators.length) || !isPDF;
-		var showProxyMenu = !isPDF
-			&& Zotero.Proxies.proxies.length > 0
-			// Don't show proxy menu if already proxied
-			&& !Zotero.Proxies.proxyToProper(tab.url, true);
-		
-		var saveMenuID;
-		if (showSaveMenu) {
-			saveMenuID = "zotero-context-menu-save-menu";
-			browser.contextMenus.create({
-				id: saveMenuID,
-				title: "Save to Zotero",
-				contexts: ['all']
-			});
-		}
-		
-		if (translators && translators.length) {
-			_showTranslatorIcon(tab, translators[0]);
-			_showTranslatorContextMenuItem(translators, saveMenuID);
-		} else if (isPDF) {
-			Zotero.Connector_Browser._showPDFIcon(tab);
-		} else {
-			_showWebpageIcon(tab);
-		}
-		
-		if (isPDF) {
-			_showPDFContextMenuItem(saveMenuID);
-		} else {
-			_showWebpageContextMenuItem(saveMenuID);
-		}
-		
-		// If unproxied, show "Reload via Proxy" options
-		if (showProxyMenu) {
-			_showProxyContextMenuItems(tab.url);
-		}
-		
-		if (Zotero.isFirefox) {
-			_showPreferencesContextMenuItem();
-		}
-	}
-	
-	function _showFirstUseUI(tab) {
-		var icon = `${Zotero.platform}/zotero-z-${window.devicePixelRatio > 1 ? 32 : 16}px-australis.png`;
-		browser.browserAction.setIcon({
-			tabId: tab.id,
-			path: `images/${icon}`
-		});
-		browser.browserAction.setTitle({
-			tabId: tab.id,
-			title: "Zotero Connector"
-		});
-		browser.browserAction.enable(tab.id);
-	}
+	this.updateExtensionUI = function(tab) {
+		Zotero.Extension.Button.update(tab, _tabInfo[tab.id]);
+		Zotero.Extension.ContextMenu.update(tab, _tabInfo[tab.id]);
+	};
 	
 	/**
 	 * Removes information about a specific tab
@@ -497,192 +301,8 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 	
-	function _isDisabledForURL(url, excludeTests=false) {
+	this.isDisabledForURL = function(url, excludeTests=false) {
 		return url.includes('chrome://') || url.includes('about:') || (url.includes('-extension://') && (!excludeTests || !url.includes('/test/data/')));
-	}
-	
-	function _showZoteroStatus(tabID) {
-		Zotero.Connector.checkIsOnline().then(function(isOnline) {
-			var icon, title;
-			if (isOnline) {
-				icon = "images/zotero-new-z-16px.png";
-				title = "Zotero is Online";
-			} else {
-				icon = "images/zotero-z-16px-offline.png";
-				title = "Zotero is Offline";
-			}
-			browser.browserAction.setIcon({
-				tabId:tabID,
-				path:icon
-			});
-			
-			browser.browserAction.setTitle({
-				tabId:tabID,
-				title: title
-			});
-		});
-		browser.browserAction.disable(tabID);
-		browser.contextMenus.removeAll();
-	}
-	
-	function _enableForTab(tabID) {
-		browser.browserAction.enable(tabID);
-	}
-	
-	function _showTranslatorIcon(tab, translator) {
-		var itemType = translator.itemType;
-		
-		browser.browserAction.setIcon({
-			tabId:tab.id,
-			path:(itemType === "multiple"
-					? "images/treesource-collection.png"
-					: Zotero.ItemTypes.getImageSrc(itemType))
-		});
-		
-		browser.browserAction.setTitle({
-			tabId:tab.id,
-			title: _getTranslatorLabel(translator)
-		});
-	}
-	
-	function _showWebpageIcon(tab) {
-		browser.browserAction.setIcon({
-			tabId: tab.id,
-			path: Zotero.ItemTypes.getImageSrc("webpage-gray")
-		});
-		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-			Zotero.Prefs.get('automaticSnapshots');
-		let title = `Save to Zotero (Web Page ${withSnapshot ? 'with' : 'without'} Snapshot)`;
-		browser.browserAction.setTitle({tabId: tab.id, title});
-	}
-	
-	this._showPDFIcon = function(tab) {
-		browser.browserAction.setIcon({
-			tabId: tab.id,
-			path: browser.extension.getURL('images/pdf.png')
-		});
-		browser.browserAction.setTitle({
-			tabId: tab.id,
-			title: "Save to Zotero (PDF)"
-		});
-	}
-	
-	function _showTranslatorContextMenuItem(translators, parentID) {
-		for (var i = 0; i < translators.length; i++) {
-			browser.contextMenus.create({
-				id: "zotero-context-menu-translator-save" + i,
-				title: _getTranslatorLabel(translators[i]),
-				onclick: (function (i) {
-					return function (info, tab) {
-						Zotero.Connector_Browser.saveWithTranslator(tab, i);
-					};
-				})(i),
-				parentId: parentID,
-				contexts: ['page', 'browser_action']
-			});
-		}
-	}
-	
-	function _showWebpageContextMenuItem(parentID) {
-		var fns = [];
-		fns.push(() => browser.contextMenus.create({
-			id: "zotero-context-menu-webpage-withSnapshot-save",
-			title: "Save to Zotero (Web Page with Snapshot)",
-			onclick: function (info, tab) {
-				Zotero.Connector_Browser.saveAsWebpage(tab, 0, true);
-			},
-			parentId: parentID,
-			contexts: ['page', 'browser_action']
-		}));
-		fns.push(() => browser.contextMenus.create({
-			id: "zotero-context-menu-webpage-withoutSnapshot-save",
-			title: "Save to Zotero (Web Page without Snapshot)",
-			onclick: function (info, tab) {
-				Zotero.Connector_Browser.saveAsWebpage(tab, 0, false);
-			},
-			parentId: parentID,
-			contexts: ['page', 'browser_action']
-		}));
-		// Swap order if automatic snapshots disabled
-		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-			Zotero.Prefs.get('automaticSnapshots');
-		if (!withSnapshot) {
-			fns = [fns[1], fns[0]];
-		}
-		fns.forEach((fn) => fn());
-	}
-	
-	function _showPDFContextMenuItem(parentID) {
-		browser.contextMenus.create({
-			id: "zotero-context-menu-pdf-save",
-			title: "Save to Zotero (PDF)",
-			onclick: function (info, tab) {
-				Zotero.Connector_Browser.saveAsWebpage(tab);
-			},
-			parentId: parentID,
-			contexts: ['all']
-		});
-	}
-	
-	function _showProxyContextMenuItems(url) {
-		var parentID = "zotero-context-menu-proxy-reload-menu";
-		browser.contextMenus.create({
-			id: parentID,
-			title: "Reload via Proxy",
-			contexts: ['page', 'browser_action']
-		});
-		
-		var i = 0;
-		for (let proxy of Zotero.Proxies.proxies) {
-			let name = proxy.toDisplayName();
-			let proxied = proxy.toProxy(url);
-			browser.contextMenus.create({
-				id: `zotero-context-menu-proxy-reload-${i++}`,
-				title: `Reload via ${name}`,
-				onclick: function () {
-					browser.tabs.update({ url: proxied });
-				},
-				parentId: parentID,
-				contexts: ['page', 'browser_action']
-			});
-		}
-	}
-	
-	function _showPreferencesContextMenuItem() {
-		browser.contextMenus.create({
-			type: "separator",
-			id: "zotero-context-menu-pref-separator",
-			contexts: ['all']
-		});
-		browser.contextMenus.create({
-			id: "zotero-context-menu-preferences",
-			title: "Preferences",
-			onclick: function () {
-				browser.tabs.create({url: browser.extension.getURL('preferences/preferences.html')});
-			},
-			contexts: ['all']
-		});
-	}
-	
-	function _browserAction(tab) {
-		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) {
-			Zotero.Messaging.sendMessage("firstUse", null, tab)
-			.then(function () {
-				Zotero.Prefs.set('firstUse', false);
-				_updateExtensionUI(tab);
-			});
-		}
-		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
-			Zotero.Connector_Browser.saveWithTranslator(tab, 0, true);
-		} else {
-			if (_tabInfo[tab.id] && _tabInfo[tab.id].isPDF) {
-				Zotero.Connector_Browser.saveAsWebpage(tab, _tabInfo[tab.id].frameId, true);
-			} else {
-				let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-					Zotero.Prefs.get('automaticSnapshots');
-				Zotero.Connector_Browser.saveAsWebpage(tab, 0, withSnapshot);
-			}
-		}
 	}
 	
 	this.saveWithTranslator = function(tab, i, fallbackOnFailure=false) {
@@ -695,28 +315,10 @@ Zotero.Connector_Browser = new function() {
 		], tab, null);
 	}
 	
-	this.saveAsWebpage = function(tab, frameId, withSnapshot) {
-		if (tab.id != -1) {
-			return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, withSnapshot], tab, frameId);
-		}
-		// Handle right-click on PDF overlay, which exists in a weird non-tab state
-		else {
-			browser.tabs.query(
-				{
-					lastFocusedWindow: true,
-					active: true
-				}).then(function (tabs) {
-					Zotero.Messaging.sendMessage("saveAsWebpage", tabs[0].title, tabs[0]);
-				}
-			);
-		}
+	this.saveAsWebpage = function(tab, frameId) {
+		return Zotero.Messaging.sendMessage("saveAsWebpage", tab.title, tab, frameId);
 	}
-	
-	function _getTranslatorLabel(translator) {
-		var translatorName = translator.label;
-		return "Save to Zotero (" + translatorName + ")";
-	}
-	
+
 	Zotero.Messaging.addMessageListener("selectDone", function(data) {
 		_tabInfo[data[0]].selectCallback(data[1]);
 	});
@@ -738,7 +340,9 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 
-	browser.browserAction.onClicked.addListener(logListenerErrors(_browserAction));
+	browser.browserAction.onClicked.addListener(logListenerErrors(function(tab) {
+		Zotero.Extension.Button.onClick(tab, _tabInfo[tab.id]);
+	}));
 	
 	browser.tabs.onRemoved.addListener(logListenerErrors(_clearInfoForTab));
 	
@@ -754,13 +358,13 @@ Zotero.Connector_Browser = new function() {
 	browser.webNavigation.onCommitted.addListener(logListenerErrors(async function(details) {
 		var tab = await browser.tabs.get(details.tabId);
 		// Ignore developer tools
-		if (tab.id < 0 || _isDisabledForURL(tab.url, true)) return;
+		if (tab.id < 0 || Zotero.Connector_Browser.isDisabledForURL(tab.url, true)) return;
 
 		if (details.frameId == 0) {
 			// Ignore item selector
 			if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
 			_updateInfoForTab(tab);
-			_updateExtensionUI(tab);
+			Zotero.Connector_Browser.updateExtensionUI(tab);
 			Zotero.Connector.reportActiveURL(tab.url);
 		}
 		// _updateInfoForTab will reject pending injections, but we need to make sure this

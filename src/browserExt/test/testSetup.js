@@ -152,6 +152,10 @@ if (typeof mocha != 'undefined') {
 				var deferred = Zotero.Promise.defer();
 				var tab = await browser.tabs.create({url, active: false});
 				Zotero.Background.registeredTabs[tab.id] = deferred;
+				Zotero.Connector_Browser._tabInfo[tab.id] = {
+					url: url,
+					injections: {}
+				};
 				return deferred.promise;
 			}, url);
 		}),

@@ -284,11 +284,11 @@ var Zotero = new function() {
 		}
 		
 		if (err.stack) {
+			var error = err.stack;
 			if (!Zotero.isChrome) {
-				Zotero.Errors.log(err.message + '\n' + err.stack);
-			} else {
-				Zotero.Errors.log(err.stack);
+				error = err.message + '\n' + error;
 			}
+			Zotero.Errors.log(error);
 		} else {
 			Zotero.Errors.log(err.message ? err.message : err.toString(), fileName, lineNumber);
 		}

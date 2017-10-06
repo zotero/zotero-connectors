@@ -110,9 +110,7 @@ Zotero.Connector_Browser = new function() {
 			if(tab.translators && tab.translators.length) {
 				Zotero.Connector_Browser.saveWithTranslator(tab, 0, true);
 			} else {
-				var withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-					Zotero.Prefs.get('automaticSnapshots');
-				Zotero.Connector_Browser.saveAsWebpage(tab, withSnapshot);
+				Zotero.Connector_Browser.saveAsWebpage(tab);
 			}
 		} else if (command === "zotero-preferences") {
 			Zotero.Connector_Browser.openTab(safari.extension.baseURI+"preferences/preferences.html");
@@ -165,10 +163,10 @@ Zotero.Connector_Browser = new function() {
 				tab.translators[i].translatorID, fallbackOnFailure], tab);
 	}
 
-	this.saveAsWebpage = function(tab, withSnapshot) {
+	this.saveAsWebpage = function(tab) {
 		let title = tab.title.split('/');
 		title = title[title.length-1];
-		return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.instanceID || 0, [title, withSnapshot]], tab);
+		return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.instanceID || 0, title], tab);
 	}
 
 	this.openTab = function(url) {
@@ -238,12 +236,10 @@ Zotero.Connector_Browser = new function() {
 		var translators = tab.translators;
 		var isPDF = tab.contentType == 'application/pdf';
 
-		if (translators && translators.length) {
-			_showTranslatorIcon(translators[0]);
-		} else if (isPDF || tab.isPDFFrame) {
+		if (isPDF || tab.isPDFFrame) {
 			Zotero.Connector_Browser._showPDFIcon();
-		} else {
-			_showWebpageIcon();
+		} else if (translators) {
+			_showTranslatorIcon(translators[0]);
 		}
 	}
 	
@@ -268,30 +264,16 @@ Zotero.Connector_Browser = new function() {
 		_zoteroButton.toolTip = _getTranslatorLabel(translator);
 	}
 
-	function _showWebpageIcon() {
-		_zoteroButton.image = Zotero.ItemTypes.getImageSrc("webpage-gray").replace('images/', 'images/toolbar/');
-		var withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-			Zotero.Prefs.get('automaticSnapshots');
-		if (withSnapshot) {
-			_zoteroButton.toolTip = "Save to Zotero (Web Page with Snapshot)";
-		} else {
-			_zoteroButton.toolTip = "Save to Zotero (Web Page without Snapshot)";
-		}
-	}
-
 	this._showPDFIcon = function() {
 		_zoteroButton.image = safari.extension.baseURI + "images/toolbar/pdf.png";
 		_zoteroButton.toolTip = "Save to Zotero (PDF)";
 	}
 
 	function _getTranslatorLabel(translator) {
-		var translatorName = translator.label;
-		if(translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE) {
-			translatorName += " via Zotero Standalone";
-		}
-
-		return "Save to Zotero (" + translatorName + ")";
+		var translatorName = translator.label ? ` (${translator.label})` : '';
+		return `Save to Zotero${translatorName}`;
 	}
+
 }
 
 // register handlers

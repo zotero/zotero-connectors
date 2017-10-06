@@ -7,6 +7,8 @@
 			margin: 0;
 			font-family: -apple-system;
 			font-size: 14px;
+			overflow: hidden;
+			background-color: #eee;
 		}
 		menu {
 			list-style: none;
@@ -14,11 +16,16 @@
 			margin: 4px 0;
 		}
 		li {
-			line-height: 1.5em;
-			padding: 0 20px;
+			line-height: 1.6em;
+			padding: 0 50px 0 20px;
 			white-space: nowrap;
+			position: relative;
 		}
-		li:hover {
+		li li {
+			margin: 0 -50px 0 -20px;
+			padding: 0 50px 0 30px;
+		}
+		li.enabled:hover {
 			background-color: #4397fa;
 			color: #fff;
 		}
@@ -27,96 +34,304 @@
 			color: inherit;
 			text-decoration: inherit;
 		}
+		li a {
+			color: #8c95a4;
+		}
+		li.enabled a {
+			color: inherit;
+		}
+		li.submenu {
+			padding: 1px 50px 1px 20px;
+			background-color: #e4e4e4
+		}
+		li.submenu.collapsed {
+			display: none;
+		}
+
+		li.submenu-headline .chevron {
+			position: absolute;
+			right: 9px;
+			top: calc(50% - 5px);
+			width: 10px;
+			height: 10px;
+			background-size: 10px;
+			transform: rotate(90deg);
+			/* Icon made by Google and licensed under CC 3.0 */
+			background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTYuMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgd2lkdGg9IjE2cHgiIGhlaWdodD0iMTZweCIgdmlld0JveD0iMCAwIDM1NyAzNTciIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDM1NyAzNTc7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPGc+Cgk8ZyBpZD0icGxheS1hcnJvdyI+CgkJPHBvbHlnb24gcG9pbnRzPSIzOC4yNSwwIDM4LjI1LDM1NyAzMTguNzUsMTc4LjUgICAiIGZpbGw9IiMwMDAwMDAiLz4KCTwvZz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8Zz4KPC9nPgo8L3N2Zz4K);
+			background-repeat: no-repeat;
+		}
+		li.submenu-headline.collapsed .chevron {
+			transform: none;
+		}
+		li .checkbox {
+			position: absolute;
+			left: 4px;
+			top: calc(50% - 6px);
+			width: 12px;
+			height: 12px;
+			background-size: 12px;
+			background-repeat: no-repeat;
+		}
+		li .checkbox.checked {
+			/* Icon made by Google and licensed under CC 3.0 */
+			background-image: url(data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTYuMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgd2lkdGg9IjE2cHgiIGhlaWdodD0iMTZweCIgdmlld0JveD0iMCAwIDQ0OC44IDQ0OC44IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA0NDguOCA0NDguODsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8Zz4KCTxnIGlkPSJjaGVjayI+CgkJPHBvbHlnb24gcG9pbnRzPSIxNDIuOCwzMjMuODUgMzUuNywyMTYuNzUgMCwyNTIuNDUgMTQyLjgsMzk1LjI1IDQ0OC44LDg5LjI1IDQxMy4xLDUzLjU1ICAgIiBmaWxsPSIjMDAwMDAwIi8+Cgk8L2c+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPGc+CjwvZz4KPC9zdmc+Cg==);
+		}
 		hr {
+			margin: 2px -2px;
 			border-top: 2px #ddd solid;
+			border-bottom: none;
+		}
+		li hr {
+			margin: 2px -52px 2px -22px;
+			border-color: #ccc;
 		}
 	</style>
 </head>
 <body>
-<menu>
-	<li><a id="zotero-save-page-with-snapshot" href="javascript:void(0)">Save to Zotero (Web Page with Snapshot)</a></li>
-	<li><a id="zotero-save-page-without-snapshot" href="javascript:void(0)">Save to Zotero (Web Page without Snapshot)</a></li>
-	<hr/>
-	<li><a id="zotero-preferences">Zotero Preferences</a></li>
-</menu>
+<menu></menu>
 <script>
 	(function () {
-		document.getElementById('zotero-preferences').onclick = function() {
-			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.openTab(safari.extension.baseURI + "preferences/preferences.html");
-			safari.self.hide();
-		};
-		var saveWithSnapshotElem = document.getElementById('zotero-save-page-with-snapshot');
-		saveWithSnapshotElem.onclick = function () {
-			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.saveAsWebpage(true);
-			safari.self.hide();
-		};
-		var saveWithoutSnapshotElem = document.getElementById('zotero-save-page-without-snapshot');
-		saveWithoutSnapshotElem.onclick = function () {
-			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.saveAsWebpage(false);
-			safari.self.hide();
-		};
+		var menu = document.getElementsByTagName('menu')[0];
+		var Zotero;
 
-		safari.application.addEventListener('popover', function (event) {
-			var Zotero = safari.extension.globalPage.contentWindow.Zotero;
+		function _getTranslatorLabel(translator) {
+			var translatorName = translator.label ? ` (${translator.label})` : '';
+			return `Save to Zotero${translatorName}`;
+		}
+		function addContextMenuItem(options) {
+			var parent = menu;
+			if (options.parentId) {
+				parent = document.getElementById(options.parentId);
+			}
+			switch (options.type) {
+			case 'separator':
+				var hr = document.createElement('hr');
+				hr.id = options.id;
+				parent.appendChild(hr);
+				break;
+			case 'submenu':
+				var li = document.createElement('li');
+				var submenuLi = document.createElement('li');
+				var submenu = document.createElement('menu');
+				li.classList.add('collapsed', 'submenu-headline');
+				submenuLi.classList.add('collapsed', 'submenu');
+				submenuLi.id = `${options.id}-submenu-li`;
+				submenu.id = options.id;
+				
+				var a = document.createElement('a');
+				a.setAttribute('href', 'javascript:void(0);');
+				a.textContent = options.title;
+				if (options.enabled !== false) {
+					li.classList.add('enabled');
+					li.onclick = function() {
+						li.classList.toggle('collapsed');
+						submenuLi.classList.toggle('collapsed');
+						adjustSize();
+					};
+				}
+				var chevron = document.createElement('span');
+				chevron.classList.add('chevron');
+				
+				li.appendChild(a);
+				li.appendChild(chevron);
+				parent.appendChild(li);
+				
+				submenuLi.appendChild(submenu);
+				parent.appendChild(submenuLi);
+				break;
+			case 'checkbox':
+				li = document.createElement('li');
+				li.id = options.id;
+				
+				var checkbox = document.createElement('span');
+				checkbox.classList.add('checkbox');
+				if (options.checked) checkbox.classList.add('checked');
+
+				a = document.createElement('a');
+				a.setAttribute('href', 'javascript:void(0);');
+				a.textContent = options.title;
+				if (options.enabled !== false) {
+					li.classList.add('enabled');
+					li.onclick = function() {
+						safari.self.hide();
+						options.onclick({checked: !options.checked});
+					}
+				}
+
+				li.appendChild(checkbox);
+				li.appendChild(a);
+				parent.appendChild(li);
+				break;
+			default:
+				li = document.createElement('li');
+				li.id = options.id;
+
+				a = document.createElement('a');
+				a.setAttribute('href', 'javascript:void(0);');
+				a.textContent = options.title;
+				if (options.enabled !== false) {
+					li.classList.add('enabled');
+					li.onclick = function() {
+						safari.self.hide();
+						options.onclick();
+					}
+				}
+
+				li.appendChild(a);
+				parent.appendChild(li);
+				break;
+			}
+		}
+		
+		function addTranslatorOptions(translators, parentId) {
+			for (let i = 0; i < translators.length; i++) {
+				addContextMenuItem({
+					id: "zotero-context-menu-translator-save" + i,
+					title: _getTranslatorLabel(translators[i]),
+					onclick: function () {
+						Zotero.Connector_Browser.saveWithTranslator(Zotero.Connector_Browser.activeTab, i, false);
+					},
+					parentId
+				});
+			}
+		}
+		
+		function addPDFOption(parentId) {
+			addContextMenuItem({
+				id: "zotero-context-menu-pdf-save",
+				title: "Save to Zotero (PDF)",
+				onclick: function () {
+					Zotero.Connector_Browser.saveAsWebpage(Zotero.Connector_Browser.activeTab);
+				},
+				parentId
+			});
+		}
+
+		function addPreferencesOption() {
+			addContextMenuItem({
+				type: "separator",
+				id: "zotero-context-menu-pref-separator",
+			});
+
+			addContextMenuItem({
+				id: "zotero-context-menu-preferences",
+				title: "Preferences",
+				onclick: function () {
+					Zotero.Connector_Browser.openTab(safari.extension.baseURI + "preferences/preferences.html");
+				},
+			});
+		}
+		
+		function addAttachmentCheckboxOptions(parentID) {
+			let includeSnapshots = Zotero.Prefs.get("automaticSnapshots");
+			addContextMenuItem({
+				type: "separator",
+				id: "zotero-context-menu-attachment-options-separator",
+				parentId: parentID,
+			});
+			addContextMenuItem({
+				type: 'checkbox',
+				id: "zotero-context-menu-snapshots-checkbox",
+				title: "Include Snapshots",
+				checked: includeSnapshots,
+				onclick: function(info) {
+					Zotero.Prefs.set('automaticSnapshots', info.checked);
+				},
+				parentId: parentID,
+			});
+		}
+		function addProxyOptions(url) {
+			var parentID = "zotero-context-menu-proxy-reload-menu";
+			addContextMenuItem({
+				id: parentID,
+				title: "Reload via Proxy",
+				type: 'submenu'
+			});
+			
+			var i = 0;
+			for (let proxy of _getProxiesForURL(url)) {
+				let name = proxy.toDisplayName({
+					includeScheme: true
+				});
+				let proxied = proxy.toProxy(url);
+				addContextMenuItem({
+					id: `zotero-context-menu-proxy-reload-${i++}`,
+					title: `Reload via ${name}`,
+					onclick: function() {
+						Zotero.Connector_Browser.activeTab.url = proxied;
+					},
+					parentId: parentID,
+				});
+			}
+		};
+		
+		/**
+		 * Get the proxies to show for a given URL
+		 *
+		 * This filters the available proxies to skip non-HTTPS proxies for HTTPS URLs
+		 */
+		function _getProxiesForURL(url) {
+			var proxies = Zotero.Proxies.proxies;
+			// If not an HTTPS site, return all proxies
+			if (!url.startsWith('https:')) {
+				return proxies;
+			}
+			// Otherwise remove non-HTTPS proxies
+			return proxies.filter(proxy => proxy.scheme.startsWith('https:'));
+		}
+		
+		function adjustSize() {
 			setTimeout(function () {
 				safari.self.height = document.documentElement.offsetHeight;
 				let width = 0;
 				let aElems = document.getElementsByTagName('a');
 				for (let i = 0; i < aElems.length; i++) {
-					if (aElems[i].offsetWidth > width) {
-						width = aElems[i].offsetWidth;
+					let calcWidth = aElems[i].offsetWidth + aElems[i].offsetLeft;
+					if (calcWidth > width) {
+						width = calcWidth;
 					}
 				}
 				safari.self.width = width + 40;
 			});
-
-			let translatorElems = document.getElementsByClassName('translator');
-			for (let i = translatorElems.length-1; i >= 0; i--) {
-				let li = translatorElems[i];
-				li.parentNode.removeChild(li);
-			}
-
-			var withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-				Zotero.Prefs.get('automaticSnapshots');
-			if (withSnapshot) {
-				document.getElementsByTagName('menu')[0]
-					.insertBefore(saveWithSnapshotElem.parentNode, saveWithoutSnapshotElem.parentNode);
-			} else {
-				document.getElementsByTagName('menu')[0]
-					.insertBefore(saveWithoutSnapshotElem.parentNode, saveWithSnapshotElem.parentNode);
-			}
-
-			if (Zotero.Connector_Browser.activeTab.contentType == 'application/pdf' ||
-				Zotero.Connector_Browser.activeTab.isPDFFrame) {
-				document.getElementById('zotero-save-page-with-snapshot').textContent = "Save to Zotero (PDF)";
-				document.getElementById('zotero-save-page-without-snapshot').style.display = 'none';
-			}
+		}
+		
+		safari.application.addEventListener('popover', function (event) {
+			Zotero = safari.extension.globalPage.contentWindow.Zotero;
+			if (event.target.identifier != 'zotero-translatorSelector') return;
+			menu.innerHTML = '';
 
 			var translators = Zotero.Connector_Browser.activeTab.translators;
-			if (!translators || event.target.identifier != 'zotero-translatorSelector') return;
-
-			var menu = document.getElementsByTagName('menu')[0];
-			var savePage = menu.firstChild;
-			for (let i = 0; i < translators.length; i++) {
-				let translator = translators[i];
-				let li = document.createElement('li');
-				li.classList.add('translator');
-
-				let a = document.createElement('a');
-				a.setAttribute('href', 'javascript:void(0);');
-				a.textContent = "Save to Zotero (" + translator.label + ")";
-				a.onclick = function () {
-					Zotero.Connector_Browser.saveWithTranslator(i);
-					safari.self.hide();
-				};
-
-				li.appendChild(a);
-				menu.insertBefore(li, savePage);
+			var isPDF = Zotero.Connector_Browser.activeTab.contentType == 'application/pdf';
+			var showSaveMenu = isPDF || translators;
+			if (showSaveMenu) {
+				var saveMenuID;
+				saveMenuID = "zotero-context-menu-save-menu";
+				addContextMenuItem({
+					id: saveMenuID,
+					title: "Save to Zotero",
+					type: 'submenu'
+				});
+			
+				if (isPDF) {
+					addPDFOption(saveMenuID);
+				} else if (translators) {
+					addTranslatorOptions(translators, saveMenuID);
+					addAttachmentCheckboxOptions(saveMenuID);
+				}
 			}
+			var showProxyMenu = !isPDF
+				&& _getProxiesForURL(Zotero.Connector_Browser.activeTab.url).length > 0
+				// Don't show proxy menu if already proxied
+				&& !Zotero.Proxies.proxyToProper(Zotero.Connector_Browser.activeTab.url, true);
+		
+			// If unproxied, show "Reload via Proxy" options
+			if (showProxyMenu) {
+				addProxyOptions(Zotero.Connector_Browser.activeTab.url);
+			}
+			addPreferencesOption();
+			adjustSize();
 		});
+		
 	})();
 </script>
 </body>

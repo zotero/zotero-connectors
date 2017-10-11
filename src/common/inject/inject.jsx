@@ -79,9 +79,17 @@ if(isTopWindow) {
 	});
 	Zotero.Messaging.addMessageListener("progressWindow.close", Zotero.ProgressWindow.close);
 	Zotero.Messaging.addMessageListener("progressWindow.done", function(returnValue) {
-		if (returnValue[0]) {
+		if (Zotero.isBrowserExt
+			&& document.location.href.startsWith(browser.extension.getURL('confirm.html')))
+		{
+			setTimeout(function() {
+				window.close();
+			}, 1000);
+		}
+		else if (returnValue[0]) {
 			Zotero.ProgressWindow.startCloseTimer(2500);
-		} else {
+		}
+		else {
 			new Zotero.ProgressWindow.ErrorMessage(returnValue[1] || "translationError");
 			Zotero.ProgressWindow.startCloseTimer(8000);
 		}
@@ -455,8 +463,8 @@ try {
 
 // don't try to scrape on hidden frames
 let isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
-let isTestPage = window.location.protocol.includes('-extension:') && window.location.href.includes('/test/');
-if(!isHiddenIFrame && (isWeb || isTestPage)) {
+let isExtensionPage = window.location.href.startsWith(browser.extension.getURL(''));
+if(!isHiddenIFrame && (isWeb || isExtensionPage)) {
 	var doInject = function () {
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {

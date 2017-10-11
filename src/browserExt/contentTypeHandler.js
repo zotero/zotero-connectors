@@ -145,10 +145,24 @@ Zotero.ContentTypeHandler = {
 			}
 		}
 		let response = await Zotero.Messaging.sendMessage('confirm', props, tab);
-		// If captured URL was pasted on about:blank or other browser pages they respond immediately
-		// with undefined which we treat as cancel here
+		// If captured URL was pasted on about:blank or other browser pages the response is immediate
+		// with undefined and means we cannot inject and display the UI, so we have to do some additional work
 		if (!response) {
-			response = {button: 2}
+			var responsePromise = new Zotero.Promise(function(resolve, reject) {
+				browser.tabs.onUpdated.addListener(async function getResponse(tabId, changeInfo) {
+					try {
+						if (tabId == tab.id && changeInfo.status == 'complete') {
+							let response = await Zotero.ContentTypeHandler.confirm(details, message, checkboxText);
+							browser.tabs.onUpdated.removeListener(getResponse);
+							resolve(response);
+						}
+					} catch (e) {
+						reject(e);
+					}
+				});
+			});
+			browser.tabs.update(tab.id, {url: browser.extension.getURL(`confirm.html`)});
+			response = await responsePromise;
 		}
 
 		return response;

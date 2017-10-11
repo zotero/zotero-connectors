@@ -109,32 +109,30 @@ describe("ContentTypeHandler", function() {
 			assert.equal(redirectUrl, 'test');
 		});
 		
-		it('navigates to target url if no injection context available', async function () {
-			let url = 'http://zotero-static.s3.amazonaws.com/test.ris';
-			let redirectUrlPromise = background(async function() {
+		it('navigates to confirmation page if no injection context available', async function () {
+			await background(async function(tabId) {
 				try {
-					var customObserver = d => Zotero.ContentTypeHandler.observe(d);
-					Zotero.WebRequestIntercept.addListener('headersReceived', customObserver);
-					// stubbing Zotero.Messaging.sendMessage('confirm', props, tab);
-					var stub1 = sinon.stub(Zotero.Messaging, 'sendMessage');
-					stub1.resolves({button: 2});
+					let confirm = Zotero.ContentTypeHandler.confirm;
+					var stub2 = sinon.stub(Zotero.ContentTypeHandler, 'confirm');
 					var deferred = Zotero.Promise.defer();
-					var stub2 = sinon.stub(Zotero.ContentTypeHandler, '_redirectToOriginal').callsFake(function(tabId, url) {
-						deferred.resolve(url);
+					stub2.callsFake(async function(details) {
+						let tab = await browser.tabs.get(details.tabId);
+						if (tab.url.includes('confirm.html')) deferred.resolve();
+						return confirm.apply(Zotero.ContentTypeHandler, arguments);
 					});
+					
+					Zotero.ContentTypeHandler.observe({frameId: 1, tabId, url: 'http://www.zotero.org/', method: "GET",
+						responseHeadersObject: {'content-type': 'application/x-research-info-systems'}});
 
 					let result = await deferred.promise;
 					return result;
 				} finally {
-					stub1.restore();
 					stub2.restore();
-					Zotero.WebRequestIntercept.removeListener('headersReceived', customObserver)
 				}
-			});
+			}, tab.id);
+			tab = await browser.tabs.get(tab.id);
 			
-			browser.tabs.update(tab.id, {url});
-			let redirectUrl = await redirectUrlPromise;
-			assert.equal(redirectUrl, url);
+			assert.equal(tab.url, getExtensionURL('confirm.html'));
 		});
 	});
 });

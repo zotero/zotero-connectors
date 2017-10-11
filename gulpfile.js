@@ -195,7 +195,7 @@ function processFile() {
 		var addFiles = function(file) {
 			// Amend paths
 			if (type === 'common' || type === 'browserExt') {
-				if (file.path.includes('test/data') && file.path.includes('.html')) {
+				if (file.path.includes('.html')) {
 					file.contents = Buffer.from(replaceScriptsHTML(
 						file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
 				}
@@ -289,7 +289,8 @@ gulp.task('watch-chrome', function () {
 gulp.task('process-custom-scripts', function() {
 	let sources = [
 		'./src/browserExt/background.js',
-		'./src/browserExt/manifest.json', 
+		'./src/browserExt/manifest.json',
+		'./src/browserExt/confirm.html',
 		'./src/safari/global.html',
 		'./src/safari/Info.plist',
 		'./src/common/node_modules.js',

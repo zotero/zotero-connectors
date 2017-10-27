@@ -96,7 +96,9 @@ describe('TestSetup', function() {
 				yield Zotero.Promise.delay(100);
 				let closedTab;
 				try {
-					closedTab = yield browser.tabs.get(tabId);
+					closedTab = yield background(async function(id) {
+						return !!(await Zotero.Background.getTabByID(id))
+					}, tabId);
 				} catch (e) {return}
 				assert.isNotOk(closedTab, 'Tab was not closed')
 			}));

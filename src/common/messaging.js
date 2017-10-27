@@ -143,6 +143,7 @@ Zotero.Messaging = new function() {
 						}
 						deferred.resolve(payload);
 					} else if (event.name === 'Connector_Browser.onPageLoad') {
+						// URL changed, so we resolve all of these
 						deferred.resolve();
 					}
 				}

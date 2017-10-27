@@ -463,7 +463,8 @@ try {
 
 // don't try to scrape on hidden frames
 let isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
-let isExtensionPage = window.location.href.startsWith(browser.extension.getURL(''));
+let isExtensionPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.extension.getURL(''))
+	|| Zotero.isSafari && window.location.href.startsWith('safari-extension://');
 if(!isHiddenIFrame && (isWeb || isExtensionPage)) {
 	var doInject = function () {
 		// add listener for translate message from extension

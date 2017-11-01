@@ -144,14 +144,15 @@ Zotero.ContentTypeHandler = {
 				checkboxText
 			}
 		}
+		let confirmURL = browser.extension.getURL(`confirm.html`);
 		let response = await Zotero.Messaging.sendMessage('confirm', props, tab);
 		// If captured URL was pasted on about:blank or other browser pages the response is immediate
 		// with undefined and means we cannot inject and display the UI, so we have to do some additional work
-		if (!response) {
+		if (!response && tab.url != confirmURL) {
 			var responsePromise = new Zotero.Promise(function(resolve, reject) {
-				browser.tabs.onUpdated.addListener(async function getResponse(tabId, changeInfo) {
+				browser.tabs.onUpdated.addListener(async function getResponse(tabId, changeInfo, tab) {
 					try {
-						if (tabId == tab.id && changeInfo.status == 'complete') {
+						if (changeInfo.status == 'complete' && tab.url == confirmURL) {
 							let response = await Zotero.ContentTypeHandler.confirm(details, message, checkboxText);
 							browser.tabs.onUpdated.removeListener(getResponse);
 							resolve(response);
@@ -160,9 +161,11 @@ Zotero.ContentTypeHandler = {
 						reject(e);
 					}
 				});
+				browser.tabs.update(tab.id, {url: confirmURL});
 			});
-			browser.tabs.update(tab.id, {url: browser.extension.getURL(`confirm.html`)});
 			response = await responsePromise;
+		} else if (!response) {
+			throw new Error('Cannot confirm whether user wants do download the file')
 		}
 
 		return response;

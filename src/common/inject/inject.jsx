@@ -463,10 +463,13 @@ try {
 
 // don't try to scrape on hidden frames
 let isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
-let isExtensionPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.extension.getURL(''))
-	|| Zotero.isSafari && window.location.href.startsWith('safari-extension://');
-if(!isHiddenIFrame && (isWeb || isExtensionPage)) {
+let isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.extension.getURL('test'))
+	|| Zotero.isSafari && window.location.href.startsWith(safari.extension.baseURI + 'test');
+if(!isHiddenIFrame) {
 	var doInject = function () {
+		Zotero.initInject();
+		
+		if (!isWeb && !isTestPage) return;
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {
 			if(data[0] !== instanceID) return;
@@ -488,9 +491,6 @@ if(!isHiddenIFrame && (isWeb || isExtensionPage)) {
 		Zotero.Messaging.addMessageListener("firstUse", function () {
 			return Zotero.Inject.firstUsePrompt();
 		});
-		
-		// initialize
-		Zotero.initInject();
 
 		if (Zotero.isSafari && isTopWindow) Zotero.Connector_Browser.onPageLoad();
 

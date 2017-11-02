@@ -156,7 +156,7 @@ var Zotero = new function() {
 	/**
 	 * Get versions, platform, etc.
 	 */
-	this.getSystemInfo = function() {
+	this.getSystemInfo = async function() {
 		var info = {
 			connector: "true",
 			version: this.version,
@@ -166,14 +166,14 @@ var Zotero = new function() {
 		};
 		
 		info.appName = Zotero.clientName;
-		info.zoteroAvailable = Zotero.Connector.isOnline;
+		info.zoteroAvailable = await Zotero.Connector.checkIsOnline();
 		
 		var str = '';
 		for (var key in info) {
 			str += key + ' => ' + info[key] + ', ';
 		}
 		str = str.substr(0, str.length - 2);
-		return Promise.resolve(str);
+		return str;
 	};
 	
 	/**

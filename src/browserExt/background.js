@@ -211,7 +211,7 @@ Zotero.Connector_Browser = new function() {
 		this.injectTranslationScripts[key] = deferred;
 		deferred.promise.catch(function(e) {
 			Zotero.debug(`Connector_Browser.injectTranslationScripts: Script injection rejected ${key}`);
-			Zotero.logError(e);
+			Zotero.debug(e.message);
 		}).then(function() {
 			delete Zotero.Connector_Browser.injectTranslationScripts[key];
 		});
@@ -279,12 +279,16 @@ Zotero.Connector_Browser = new function() {
 		}, 5000);
 
 		var urlChanged = Zotero.Promise.defer();
-		function urlChangeListener(tabID, changeInfo, changeTab) {
-			if (tabID != tab.id || (changeInfo && changeTab.url == tab.url)) return;
+		function urlChangeListener(details) {
+			if (details.tabId != tab.id || details.frameId != frameId || details.url == tab.url) return;
 			urlChanged.reject(new Error(`Url changed mid-injection into ${tab.id}-${frameId}`))
 		}
-		browser.tabs.onRemoved.addListener(urlChangeListener);
-		browser.tabs.onUpdated.addListener(urlChangeListener);
+		browser.webNavigation.onBeforeNavigate.addListener(urlChangeListener);
+		function tabRemovedListener(tabID) {
+			if (tabID != tab.id) return;
+			urlChanged.reject(new Error(`Tab removed mid-injection into ${tab.id}-${frameId}`))
+		}
+		browser.tabs.onRemoved.addListener(tabRemovedListener);
 
 		// This is a bit complex, but we need to cut off script injection as soon as we notice an
 		// interruption condition, such as a timeout or url change, otherwise we get partial injections
@@ -304,8 +308,8 @@ Zotero.Connector_Browser = new function() {
 				}
 			}
 		} finally {
-			browser.tabs.onRemoved.removeListener(urlChangeListener);
-			browser.tabs.onUpdated.removeListener(urlChangeListener);
+			browser.tabs.onRemoved.removeListener(tabRemovedListener);
+			browser.webNavigation.onBeforeNavigate.removeListener(urlChangeListener);
 			clearTimeout(timeout);
 		}
 	};

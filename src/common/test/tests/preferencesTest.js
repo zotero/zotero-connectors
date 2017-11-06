@@ -142,7 +142,7 @@ describe('Preferences', function() {
 				
 				assert.include(message, `D${debugId}`);
 				var debugLogBody = yield background(function() {
-					return Zotero.HTTP.request.firstCall.args[2].body;
+					return Zotero.HTTP.request.lastCall.args[2].body;
 				});
 				assert.include(debugLogBody, testDebugLine);
 			} finally {

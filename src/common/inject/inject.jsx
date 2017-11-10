@@ -94,6 +94,9 @@ if(isTopWindow) {
 			Zotero.ProgressWindow.startCloseTimer(8000);
 		}
 	});
+	Zotero.Messaging.addMessageListener("progressWindow.error", function(args) {
+		new Zotero.ProgressWindow.ErrorMessage(args.shift(), args);
+	})
 	Zotero.Messaging.addMessageListener("confirm", function (props) {
 		return Zotero.Inject.confirm(props);
 	});
@@ -111,7 +114,7 @@ if(isTopWindow) {
  */
 Zotero.Inject = new function() {
 	var _translate;
-	this.translators = {};
+	this.translators = [];
 		
 	/**
 	 * Initializes the translate machinery and determines whether this page can be translated
@@ -182,9 +185,6 @@ Zotero.Inject = new function() {
 					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
 						[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
 				});
-				_translate.setHandler("done", function(obj, status) {
-					Zotero.Messaging.sendMessage("progressWindow.done", [status]);
-				});
 				_translate.setHandler("pageModified", function() {
 					Zotero.Connector_Browser.onPageLoad();
 					Zotero.Messaging.sendMessage("pageModified", null);
@@ -202,10 +202,7 @@ Zotero.Inject = new function() {
 						return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
 					}
 				}
-				this.translators = {};
-				for (let translator of translators) {
-					this.translators[translator.translatorID] = translator;
-				}
+				this.translators = translators;
 				
 				translators = translators.map(function(translator) {return translator.serialize(TRANSLATOR_PASSING_PROPERTIES)});
 				Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
@@ -391,13 +388,32 @@ Zotero.Inject = new function() {
 		}
 	};
 	
-	this.translate = function(translatorID) {
-		return Zotero.Inject.checkActionToServer().then(function (result) {
-			if (!result) return;
-			Zotero.Messaging.sendMessage("progressWindow.show", null);
-			_translate.setTranslator(Zotero.Inject.translators[translatorID]);
-			return _translate.translate();
-		}.bind(this));
+	this.translate = async function(translatorID, fallbackOnFailure=false) {
+		let result = await Zotero.Inject.checkActionToServer();
+		if (!result) return;
+		
+		Zotero.Messaging.sendMessage("progressWindow.show", null);
+		var translators = Array.from(this.translators);
+		while (translators[0].translatorID != translatorID) {
+			translators.shift();
+		}
+		while (true) {
+			var translator = translators.shift();
+			_translate.setTranslator(translator);
+			try {
+				await _translate.translate();
+				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+				break;
+			} catch (e) {
+				if (fallbackOnFailure && translators.length) {
+					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
+				} else {
+					Zotero.Messaging.sendMessage("progressWindow.done", [false]);
+					return;
+				}
+			}
+		}
+
 	};
 	
 	this.saveAsWebpage = function (args) {
@@ -472,8 +488,8 @@ if(!isHiddenIFrame) {
 		if (!isWeb && !isTestPage) return;
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {
-			if(data[0] !== instanceID) return;
-			return Zotero.Inject.translate(data[1]);
+			if(data.shift() !== instanceID) return;
+			return Zotero.Inject.translate.apply(Zotero.Inject, data);
 		});
 		// add a listener to save as webpage when translators unavailable
 		Zotero.Messaging.addMessageListener("saveAsWebpage", function(data) {

@@ -151,7 +151,7 @@ Zotero.ProgressWindow = new function() {
 		this._div.style.filter = "";
 	};
 	
-	this.ErrorMessage = function(err) {
+	this.ErrorMessage = function(err, args) {
 		Zotero.ProgressWindow.show();
 		
 		this._div = doc.createElement('div');
@@ -170,6 +170,10 @@ Zotero.ProgressWindow = new function() {
 			
 			this._div.appendChild(link);
 			this._div.appendChild(doc.createTextNode(" for more information."));
+		} else if (err === "fallback") {
+			this._div.innerHTML = `An error occurred while saving with <span style='font-weight: bold;'>${args[0]}</span>. `+
+					`Attempting to save using <span style='font-weight: bold;'>${args[1]}</span>.`
+			
 		} else if (err === "noTranslator") {
 			var textNode = doc.createTextNode("No items could be saved because this website "+
 					"is not supported by any Zotero translator. If Zotero is not open, try "+

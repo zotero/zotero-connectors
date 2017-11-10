@@ -657,7 +657,7 @@ Zotero.Connector_Browser = new function() {
 			});
 		}
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
-			Zotero.Connector_Browser.saveWithTranslator(tab, 0);
+			Zotero.Connector_Browser.saveWithTranslator(tab, 0, true);
 		} else {
 			if (_tabInfo[tab.id] && _tabInfo[tab.id].isPDF) {
 				Zotero.Connector_Browser.saveAsWebpage(tab, _tabInfo[tab.id].frameId, true);
@@ -669,12 +669,13 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 	
-	this.saveWithTranslator = function(tab, i) {
+	this.saveWithTranslator = function(tab, i, fallbackOnFailure=false) {
 		// Set frameId to null - send message to all frames
 		// There is code to figure out which frame should translate with instanceID.
 		return Zotero.Messaging.sendMessage("translate", [
 			_tabInfo[tab.id].instanceID,
-			_tabInfo[tab.id].translators[i].translatorID
+			_tabInfo[tab.id].translators[i].translatorID,
+			fallbackOnFailure
 		], tab, null);
 	}
 	

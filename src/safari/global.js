@@ -108,7 +108,7 @@ Zotero.Connector_Browser = new function() {
 		var tab = safari.application.activeBrowserWindow.activeTab;
 		if (command === "zotero-button") {
 			if(tab.translators && tab.translators.length) {
-				Zotero.Connector_Browser.saveWithTranslator(tab, 0);
+				Zotero.Connector_Browser.saveWithTranslator(tab, 0, true);
 			} else {
 				var withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
 					Zotero.Prefs.get('automaticSnapshots');

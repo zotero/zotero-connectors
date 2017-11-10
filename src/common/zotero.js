@@ -166,7 +166,7 @@ var Zotero = new function() {
 		};
 		
 		info.appName = Zotero.clientName;
-		info.zoteroAvailable = await Zotero.Connector.checkIsOnline();
+		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());
 		
 		var str = '';
 		for (var key in info) {

@@ -164,6 +164,10 @@ Zotero.Connector_Browser = new function() {
 			'https://www.zotero.org/support/standalone for more details.');
 		_incompatibleVersionMessageShown = true;
 	}
+	
+	this.isIncognito = function(tab) {
+		return tab.private;
+	}
 
 	this.saveWithTranslator = function(tab, i) {
 		return Zotero.Messaging.sendMessage("translate", [tab.instanceID, tab.translators[i].translatorID], tab);

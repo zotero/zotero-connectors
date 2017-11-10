@@ -127,6 +127,7 @@ var MESSAGES = {
 		onPageLoad: false,
 		onTranslators: false,
 		injectScripts: true,
+		isIncognito: true,
 		firstSaveToServerPrompt: true,
 		openTab: false,
 		openConfigEditor: false,

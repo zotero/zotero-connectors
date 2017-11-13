@@ -401,9 +401,9 @@ Zotero.Inject = new function() {
 			var translator = translators.shift();
 			_translate.setTranslator(translator);
 			try {
-				await _translate.translate();
+				let items = await _translate.translate();
 				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
-				break;
+				return items;
 			} catch (e) {
 				if (fallbackOnFailure && translators.length) {
 					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);

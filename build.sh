@@ -212,8 +212,12 @@ if [ $RETVAL == 0 ]; then
 	cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari.safariextension/images"
 	for f in $ICONS
 	do
-		convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
+		{
+			convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
+				Opacity -contrast-stretch 50 "$BUILD_DIR/safari.safariextension/images/toolbar/"`basename $f` ||
+			convert $f -background white -negate -alpha Background -alpha Copy -channel \
 				Opacity -contrast-stretch 50 "$BUILD_DIR/safari.safariextension/images/toolbar/"`basename $f`
+		} 2>/dev/null
 	done
 else
 	echo

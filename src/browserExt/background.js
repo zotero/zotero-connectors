@@ -112,6 +112,13 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	/**
+	 * Called when a tab is removed or the URL has changed
+	 */
+	this.onPageLoad = function(tab) {
+		if(tab) _clearInfoForTab(tab.id);
+	}
+	
+	/**
 	 * Called when Zotero goes online or offline
 	 * @param [String|Boolean] version - either `false` or version string from X-Zotero-Version header
 	 */

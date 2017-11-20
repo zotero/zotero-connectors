@@ -416,46 +416,46 @@ Zotero.Inject = new function() {
 
 	};
 	
-	this.saveAsWebpage = function (args) {
+	this.saveAsWebpage = async function (args) {
 		var title = args[0] || document.title, withSnapshot = args[1];
 		var image;
-		return Zotero.Inject.checkActionToServer().then(function(result) {
-			if (!result) return;
-			
-			var data = {
-				url: document.location.toString(),
-				cookie: document.cookie,
-				html: document.documentElement.innerHTML,
-				skipSnapshot: !withSnapshot
-			};
-			
-			if (document.contentType == 'application/pdf') {
-				data.pdf = true;
-				image = "attachment-pdf";
-			} else {
-				image = "webpage";
-			}
+		var result = await Zotero.Inject.checkActionToServer();
+		if (!result) return;
+		
+		var data = {
+			url: document.location.toString(),
+			cookie: document.cookie,
+			html: document.documentElement.innerHTML,
+			skipSnapshot: !withSnapshot
+		};
+		
+		if (document.contentType == 'application/pdf') {
+			data.pdf = true;
+			image = "attachment-pdf";
+		} else {
+			image = "webpage";
+		}
 
-			Zotero.Messaging.sendMessage("progressWindow.show", null);
-			Zotero.Messaging.sendMessage("progressWindow.itemSaving",
-				[Zotero.ItemTypes.getImageSrc(image), title, title]);
-			return Zotero.Connector.callMethodWithCookies("saveSnapshot", data)
-		}.bind(this)).then(function(result) {
+		Zotero.Messaging.sendMessage("progressWindow.show", null);
+		Zotero.Messaging.sendMessage("progressWindow.itemSaving",
+			[Zotero.ItemTypes.getImageSrc(image), title, title]);
+		try {
+			result = await Zotero.Connector.callMethodWithCookies("saveSnapshot", data);
+		
 			Zotero.Messaging.sendMessage("progressWindow.itemProgress",
 				[Zotero.ItemTypes.getImageSrc(image), title, title, 100]);
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			return result;
-		}.bind(this))
-		.catch(function(e) {
-			var err;
+		} catch (e) {
 			// Client unavailable
 			if (e.status === 0) {
 				// Attempt saving to server if not pdf
 				if (document.contentType != 'application/pdf') {
 					let itemSaver = new Zotero.Translate.ItemSaver({});
-					return itemSaver.saveAsWebpage().then(function(items) {
-						if (items.length) progress.setProgress(100);
-					});
+					let items = await itemSaver.saveAsWebpage();
+					if (items.length) Zotero.Messaging.sendMessage("progressWindow.itemProgress",
+						[Zotero.ItemTypes.getImageSrc(image), title, title, 100]);
+					return;
 				} else {
 					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
 				}
@@ -466,8 +466,8 @@ Zotero.Inject = new function() {
 			else if (!e.value || e.value.libraryEditable != false) {
 				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
 			}
-			if (err) throw err;
-		}.bind(this));
+			throw e;
+		}
 	};
 };
 

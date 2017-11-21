@@ -169,8 +169,9 @@ Zotero.Connector_Browser = new function() {
 		return tab.private;
 	}
 
-	this.saveWithTranslator = function(tab, i) {
-		return Zotero.Messaging.sendMessage("translate", [tab.instanceID, tab.translators[i].translatorID], tab);
+	this.saveWithTranslator = function(tab, i, fallbackOnFailure=false) {
+		return Zotero.Messaging.sendMessage("translate", [tab.instanceID, 
+				tab.translators[i].translatorID, fallbackOnFailure], tab);
 	}
 
 	this.saveAsWebpage = function(tab, withSnapshot) {

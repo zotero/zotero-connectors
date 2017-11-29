@@ -99,11 +99,18 @@ Zotero.Connector_Browser = new function() {
 					left: left,
 					type: 'popup'
 				})
-		}).then(function (win) {
+		}).then(async function (win) {
 			// Fix positioning in Chrome when window is on second monitor
 			// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
-			if (Zotero.isChrome && win.left < left) {
-				browser.windows.update(win.id, { left: left });
+			if (Zotero.isBrowserExt && win.left < left) {
+				browser.windows.update(win.id, {left});
+			}
+			// Fix a Firefox bug where content does not appear before resize on linux
+			// https://bugzilla.mozilla.org/show_bug.cgi?id=1402110
+			// this one might actually get fixed, unlike the one above
+			if (Zotero.isFirefox) {
+				await Zotero.Promise.delay(1000);
+				browser.windows.update(win.id, {width: win.width+1});
 			}
 			return new Promise(function(resolve) {
 				_tabInfo[tab.id].selectCallback = resolve;

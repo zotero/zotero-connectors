@@ -579,10 +579,11 @@ Zotero.Proxies = new function() {
 			var host = m[2];
 			if (host.substr(0, 2) === "0-") host = host.substr(2);
 			var hostnameParts = [host.split(".")];
-			if (m[1] == 'https://' && host.replace(/-/g, '.') != host) {
+			if (m[1] == 'https://') {
 				// try replacing hyphens with dots for https protocol
 				// to account for EZProxy HttpsHypens mode
-				hostnameParts.push(host.replace(/-/g, '.').split('.'));
+				hostnameParts.push(host.split('.'));
+				hostnameParts[1].splice(0, 1, ...(hostnameParts[1][0].replace(/-/g, '.').split('.')));
 			}
 			
 			for (let i=0; i < hostnameParts.length; i++) {

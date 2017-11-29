@@ -332,7 +332,7 @@ Zotero.Inject = new function() {
 			button1Text: "Try Again",
 			button2Text: "Cancel",
 			button3Text: "Enable Saving to Online Library",
-			title: "Zotero is Offline",
+			title: "Is Zotero Running?",
 			message: `
 				The Zotero Connector was unable to communicate with the Zotero desktop application. The Connector can save some pages directly to your zotero.org account, but for best results you should make sure Zotero is open before attempting to save.<br/><br/>
 				You can <a href="https://www.zotero.org/download/">download Zotero</a> or <a href="https://www.zotero.org/support/kb/connector_zotero_unavailable">troubleshoot the connection</a> if necessary.

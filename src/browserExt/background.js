@@ -326,7 +326,7 @@ Zotero.Connector_Browser = new function() {
 					// Will either throw from the first two, or return from the third one
 					let nextVal = await Promise.race([
 						timedOut.promise,
-						_tabInfo[tab.id].injections[frameId].promise,
+						deferred.promise,
 						val.value
 					]);
 					val = iter.next(nextVal);
@@ -336,7 +336,7 @@ Zotero.Connector_Browser = new function() {
 			}
 		} finally {
 			browser.tabs.onRemoved.removeListener(tabRemovedListener);
-			_tabInfo[tab.id].injections[frameId].resolve();
+			deferred.resolve();
 			delete _tabInfo[tab.id].injections[frameId];
 			clearTimeout(timeout);
 		}
@@ -771,22 +771,16 @@ Zotero.Connector_Browser = new function() {
 	});
 	
 	browser.webNavigation.onCommitted.addListener(async function(details) {
-		if (details.frameId != 0) return;
-		
 		var tab = await browser.tabs.get(details.tabId);
-		// Ignore item selector
-		if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
-		_updateInfoForTab(tab);
-		_updateExtensionUI(tab);
-		tab.active && Zotero.Connector.reportActiveURL(tab.url);
-	});
-	
-	browser.webNavigation.onDOMContentLoaded.addListener(async function(details) {
-		var tab = await browser.tabs.get(details.tabId);
-		// Firefox 57 fires onDOMContentLoaded even if onCommitted has been fired with a different url
-		// which throws off script injection
-		if (_tabInfo[tab.id].url != tab.url) return;
-		Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
+		if (details.frameId == 0) {
+			// Ignore item selector
+			if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
+			_updateInfoForTab(tab);
+			_updateExtensionUI(tab);
+		}
+		// _updateInfoForTab will reject pending injections, but we need to make sure this
+		// executes in the next event loop such that the rejections can be processed
+		setTimeout(() => Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url));
 	});
 }
 

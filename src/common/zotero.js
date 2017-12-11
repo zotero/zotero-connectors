@@ -227,7 +227,11 @@ var Zotero = new function() {
 		}
 		
 		if (err.stack) {
-			Zotero.Errors.log(err.stack);
+			if (Zotero.isFirefox) {
+				Zotero.Errors.log(err.message + '\n' + err.stack);
+			} else {
+				Zotero.Errors.log(err.stack);
+			}
 		} else {
 			Zotero.Errors.log(err.message ? err.message : err.toString(), fileName, lineNumber);
 		}

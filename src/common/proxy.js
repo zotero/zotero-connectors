@@ -147,10 +147,9 @@ Zotero.Proxies = new function() {
 					existingProxy.hosts = Array.from(new Set(existingProxy.hosts));
 				} else {
 					// Otherwise add the proxy
-					Zotero.Proxies.proxies.push(new Zotero.Proxy(proxy));
+					new Zotero.Proxy(proxy).save();
 				}
 			}
-			Zotero.Proxies.storeProxies();
 
 			Zotero.Prefs.set('proxies.clientChecked', true);
 			return result;
@@ -419,7 +418,7 @@ Zotero.Proxies = new function() {
 		}
 		proxy = new Zotero.Proxy(proxy);
 	
-		var existingProxyIndex = Zotero.Proxies.proxies.findIndex((p) => p.id == proxy.id);
+		var existingProxyIndex = Zotero.Proxies.proxies.findIndex((p) => p.scheme == proxy.scheme);
 		if (existingProxyIndex == -1) {
 			Zotero.Proxies.proxies.push(proxy);
 		}
@@ -816,6 +815,9 @@ Zotero.Proxy.prototype.toProper = function(m) {
 Zotero.Proxy.prototype.toProxy = function(uri) {
 	if (typeof uri == "string") {
 		uri = url.parse(uri);
+		// If there's no path it is set to null, but we need
+		// at least an empty string to avoid doing many checks
+		uri.path = uri.path || '';
 	}
 	if (this.regexp.exec(uri.href)) {
 		return uri.href;

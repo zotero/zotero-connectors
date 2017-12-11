@@ -227,7 +227,7 @@ var Zotero = new function() {
 		}
 		
 		if (err.stack) {
-			if (Zotero.isFirefox) {
+			if (!Zotero.isChrome) {
 				Zotero.Errors.log(err.message + '\n' + err.stack);
 			} else {
 				Zotero.Errors.log(err.stack);

@@ -220,7 +220,7 @@ describe("Translation", function() {
 								// Allow the button click to propagate
 								await Zotero.Promise.delay(10);
 							} else {
-								await Zotero.Inject.translate(Object.keys(Zotero.Inject.translators)[0]);
+								await Zotero.Inject.translate(Zotero.Inject.translators[0].translatorID);
 							}
 							try {
 								let val = await spy.lastCall.returnValue;

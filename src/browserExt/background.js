@@ -760,22 +760,38 @@ Zotero.Connector_Browser = new function() {
 	Zotero.Messaging.addMessageListener("selectDone", function(data) {
 		_tabInfo[data[0]].selectCallback(data[1]);
 	});
+	
+	function logListenerErrors(listener) {
+		return function() {
+			try {
+				var returnValue = listener.apply(this, arguments);
+				if (returnValue && returnValue.then) {
+					returnValue.catch(function(e) {
+						Zotero.logError(e);
+						throw (e);
+					});
+				}
+			} catch (e) {
+				Zotero.logError(e);
+				throw e;
+			}
+		}
+	}
 
-	browser.browserAction.onClicked.addListener(_browserAction);
+	browser.browserAction.onClicked.addListener(logListenerErrors(_browserAction));
 	
-	browser.tabs.onRemoved.addListener(_clearInfoForTab);
+	browser.tabs.onRemoved.addListener(logListenerErrors(_clearInfoForTab));
 	
-	browser.tabs.onActivated.addListener(function(activeInfo) {
-		return browser.tabs.get(activeInfo.tabId).then(function(tab) {
-			// Ignore item selector
-			if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
-			Zotero.debug("Connector_Browser: onActivated for " + tab.url);
-			Zotero.Connector_Browser.onTabActivated(tab);
-			Zotero.Connector.reportActiveURL(tab.url);
-		}).catch((e) => {Zotero.logError(e); throw(e)});
-	});
+	browser.tabs.onActivated.addListener(logListenerErrors(async function(details) {
+		var tab = await browser.tabs.get(details.tabId);
+		// Ignore item selector
+		if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
+		Zotero.debug("Connector_Browser: onActivated for " + tab.url);
+		Zotero.Connector_Browser.onTabActivated(tab);
+		Zotero.Connector.reportActiveURL(tab.url);
+	}));
 	
-	browser.webNavigation.onCommitted.addListener(async function(details) {
+	browser.webNavigation.onCommitted.addListener(logListenerErrors(async function(details) {
 		var tab = await browser.tabs.get(details.tabId);
 		if (details.frameId == 0) {
 			// Ignore item selector
@@ -785,8 +801,9 @@ Zotero.Connector_Browser = new function() {
 		}
 		// _updateInfoForTab will reject pending injections, but we need to make sure this
 		// executes in the next event loop such that the rejections can be processed
-		setTimeout(() => Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url));
-	});
+		await Zotero.Promise.delay(1);
+		await Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
+	}));
 }
 
 Zotero.initGlobal();

@@ -138,15 +138,6 @@ Zotero.Connector_Browser = new function() {
 			Zotero.Prefs.set('firstSaveToServer', true);
 		}
 		else {
-			Zotero.debug("Standalone went offline, invalidating standalone translators");
-			for (let browserWindow of safari.application.browserWindows) {
-				for (let tab of browserWindow.tabs) {
-					if (tab.translators && tab.translators.length) {
-						tab.translators = tab.translators.filter(
-							(t) => t.runMode !== Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE);
-					}
-				}
-			}
 			_updateButtonStatus();
 		}
 	};

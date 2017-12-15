@@ -135,13 +135,6 @@ Zotero.Connector_Browser = new function() {
 			// TODO: Enable once 5.0 is out, so that ContentTypeHandlers show an upgradeClient message instead
 			parseInt(version[0]) >= 5 && Zotero.ContentTypeHandler.enable();
 		} else {
-			for (var i in _tabInfo) {
-				if (_tabInfo[i].translators && _tabInfo[i].translators.length) {
-					_tabInfo[i].translators = _tabInfo[i].translators.filter(
-						(t) => t.runMode !== Zotero.Translator.RUN_MODE_ZOTERO_STANDALONE);
-				}
-			}
-			
 			Zotero.ContentTypeHandler.disable();
 		}
 	}

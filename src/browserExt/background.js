@@ -55,7 +55,7 @@ Zotero.Connector_Browser = new function() {
 		}
 		
 		var isPDF = contentType == 'application/pdf';
-		_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {}, {translators, instanceID, isPDF});
+		_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {injections: {}}, {translators, instanceID, isPDF});
 		
 		_updateExtensionUI(tab);
 	}
@@ -70,7 +70,7 @@ Zotero.Connector_Browser = new function() {
 			return;
 		}
 		browser.tabs.get(tabId).then(function(tab) {
-			_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {}, {translators: [], isPDF: true, frameId});
+			_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {injections: {}}, {translators: [], isPDF: true, frameId});
 			Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
 			_updateExtensionUI(tab);
 		});
@@ -252,7 +252,6 @@ Zotero.Connector_Browser = new function() {
 			// Make sure we're not changing the original list
 			scripts = Array.from(scripts);
 			Zotero.debug(`Inject: Injecting scripts into ${frameId} - ${tab.url} : ${scripts.join(', ')}`);
-			let timedOut = false;
 			
 			for (let script of scripts) {
 				// Firefox returns an error for unstructured data being returned from scripts
@@ -302,7 +301,7 @@ Zotero.Connector_Browser = new function() {
 		
 		function tabRemovedListener(tabID) {
 			if (tabID != tab.id) return;
-			urlChanged.reject(new Error(`Inject: Tab removed mid-injection into ${frameId} - ${tab.url}`))
+			deferred.reject(new Error(`Inject: Tab removed mid-injection into ${frameId} - ${tab.url}`))
 		}
 		browser.tabs.onRemoved.addListener(tabRemovedListener);
 

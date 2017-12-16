@@ -3,14 +3,14 @@ set -euo pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
-BUILD_DIR="$( cd "$DIR"/../../build && pwd )"
+BUILD_DIR="$( cd "$ROOT_DIR"/build && pwd )"
 
 . "$ROOT_DIR/config.sh"
 
 cd "$DIR"
 
 XPI="`./get_xpi_path`"
-VERSION="$( cat "$BUILD_DIR/browserExt/manifest.json" | jq -r .version )"
+VERSION="$( cat "$BUILD_DIR/firefox/manifest.json" | jq -r .version )"
 HASH="$( shasum -a 256 "$XPI" | cut -d' ' -f1 )"
 
 ./upload_signed_xpi

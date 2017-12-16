@@ -3,12 +3,13 @@ set -euo pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
-BUILD_DIR="$( cd "$DIR"/../../build && pwd )"
+BUILD_DIR="$( cd "$ROOT_DIR"/build && pwd )"
 
 . "$ROOT_DIR/config.sh"
 
 rm -f "$BUILD_DIR"/*.xpi
-VERSION="$( cat "$BUILD_DIR/browserExt/manifest.json" | jq -r .version )"
+
+VERSION="$( cat "$BUILD_DIR/firefox/manifest.json" | jq -r .version )"
 echo "Signing $VERSION"
 sleep 3
-web-ext sign -s "$BUILD_DIR/browserExt" -a $BUILD_DIR
+web-ext sign -s "$BUILD_DIR/firefox" -a $BUILD_DIR

@@ -3,12 +3,12 @@ set -euo pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
+BUILD_DIR="$( cd "$ROOT_DIR"/build && pwd )"
 
-rm -rf "$ROOT_DIR/build/chrome/"
 rm -rf "$ROOT_DIR"/dist/Zotero_Connector*.zip
 
-rsync -a "$ROOT_DIR/build/browserExt/" "$ROOT_DIR/build/chrome/"
-cd "$ROOT_DIR/build/chrome/"
+rsync -a --delete "$BUILD_DIR/browserExt/" "$BUILD_DIR/chrome/"
+cd "$BUILD_DIR/chrome/"
 
 # Remove the 'applications' property used by Firefox from the manifest
 cat manifest.json | jq '. |= del(.applications)' > manifest.json-tmp

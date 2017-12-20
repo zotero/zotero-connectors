@@ -418,7 +418,7 @@ Zotero.Proxies = new function() {
 		}
 		proxy = new Zotero.Proxy(proxy);
 	
-		var existingProxyIndex = Zotero.Proxies.proxies.findIndex((p) => p.scheme == proxy.scheme);
+		var existingProxyIndex = Zotero.Proxies.proxies.findIndex((p) => p.id == proxy.id);
 		if (existingProxyIndex == -1) {
 			Zotero.Proxies.proxies.push(proxy);
 		}
@@ -448,10 +448,6 @@ Zotero.Proxies = new function() {
 	 *	no error.
 	 */
 	this.validate = function(proxy) {
-		if (proxy.scheme.length < 8 || (proxy.scheme.substr(0, 7) != "http://" && proxy.scheme.substr(0, 8) != "https://")) {
-			return ["scheme.noHTTP"];
-		}
-		
 		if (!Zotero_Proxy_schemeParameterRegexps["%p"].test(proxy.scheme) &&
 				(!Zotero_Proxy_schemeParameterRegexps["%d"].test(proxy.scheme) ||
 				!Zotero_Proxy_schemeParameterRegexps["%f"].test(proxy.scheme))) {
@@ -597,7 +593,7 @@ Zotero.Proxies = new function() {
 						// protocol + properHost + /path
 						var properURL = m[1]+properHost+URL.substr(m[0].length);
 						var proxyHost = parts.slice(j+1).join('.');
-						urlToProxy[properURL] = {scheme: m[1] + '%h.' + proxyHost + '/%p', dotsToHyphens};
+						urlToProxy[properURL] = {scheme: '%h.' + proxyHost + '/%p', dotsToHyphens};
 					}
 				}
 			}
@@ -754,7 +750,12 @@ Zotero.Proxy.prototype.compileRegexp = function() {
 	});
 
 	// now replace with regexp fragment in reverse order
-	var re = "^"+Zotero.Utilities.quotemeta(this.scheme)+"$";
+	var re;
+	if (this.scheme.includes('://')) {
+		re = "^"+Zotero.Utilities.quotemeta(this.scheme)+"$";
+	} else {
+		re = "^https?"+Zotero.Utilities.quotemeta('://'+this.scheme)+"$";
+	}
 	for(var i=this.parameters.length-1; i>=0; i--) {
 		var param = this.parameters[i];
 		re = re.replace(Zotero_Proxy_schemeParameterRegexps[param], "$1"+Zotero_Proxy_schemeParameters[param]);
@@ -779,7 +780,7 @@ Zotero.Proxy.prototype.toProper = function(m) {
 		}
 	}
 	let hostIdx = this.parameters.indexOf("%h");
-	let scheme = this.scheme.indexOf('https') == -1 ? 'http://' : 'https://';
+	let scheme = m[0].indexOf('https') == 0 ? 'https://' : 'http://';
 	if (hostIdx != -1) {
 		var properURL = scheme+m[hostIdx+1]+"/";
 	} else {
@@ -828,7 +829,7 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
 		var param = this.parameters[i];
 		var value = "";
 		if (param == "%h") {
-			value = this.dotsToHyphens ? uri.host.replace(/\./g, '-') : uri.host;
+			value = (this.dotsToHyphens && uri.protocol == 'https:') ? uri.host.replace(/\./g, '-') : uri.host;
 		} else if (param == "%p") {
 			value = uri.path.substr(1);
 		} else if (param == "%d") {
@@ -840,26 +841,26 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
 		proxyURL = proxyURL.substr(0, this.indices[param])+value+proxyURL.substr(this.indices[param]+2);
 	}
 
-	return proxyURL;
+	if (proxyURL.includes('://')) {
+		return proxyURL;
+	}
+	return uri.protocol + '//' + proxyURL;
 }
 
 /**
  * Generate a display name for the proxy (e.g., "proxy.example.edu (HTTPS)")
  *
- * @param {Object} [options]
- * @param {Boolean} [options.includeScheme=false] - Include scheme (HTTP/HTTPS) in name
  * @return {String}
  */
-Zotero.Proxy.prototype.toDisplayName = function (options = {}) {
+Zotero.Proxy.prototype.toDisplayName = function () {
 	try {
-		var parts = this.scheme.match(/^([^:]+):\/\/([^\/]+)/);
-		var scheme = parts[1].toUpperCase();
-		var domain = parts[2]
+		var parts = this.scheme.match(/^([^\/]+)/);
+		var domain = parts[1]
 			// Include part after %h, if it's present
 			.split('%h').pop()
 			// Trim leading punctuation after the %h
 			.match(/\W(.+)/)[1];
-		return options.includeScheme ? `${domain} (${scheme})` : domain;
+		return domain;
 	}
 	catch (e) {
 		Zotero.logError(`Invalid proxy ${this.scheme}: ${e}`);
@@ -973,7 +974,7 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 		// Proxy by port
 		proxy = new Zotero.Proxy({
 			autoAssociate: false,
-			scheme: proxiedURI.protocol+"//"+proxiedURI.host+"/%p",
+			scheme: proxiedURI.host+"/%p",
 			hosts: [properURI.host],
 			dotsToHyphens: !!dotsToHyphens
 		});
@@ -981,7 +982,7 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 		// Proxy by host
 		proxy = new Zotero.Proxy({
 			autoAssociate: true,
-			scheme: proxiedURI.protocol+"//"+proxiedURI.host.replace(properURI.hostname, "%h")+"/%p",
+			scheme: proxiedURI.host.replace(properURI.hostname, "%h")+"/%p",
 			hosts: [properURI.host],
 			dotsToHyphens: !!dotsToHyphens
 		});
@@ -1040,7 +1041,7 @@ Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function
  * @type Boolean|Zotero.Proxy
  */
 Zotero.Proxies.Detectors.Juniper = function(details) {
-	const juniperRe = /^(https?:\/\/[^\/:]+(?:\:[0-9]+)?)\/(.*),DanaInfo=([^+,]*)([^+]*)(?:\+(.*))?$/;
+	const juniperRe = /^https?:\/\/([^\/:]+(?:\:[0-9]+)?)\/(.*),DanaInfo=([^+,]*)([^+]*)(?:\+(.*))?$/;
 	var m = juniperRe.exec(details.url);
 	if (!m) return false;
 	

@@ -421,7 +421,7 @@ Zotero.Connector_Browser = new function() {
 		// other than for PDFs with no translator
 		var showSaveMenu = (translators && translators.length) || !isPDF;
 		var showProxyMenu = !isPDF
-			&& _getProxiesForURL(tab.url).length > 0
+			&& Zotero.Proxies.proxies.length > 0
 			// Don't show proxy menu if already proxied
 			&& !Zotero.Proxies.proxyToProper(tab.url, true);
 		
@@ -643,10 +643,8 @@ Zotero.Connector_Browser = new function() {
 		});
 		
 		var i = 0;
-		for (let proxy of _getProxiesForURL(url)) {
-			let name = proxy.toDisplayName({
-				includeScheme: true
-			});
+		for (let proxy of Zotero.Proxies.proxies) {
+			let name = proxy.toDisplayName();
 			let proxied = proxy.toProxy(url);
 			browser.contextMenus.create({
 				id: `zotero-context-menu-proxy-reload-${i++}`,
@@ -657,26 +655,6 @@ Zotero.Connector_Browser = new function() {
 				parentId: parentID,
 				contexts: ['page', 'browser_action']
 			});
-		}
-	}
-	
-	/**
-	 * Get the proxies to show for a given URL
-	 *
-	 * This filters the available proxies to skip non-HTTPS proxies for HTTPS URLs
-	 */
-	function _getProxiesForURL(url) {
-		try {
-			var proxies = Zotero.Proxies.proxies;
-			// If not an HTTPS site, return all proxies
-			if (!url.startsWith('https:')) {
-				return proxies;
-			}
-			// Otherwise remove non-HTTPS proxies
-			return proxies.filter(proxy => proxy.scheme.startsWith('https:'));
-		} catch(e) {
-			Zotero.logError(e);
-			return [];
 		}
 	}
 	

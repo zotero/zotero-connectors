@@ -97,6 +97,33 @@ var Zotero = new function() {
 			}
 			Zotero.Proxies.storeProxies();
 		}
+		// To be removed after SSE connectors released
+		if (Zotero.Proxies.proxies.length > 1) {
+			let pairs = [];
+			for (let i = 0; i < Zotero.Proxies.proxies.length; i++) {
+				if (Zotero.Proxies.length == i+1) break;
+				let proxy1 = Zotero.Proxies.proxies[i];
+				let scheme = proxy1.scheme.replace('https', '').replace('http', '');
+				for (let j = i+1; j < Zotero.Proxies.proxies.length; j++) {
+					let proxy2 = Zotero.Proxies.proxies[j];
+					if (scheme == proxy2.scheme.replace('https', '').replace('http', '')) {
+						pairs.push([proxy1, proxy2]);
+						break;
+					}
+				}
+			}
+			for (let [proxy1, proxy2] of pairs) {
+				let json = proxy1.toJSON();
+				delete json.id;
+				let proxy = new Zotero.Proxy(json);
+				proxy.dotsToHyphens = true;
+				proxy.hosts = proxy1.hosts.concat(proxy2.hosts);
+				proxy.scheme = proxy.scheme.replace('http://', '').replace('https://', '');
+				Zotero.Proxies.remove(proxy1);
+				Zotero.Proxies.remove(proxy2);
+				Zotero.Proxies.save(proxy);
+			}
+		}
 	};
 	
 	/**

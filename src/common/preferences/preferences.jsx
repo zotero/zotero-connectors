@@ -459,7 +459,7 @@ Zotero_Preferences.Components.Proxies = React.createClass({
 	handleProxyButtonClick: function(event) {
 		var currentProxyIdx = -1, currentHostIdx = -1;
 		if (event.target.value == '+') {
-			this.state.proxies.push({id: Date.now(), scheme: 'http://%h.example.com/%p', autoAssociate: true, 
+			this.state.proxies.push({id: Date.now(), scheme: '%h.example.com/%p', autoAssociate: true,
 				hosts: ['']});
 			currentProxyIdx = this.state.proxies.length-1;
 			currentHostIdx = 0;

@@ -85,21 +85,21 @@ var Zotero = new function() {
 	this.Promise = Promise;
 	
 	this.migrate = async function() {
-		let lastVersion = Zotero.Prefs.get('lastVersion');
+		let lastVersion = Zotero.Prefs.get('lastVersion') || Zotero.version;
 		var [major, minor, patch] = lastVersion.split('.');
 		Zotero.Prefs.set('lastVersion', Zotero.version);
 		// If coming from a version before 5.0.24, reset the
 		// auto-associate setting for all existing proxies, since it wasn't being set properly for
 		// proxies imported from the client
-		if ((lastVersion == '' || (major == 5 && minor == 0 && patch < 24)) && Zotero.Prefs.get('proxies.clientChecked')) {
+		if (major == 5 && minor == 0 && patch < 24 && Zotero.Prefs.get('proxies.clientChecked')) {
 			for (let proxy of Zotero.Proxies.proxies) {
 				proxy.autoAssociate = true;
 			}
 			Zotero.Proxies.storeProxies();
 		}
-		// To be removed after SSE connectors released
-		if (Zotero.Proxies.proxies.length > 1) {
+		if (major == 5 && minor == 0 && patch < 32 && Zotero.Proxies.proxies.length > 1) {
 			let pairs = [];
+			// merge pairs of proxies with http and https protocols
 			for (let i = 0; i < Zotero.Proxies.proxies.length; i++) {
 				if (Zotero.Proxies.length == i+1) break;
 				let proxy1 = Zotero.Proxies.proxies[i];
@@ -122,6 +122,14 @@ var Zotero = new function() {
 				Zotero.Proxies.remove(proxy1);
 				Zotero.Proxies.remove(proxy2);
 				Zotero.Proxies.save(proxy);
+			}
+			// remove protocols of single proxies
+			for (let proxy of Zotero.Proxies.proxies) {
+				if (proxy.scheme.includes('://')) {
+					proxy.scheme = proxy.scheme.substr(proxy.scheme.indexOf('://')+3);
+					proxy.compileRegexp();
+					Zotero.Proxies.save(proxy);
+				}
 			}
 		}
 	};

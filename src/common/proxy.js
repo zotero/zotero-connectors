@@ -134,6 +134,9 @@ Zotero.Proxies = new function() {
 		if (Zotero.Prefs.get('proxies.clientChecked')) return;
 		return Zotero.Connector.callMethod('proxies', null).then(function(result) {
 			for (let proxy of result) {
+				if (proxy.scheme.includes('://')) {
+					proxy.scheme = proxy.scheme.substr(proxy.scheme.indexOf('://')+3);
+				}
 				let existingProxy;
 				for (let p of Zotero.Proxies.proxies) {
 					if (proxy.scheme == p.scheme) {
@@ -147,7 +150,7 @@ Zotero.Proxies = new function() {
 					existingProxy.hosts = Array.from(new Set(existingProxy.hosts));
 				} else {
 					// Otherwise add the proxy
-					new Zotero.Proxy(proxy).save();
+					Zotero.Proxies.save(new Zotero.Proxy(proxy));
 				}
 			}
 
@@ -402,7 +405,7 @@ Zotero.Proxies = new function() {
 	 * Update proxy and host maps and store proxy settings in storage
 	 */
 	this.save = function(proxy) {
-		proxy.scheme = proxy.scheme.trim()
+		proxy.scheme = proxy.scheme.trim();
 		proxy.hosts = proxy.hosts.map(host => host.trim());
 		
 		// If empty or default scheme
@@ -448,16 +451,23 @@ Zotero.Proxies = new function() {
 	 *	no error.
 	 */
 	this.validate = function(proxy) {
+		// If empty or unmodified scheme
+		if (proxy.scheme.length == 0 || proxy.scheme == '%h.example.com/%p') {
+			return ["scheme.invalid"];
+		}
+		
+		for (let p of Zotero.Proxies.proxies) {
+			if (proxy.scheme == p.scheme) {
+				return ["scheme.alreadyExists"]
+			}
+		}
+		
 		if (!Zotero_Proxy_schemeParameterRegexps["%p"].test(proxy.scheme) &&
 				(!Zotero_Proxy_schemeParameterRegexps["%d"].test(proxy.scheme) ||
 				!Zotero_Proxy_schemeParameterRegexps["%f"].test(proxy.scheme))) {
 			return ["scheme.noPath"];
 		}
-
-		// If empty or unmodified scheme
-		if (proxy.scheme.length == 0 || proxy.scheme == 'http://%h.example.com/%p') {
-			return ["scheme.invalid"];
-		}
+		
 		// If empty or unmodified hosts
 		if (proxy.hosts.length == 0 || proxy.hosts.length == 1 && proxy.hosts[0].trim().length == 0) {
 			return ["hosts.invalid"];

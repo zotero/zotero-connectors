@@ -289,7 +289,11 @@ Zotero_Preferences.Advanced = {
 
 		// We have to request within a user gesture in chrome
 		if (Zotero.isChrome) {
-			await browser.permissions.request({permissions: ['management']});
+			try {
+				await browser.permissions.request({permissions: ['management']});
+			} catch (e) {
+				Zotero.debug(`Management permission request failed: ${e.message || e}`);
+			}
 		}
 		
 		return Zotero.Connector_Debug.submitReport().then(function(reportID) {
@@ -311,7 +315,11 @@ Zotero_Preferences.Advanced = {
 		
 		// We have to request within a user gesture in chrome
 		if (Zotero.isChrome) {
-			await browser.permissions.request({permissions: ['management']});
+			try {
+				await browser.permissions.request({permissions: ['management']});
+			} catch (e) {
+				Zotero.debug(`Management permission request failed: ${e.message || e}`);
+			}
 		}
 		
 		try {

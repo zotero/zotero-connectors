@@ -287,8 +287,8 @@ Zotero.Connector_Browser = new function() {
 		}
 		var timedOut = Zotero.Promise.defer();
 		let timeout = setTimeout(function() {
-			timedOut.reject(new Error (`Inject: Timed out ${frameId} - ${tab.url} after ${this.INJECTION_TIMEOUT}`))
-		}, this.INJECTION_TIMEOUT);
+			timedOut.reject(new Error (`Inject: Timed out ${frameId} - ${tab.url} after ${this.INJECTION_TIMEOUT}ms`))
+		}.bind(this), this.INJECTION_TIMEOUT);
 		
 		// Prevent triggering multiple times
 		let deferred = _tabInfo[tab.id].injections[frameId];
@@ -763,6 +763,9 @@ Zotero.Connector_Browser = new function() {
 	
 	browser.webNavigation.onCommitted.addListener(logListenerErrors(async function(details) {
 		var tab = await browser.tabs.get(details.tabId);
+		// Ignore developer tools
+		if (tab.id < 0) return;
+
 		if (details.frameId == 0) {
 			// Ignore item selector
 			if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;

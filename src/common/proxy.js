@@ -457,7 +457,7 @@ Zotero.Proxies = new function() {
 		}
 		
 		for (let p of Zotero.Proxies.proxies) {
-			if (proxy.scheme == p.scheme) {
+			if (proxy.scheme == p.scheme && p.id != proxy.id) {
 				return ["scheme.alreadyExists"]
 			}
 		}
@@ -864,7 +864,7 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
  */
 Zotero.Proxy.prototype.toDisplayName = function () {
 	try {
-		var parts = this.scheme.match(/^([^\/]+)/);
+		var parts = this.scheme.match(/^(?:(?:[^:]+):\/\/)?([^\/]+)/);
 		var domain = parts[1]
 			// Include part after %h, if it's present
 			.split('%h').pop()

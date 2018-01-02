@@ -764,7 +764,7 @@ Zotero.Connector_Browser = new function() {
 	browser.webNavigation.onCommitted.addListener(logListenerErrors(async function(details) {
 		var tab = await browser.tabs.get(details.tabId);
 		// Ignore developer tools
-		if (tab.id < 0) return;
+		if (tab.id < 0 || _isDisabledForURL(tab.url, true)) return;
 
 		if (details.frameId == 0) {
 			// Ignore item selector

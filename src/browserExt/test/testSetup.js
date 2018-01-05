@@ -106,7 +106,6 @@ Zotero.initDeferred.promise.then(function() {
 			
 			let scripts = [ 'lib/sinon.js', 'test/testSetup.js' ];
 			try {
-				await Zotero.Connector_Browser.injectTranslationScripts(tab);
 				await Zotero.Connector_Browser.injectScripts(scripts, tab);
 				deferred.resolved = true;
 				deferred.resolve(tab.id);

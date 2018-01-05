@@ -230,6 +230,8 @@ function processFile() {
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("/*BACKGROUND SCRIPTS*/",
 						backgroundIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
+					.replace("/*INJECT SCRIPTS*/",
+						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
 					.replace(/"version": "[^"]*"/, '"version": "'+argv.version+'"'));
 				break;
 			case 'background.js':

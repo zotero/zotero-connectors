@@ -20,6 +20,13 @@
 			"background.js"
 		]
 	},
+	"content_scripts": [
+		{
+			"matches": ["http://*/*", "https://*/*"],
+			"run_at": "document_start",
+			"js": [/*INJECT SCRIPTS*/]
+		}
+	],
 	"web_accessible_resources": [
 		"images/*",
 		"test/data/journalArticle-single.html"

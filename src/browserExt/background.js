@@ -171,8 +171,8 @@ Zotero.Connector_Browser = new function() {
 		}
 		Zotero.debug("Connector_Browser: onFrameLoaded for " + tab.url + "; " + url);
 		if (frameId == 0) {
-			// Always inject in the top-frame
-			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+			// Injected via the manifest file
+			return;
 		} else {
 			if (!(tab.id in _tabInfo)) {
 				_tabInfo[tab.id] = {};
@@ -370,7 +370,7 @@ Zotero.Connector_Browser = new function() {
 	 * @param {Tab} [tab=currentTab]
 	 * @returns {Promise{Number}} button pressed idx or undefined if timed-out and navigated away from
 	 */
-	this.notify = function(text, buttons, seenTimeout=5000, tab=null) {
+	this.notify = async function(text, buttons, seenTimeout=5000, tab=null) {
 		// Get current tab if not provided
 		if (!tab) {
 			return browser.tabs.query({active: true, lastFocusedWindow: true})
@@ -380,24 +380,16 @@ Zotero.Connector_Browser = new function() {
 		}
 		let timedOut = false;
 		seenTimeout && setTimeout(() => timedOut = true, seenTimeout);
-		return Zotero.Messaging.sendMessage('notify', [text, buttons, null, tab.status], tab).then(function(response) {
-			if (response != undefined || timedOut) return response;
-			
-			// Tab url changed or tab got removed, hence the undefined response
-			// Wait half a sec to not run a busy-waiting loop
-			return Zotero.Promise.delay(500)
-			.then(function() {
-				return new Zotero.Promise(function(resolve) {
-					browser.tabs.get(tab.id).then(function(tab) {
-						if (!tab) return;
-						// If it still exists try again
-						// But make sure translation scripts are injected first
-						return this.injectTranslationScripts(tab)
-							.then(() => resolve(this.notify(text, buttons, seenTimeout, tab)));
-					}.bind(this));
-				}.bind(this))
-			}.bind(this));
-		}.bind(this));
+		var response = await Zotero.Messaging.sendMessage('notify', [text, buttons, null, tab.status], tab)
+		if (response != undefined || timedOut) return response;
+		
+		// Tab url changed or tab got removed, hence the undefined response
+		// Wait half a sec to not run a busy-waiting loop
+		await Zotero.Promise.delay(500)
+		var tab = await browser.tabs.get(tab.id)
+		if (!tab) return;
+		// If it still exists try again
+		return this.notify(text, buttons, seenTimeout, tab);
 	};
 
 	/**

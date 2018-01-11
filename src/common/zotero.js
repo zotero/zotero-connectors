@@ -209,7 +209,7 @@ var Zotero = new function() {
 		for (var key in info) {
 			str += key + ' => ' + info[key] + ', ';
 		}
-		if (Zotero.isChrome) {
+		if (Zotero.isBackground && Zotero.isChrome) {
 			let granted = await browser.permissions.contains({permissions: ['management']});
 			if (granted) {
 				str += 'extensions => ';

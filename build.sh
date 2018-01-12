@@ -45,35 +45,39 @@ function explorerify {
 
 function usage {
 	cat >&2 <<DONE
-Usage: $0 [-v VERSION] [-d]
+Usage: $0 [-p PLATFORMS] [-v VERSION] [-d]
 Options
+ -p PLATFORMS        platform(s) (b=browserExt, s=safari, k=bookmarklet; defaults to all)
  -v VERSION          use version VERSION
- -b                  build bookmarklet
  -d                  build for debugging (enable translator tester, don't minify)
 DONE
 	exit 1
 }
 
-if [[ ! -z "$TEST_CHROME" ]] || [[ ! -z "$TEST_FX" ]]; then
-	BUILD_BROWSER_EXT=1
-elif [[ ! -z $TEST_SAFARI ]]; then
-	BUILD_SAFARI=1
-else
-	BUILD_BROWSER_EXT=1
-	BUILD_SAFARI=1
-fi
-
+BUILD_BROWSER_EXT=0
+BUILD_SAFARI=0
 BUILD_BOOKMARKLET=0
-while getopts "hv:bd" opt; do
+while getopts "hp:v:d" opt; do
 	case $opt in
 		h)
 			usage
 			;;
+		p)
+			for i in `seq 0 1 $((${#OPTARG}-1))`
+			do
+				case ${OPTARG:i:1} in
+					b) BUILD_BROWSER_EXT=1;;
+					s) BUILD_SAFARI=1;;
+					k) BUILD_BOOKMARKLET=1;;
+					*)
+						echo "$0: Invalid platform option ${OPTARG:i:1}"
+						usage
+						;;
+				esac
+			done
+			;;
 		v)
 			VERSION="$OPTARG"
-			;;
-		b)
-			BUILD_BOOKMARKLET=1
 			;;
 		d)
 			DEBUG=1
@@ -87,6 +91,17 @@ done
 
 if [ ! -z $1 ]; then
 	usage
+fi
+
+if [[ ! -z "$TEST_CHROME" ]] || [[ ! -z "$TEST_FX" ]]; then
+	BUILD_BROWSER_EXT=1
+elif [[ ! -z $TEST_SAFARI ]]; then
+	BUILD_SAFARI=1
+# Default to all builds if none specified
+elif [[ $BUILD_BROWSER_EXT -eq 0 ]] && [[ $BUILD_SAFARI -eq 0 ]] && [[ $BUILD_BOOKMARKLET -eq 0 ]]; then
+	BUILD_BROWSER_EXT=1
+	BUILD_SAFARI=1
+	BUILD_BOOKMARKLET=1
 fi
 
 if [ -z $VERSION ]; then

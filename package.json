@@ -18,6 +18,7 @@
     "react": "^15.3.2",
     "react-dom": "^15.3.2",
     "selenium-webdriver": "^3.5.0",
+    "semver": "^5.4.1",
     "sinon": "^2.3.4",
     "through2": "^2.0.1",
     "yargs": "^6.0.0"

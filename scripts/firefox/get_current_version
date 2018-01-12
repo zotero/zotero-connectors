@@ -6,4 +6,6 @@ ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
 
 . "$ROOT_DIR/config.sh"
 
-ssh $DEPLOY_HOST cat "$MANIFEST_DEPLOY_PATH/updates.json" | jq -r '.addons["zotero@chnm.gmu.edu"].updates[-1].version'
+channel=${1:-release}
+
+ssh $DEPLOY_HOST cat "$MANIFEST_DEPLOY_PATH/$channel/updates.json" | jq -r '.addons["zotero@chnm.gmu.edu"].updates[-1].version'

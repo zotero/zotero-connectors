@@ -7,13 +7,14 @@ import sys
 import shutil
 import json
 import traceback
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
 
 parser = argparse.ArgumentParser(
     description='Update a WebExtension build manifest with info on a given build',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument('-f', '--file', required=True, help="path to updates.json")
+parser.add_argument('-c', '--channel', required=True, help='release channel')
 parser.add_argument('-v', '--version', required=True, help='version number of XPI')
 parser.add_argument('-s', '--sha', required=True, help="SHA256 of XPI")
 
@@ -23,6 +24,7 @@ def main():
     try:
         file = args.file
         version = args.version
+        channel = args.channel
         sha = args.sha
         
         # Read in existing file
@@ -38,11 +40,12 @@ def main():
             )
             return 1
         
-        url = "https://download.zotero.org/connector/firefox/Zotero_Connector-{0}.xpi"
+        url = ("https://download.zotero.org/connector/" +
+               "firefox/{0}/Zotero_Connector-{1}.xpi".format(channel, version))
         min_version = "51.0"
         updates.append({
             "version": version,
-            "update_link": url.format(version),
+            "update_link": url,
             "update_hash": "sha256:" + sha,
             "applications": {
                 "gecko": {
@@ -50,7 +53,7 @@ def main():
                 }
             }
         })
-        updates = sorted(updates, key=lambda item: StrictVersion(item['version']))
+        updates = sorted(updates, key=lambda item: LooseVersion(item['version']))
         
         # Keep last 5 versions
         manifest['addons']['zotero@chnm.gmu.edu']['updates'] = updates[-5:]

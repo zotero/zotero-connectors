@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
+
+. "$ROOT_DIR/config.sh"
+
+function usage {
+	echo "Usage: $0 CHANNEL VERSION" >&2
+	exit 1
+}
+
+if [[ -z "${1:-}" ]] || [[ -z "${2:-}" ]]; then
+	usage
+fi
+
+channel=$1
+version=$2
+
+ssh $DEPLOY_HOST "test -e $MANIFEST_DEPLOY_PATH/$channel/lastrev-$version && cat $MANIFEST_DEPLOY_PATH/$channel/lastrev-$version" || echo -n 0

@@ -9,14 +9,20 @@ BUILD_DIR="$( cd "$ROOT_DIR"/build && pwd )"
 
 cd "$DIR"
 
+channel=${1:-}
+if [ -z "$channel" ]; then
+	echo "Usage: $0 CHANNEL" >&2
+	exit 1
+fi
+
 XPI="`./get_xpi_path`"
 VERSION="$( cat "$BUILD_DIR/firefox/manifest.json" | jq -r .version )"
 HASH="$( shasum -a 256 "$XPI" | cut -d' ' -f1 )"
 
-./upload_signed_xpi
-scp $DEPLOY_HOST:"$MANIFEST_DEPLOY_PATH/updates.json" "$BUILD_DIR/updates.json"
-./update_manifest -f "$BUILD_DIR/updates.json" -v $VERSION -s $HASH
-scp "$BUILD_DIR/updates.json" $DEPLOY_HOST:"$MANIFEST_DEPLOY_PATH/updates.json"
+./upload_signed_xpi $channel
+scp $DEPLOY_HOST:"$MANIFEST_DEPLOY_PATH/$channel/updates.json" "$BUILD_DIR/updates.json"
+./update_manifest -f "$BUILD_DIR/updates.json" -c $channel -v $VERSION -s $HASH
+scp "$BUILD_DIR/updates.json" $DEPLOY_HOST:"$MANIFEST_DEPLOY_PATH/$channel/updates.json"
 rm "$BUILD_DIR/updates.json"
 
 ssh $DEPLOY_HOST $DEPLOY_CMD

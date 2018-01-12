@@ -3,21 +3,30 @@ set -euo pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
+BUILD_DIR="$( cd "$DIR"/../../build && pwd )"
+
+. "$ROOT_DIR/config.sh"
 
 function usage {
-	echo Current version: `"$DIR/get_current_version"` >&2
+	echo "Current '$channel' version: `$DIR/get_current_version $channel`" >&2
 	echo >&2
 	cat >&2 <<DONE
-Usage: $0 -v VERSION
+Usage: $0 [-c CHANNEL] -v VERSION
+
+For non-release versions, specify numeric version only (e.g., 5.0.30).
 DONE
 	exit 1
 }
 
-VERSION=""
-while getopts "v:" opt; do
+channel="release"
+version=""
+while getopts "c:v:" opt; do
 	case $opt in
+		c)
+			channel="$OPTARG"
+			;;
 		v)
-			VERSION="$OPTARG"
+			version="$OPTARG"
 			;;
 		*)
 			usage
@@ -26,18 +35,29 @@ while getopts "v:" opt; do
 	shift $((OPTIND-1)); OPTIND=1
 done
 
-if [ -z "$VERSION" ]; then
+if [ -z "$version" ]; then
 	usage
 fi
 
-CURRENT_VERSION="$("$DIR/get_current_version")"
-CMP=$(node -e "var cmp = require('semver-compare'); console.log(cmp('$VERSION', '$CURRENT_VERSION'))")
+current_version=`$DIR/get_current_version $channel`
+if [ $current_version = 'null' ]; then
+	current_version="0.0.1"
+fi
+
+if [ $channel != "release" ]; then
+	rev=$($DIR/get_last_rev $channel $version)
+	((++rev))
+	main_version=$version
+	version="$version$channel$rev"
+fi
+
+CMP=$(node -e "console.log(require('semver').compare('$version', '$current_version', true))")
 if [ "$CMP" = "-1" ]; then
-	echo "$VERSION must be greater than $CURRENT_VERSION"
+	echo "$version must be greater than $current_version"
 	exit 1
 fi
 if [ "$CMP" = "0" ]; then
-	echo "$VERSION is the current version"
+	echo "$version is the current version"
 	exit 1
 fi
 if [ "$CMP" != "1" ]; then
@@ -46,9 +66,42 @@ if [ "$CMP" != "1" ]; then
 fi
 
 cd "$ROOT_DIR"
-./build.sh -v "$VERSION"
+
+echo -n "Building $version"
+sleep 1
+echo -n .
+sleep 1
+echo -n .
+sleep 1
+echo .
+sleep 1
+
+./build.sh -p b -v "$version"
+
+if [ $channel != "release" ]; then
+	# Add Git commit hash to XPI files
+	hash=$(git rev-parse --short HEAD)
+	echo "$version+$hash" > $BUILD_DIR/browserExt/build_id
+fi
+
+FIREFOX_UPDATE_URL=${FIREFOX_UPDATE_URL/CHANNEL/$channel}
+cat "$BUILD_DIR/browserExt/manifest.json" | jq ".applications.gecko.update_url = \"$FIREFOX_UPDATE_URL\"" > $BUILD_DIR/browserExt/manifest.json-new
+mv $BUILD_DIR/browserExt/manifest.json-new $BUILD_DIR/browserExt/manifest.json
+
+echo
+echo manifest.json:
+echo
+grep '"version"' $BUILD_DIR/browserExt/manifest.json
+grep update_url $BUILD_DIR/browserExt/manifest.json
+echo
+sleep 2
+
 cd "$DIR"
 ./prep_dir
 ./sign_xpi
 echo "Pushing XPI"
-./push_xpi
+
+./push_xpi $channel
+if [ $channel != "release" ]; then
+	./set_last_rev $channel $main_version $rev
+fi

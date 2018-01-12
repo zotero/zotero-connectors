@@ -10,7 +10,13 @@ BUILD_DIR="$( cd "$DIR"/../../build && pwd )"
 
 . "$ROOT_DIR/config.sh"
 
-S3_PATH="$S3_BUCKET/connector/firefox/"
+channel=${1:-}
+if [ -z "$channel" ]; then
+	echo "Usage: $0 CHANNEL" >&2
+	exit 1
+fi
+
+S3_PATH="$S3_BUCKET/connector/firefox/$channel/"
 XPI="`$DIR/get_xpi_path`"
 VERSION="$( unzip -p "$XPI" manifest.json | jq -r .version )"
 

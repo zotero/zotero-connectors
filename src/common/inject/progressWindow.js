@@ -57,7 +57,7 @@ Zotero.ProgressWindow = new function() {
 	const nArcs = 20;
 	
 	var win = Zotero.isBookmarklet ? window.parent : window,
-		doc = Zotero.isBookmarklet ? window.parent.document : window.document,
+		doc = Zotero.isBookmarklet ? window.parent.document : undefined,
 		container, timeoutID,
 		headlineDiv, headlinePreImageTextNode, headlinePostImageTextNode, headlineImage;
 	
@@ -65,6 +65,7 @@ Zotero.ProgressWindow = new function() {
 	 * Creates a new object representing a line in the progressWindow.
 	 */
 	this.ItemProgress = function(iconSrc, title, parentItemProgress) {
+		doc = doc || document;
 		Zotero.ProgressWindow.show();
 		
 		this._div = doc.createElement('div');
@@ -152,6 +153,7 @@ Zotero.ProgressWindow = new function() {
 	};
 	
 	this.ErrorMessage = function(err, args) {
+		doc = doc || document;
 		Zotero.ProgressWindow.show();
 		
 		this._div = doc.createElement('div');
@@ -212,6 +214,7 @@ Zotero.ProgressWindow = new function() {
 	 */
 	this.show = function() {
 		if (container) return;
+		doc = doc || document;
 		container = doc.createElement('div');
 		container.id = 'zotero-progress-window';
 		container.style.cssText = cssDivClearString;
@@ -267,6 +270,7 @@ Zotero.ProgressWindow = new function() {
 	 */
 	this.close = function() {
 		if(!container) return;
+		doc = doc || document;
 		doc.body.removeChild(container);
 		container = void(0);
 		if(timeoutID) win.clearTimeout(timeoutID);

@@ -147,7 +147,7 @@ if [[ ! -z $DEBUG ]]; then
 fi
 
 # Scripts to be included in bookmarklet
-BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
+BOOKMARKLET_INJECT_INCLUDE=("$SRCDIR/common/cachedTypes.js" \
 	"$EXTENSION_XPCOM_DIR/date.js" \
 	"$SRCDIR/common/inject/http.js" \
 	"$EXTENSION_XPCOM_DIR/openurl.js" \
@@ -159,14 +159,14 @@ BOOKMARKLET_INJECT_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/cachedTypes.js" \
 	"$EXTENSION_XPCOM_DIR/rdf/match.js" \
 	"$EXTENSION_XPCOM_DIR/rdf/rdfparser.js" \
 	"$EXTENSION_XPCOM_DIR/translation/translate.js" \
-	"$EXTENSION_XPCOM_DIR/connector/translate_item.js" \
+	"$SRCDIR/common/translate_item.js" \
 	"$SRCDIR/common/inject/translate_inject.js" \
 	"$SRCDIR/zotero/resource/schema/connectorTypeSchemaData.js" \
 	"$EXTENSION_XPCOM_DIR/utilities_translate.js" \
 	"$SRCDIR/bookmarklet/messaging_inject.js" \
 	"$SRCDIR/bookmarklet/inject_base.js")
 
-BOOKMARKLET_IFRAME_INCLUDE=("$EXTENSION_XPCOM_DIR/connector/connector.js" \
+BOOKMARKLET_IFRAME_INCLUDE=("$SRCDIR/common/connector.js" \
 	"$EXTENSION_XPCOM_DIR/translation/tlds.js" \
 	"$SRCDIR/bookmarklet/translator.js" \
 	"$SRCDIR/common/messaging.js" \

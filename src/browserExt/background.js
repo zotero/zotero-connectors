@@ -494,8 +494,6 @@ Zotero.Connector_Browser = new function() {
 				url: tab.url,
 				injections: {}
 			};
-			// Rerun translation
-			Zotero.Messaging.sendMessage("pageModified", null, tab, 0);
 		}
 	}
 	

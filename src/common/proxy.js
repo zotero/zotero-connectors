@@ -451,8 +451,14 @@ Zotero.Proxies = new function() {
 	 *	no error.
 	 */
 	this.validate = function(proxy) {
-		// If empty or unmodified scheme
-		if (proxy.scheme.length == 0 || proxy.scheme == '%h.example.com/%p') {
+		if (
+			// Scheme very short
+			proxy.scheme.length <= "%h.-.--/%p".length 
+			// Unmodified
+				|| proxy.scheme == '%h.example.com/%p'
+				// Host is at the end of the domain part of the scheme
+				|| proxy.scheme.includes('%h/')
+		) {
 			return ["scheme.invalid"];
 		}
 		

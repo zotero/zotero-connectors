@@ -761,6 +761,7 @@ Zotero.Connector_Browser = new function() {
 			if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
 			_updateInfoForTab(tab);
 			_updateExtensionUI(tab);
+			Zotero.Connector.reportActiveURL(tab.url);
 		}
 		// _updateInfoForTab will reject pending injections, but we need to make sure this
 		// executes in the next event loop such that the rejections can be processed

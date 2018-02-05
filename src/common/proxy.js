@@ -246,7 +246,7 @@ Zotero.Proxies = new function() {
 			&& details.statusCode < 300					// and query was successful
 			&& (!Zotero.Proxies.hosts[host] || shouldRemapHostToMatchedProxy)		// and host is not saved
 			&& proxy.hosts.indexOf(host) === -1
-			&& !_isBlacklisted(host)					// and host is not blacklisted
+			&& !Zotero.Proxies._isBlacklisted(host)					// and host is not blacklisted
 		) {
 			if (shouldRemapHostToMatchedProxy) {
 				associatedProxy.hosts = associatedProxy.hosts.filter(h => h != host);
@@ -626,7 +626,7 @@ Zotero.Proxies = new function() {
 	 * @type Boolean
 	 * @private
 	 */
-	function _isBlacklisted(host) {
+	this._isBlacklisted = function(host) {
 		/**
 		 * Regular expression patterns of hosts never to proxy
 		 * @const
@@ -636,7 +636,8 @@ Zotero.Proxies = new function() {
 			/google\.com$/,
 			/wikipedia\.org$/,
 			/^[^.]*$/,
-			/doubleclick\.net$/
+			/doubleclick\.net$/,
+			/^eutils.ncbi.nlm.nih.gov$/
 		];
 		/**
 		 * Regular expression patterns of hosts that should always be proxied, regardless of whether
@@ -837,7 +838,7 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
 		// at least an empty string to avoid doing many checks
 		uri.path = uri.path || '';
 	}
-	if (this.regexp.exec(uri.href)) {
+	if (this.regexp.exec(uri.href) || Zotero.Proxies._isBlacklisted(uri.host)) {
 		return uri.href;
 	}
 	var proxyURL = this.scheme;

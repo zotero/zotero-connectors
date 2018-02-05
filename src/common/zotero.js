@@ -123,7 +123,7 @@ var Zotero = new function() {
 				Zotero.Proxies.remove(proxy2);
 				Zotero.Proxies.save(proxy);
 			}
-			// remove protocols of single proxies
+			// remove protocols of single protocolless
 			for (let proxy of Zotero.Proxies.proxies) {
 				if (proxy.scheme.includes('://')) {
 					proxy.scheme = proxy.scheme.substr(proxy.scheme.indexOf('://')+3);
@@ -131,6 +131,15 @@ var Zotero = new function() {
 					Zotero.Proxies.save(proxy);
 				}
 			}
+		}
+		// Botched dotsToHyphen pref migration to protocolless schemes in 5.0.32
+		if (major == 5 && minor == 0 && patch < 35) {
+			for (let proxy of Zotero.Proxies.proxies) {
+				if (proxy.scheme.indexOf('%h') == 0) {
+					proxy.dotsToHyphens = true;
+				}
+			}
+			Zotero.Proxies.storeProxies();
 		}
 	};
 	

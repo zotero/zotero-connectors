@@ -136,6 +136,7 @@ Zotero.Proxies = new function() {
 			for (let proxy of result) {
 				if (proxy.scheme.includes('://')) {
 					proxy.scheme = proxy.scheme.substr(proxy.scheme.indexOf('://')+3);
+					proxy.dotsToHyphens = true;
 				}
 				let existingProxy;
 				for (let p of Zotero.Proxies.proxies) {
@@ -979,7 +980,6 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 	if (!proxiedHostContainsProperHost && properURI.protocol == 'https:') {
 		if (properURI.hostname != properURI.hostname.replace(/\./g, '-')) {
 			properURI.hostname = properURI.hostname.replace(/\./g, '-');
-			var dotsToHyphens = true;
 		}
 		proxiedHostContainsProperHost = (proxiedURI.host.indexOf(properURI.hostname) != -1);
 	}
@@ -992,7 +992,7 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 			autoAssociate: false,
 			scheme: proxiedURI.host+"/%p",
 			hosts: [properURI.host],
-			dotsToHyphens: !!dotsToHyphens
+			dotsToHyphens: false
 		});
 	} else if (!loginHostIsProxiedHost && proxiedHostContainsProperHost) {
 		// Proxy by host
@@ -1000,7 +1000,7 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 			autoAssociate: true,
 			scheme: proxiedURI.host.replace(properURI.hostname, "%h")+"/%p",
 			hosts: [properURI.host],
-			dotsToHyphens: !!dotsToHyphens
+			dotsToHyphens: true
 		});
 	}
 	return proxy;

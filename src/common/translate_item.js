@@ -35,10 +35,12 @@
  *         <li>cookieSandbox - Cookie sandbox for attachment requests</li>
  *         <li>proxy - A proxy to deproxify item URLs</li>
  *         <li>baseURI - URI to which attachment paths should be relative</li>
+ *         <li>sessionID - A sessionID for the save session to allow changes later</li>
  *         
  */
 Zotero.Translate.ItemSaver = function(options) {
 	this.newItems = [];
+	this._sessionID = options.sessionID;
 	this._proxy = options.proxy;
 	this._baseURI = options.baseURI;
 	
@@ -90,7 +92,11 @@ Zotero.Translate.ItemSaver.prototype = {
 	 */
 	saveItems: function (items, attachmentCallback) {
 		// first try to save items via connector
-		var payload = { items, uri: this._baseURI };
+		var payload = {
+			items,
+			sessionID: this._sessionID,
+			uri: this._baseURI
+		};
 		if (Zotero.isSafari) {
 			// This is the best in terms of cookies we can do in Safari
 			payload.cookie = document.cookie;

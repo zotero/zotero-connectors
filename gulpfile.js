@@ -73,7 +73,6 @@ var injectInclude = [
 	'zotero/utilities_translate.js',
 	'utilities.js',
 	'inject/http.js',
-	'inject/progressWindow.js',
 	'inject/translate_inject.js',
 	'messages.js',
 	'messaging_inject.js'

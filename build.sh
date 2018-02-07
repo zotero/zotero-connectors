@@ -134,7 +134,8 @@ IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXT
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png $EXTENSION_SKIN_DIR/prefs-proxies.png"
 
 LIBS=("$NODE_MODULES_DIR/react/umd/react.production.min.js" \
-	"$NODE_MODULES_DIR/react-dom/umd/react-dom.production.min.js")
+	"$NODE_MODULES_DIR/react-dom/umd/react-dom.production.min.js" \
+	"$NODE_MODULES_DIR/prop-types/prop-types.min.js")
 	
 if [[ ! -z $DEBUG ]]; then
 	LIBS=("${LIBS[@]}" \
@@ -143,7 +144,6 @@ if [[ ! -z $DEBUG ]]; then
 		"$NODE_MODULES_DIR/mocha/mocha.js" \
 		"$NODE_MODULES_DIR/mocha/mocha.css" \
 		"$NODE_MODULES_DIR/sinon/pkg/sinon.js")
-		
 fi
 
 # Scripts to be included in bookmarklet
@@ -151,7 +151,6 @@ BOOKMARKLET_INJECT_INCLUDE=("$SRCDIR/common/cachedTypes.js" \
 	"$EXTENSION_XPCOM_DIR/date.js" \
 	"$SRCDIR/common/inject/http.js" \
 	"$EXTENSION_XPCOM_DIR/openurl.js" \
-	"$SRCDIR/common/inject/progressWindow.js" \
 	"$EXTENSION_XPCOM_DIR/rdf/init.js" \
 	"$EXTENSION_XPCOM_DIR/rdf/uri.js" \
 	"$EXTENSION_XPCOM_DIR/rdf/term.js" \
@@ -267,16 +266,10 @@ function copyResources {
 	browser_srcdir="$SRCDIR/$browser"
 	
 	# Copy common files
-	pushd "$SRCDIR/common" > /dev/null
-	find . -not \( -name ".?*" -prune \) -not -name "." -type d -exec mkdir -p "$browser_builddir/"{} \;
-	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$browser_builddir/"{} \;
-	popd > /dev/null
+	rsync -r --exclude '.*' --exclude ui/tree "$SRCDIR/common/" "$browser_builddir/"
 	
 	# Copy browser-specific files
-	pushd "$browser_srcdir" > /dev/null
-	find . -not \( -name ".?*" -prune \) -not -name "." -type d -exec mkdir -p "$browser_builddir/"{} \;
-	find . -not \( -name ".?*" -prune \) -type f -exec cp -r {} "$browser_builddir/"{} \;
-	popd > /dev/null
+	rsync -r --exclude '.*' --exclude ui/tree "$browser_srcdir/" "$browser_builddir/"
 	
 	# Set version
 	perl -pi -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$browser_builddir/zotero.js"
@@ -301,6 +294,9 @@ function copyResources {
 	# Copy node_modules libs
 	mkdir "$browser_builddir/lib"
 	cp "${LIBS[@]}" "$browser_builddir/lib"
+	# TODO: Allow renaming to be specified in librarie list above
+	cp "$NODE_MODULES_DIR/react-dom-factories/index.js" "$browser_builddir/lib/react-dom-factories.js"
+	webpack --config "$CWD/webpack.config.js" "$SRCDIR/common/ui/tree/tree.js" "$browser_builddir/ui/tree.js"
 	
 	# Remove .jsx files - we'll deal with those in gulp
 	find "$browser_builddir" -type f -name "*.jsx" -delete

@@ -34,69 +34,319 @@ if(window.top) {
 }
 var instanceID = isTopWindow ? 0 : (new Date()).getTime();
 
-if(isTopWindow) {
-	/*
-	 * Register save dialog listeners
-	 *
-	 * When an item is saved (by this page or by an iframe), the item will be relayed back to 
-	 * the background script and then to this handler, which will show the saving dialog
-	 */
-	Zotero.Messaging.addMessageListener("progressWindow.show", function(headline) {
-		Zotero.ProgressWindow.show();
-		if (headline) {
-			return Zotero.ProgressWindow.changeHeadline(headline);
-		}
-		Zotero.Connector.callMethod("getSelectedCollection", {}).then(function(response) {
-			Zotero.ProgressWindow.changeHeadline("Saving to ",
-				response.id ? "treesource-collection.png" : "treesource-library.png",
-				response.name+"\u2026");
-			if (response.libraryEditable === false) {
-				new Zotero.ProgressWindow.ErrorMessage("collectionNotEditable");
-				Zotero.ProgressWindow.startCloseTimer(8000);
-			}
-		}, function() {
-			Zotero.ProgressWindow.changeHeadline("Saving to zotero.org");
+if (isTopWindow) {
+	//
+	// Progress window popup initialization
+	//
+	// The progress window is created using React in an iframe, and we use postMessage() to
+	// communicate with it based on events from the messaging system (so that we don't need to
+	// load complicated messaging code into the iframe).
+	//
+	let frameID = 'zotero-progress-window-frame';
+	let listenersRegistered = false;
+	let currentSessionID;
+	let frameWindow;
+	let eventQueue = [];
+	let timeoutID;
+	let insideIframe = false;
+	let frameSrc;
+	if (Zotero.isSafari) {
+		frameSrc = safari.extension.baseURI + 'progressWindow/progressWindow.html';
+	}
+	else {
+		frameSrc = browser.extension.getURL('progressWindow/progressWindow.html');
+	}
+	let origin = frameSrc.match(/^[a-z\-]+:\/\/[^\/]+/);
+	let scrollX;
+	let scrollY;
+	
+	// The progress window component is initialized asynchronously, so queue updates and send them
+	// to the iframe once the component is ready
+	function addEvent(name, data) {
+		eventQueue.push({
+			event: name,
+			data
 		});
-	});
-	var itemProgress = {};
-	Zotero.Messaging.addMessageListener("progressWindow.itemSaving", function(data) {
-		itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1],
-			data.length > 3 ? itemProgress[data[3]] : undefined);
-	});
-	Zotero.Messaging.addMessageListener("progressWindow.itemProgress", function(data) {
-		var progress = itemProgress[data[2]];
-		if(!progress || !data[2]) {
-			progress = itemProgress[data[2]] = new Zotero.ProgressWindow.ItemProgress(data[0], data[1]);
-		} else {
-			progress.setIcon(data[0]);
+		drainEventQueue();
+	}
+	
+	function drainEventQueue() {
+		if (!frameWindow) return;
+		var x;
+		while (x = eventQueue.shift()) {
+			frameWindow.postMessage(x, origin);
+		}
+	};
+	
+	function changeHeadline() {
+		addEvent("changeHeadline", Array.from(arguments));
+	}
+	
+	/**
+	 * Get selected collection and collections list from client and update popup
+	 */
+	async function setHeadlineFromClient() {
+		try {
+			var response = await Zotero.Connector.callMethod("getSelectedCollection", {})
+		}
+		catch (e) {
+			// TODO: Shouldn't this be coupled to the actual save process?
+			changeHeadline("Saving to zotero.org");
+			return;
 		}
 		
-		if(data[3] === false) {
-			progress.setError();
-		} else {
-			progress.setProgress(data[3]);
+		// TODO: Change client to default to My Library root
+		if (response.targets && response.libraryEditable === false) {
+			let target = response.targets[0];
+			response.id = target.id;
+			response.name = target.name;
 		}
+		
+		var id;
+		// Legacy response for libraries
+		if (!response.id) {
+			id = "L" + response.libraryID;
+		}
+		// Legacy response for collections
+		else if (typeof response.id != 'string') {
+			id = "C" + response.id;
+		}
+		else {
+			id = response.id;
+		}
+		
+		changeHeadline(
+			"Saving to ",
+			{
+				id,
+				type: id.startsWith('L')
+					? 'library'
+					: 'collection',
+				name: response.name
+			},
+			response.targets
+		);
+		if (!response.targets && response.libraryEditable === false) {
+			// TODO: Update
+			addError("collectionNotEditable");
+			startCloseTimer(8000);
+		}
+	}
+	
+	function updateProgress() {
+		addEvent("updateProgress", Array.from(arguments));
+	}
+	
+	function addError() {
+		// DEBUG: Can this be called before the frame is created?
+		showFrame();
+		addEvent("addError", Array.from(arguments));
+	}
+	
+	function showFrame() {
+		var frame = document.getElementById(frameID);
+		frame.style.display = 'block';
+	}
+	
+	function hideFrame() {
+		// TODO: Restore session instead of resetting if the (non-folder) button is clicked again
+		resetFrame();
+		
+		var frame = document.getElementById(frameID);
+		frame.style.display = 'none';
+	}
+	
+	function resetFrame() {
+		eventQueue = [];
+		stopCloseTimer();
+		addEvent('reset');
+	}
+	
+	function destroyFrame() {
+		stopCloseTimer();
+		var frame = document.getElementById(frameID);
+		document.body.removeChild(frame);
+		frameWindow = null;
+		eventQueue = [];
+	}
+	
+	function startCloseTimer(delay) {
+		return;
+		
+		// Don't start the timer if the mouse is over the popup
+		if (insideIframe) return;
+		
+		if (!delay) delay = 2500;
+		stopCloseTimer();
+		timeoutID = setTimeout(hideFrame, delay);
+	}
+	
+	function stopCloseTimer() {
+		if (timeoutID) {
+			clearTimeout(timeoutID);
+		}
+	}
+	
+	/**
+	 * This is called after an item has started to save in order to show the progress window
+	 */
+	Zotero.Messaging.addMessageListener("progressWindow.show", async function (sessionID) {
+		if (currentSessionID) {
+			// If session has changed, reset state
+			if (currentSessionID != sessionID) {
+				resetFrame();
+				currentSessionID = sessionID;
+				await setHeadlineFromClient();
+			}
+			showFrame();
+			return;
+		}
+		currentSessionID = sessionID;
+		
+		// Create the iframe
+		var iframe = document.createElement('iframe');
+		iframe.id = frameID;
+		iframe.src = frameSrc;
+		var style = {
+			position: 'fixed',
+			top: '15px',
+			right: '15px',
+			width: '340px',
+			height: '120px',
+			border: "none",
+			zIndex: 2147483647
+		};
+		for (let i in style) iframe.style[i] = style[i];
+		document.body.appendChild(iframe);
+		
+		// Keep track of when the mouse is over the popup, for various purposes
+		iframe.addEventListener('mouseenter', function() {
+			insideIframe = true;
+			stopCloseTimer();
+			
+			// See scroll listener above
+			scrollX = window.scrollX;
+			scrollY = window.scrollY;
+		});
+		iframe.addEventListener('mouseleave', function() {
+			insideIframe = false;
+			startCloseTimer();
+		});
+		
+		// Keep track of clicks on the window so that when the iframe document is blurred we can
+		// distinguish between a click on the document and switching to another window
+		var lastClick;
+		window.addEventListener('click', function () {
+			lastClick = new Date();
+		}, true);
+		
+		
+		// Prevent scrolling of parent document when scrolling to bottom of target list in iframe
+		// From https://stackoverflow.com/a/32283373
+		//
+		// This is jittery and it would be nice to do better
+		document.addEventListener('scroll', function (event) {
+			if (insideIframe) {
+				window.scrollTo(scrollX, scrollY);
+			}
+		});
+		
+		//
+		// Handle messages from the progress window iframe
+		//
+		window.addEventListener("message", async function (event) {
+			if (event.origin != origin) return;
+			
+			//Zotero.debug("Got event");
+			//Zotero.debug(event.data);
+			
+			switch (event.data.event) {
+			// Save a reference to the iframe's window once it's ready
+			case 'zotero.progressWindow.registered':
+				frameWindow = event.source;
+				drainEventQueue();
+				break;
+			
+			// Adjust iframe height when inner document is resized
+			case 'zotero.progressWindow.resized':
+				iframe.style.height = (event.data.height + 20) + "px";
+				break;
+			
+			// Update the client or API with changes
+			case 'zotero.progressWindow.updated':
+				var response = await Zotero.Connector.callMethod(
+					"updateSession",
+					{
+						sessionID: currentSessionID,
+						target: event.data.target,
+						tags: event.data.tags
+					}
+				);
+				break;
+			
+			// Hide iframe if it loses focus and the user recently clicked on the main page
+			// (i.e., they didn't just switch to another window)
+			case 'zotero.progressWindow.blurred':
+				setTimeout(function () {
+					if (lastClick > new Date() - 500) {
+						hideFrame();
+					}
+				}, 150);
+				break;
+			
+			// Hide frame
+			case 'zotero.progressWindow.closed':
+				hideFrame();
+				break;
+			}
+		});
+		
+		await setHeadlineFromClient();
 	});
-	Zotero.Messaging.addMessageListener("progressWindow.close", Zotero.ProgressWindow.close);
-	Zotero.Messaging.addMessageListener("progressWindow.done", function(returnValue) {
+	
+	// TODO: Combine with itemProgress?
+	Zotero.Messaging.addMessageListener("progressWindow.itemSaving", function (data) {
+		var id = data[2];
+		var data = {
+			iconSrc: data[0],
+			title: data[1],
+			parentItem: data[3]
+		};
+		updateProgress(id, data);
+	});
+	
+	Zotero.Messaging.addMessageListener("progressWindow.itemProgress", (data) => {
+		var id = data[2];
+		var data = {
+			iconSrc: data[0],
+			title: data[1],
+			progress: data[3] // false === error
+		};
+		updateProgress(id, data);
+	});
+	
+	Zotero.Messaging.addMessageListener("progressWindow.close", hideFrame);
+	
+	Zotero.Messaging.addMessageListener("progressWindow.done", (returnValue) => {
 		if (Zotero.isBrowserExt
-			&& document.location.href.startsWith(browser.extension.getURL('confirm.html')))
-		{
+				&& document.location.href.startsWith(browser.extension.getURL('confirm.html'))) {
 			setTimeout(function() {
 				window.close();
 			}, 1000);
 		}
 		else if (returnValue[0]) {
-			Zotero.ProgressWindow.startCloseTimer(2500);
+			startCloseTimer(2500);
 		}
 		else {
-			new Zotero.ProgressWindow.ErrorMessage(returnValue[1] || "translationError");
-			Zotero.ProgressWindow.startCloseTimer(8000);
+			addError(returnValue[1] || "translationError");
+			startCloseTimer(8000);
 		}
 	});
-	Zotero.Messaging.addMessageListener("progressWindow.error", function(args) {
-		new Zotero.ProgressWindow.ErrorMessage(args.shift(), args);
+	
+	Zotero.Messaging.addMessageListener("progressWindow.error", (args) => {
+		addError(args.shift(), ...args);
 	})
+	
 	Zotero.Messaging.addMessageListener("confirm", function (props) {
 		return Zotero.Inject.confirm(props);
 	});
@@ -392,8 +642,11 @@ Zotero.Inject = new function() {
 		let result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
 		
-		Zotero.Messaging.sendMessage("progressWindow.show", null);
+		// TODO: Fetch previous session?
+		var sessionID = Zotero.Utilities.randomString();
 		var translators = Array.from(this.translators);
+		
+		Zotero.Messaging.sendMessage("progressWindow.show", sessionID);
 		while (translators[0].translatorID != translatorID) {
 			translators.shift();
 		}
@@ -401,7 +654,7 @@ Zotero.Inject = new function() {
 			var translator = translators.shift();
 			_translate.setTranslator(translator);
 			try {
-				let items = await _translate.translate();
+				let items = await _translate.translate({ sessionID });
 				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return items;
 			} catch (e) {
@@ -413,7 +666,6 @@ Zotero.Inject = new function() {
 				}
 			}
 		}
-
 	};
 	
 	this.saveAsWebpage = async function (args) {

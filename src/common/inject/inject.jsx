@@ -236,7 +236,7 @@ Zotero.Inject = new function() {
 		}
 		for (let component of components) {
 			if (!Zotero.ui || !Zotero.ui[component]) {
-				toLoad.push(`ui/${component.replace(/(.)([A-Z])/g, '$1-$2').toLowerCase()}.js`)
+				toLoad.push(`ui/${component}.js`)
 			}
 		}
 		if (toLoad.length) {

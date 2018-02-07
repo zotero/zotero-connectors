@@ -232,7 +232,7 @@ Zotero.Inject = new function() {
 		if (Zotero.isSafari) return;
 		var toLoad = [];
 		if (typeof ReactDOM === "undefined") {
-			toLoad = ['lib/react.js', 'lib/react-dom.js'];
+			toLoad = ['lib/react.production.min.js', 'lib/react-dom.production.min.js'];
 		}
 		for (let component of components) {
 			if (!Zotero.ui || !Zotero.ui[component]) {

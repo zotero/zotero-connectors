@@ -133,8 +133,8 @@ ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collectio
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png $EXTENSION_SKIN_DIR/prefs-proxies.png"
 
-LIBS=("$NODE_MODULES_DIR/react/dist/react.js" \
-	"$NODE_MODULES_DIR/react-dom/dist/react-dom.js")
+LIBS=("$NODE_MODULES_DIR/react/umd/react.production.min.js" \
+	"$NODE_MODULES_DIR/react-dom/umd/react-dom.production.min.js")
 	
 if [[ ! -z $DEBUG ]]; then
 	LIBS=("${LIBS[@]}" \

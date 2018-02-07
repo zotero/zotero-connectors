@@ -296,7 +296,7 @@ function copyResources {
 	cp "${LIBS[@]}" "$browser_builddir/lib"
 	# TODO: Allow renaming to be specified in librarie list above
 	cp "$NODE_MODULES_DIR/react-dom-factories/index.js" "$browser_builddir/lib/react-dom-factories.js"
-	webpack --config "$CWD/webpack.config.js" "$SRCDIR/common/ui/tree/tree.js" "$browser_builddir/ui/tree.js"
+	"$NODE_MODULES_DIR/.bin/webpack" --config "$CWD/webpack.config.js" "$SRCDIR/common/ui/tree/tree.js" "$browser_builddir/ui/tree.js"
 	
 	# Remove .jsx files - we'll deal with those in gulp
 	find "$browser_builddir" -type f -name "*.jsx" -delete

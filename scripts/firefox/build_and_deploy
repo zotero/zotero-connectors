@@ -76,7 +76,7 @@ sleep 1
 echo .
 sleep 1
 
-./build.sh -p b -v "$version"
+./build.sh -p bs -v "$version"
 
 if [ $channel != "release" ]; then
 	# Add Git commit hash to XPI files

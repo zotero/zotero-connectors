@@ -480,7 +480,11 @@ Zotero.Inject = new function() {
 		if (Zotero.isSafari) return;
 		var toLoad = [];
 		if (typeof ReactDOM === "undefined") {
-			toLoad = ['lib/react.production.min.js', 'lib/react-dom.production.min.js'];
+			toLoad = [
+				'lib/react.production.min.js',
+				'lib/react-dom.production.min.js',
+				'lib/prop-types.min.js'
+			];
 		}
 		for (let component of components) {
 			if (!Zotero.ui || !Zotero.ui[component]) {

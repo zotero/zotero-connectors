@@ -2,14 +2,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import React from "react";
+//import React from "react";
 const { Component, createFactory, createElement } = React;
-import dom from "react-dom-factories";
-import PropTypes from "prop-types";
-import InlineSVG from "svg-inline-react";
-import svgArrow from "./images/arrow.svg";
+//import dom from "react-dom-factories";
+const dom = ReactDOMFactories;
+//import PropTypes from "prop-types";
+//import InlineSVG from "svg-inline-react";
+//import svgArrow from "./images/arrow.svg";
 
-require("./tree.css");
+//require("./tree.css");
 
 const AUTO_EXPAND_DEPTH = 0; // depth
 
@@ -37,9 +38,17 @@ class ArrowExpander extends Component {
     if (expanded) {
       classNames.push("expanded");
     }
-    return createElement(InlineSVG, {
-      className: classNames.join(" "),
-      src: svgArrow
+    //return createElement(InlineSVG, {
+    //  className: classNames.join(" "),
+    //  src: svgArrow
+    //});
+    // Inline the SVG to avoid needing svg-inline-react
+    var svg = {
+        __html: '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 13.4c-.5 0-.9-.2-1.2-.6L.4 5.2C0 4.7-.1 4.3.2 3.7S1 3 1.6 3h12.8c.6 0 1.2.1 1.4.7.3.6.2 1.1-.2 1.6l-6.4 7.6c-.3.4-.7.5-1.2.5z"/></svg>'
+    };
+    return createElement('span', {
+        className: classNames.join(" "),
+        dangerouslySetInnerHTML: svg
     });
   }
 }
@@ -786,4 +795,4 @@ class Tree extends Component {
   }
 }
 
-export default Tree;
+//export default Tree;

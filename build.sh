@@ -266,7 +266,7 @@ function copyResources {
 	browser_srcdir="$SRCDIR/$browser"
 	
 	# Copy common files
-	rsync -r --exclude '.*' --exclude ui/tree "$SRCDIR/common/" "$browser_builddir/"
+	rsync -r --exclude '.*' "$SRCDIR/common/" "$browser_builddir/"
 	
 	# Copy browser-specific files
 	rsync -r --exclude '.*' --exclude ui/tree "$browser_srcdir/" "$browser_builddir/"
@@ -296,7 +296,6 @@ function copyResources {
 	cp "${LIBS[@]}" "$browser_builddir/lib"
 	# TODO: Allow renaming to be specified in librarie list above
 	cp "$NODE_MODULES_DIR/react-dom-factories/index.js" "$browser_builddir/lib/react-dom-factories.js"
-	"$NODE_MODULES_DIR/.bin/webpack" --config "$CWD/webpack.config.js" "$SRCDIR/common/ui/tree/tree.js" "$browser_builddir/ui/tree.js"
 	
 	# Remove .jsx files - we'll deal with those in gulp
 	find "$browser_builddir" -type f -name "*.jsx" -delete

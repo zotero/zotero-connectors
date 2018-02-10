@@ -71,6 +71,8 @@
   width: 10px;
   margin-right: 5px;
   transform: rotate(-90deg);
+  vertical-align: middle;
+  margin-top: -3px;
 }
 
 html[dir="rtl"] .arrow svg,

@@ -672,7 +672,11 @@ Zotero.Inject = new function() {
 		var result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
 		
+		// TODO: Fetch previous session?
+		var sessionID = Zotero.Utilities.randomString();
+		
 		var data = {
+			sessionID,
 			url: document.location.toString(),
 			cookie: document.cookie,
 			html: document.documentElement.innerHTML,
@@ -686,7 +690,7 @@ Zotero.Inject = new function() {
 			image = "webpage";
 		}
 
-		Zotero.Messaging.sendMessage("progressWindow.show", null);
+		Zotero.Messaging.sendMessage("progressWindow.show", sessionID);
 		Zotero.Messaging.sendMessage("progressWindow.itemSaving",
 			[Zotero.ItemTypes.getImageSrc(image), title, title]);
 		try {

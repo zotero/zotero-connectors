@@ -133,9 +133,7 @@ ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collectio
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png $EXTENSION_SKIN_DIR/cross.png $EXTENSION_SKIN_DIR/treesource-library.png"
 PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png $EXTENSION_SKIN_DIR/prefs-proxies.png"
 
-LIBS=("$NODE_MODULES_DIR/react/umd/react.production.min.js" \
-	"$NODE_MODULES_DIR/react-dom/umd/react-dom.production.min.js" \
-	"$NODE_MODULES_DIR/prop-types/prop-types.min.js")
+LIBS=()
 	
 if [[ ! -z $DEBUG ]]; then
 	LIBS=("${LIBS[@]}" \
@@ -293,8 +291,14 @@ function copyResources {
 	
 	# Copy node_modules libs
 	mkdir "$browser_builddir/lib"
-	cp "${LIBS[@]}" "$browser_builddir/lib"
-	# TODO: Allow renaming to be specified in librarie list above
+	
+	if [ ${#LIBS[@]} -gt 0 ]; then
+		cp "${LIBS[@]}" "$browser_builddir/lib"
+	fi
+	# TODO: Allow renaming to be specified in library list above
+	cp "$NODE_MODULES_DIR/react/umd/react.production.min.js" "$browser_builddir/lib/react.js"
+	cp "$NODE_MODULES_DIR/react-dom/umd/react-dom.production.min.js" "$browser_builddir/lib/react-dom.js"
+	cp "$NODE_MODULES_DIR/prop-types/prop-types.min.js" "$browser_builddir/lib/prop-types.js"
 	cp "$NODE_MODULES_DIR/react-dom-factories/index.js" "$browser_builddir/lib/react-dom-factories.js"
 	
 	# Remove .jsx files - we'll deal with those in gulp

@@ -68,7 +68,7 @@ Zotero.Utilities.itemToAPIJSON = function(item) {
 	
 	var typeID = Zotero.ItemTypes.getID(item.itemType);
 	if(!typeID) {
-		Zotero.debug("itemToServerJSON: Invalid itemType "+item.itemType+"; using webpage");
+		Zotero.debug(`itemToAPIJSON: Invalid itemType ${item.itemType}; using webpage`);
 		item.itemType = "webpage";
 		typeID = Zotero.ItemTypes.getID(item.itemType);
 	}
@@ -90,7 +90,7 @@ Zotero.Utilities.itemToAPIJSON = function(item) {
 				var creator = val[j];
 				
 				if(!creator.firstName && !creator.lastName) {
-					Zotero.debug("itemToServerJSON: Silently dropping empty creator");
+					Zotero.debug("itemToAPIJSON: Silently dropping empty creator");
 					continue;
 				}
 				
@@ -113,7 +113,8 @@ Zotero.Utilities.itemToAPIJSON = function(item) {
 					if(Zotero.CreatorTypes.getID(creator.creatorType)) {
 						newCreator.creatorType = creator.creatorType;
 					} else {
-						Zotero.debug("itemToServerJSON: Invalid creator type "+creator.creatorType+"; falling back to author");
+						Zotero.debug(`itemToAPIJSON: Invalid creator type ${creator.creatorType}; `
+							+ "falling back to author");
 					}
 				}
 				if(!newCreator.creatorType) newCreator.creatorType = "author";
@@ -132,7 +133,7 @@ Zotero.Utilities.itemToAPIJSON = function(item) {
 					} else if(tag.name) {
 						tag = tag.name;
 					} else {
-						Zotero.debug("itemToServerJSON: Discarded invalid tag");
+						Zotero.debug("itemToAPIJSON: Discarded invalid tag");
 						continue;
 					}
 				} else if(tag === "") {
@@ -147,7 +148,7 @@ Zotero.Utilities.itemToAPIJSON = function(item) {
 				var note = val[j];
 				if(typeof note === "object") {
 					if(!note.note) {
-						Zotero.debug("itemToServerJSON: Discarded invalid note");
+						Zotero.debug("itemToAPIJSON: Discarded invalid note");
 						continue;
 					}
 					note = note.note;
@@ -177,10 +178,11 @@ Zotero.Utilities.itemToAPIJSON = function(item) {
 			if(Zotero.ItemFields.isValidForType(fieldID, typeID)) {
 				newItem[field] = val;
 			} else {
-				Zotero.debug("itemToServerJSON: Discarded field "+field+": field not valid for type "+item.itemType, 3);
+				Zotero.debug(`itemToAPIJSON: Discarded field ${field}: `
+					+ `field not valid for type ${item.itemType}`, 3);
 			}
 		} else {
-			Zotero.debug("itemToServerJSON: Discarded unknown field "+field, 3);
+			Zotero.debug(`itemToAPIJSON: Discarded unknown field ${field}`, 3);
 		}
 	}
 	

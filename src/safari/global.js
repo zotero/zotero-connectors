@@ -38,6 +38,11 @@ Zotero.Connector_Browser = new function() {
 		if (Zotero.Proxies.transparent) {
 			Zotero.Proxies.onPageLoadSafari(tab);
 		}
+
+		if(tab.translators) {
+			tab.isPDFFrame = false;
+			tab.translators = null;
+		}
 	};
 	
 	/**
@@ -303,10 +308,6 @@ safari.application.addEventListener('activate', function(e) {
 safari.application.addEventListener('beforeNavigate', function(e) {
 	if (e.target == safari.application.activeBrowserWindow.activeTab) {
 		Zotero.Connector.reportActiveURL(e.target.url);
-	}
-	if (e.target.translators) {
-		e.target.translators = null;
-		e.target.isPDFFrame = false;
 	}
 }, true);
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);

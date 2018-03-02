@@ -468,11 +468,6 @@ Zotero.Proxies = new function() {
 			return ["scheme.noPath"];
 		}
 		
-		// If empty or unmodified hosts
-		if (proxy.hosts.length == 0 || proxy.hosts.length == 1 && proxy.hosts[0].trim().length == 0) {
-			return ["hosts.invalid"];
-		}
-		
 		for (let host in proxy.hosts) {
 			host = host.trim();
 			var oldProxy = Zotero.Proxies.hosts[host];

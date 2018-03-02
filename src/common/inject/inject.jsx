@@ -42,23 +42,23 @@ if (isTopWindow) {
 	// communicate with it based on events from the messaging system (so that we don't need to
 	// load complicated messaging code into the iframe).
 	//
-	let frameID = 'zotero-progress-window-frame';
-	let listenersRegistered = false;
-	let currentSessionID;
-	let frameWindow;
-	let eventQueue = [];
-	let timeoutID;
-	let insideIframe = false;
-	let frameSrc;
+	var frameID = 'zotero-progress-window-frame';
+	var listenersRegistered = false;
+	var currentSessionID;
+	var frameWindow;
+	var eventQueue = [];
+	var timeoutID;
+	var insideIframe = false;
+	var frameSrc;
 	if (Zotero.isSafari) {
-		frameSrc = safari.extension.baseURI + 'progressWindow/progressWindow.html';
+		frameSrc = safari.extension.baseURI.toLowerCase() + 'progressWindow/progressWindow.html';
 	}
 	else {
 		frameSrc = browser.extension.getURL('progressWindow/progressWindow.html');
 	}
-	let origin = frameSrc.match(/^[a-z\-]+:\/\/[^\/]+/);
-	let scrollX;
-	let scrollY;
+	var origin = frameSrc.match(/^[a-z\-]+:\/\/[^\/]+/)[0];
+	var scrollX;
+	var scrollY;
 	
 	// The progress window component is initialized asynchronously, so queue updates and send them
 	// to the iframe once the component is ready

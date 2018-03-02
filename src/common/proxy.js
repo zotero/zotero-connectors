@@ -406,7 +406,7 @@ Zotero.Proxies = new function() {
 	 */
 	this.save = function(proxy) {
 		proxy.scheme = proxy.scheme.trim();
-		proxy.hosts = proxy.hosts.map(host => host.trim());
+		proxy.hosts = proxy.hosts.map(host => host.trim()).filter(host => host);
 		
 		// If empty or default scheme
 		var invalid = Zotero.Proxies.validate(proxy);

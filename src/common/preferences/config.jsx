@@ -33,14 +33,21 @@ var Zotero_Preferences_Config = {
 	}
 };
 
-Zotero_Preferences_Config.Table = React.createClass({
-	getInitialState() {
-		return {filter: '', prefs: Object.keys(this.props.prefs)};
-	},
+Zotero_Preferences_Config.Table = class Table extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			filter: '',
+			prefs: Object.keys(this.props.prefs)
+		};
+		
+		this.filter = this.filter.bind(this);
+		this.addPref = this.addPref.bind(this);
+	}
 
 	filter(event) {
 		this.setState({filter: event.target.value});
-	},
+	}
 	
 	addPref() {
 		let name = prompt('Enter the preference name');
@@ -54,7 +61,7 @@ Zotero_Preferences_Config.Table = React.createClass({
 		}
 		Zotero.Prefs.set(name, parsedValue);
 		this.setState(state => ({prefs: state.prefs.concat([name])}));
-	},
+	}
 	
 	resetPref(name) {
 		if (confirm('Do you want to reset this preference to its default value?')) {
@@ -63,11 +70,12 @@ Zotero_Preferences_Config.Table = React.createClass({
 				this.setState(state => ({prefs: state.prefs.filter(p => p != name)}));
 			}.bind(this));
 		}
-	},
+	}
 
 	render() {
 		let rows = [];
-		let keys = this.state.prefs.sort();
+		let keys = [...this.state.prefs];
+		keys.sort();
 		if (this.state.filter.length) {
 			keys = keys.filter((k) => k.includes(this.state.filter));
 		}
@@ -93,12 +101,13 @@ Zotero_Preferences_Config.Table = React.createClass({
 			</div>
 		)
 	}
-});
+};
 
-Zotero_Preferences_Config.Row = React.createClass({
-	getInitialState() {
-		return {};
-	},
+Zotero_Preferences_Config.Row = class Row extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {};
+	}
 	
 	edit() {
 		Zotero.Prefs.getAsync(this.props.name).then(function(value) {
@@ -118,7 +127,7 @@ Zotero_Preferences_Config.Row = React.createClass({
 			Zotero.Prefs.set(this.props.name, parsedValue);
 			this.setState({value});	
 		}.bind(this));
-	},
+	}
 
 	componentDidMount() {
 		Zotero.Prefs.getAsync(this.props.name).then(function(value) {
@@ -127,7 +136,7 @@ Zotero_Preferences_Config.Row = React.createClass({
 			}
 			this.setState({value});
 		}.bind(this));
-	},
+	}
 	
 	render() {
 		return (
@@ -138,6 +147,6 @@ Zotero_Preferences_Config.Row = React.createClass({
 			</tr>
 		)
 	}
-});
+};
 
 Zotero_Preferences_Config.init();

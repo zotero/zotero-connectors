@@ -481,9 +481,9 @@ Zotero.Inject = new function() {
 		var toLoad = [];
 		if (typeof ReactDOM === "undefined") {
 			toLoad = [
-				'lib/react.production.min.js',
-				'lib/react-dom.production.min.js',
-				'lib/prop-types.min.js'
+				'lib/react.js',
+				'lib/react-dom.js',
+				'lib/prop-types.js'
 			];
 		}
 		for (let component of components) {

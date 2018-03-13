@@ -563,6 +563,14 @@ class TargetTree extends React.Component {
 		return !!this.state.expanded[id];
 	}
 	
+	onRowToggle(item) {
+		var id = item.id;
+		this.setState((prevState) => {
+			prevState.expanded[id] = !prevState.expanded[id];
+			return prevState;
+		});
+	}
+	
 	onRowExpand(item) {
 		var id = item.id;
 		this.setState((prevState) => {
@@ -617,7 +625,10 @@ class TargetTree extends React.Component {
 					
 					return (
 						<div className={className} style={{marginLeft: depth * 5 + "px"}}>
-							{arrow}
+							// Add toggle on arrow click, since we disabled it in tree.js for
+							// clicking on the row itself. If the tree is updated to have less
+							// annoying behavior, this can be reverted.
+							<span onClick={() => this.onRowToggle(item)}>{arrow}</span>
 							<TargetIcon type={type} />
 							<span className="tree-item-label">{item.name}</span>
 						</div>

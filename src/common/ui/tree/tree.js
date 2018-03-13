@@ -741,11 +741,15 @@ class Tree extends Component {
         onCollapse: this._onCollapse,
         onClick: (e) => {
           this._focus(item);
-          if (this.props.isExpanded(item)) {
+          // Modified by Zotero
+          //
+          // Don't toggle row open state on click -- instead, toggle on arrow click in
+          // ProgressWindow.jsx
+          /*if (this.props.isExpanded(item)) {
             this.props.onCollapse(item);
           } else {
             this.props.onExpand(item, e.altKey);
-          }
+          }*/
         },
       });
     });

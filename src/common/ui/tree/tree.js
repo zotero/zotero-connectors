@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// Modified by Zotero -- skip dependencies that are included externally
 //import React from "react";
 const { Component, createFactory, createElement } = React;
 //import dom from "react-dom-factories";
@@ -38,6 +39,8 @@ class ArrowExpander extends Component {
     if (expanded) {
       classNames.push("expanded");
     }
+    // Modified by Zotero
+    //
     //return createElement(InlineSVG, {
     //  className: classNames.join(" "),
     //  src: svgArrow

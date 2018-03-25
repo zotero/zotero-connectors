@@ -47,7 +47,8 @@ if (isTopWindow) {
 	var currentSessionID;
 	var frameWindow;
 	var eventQueue = [];
-	var timeoutID;
+	var closeTimeoutID;
+	var syncDelayIntervalID;
 	var insideIframe = false;
 	var frameSrc;
 	if (Zotero.isSafari) {
@@ -154,6 +155,11 @@ if (isTopWindow) {
 		
 		var frame = document.getElementById(frameID);
 		frame.style.display = 'none';
+		
+		// Stop delaying syncs when the window closes
+		if (syncDelayIntervalID) {
+			clearInterval(syncDelayIntervalID);
+		}
 	}
 	
 	function resetFrame() {
@@ -176,12 +182,12 @@ if (isTopWindow) {
 		
 		if (!delay) delay = 2500;
 		stopCloseTimer();
-		timeoutID = setTimeout(hideFrame, delay);
+		closeTimeoutID = setTimeout(hideFrame, delay);
 	}
 	
 	function stopCloseTimer() {
-		if (timeoutID) {
-			clearTimeout(timeoutID);
+		if (closeTimeoutID) {
+			clearTimeout(closeTimeoutID);
 		}
 	}
 	
@@ -263,6 +269,13 @@ if (isTopWindow) {
 			case 'zotero.progressWindow.registered':
 				frameWindow = event.source;
 				drainEventQueue();
+				
+				// Delay syncs by 10 seconds at a time (specified in server_connector.js) while
+				// the selector is open. Run every 7.5 seconds to make sure the request gets
+				// there in time.
+				syncDelayIntervalID = setInterval(() => {
+					Zotero.Connector.callMethod("delaySync", {});
+				}, 7500);
 				break;
 			
 			// Adjust iframe height when inner document is resized

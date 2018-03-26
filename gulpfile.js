@@ -137,10 +137,6 @@ if (!argv.p) {
 		'test/testSetup.js',
 		'lib/sinon.js');
 }
-var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclude, [
-	'webRequestIntercept.js',
-	'contentTypeHandler.js',
-]);
 
 function reloadChromeExtensionsTab(cb) {
 	console.log("Reloading Chrome extensions tab");
@@ -229,12 +225,12 @@ function processFile() {
 			case 'manifest.json':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("/*BACKGROUND SCRIPTS*/",
-						backgroundIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
+						backgroundInclude.map((s) => `"${s}"`).join(',\n\t\t\t'))
 					.replace("/*INJECT SCRIPTS*/",
-						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
+						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t'))
 					.replace(/"version": "[^"]*"/, '"version": "'+argv.version+'"'));
 				break;
-			case 'background.js':
+			case 'script-injection.js':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("/*INJECT SCRIPTS*/", 
 						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t')));
@@ -290,7 +286,7 @@ gulp.task('watch-chrome', function () {
 
 gulp.task('process-custom-scripts', function() {
 	let sources = [
-		'./src/browserExt/background.js',
+		'./src/browserExt/script-injection.js',
 		'./src/browserExt/manifest.json',
 		'./src/browserExt/confirm.html',
 		'./src/safari/global.html',

@@ -159,8 +159,8 @@ Zotero_Preferences.General = {
 	updateAuthorization: function(userInfo) {
 		document.getElementById('general-authorization-not-authorized').style.display = (userInfo ? 'none' : 'block');
 		document.getElementById('general-authorization-authorized').style.display = (!userInfo ? 'none' : 'block');
-		if(userInfo) {
-			document.getElementById('general-span-authorization-username').textContent = userInfo.username;
+		if (userInfo) {
+			document.getElementById('general-span-authorization-username').textContent = userInfo['auth-username'];
 		}
 	},
 

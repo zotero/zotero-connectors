@@ -284,11 +284,11 @@ var Zotero = new function() {
 		}
 		
 		if (err.stack) {
+			var error = err.stack;
 			if (!Zotero.isChrome) {
-				Zotero.Errors.log(err.message + '\n' + err.stack);
-			} else {
-				Zotero.Errors.log(err.stack);
+				error = err.message + '\n' + error;
 			}
+			Zotero.Errors.log(error);
 		} else {
 			Zotero.Errors.log(err.message ? err.message : err.toString(), fileName, lineNumber);
 		}
@@ -305,7 +305,7 @@ Zotero.Prefs = new function() {
 		"debug.time": false,
 		"lastVersion": "",
 		"downloadAssociatedFiles": true,
-		"automaticSnapshots": true, // only affects saves to zotero.org. saves to client governed by pref in the client
+		"automaticSnapshots": true,
 		"connector.repo.lastCheck.localTime": 0,
 		"connector.repo.lastCheck.repoTime": 0,
 		"connector.url": ZOTERO_CONFIG.CONNECTOR_SERVER_URL,

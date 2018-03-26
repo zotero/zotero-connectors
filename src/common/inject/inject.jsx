@@ -115,110 +115,6 @@ if(isTopWindow) {
 Zotero.Inject = new function() {
 	var _translate;
 	this.translators = [];
-		
-	/**
-	 * Initializes the translate machinery and determines whether this page can be translated
-	 */
-	this.init = function(force) {	
-		// On OAuth completion, close window and call completion listener
-		if(document.location.href.substr(0, ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH_CALLBACK_URL+"?") {
-			Zotero.API.onAuthorizationComplete(document.location.href.substr(ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1));
-			return;
-		}
-		
-		// wrap this in try/catch so that errors will reach logError
-		try {
-			if(this.translators.length) {
-				if(force) {
-					this.translators = [];
-				} else {
-					return;
-				}
-			}
-			if(document.location == "about:blank") return;
-
-			if(!_translate) {
-				_translate = new Zotero.Translate.Web();
-				_translate.setHandler("select", function(obj, items, callback) {
-					// If the handler returns a non-undefined value then it is passed
-					// back to the callback due to backwards compat code in translate.js
-					(async function() {
-						try {
-							let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
-							if (response.libraryEditable === false) {
-								return callback([]);
-							}
-						} catch (e) {
-							// Zotero is online but an error occured anyway, so let's log it and display
-							// the dialog just in case
-							if (e.status != 0) {
-								Zotero.logError(e);
-							}
-						}
-						Zotero.Connector_Browser.onSelect(items).then(function(returnItems) {
-							// if no items selected, close save dialog immediately
-							if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
-								Zotero.Messaging.sendMessage("progressWindow.close", null);
-							}
-							callback(returnItems);
-						});					
-					})();
-				});
-				_translate.setHandler("itemSaving", function(obj, item) {
-					// this relays an item from this tab to the top level of the window
-					Zotero.Messaging.sendMessage("progressWindow.itemSaving",
-						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id]);
-				});
-				_translate.setHandler("itemDone", function(obj, dbItem, item) {
-					// this relays an item from this tab to the top level of the window
-					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
-						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id, 100]);
-					for(var i=0; i<item.attachments.length; i++) {
-						var attachment = item.attachments[i];
-						Zotero.Messaging.sendMessage("progressWindow.itemSaving",
-							[determineAttachmentIcon(attachment), attachment.title, attachment.id,
-								item.id]);
-					}
-				});
-				_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
-					if(progress === 0) return;
-					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
-						[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
-				});
-				_translate.setHandler("pageModified", function() {
-					Zotero.Connector_Browser.onPageLoad();
-					Zotero.Messaging.sendMessage("pageModified", null);
-				});
-				document.addEventListener("ZoteroItemUpdated", function() {
-					Zotero.debug("Inject: ZoteroItemUpdated event received");
-					Zotero.Connector_Browser.onPageLoad();
-					Zotero.Messaging.sendMessage("pageModified", null);
-				}, false);
-			}
-			_translate.setDocument(document);
-			return _translate.getTranslators(true).then(function(translators) {
-				if (!translators.length && Zotero.isSafari) {
-					if (!isTopWindow && document.contentType == 'application/pdf') {
-						return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
-					}
-				}
-				this.translators = translators;
-				
-				translators = translators.map(function(translator) {return translator.serialize(TRANSLATOR_PASSING_PROPERTIES)});
-				Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
-			}.bind(this));
-		} catch(e) {
-			Zotero.logError(e);
-		}
-	};
-	
-	function determineAttachmentIcon(attachment) {
-		if(attachment.linkMode === "linked_url") {
-			return Zotero.ItemTypes.getImageSrc("attachment-web-link");
-		}
-		return Zotero.ItemTypes.getImageSrc(attachment.mimeType === "application/pdf"
-							? "attachment-pdf" : "attachment-snapshot");
-	}
 
 	/**
 	 * Check if React and components are loaded and if not - load into page.
@@ -387,6 +283,139 @@ Zotero.Inject = new function() {
 			return Zotero.Promise.resolve(true);
 		}
 	};
+			
+	/**
+	 * Initializes the translate machinery and determines whether this page can be translated
+	 */
+	this.init = async function(force) {	
+		// On OAuth completion, close window and call completion listener
+		if(document.location.href.substr(0, ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH_CALLBACK_URL+"?") {
+			Zotero.API.onAuthorizationComplete(document.location.href.substr(ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1));
+			return;
+		}
+		
+		// wrap this in try/catch so that errors will reach logError
+		try {
+			if(this.translators.length) {
+				if(force) {
+					this.translators = [];
+				} else {
+					return;
+				}
+			}
+			if(document.location == "about:blank") return;
+
+			if(!_translate) {
+				_translate = new Zotero.Translate.Web();
+				_translate.setHandler("select", function(obj, items, callback) {
+					// If the handler returns a non-undefined value then it is passed
+					// back to the callback due to backwards compat code in translate.js
+					(async function() {
+						try {
+							let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
+							if (response.libraryEditable === false) {
+								return callback([]);
+							}
+						} catch (e) {
+							// Zotero is online but an error occured anyway, so let's log it and display
+							// the dialog just in case
+							if (e.status != 0) {
+								Zotero.logError(e);
+							}
+						}
+						Zotero.Connector_Browser.onSelect(items).then(function(returnItems) {
+							// if no items selected, close save dialog immediately
+							if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
+								Zotero.Messaging.sendMessage("progressWindow.close", null);
+							}
+							callback(returnItems);
+						});					
+					})();
+				});
+				_translate.setHandler("itemSaving", function(obj, item) {
+					// this relays an item from this tab to the top level of the window
+					Zotero.Messaging.sendMessage("progressWindow.itemSaving",
+						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id]);
+				});
+				_translate.setHandler("itemDone", function(obj, dbItem, item) {
+					// this relays an item from this tab to the top level of the window
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
+						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id, 100]);
+					for(var i=0; i<item.attachments.length; i++) {
+						var attachment = item.attachments[i];
+						Zotero.Messaging.sendMessage("progressWindow.itemSaving",
+							[determineAttachmentIcon(attachment), attachment.title, attachment.id,
+								item.id]);
+					}
+				});
+				_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
+					if(progress === 0) return;
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
+						[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
+				});
+				_translate.setHandler("pageModified", function() {
+					Zotero.Connector_Browser.onPageLoad();
+					Zotero.Messaging.sendMessage("pageModified", null);
+				});
+				document.addEventListener("ZoteroItemUpdated", function() {
+					Zotero.debug("Inject: ZoteroItemUpdated event received");
+					Zotero.Connector_Browser.onPageLoad();
+					Zotero.Messaging.sendMessage("pageModified", null);
+				}, false);
+			}
+			_translate.setDocument(document);
+			let translators = await _translate.getTranslators(true);
+			
+			if (!translators.length && Zotero.isSafari) {
+				if (!isTopWindow && document.contentType == 'application/pdf') {
+					return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
+				}
+			}
+
+			this.translators = await this.ensureGenericEMTranslation(translators);
+			
+			translators = translators.map(function(translator) {return translator.serialize(TRANSLATOR_PASSING_PROPERTIES)});
+			Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
+		} catch(e) {
+			Zotero.logError(e);
+		}
+	};
+	
+	function determineAttachmentIcon(attachment) {
+		if(attachment.linkMode === "linked_url") {
+			return Zotero.ItemTypes.getImageSrc("attachment-web-link");
+		}
+		return Zotero.ItemTypes.getImageSrc(attachment.mimeType === "application/pdf"
+							? "attachment-pdf" : "attachment-snapshot");
+	}
+
+	/**
+	 * Ensures that EM translator is always present as a default
+	 * saving option even when it is not detected for any pages
+	 * 
+	 * See discussion https://github.com/zotero/translators/issues/1092#issuecomment-333475693
+	 */
+	this.ensureGenericEMTranslation = async function(translators) {
+		let EM = "951c027d-74ac-47d4-a107-9c3069ab7b48";
+		let EMIndex = null;
+		for (let i = 0; i < translators.length; i++) {
+			if (translators[i].translatorID == EM) {
+				EMIndex = i;
+				break;
+			}
+		}
+		if (EMIndex == null) {
+			EMIndex = translators.length;
+			let translator = await Zotero.Translators.get(EM);
+			translators.push(translator);
+		}
+		
+		let translator = translators[EMIndex];
+		translator.itemType = translator.itemType || 'webpage';
+		translator.label = Zotero.ItemTypes.getLocalizedString(translator.itemType);
+		
+		return translators;
+	};
 	
 	this.translate = async function(translatorID, fallbackOnFailure=false) {
 		let result = await Zotero.Inject.checkActionToServer();
@@ -416,8 +445,8 @@ Zotero.Inject = new function() {
 
 	};
 	
-	this.saveAsWebpage = async function (args) {
-		var title = args[0] || document.title, withSnapshot = args[1];
+	this.saveAsWebpage = async function (title) {
+		var title = title || document.title;
 		var image;
 		var result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
@@ -426,7 +455,6 @@ Zotero.Inject = new function() {
 			url: document.location.toString(),
 			cookie: document.cookie,
 			html: document.documentElement.innerHTML,
-			skipSnapshot: !withSnapshot
 		};
 		
 		if (document.contentType == 'application/pdf') {

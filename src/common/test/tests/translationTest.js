@@ -56,7 +56,7 @@ describe("Translation", function() {
 						return Zotero.Inject.translators[key].metadata.label;
 					});
 				});
-				assert.deepEqual(['COinS', 'DOI'], translators);
+				assert.deepEqual(['COinS', 'DOI', 'Embedded Metadata'], translators);
 			});
 		});
 		
@@ -119,25 +119,6 @@ describe("Translation", function() {
 					});
 					assert.include(message, items[0].title);
 				}));
-			
-				it('saves as snapshot', async function () {
-					try {
-						await background(async function (tabId) {
-							sinon.stub(Zotero.Connector, "callMethod").resolves([]);
-							let tab = await Zotero.Background.getTabByID(tabId);
-							await Zotero.Connector_Browser.saveAsWebpage(tab, false);
-						}, tab.tabId);
-						await Zotero.Promise.delay(20);
-						var message = await tab.run(function () {
-							var message = document.getElementById('zotero-progress-window').textContent;
-							Zotero.ProgressWindow.close();
-							return message;
-						});
-						assert.include(message, "Scarcity or Abundance? Preserving the Past in a Digital Era");
-					} finally {
-						await background(() => Zotero.Connector.callMethod.restore())
-					}
-				});
 					
 				it('displays an error message if Zotero responds with an error', async function () {
 					await background(async function(tabId) {
@@ -285,7 +266,7 @@ describe("Translation", function() {
 					}, tab.tabId);
 					
 					assert.notEqual(instanceID, 0);
-					assert.deepEqual(['COinS', 'DOI'], translators);
+					assert.deepEqual(['COinS', 'DOI', 'Web Page'], translators);
 				} finally {
 					await tab.close();
 				}

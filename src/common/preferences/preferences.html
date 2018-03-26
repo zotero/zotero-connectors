@@ -43,22 +43,27 @@
 				<div class="group-content" id="client-status"></div>
 			</div>
 			<div class="group">
-				<div class="group-title">Save to Zotero.org</div>
+				<div class="group-title">Saving</div>
 				<div class="group-content">
-					<div id="general-authorization-not-authorized">
-						<p>Zotero Connector must be authorized in order to save items to zotero.org when Zotero is not open.</p>
-						<p><input type="button" value="Authorize" id="general-button-authorize"/></p>
-					</div>
-					<div id="general-authorization-authorized" style="display:none">
-						<p>Zotero Connector will save items to zotero.org as <span id="general-span-authorization-username"></span> when Zotero is not open.</p>
-						<p>
-							<input type="button" value="Reauthorize" id="general-button-reauthorize"/>
-							<input type="button" value="Clear Credentials" id="general-button-clear-credentials"/>
-						</p>
+					<div id="general-saving-prefs">
 						<p>
 							<label><input type="checkbox" id="general-checkbox-automaticSnapshots"/>&nbsp;Automatically take snapshots when saving items</label><br/>
 							<label><input type="checkbox" id="general-checkbox-downloadAssociatedFiles"/>&nbsp;Automatically download associated PDFs and other files when saving items</label><br/>
-						</p>
+						</p>	
+					</div>
+					<div id="general-authorization">
+						<h3>Saving to Zotero.org</h3>
+						<div id="general-authorization-not-authorized">
+							<p>Zotero Connector must be authorized in order to save items to zotero.org when Zotero is not open.</p>
+							<p><input type="button" value="Authorize" id="general-button-authorize"/></p>
+						</div>
+						<div id="general-authorization-authorized" style="display:none">
+							<p>Zotero Connector will save items to zotero.org as <span id="general-span-authorization-username"></span> when Zotero is not open.</p>
+							<p>
+								<input type="button" value="Reauthorize" id="general-button-reauthorize"/>
+								<input type="button" value="Clear Credentials" id="general-button-clear-credentials"/>
+							</p>
+						</div>
 					</div>
 				</div>
 			</div>

@@ -34,7 +34,7 @@ Zotero.Messaging = new function() {
 	 * Add a message listener
 	 */
 	this.addMessageListener = function(messageName, callback) {
-		_messageListeners[messageName] = Zotero.Promise.method(callback);
+		_messageListeners[messageName] = callback;
 	}
 	
 	/**
@@ -106,15 +106,31 @@ Zotero.Messaging = new function() {
 		browser.runtime.onMessage.addListener(function(request, sender) {
 			if (typeof request !== "object" || !request.length || !_messageListeners[request[0]]) return;
 			Zotero.debug(request[0] + " message received in injected page " + window.location.href);
-			return _messageListeners[request[0]](request[1]).catch(function(err) {
-				Zotero.logError(err);
-				err = JSON.stringify(Object.assign({
-					name: err.name,
-					message: err.message,
-					stack: err.stack
-				}, err));
-				return ['error', err]
-			});
+			try {
+				var maybePromise = _messageListeners[request[0]](request[1]);
+			} catch (err) {
+				return Zotero.Messaging._respondError(err);
+			}
+			if (maybePromise && maybePromise.then) {
+				return maybePromise.catch(Zotero.Messaging._respondError);
+			}
+			// Discrepancy between browser-polyfill.js where returning non-undefined responds
+			// and Firefox where returning non-undefined non-promise means that
+			// arguments[2] (sendResponse) will be called asynchronously
+			if (Zotero.isFirefox && maybePromise != undefined) {
+				return Zotero.Promise.resolve(maybePromise);
+			}
+			return maybePromise
 		});
-	}
+	};
+	
+	this._respondError = async function(err) {
+		Zotero.logError(err);
+		err = JSON.stringify(Object.assign({
+			name: err.name,
+			message: err.message,
+			stack: err.stack
+		}, err));
+		return ['error', err]
+	};
 }

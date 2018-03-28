@@ -45,6 +45,7 @@ if (isTopWindow) {
 	var frameID = 'zotero-progress-window-frame';
 	var listenersRegistered = false;
 	var currentSessionID;
+	var lastSuccessfulTarget;
 	var frameWindow;
 	var eventQueue = [];
 	var closeTimeoutID;
@@ -83,6 +84,10 @@ if (isTopWindow) {
 		addEvent("changeHeadline", Array.from(arguments));
 	}
 	
+	function makeReadOnly() {
+		addEvent("makeReadOnly", [lastSuccessfulTarget]);
+	}
+	
 	/**
 	 * Get selected collection and collections list from client and update popup
 	 */
@@ -116,17 +121,11 @@ if (isTopWindow) {
 			id = response.id;
 		}
 		
-		changeHeadline(
-			"Saving to ",
-			{
-				id,
-				type: id.startsWith('L')
-					? 'library'
-					: 'collection',
-				name: response.name
-			},
-			response.targets
-		);
+		var target = lastSuccessfulTarget = {
+			id,
+			name: response.name
+		};
+		changeHeadline("Saving to ", target, response.targets);
 		if (!response.targets && response.libraryEditable === false) {
 			// TODO: Update
 			addError("collectionNotEditable");
@@ -271,14 +270,22 @@ if (isTopWindow) {
 			
 			// Update the client or API with changes
 			case 'zotero.progressWindow.updated':
-				var response = await Zotero.Connector.callMethod(
-					"updateSession",
-					{
-						sessionID: currentSessionID,
-						target: event.data.target,
-						tags: event.data.tags
-					}
-				);
+				try {
+					await Zotero.Connector.callMethod(
+						"updateSession",
+						{
+							sessionID: currentSessionID,
+							target: event.data.target.id,
+							tags: event.data.tags
+						}
+					);
+				}
+				// Collapse popup on error
+				catch (e) {
+					makeReadOnly();
+					throw e;
+				}
+				lastSuccessfulTarget = event.data.target;
 				break;
 			
 			// Keep track of when the mouse is over the popup, for various purposes

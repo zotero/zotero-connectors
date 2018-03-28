@@ -40,6 +40,10 @@ else if (typeof chrome != 'undefined') {
 	Zotero.ui.style.imageBase = chrome.extension.getURL("images/");
 }
 
+function getTargetType(id) {
+	return id.startsWith('L') ? 'library': 'collection';
+}
+
 Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 	constructor(props) {
 		super(props);
@@ -75,6 +79,7 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 		window.addEventListener("message", (event) => {
 			switch (event.data.event) {
 			case 'changeHeadline':
+			case 'makeReadOnly':
 			case 'updateProgress':
 			case 'addError':
 				this[event.data.event](...event.data.data);
@@ -119,6 +124,14 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 			headlineText: text,
 			target,
 			targets
+		});
+	}
+	
+	makeReadOnly(target) {
+		this.setState({
+			targetSelectorShown: false,
+			target,
+			targets: null
 		});
 	}
 	
@@ -237,7 +250,7 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 		
 		var target = this.state.targets.find(row => row.id == id);
 		this.setState({target});
-		this.target = id;
+		this.target = target;
 		this.sendUpdate();
 	}
 	
@@ -320,7 +333,7 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 	 */
 	renderHeadlineTarget() {
 		return <React.Fragment>
-			<TargetIcon type={this.state.target.type}/>
+			<TargetIcon type={getTargetType(this.state.target.id)}/>
 			{" " + this.state.target.name + "…"}
 		</React.Fragment>;
 	}
@@ -626,23 +639,13 @@ class TargetTree extends React.Component {
 						className += "focused";
 					}
 					
-					// Set type
-					switch (true) {
-					case item.id.startsWith('L'):
-						var type = 'library';
-						break;
-					default:
-						var type = 'collection';
-						break;
-					}
-					
 					return (
 						<div className={className} style={{marginLeft: depth * 5 + "px"}}>
 							{/* Add toggle on arrow click, since we disabled it in tree.js for
 							    clicking on the row itself. If the tree is updated to have less
 							    annoying behavior, this can be reverted. */}
 							<span onClick={() => this.onRowToggle(item)}>{arrow}</span>
-							<TargetIcon type={type} />
+							<TargetIcon type={getTargetType(item.id)} />
 							<span className="tree-item-label">{item.name}</span>
 						</div>
 					);

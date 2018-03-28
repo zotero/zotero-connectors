@@ -91,7 +91,7 @@ if (isTopWindow) {
 	/**
 	 * Get selected collection and collections list from client and update popup
 	 */
-	async function setHeadlineFromClient() {
+	async function setHeadlineFromClient(prefix) {
 		try {
 			var response = await Zotero.Connector.callMethod("getSelectedCollection", {})
 		}
@@ -121,11 +121,15 @@ if (isTopWindow) {
 			id = response.id;
 		}
 		
+		if (!prefix) {
+			prefix = "Saving to ";
+		}
+		
 		var target = lastSuccessfulTarget = {
 			id,
 			name: response.name
 		};
-		changeHeadline("Saving to ", target, response.targets);
+		changeHeadline(prefix, target, response.targets);
 		if (!response.targets && response.libraryEditable === false) {
 			// TODO: Update
 			addError("collectionNotEditable");
@@ -193,13 +197,23 @@ if (isTopWindow) {
 	/**
 	 * This is called after an item has started to save in order to show the progress window
 	 */
-	Zotero.Messaging.addMessageListener("progressWindow.show", async function (sessionID) {
+	Zotero.Messaging.addMessageListener("progressWindow.show", async function (args) {
+		var [sessionID, headline, targetSelector] = args;
+		if (targetSelector === undefined) {
+			targetSelector = true;
+		}
+		
 		if (currentSessionID) {
 			// If session has changed, reset state
 			if (currentSessionID != sessionID) {
 				resetFrame();
 				currentSessionID = sessionID;
-				await setHeadlineFromClient();
+				if (targetSelector) {
+					await setHeadlineFromClient(headline);
+				}
+				else {
+					changeHeadline(headline);
+				}
 			}
 			showFrame();
 			return;
@@ -320,7 +334,12 @@ if (isTopWindow) {
 			}
 		});
 		
-		await setHeadlineFromClient();
+		if (targetSelector) {
+			await setHeadlineFromClient(headline);
+		}
+		else {
+			changeHeadline(headline);
+		}
 	});
 	
 	/**
@@ -694,7 +713,7 @@ Zotero.Inject = new function() {
 		var sessionID = Zotero.Utilities.randomString();
 		var translators = Array.from(this.translators);
 		
-		Zotero.Messaging.sendMessage("progressWindow.show", sessionID);
+		Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 		while (translators[0].translatorID != translatorID) {
 			translators.shift();
 		}
@@ -740,7 +759,7 @@ Zotero.Inject = new function() {
 			image = "webpage";
 		}
 
-		Zotero.Messaging.sendMessage("progressWindow.show", sessionID);
+		Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 		Zotero.Messaging.sendMessage(
 			"progressWindow.itemProgress",
 			[

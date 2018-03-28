@@ -47,6 +47,8 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 		
 		this.nArcs = 20;
 		
+		this.onMouseEnter = this.onMouseEnter.bind(this);
+		this.onMouseLeave = this.onMouseLeave.bind(this);
 		this.onUserInteraction = this.onUserInteraction.bind(this);
 		this.onHeadlineSelectChange = this.onHeadlineSelectChange.bind(this);
 		this.onDisclosureChange = this.onDisclosureChange.bind(this);
@@ -186,6 +188,14 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 	//
 	// Handlers
 	//
+	onMouseEnter() {
+		this.sendMessage('mouseenter');
+	}
+	
+	onMouseLeave() {
+		this.sendMessage('mouseleave');
+	}
+	
 	onUserInteraction() {
 		// After the user has interacted with the popup, let the parent know when the document
 		// is blurred in case it wants to close the frame
@@ -483,7 +493,10 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 	
 	render() {
 		return (
-			<div ref={(el) => {this.rootNode = el}} className="ProgressWindow-box">
+			<div ref={(el) => {this.rootNode = el}}
+					className="ProgressWindow-box"
+					onMouseEnter={this.onMouseEnter}
+					onMouseLeave={this.onMouseLeave}>
 				{this.renderHeadline()}
 				{this.renderTargetSelector()}
 				{this.renderProgress()}

@@ -223,20 +223,6 @@ if (isTopWindow) {
 		for (let i in style) iframe.style[i] = style[i];
 		document.body.appendChild(iframe);
 		
-		// Keep track of when the mouse is over the popup, for various purposes
-		iframe.addEventListener('mouseenter', function() {
-			insideIframe = true;
-			stopCloseTimer();
-			
-			// See scroll listener above
-			scrollX = window.scrollX;
-			scrollY = window.scrollY;
-		});
-		iframe.addEventListener('mouseleave', function() {
-			insideIframe = false;
-			startCloseTimer();
-		});
-		
 		// Keep track of clicks on the window so that when the iframe document is blurred we can
 		// distinguish between a click on the document and switching to another window
 		var lastClick;
@@ -293,6 +279,21 @@ if (isTopWindow) {
 						tags: event.data.tags
 					}
 				);
+				break;
+			
+			// Keep track of when the mouse is over the popup, for various purposes
+			case 'zotero.progressWindow.mouseenter':
+				insideIframe = true;
+				stopCloseTimer();
+				
+				// See scroll listener above
+				scrollX = window.scrollX;
+				scrollY = window.scrollY;
+				break;
+			
+			case 'zotero.progressWindow.mouseleave':
+				insideIframe = false;
+				startCloseTimer();
 				break;
 			
 			// Hide iframe if it loses focus and the user recently clicked on the main page

@@ -196,8 +196,17 @@ Zotero.ContentTypeHandler = {
 				options.queryString = 'origin=' + encodeURIComponent(details.url);
 				try {
 					let result = await Zotero.Connector.callMethod(options, this.response);
-					Zotero.Messaging.sendMessage('progressWindow.itemProgress',
-						[browser.extension.getURL('images/csl-style.png'), result.name, null, 100], tab);
+					Zotero.Messaging.sendMessage(
+						'progressWindow.itemProgress',
+						[
+							null,
+							browser.extension.getURL('images/csl-style.png'),
+							result.name,
+							false,
+							100
+						],
+						tab
+					);
 					return Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
 				}
 				catch(e) {
@@ -217,8 +226,17 @@ Zotero.ContentTypeHandler = {
 						`Imported ${result.length} item` + (result.length > 1 ? 's' : ''), tab);
 					for (let i = 0; i < result.length && i < 20; i++) {
 						let item = result[i];
-						Zotero.Messaging.sendMessage('progressWindow.itemProgress',
-							[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, null, 100], tab);
+						Zotero.Messaging.sendMessage(
+							'progressWindow.itemProgress',
+							[
+								null,
+								Zotero.ItemTypes.getImageSrc(item.itemType),
+								item.title,
+								false,
+								100
+							],
+							tab
+						);
 					}
 					Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
 				}

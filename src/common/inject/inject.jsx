@@ -323,23 +323,20 @@ if (isTopWindow) {
 		await setHeadlineFromClient();
 	});
 	
-	// TODO: Combine with itemProgress?
-	Zotero.Messaging.addMessageListener("progressWindow.itemSaving", function (data) {
-		var id = data[2];
-		var data = {
-			iconSrc: data[0],
-			title: data[1],
-			parentItem: data[3]
-		};
-		updateProgress(id, data);
-	});
-	
+	/**
+	 * @param {Integer} id
+	 * @param {String} iconSrc
+	 * @param {String} title
+	 * @param {Integer|false} parentItem
+	 * @param {Integer|false} progress
+	 */
 	Zotero.Messaging.addMessageListener("progressWindow.itemProgress", (data) => {
-		var id = data[2];
+		var id = data[0];
 		var data = {
-			iconSrc: data[0],
-			title: data[1],
-			progress: data[3] // false === error
+			iconSrc: data[1],
+			title: data[2],
+			parentItem: data[3],
+			progress: data[4] // false === error
 		};
 		updateProgress(id, data);
 	});
@@ -435,24 +432,52 @@ Zotero.Inject = new function() {
 				});
 				_translate.setHandler("itemSaving", function(obj, item) {
 					// this relays an item from this tab to the top level of the window
-					Zotero.Messaging.sendMessage("progressWindow.itemSaving",
-						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id]);
+					Zotero.Messaging.sendMessage(
+						"progressWindow.itemProgress",
+						[
+							item.id,
+							Zotero.ItemTypes.getImageSrc(item.itemType),
+							item.title
+						]
+					);
 				});
 				_translate.setHandler("itemDone", function(obj, dbItem, item) {
 					// this relays an item from this tab to the top level of the window
-					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
-						[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, item.id, 100]);
+					Zotero.Messaging.sendMessage(
+						"progressWindow.itemProgress",
+						[
+							item.id,
+							Zotero.ItemTypes.getImageSrc(item.itemType),
+							item.title,
+							false,
+							100
+						]
+					);
 					for(var i=0; i<item.attachments.length; i++) {
 						var attachment = item.attachments[i];
-						Zotero.Messaging.sendMessage("progressWindow.itemSaving",
-							[determineAttachmentIcon(attachment), attachment.title, attachment.id,
-								item.id]);
+						Zotero.Messaging.sendMessage(
+							"progressWindow.itemProgress",
+							[
+								attachment.id,
+								determineAttachmentIcon(attachment),
+								attachment.title,
+								item.id
+							]
+						);
 					}
 				});
 				_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
 					if(progress === 0) return;
-					Zotero.Messaging.sendMessage("progressWindow.itemProgress",
-						[determineAttachmentIcon(attachment), attachment.title, attachment.id, progress]);
+					Zotero.Messaging.sendMessage(
+						"progressWindow.itemProgress",
+						[
+							attachment.id,
+							determineAttachmentIcon(attachment),
+							attachment.title,
+							false,
+							progress
+						]
+					);
 				});
 				_translate.setHandler("pageModified", function() {
 					Zotero.Connector_Browser.onPageLoad();
@@ -716,13 +741,27 @@ Zotero.Inject = new function() {
 		}
 
 		Zotero.Messaging.sendMessage("progressWindow.show", sessionID);
-		Zotero.Messaging.sendMessage("progressWindow.itemSaving",
-			[Zotero.ItemTypes.getImageSrc(image), title, title]);
+		Zotero.Messaging.sendMessage(
+			"progressWindow.itemProgress",
+			[
+				title,
+				Zotero.ItemTypes.getImageSrc(image),
+				title
+			]
+		);
 		try {
 			result = await Zotero.Connector.callMethodWithCookies("saveSnapshot", data);
 		
-			Zotero.Messaging.sendMessage("progressWindow.itemProgress",
-				[Zotero.ItemTypes.getImageSrc(image), title, title, 100]);
+			Zotero.Messaging.sendMessage(
+				"progressWindow.itemProgress",
+				[
+					title,
+					Zotero.ItemTypes.getImageSrc(image),
+					title,
+					false,
+					100
+				]
+			);
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			return result;
 		} catch (e) {
@@ -732,8 +771,18 @@ Zotero.Inject = new function() {
 				if (document.contentType != 'application/pdf') {
 					let itemSaver = new Zotero.Translate.ItemSaver({});
 					let items = await itemSaver.saveAsWebpage();
-					if (items.length) Zotero.Messaging.sendMessage("progressWindow.itemProgress",
-						[Zotero.ItemTypes.getImageSrc(image), title, title, 100]);
+					if (items.length) {
+						Zotero.Messaging.sendMessage(
+							"progressWindow.itemProgress",
+							[
+								title,
+								Zotero.ItemTypes.getImageSrc(image),
+								title,
+								false,
+								100
+							]
+						);
+					}
 					return;
 				} else {
 					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);

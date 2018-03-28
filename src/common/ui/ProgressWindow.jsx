@@ -136,6 +136,11 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 	}
 	
 	updateProgress(id, params = {}) {
+		// Assign a random id if not provided. This row won't be able to be updated.
+		if (!id) {
+			id = Math.floor(Math.random() * 99999999);
+		}
+		
 		this.setState((prevState, props) => {
 			var iconSrc = params.iconSrc;
 			var title = params.title;

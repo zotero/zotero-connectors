@@ -44,7 +44,7 @@ function getTargetType(id) {
 	return id.startsWith('L') ? 'library': 'collection';
 }
 
-Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
+Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	constructor(props) {
 		super(props);
 		this.state = this.getInitialState();
@@ -147,10 +147,14 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 			var parentItem = params.parentItem;
 			var progress = params.progress;
 			
+			var newState = {
+				itemProgress: new Map(prevState.itemProgress)
+			};
+			
 			var p = prevState.itemProgress.get(id);
 			if (!p) {
 				p = {id, iconSrc, title};
-				prevState.itemProgress.set(id, p);
+				newState.itemProgress.set(id, p);
 				p.order = prevState.itemProgress.size - 1;
 			}
 			if (iconSrc) {
@@ -165,15 +169,16 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 			else if (typeof progress == 'number') {
 				p.percentage = progress;
 			}
-			return prevState;
+			return newState;
 		});
 	}
 	
 	addError() {
 		var args = Array.from(arguments);
 		this.setState((prevState) => {
-			prevState.errors.push(args);
-			return prevState;
+			return {
+				errors: prevState.errors.concat([...args])
+			};
 		});
 	}
 	
@@ -242,11 +247,12 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.Component {
 		this.onUserInteraction();
 		
 		this.setState((prevState, props) => {
-			prevState.targetSelectorShown = !prevState.targetSelectorShown;
-			if (prevState.targetSelectorShown) {
+			if (!prevState.targetSelectorShown) {
 				setTimeout(() => this.focusTree(), 100);
 			}
-			return prevState;
+			return {
+				targetSelectorShown: !prevState.targetSelectorShown
+			};
 		});
 	}
 	
@@ -597,24 +603,45 @@ class TargetTree extends React.Component {
 	onRowToggle(item) {
 		var id = item.id;
 		this.setState((prevState) => {
-			prevState.expanded[id] = !prevState.expanded[id];
-			return prevState;
+			return {
+				expanded: Object.assign(
+					{},
+					prevState.expanded,
+					{
+						[id]: !prevState.expanded[id]
+					}
+				)
+			};
 		});
 	}
 	
 	onRowExpand(item) {
 		var id = item.id;
 		this.setState((prevState) => {
-			prevState.expanded[id] = true;
-			return prevState;
+			return {
+				expanded: Object.assign(
+					{},
+					prevState.expanded,
+					{
+						[id]: true
+					}
+				)
+			};
 		});
 	}
 	
 	onRowCollapse(item) {
 		var id = item.id;
 		this.setState((prevState) => {
-			prevState.expanded[id] = false;
-			return prevState;
+			return {
+				expanded: Object.assign(
+					{},
+					prevState.expanded,
+					{
+						[id]: false
+					}
+				)
+			};
 		});
 	}
 	

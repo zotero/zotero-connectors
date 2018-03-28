@@ -99,6 +99,7 @@ body {
 }
 
 .ProgressWindow-button {
+	background-color: white;
 	border: 1px gray solid;
 	padding: 3px 24px;
 	border-radius: 4px;

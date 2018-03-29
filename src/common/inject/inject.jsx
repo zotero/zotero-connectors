@@ -195,17 +195,17 @@ if (isTopWindow) {
 	 * This is called after an item has started to save in order to show the progress window
 	 */
 	Zotero.Messaging.addMessageListener("progressWindow.show", async function (args) {
-		var [sessionID, headline, targetSelector] = args;
-		if (targetSelector === undefined) {
-			targetSelector = true;
+		var [sessionID, headline, useTargetSelector] = args;
+		if (useTargetSelector === undefined) {
+			useTargetSelector = true;
 		}
 		
 		if (currentSessionID) {
-			// If session has changed, reset state
+			// If session has changed, reset state before reopening popup
 			if (currentSessionID != sessionID) {
 				resetFrame();
 				currentSessionID = sessionID;
-				if (targetSelector) {
+				if (useTargetSelector) {
 					await setHeadlineFromClient(headline);
 				}
 				else {
@@ -296,6 +296,7 @@ if (isTopWindow) {
 					makeReadOnly();
 					throw e;
 				}
+				// Keep track of last successful target to show on failure
 				lastSuccessfulTarget = event.data.target;
 				break;
 			
@@ -325,13 +326,13 @@ if (isTopWindow) {
 				break;
 			
 			// Hide frame
-			case 'zotero.progressWindow.closed':
+			case 'zotero.progressWindow.close':
 				hideFrame();
 				break;
 			}
 		});
 		
-		if (targetSelector) {
+		if (useTargetSelector) {
 			await setHeadlineFromClient(headline);
 		}
 		else {

@@ -284,7 +284,7 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	
 	onDone() {
 		this.headlineSelectNode.focus();
-		this.sendMessage('closed');
+		this.sendMessage('close');
 	}
 	
 	//

@@ -685,14 +685,22 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 	
-	this.saveWithTranslator = function(tab, i, fallbackOnFailure=false) {
+	this.saveWithTranslator = function(tab, i, fallbackOnFailure = false) {
+		var translator = _tabInfo[tab.id].translators[i];
+		
 		// Set frameId to null - send message to all frames
 		// There is code to figure out which frame should translate with instanceID.
-		return Zotero.Messaging.sendMessage("translate", [
-			_tabInfo[tab.id].instanceID,
-			_tabInfo[tab.id].translators[i].translatorID,
-			fallbackOnFailure
-		], tab, null);
+		return Zotero.Messaging.sendMessage(
+			"translate",
+			[
+				_tabInfo[tab.id].instanceID,
+				translator.translatorID,
+				translator.itemType,
+				fallbackOnFailure
+			],
+			tab,
+			null
+		);
 	}
 	
 	this.saveAsWebpage = function(tab, frameId, withSnapshot) {

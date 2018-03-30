@@ -262,7 +262,30 @@ Zotero.Connector = new function() {
 	 */
 	this.callMethodWithCookies = function(options, data, tab) {
 		if (Zotero.isBrowserExt && !Zotero.isBookmarklet) {
-			return browser.cookies.getAll({url: tab.url}).then(function(cookies) {
+			let cookieParams = {
+				url: tab.url
+			};
+			// When first-party isolation is enabled in Firefox, browser.cookies.getAll()
+			// will fail if firstPartyDomain isn't provided, causing all saves to fail. According
+			// to the document [1], passing null should cause all cookies to be returned, but as
+			// of Fx60.0b7 that doesn't seem to be working, returning no cookies instead. (It
+			// returns all cookies if FPI is disabled.)
+			//
+			// In 60.0b7 it does work to set the domain explicitly (e.g., 'gmu.edu'), but we
+			// can't get that correctly without the public suffix list, which isn't yet available
+			// to WebExtensions [2], so for now we pass null, which will cause attachments that
+			// rely on cookies to fail but will at least allow saves to go through when FPI is
+			// enabled.
+			//
+			// https://github.com/zotero/zotero-connectors/issues/226
+			//
+			// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/cookies/getAll
+			// [2] https://bugzilla.mozilla.org/show_bug.cgi?id=1315558
+			if (Zotero.isFirefox) {
+				cookieParams.firstPartyDomain = null;
+			}
+			return browser.cookies.getAll(cookieParams)
+			.then(function(cookies) {
 				var cookieHeader = '';
 				for(var i=0, n=cookies.length; i<n; i++) {
 					cookieHeader += '\n' + cookies[i].name + '=' + cookies[i].value

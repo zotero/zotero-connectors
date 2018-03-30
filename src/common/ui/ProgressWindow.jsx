@@ -690,7 +690,7 @@ class TargetTree extends React.Component {
 				onCollapse: item => this.onRowCollapse(item),
 				
 				autoExpandAll: true,
-				autoExpandDepth: 20
+				autoExpandDepth: 1
 			}
 		);
 	}

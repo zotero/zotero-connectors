@@ -33,11 +33,22 @@ const ZOTERO_CONFIG = {
 	CLIENT_DOWNLOAD_URL: 'https://www.zotero.org/download',
 	API_URL: 'https://api.zotero.org/',
 	CONNECTOR_SERVER_URL: "http://127.0.0.1:23119/",
-	OAUTH_REQUEST_URL: 'https://www.zotero.org/oauth/request',
-	OAUTH_ACCESS_URL: 'https://www.zotero.org/oauth/access',
-	OAUTH_AUTHORIZE_URL: 'https://www.zotero.org/oauth/authorize',
-	OAUTH_CALLBACK_URL: 'https://www.zotero.org/connector_auth_complete',
-	OAUTH_NEW_KEY_URL: 'https://www.zotero.org/settings/keys/new?oauth=1&oauth_consumer_key=05a4e25d3d9af8922eb9',
-	OAUTH_CLIENT_KEY: '05a4e25d3d9af8922eb9',
-	OAUTH_CLIENT_SECRET: '8dda1d6aa188bdd3126e'
+	GOOGLE_DOCS_API_URL: "https://script.googleapis.com/v1/scripts/MLcaOTd_PUYyG7cBwJxdOKvYlDj38wupO:run",
+	OAUTH: {
+		ZOTERO: {
+			REQUEST_URL: 'https://www.zotero.org/oauth/request',
+			ACCESS_URL: 'https://www.zotero.org/oauth/access',
+			AUTHORIZE_URL: 'https://www.zotero.org/oauth/authorize',
+			CALLBACK_URL: 'https://www.zotero.org/connector_auth_complete',
+			CLIENT_KEY: '05a4e25d3d9af8922eb9',
+			CLIENT_SECRET: '8dda1d6aa188bdd3126e'
+		},
+		GOOGLE_DOCS: {
+			AUTHORIZE_URL: 'https://accounts.google.com/o/oauth2/v2/auth',
+			ACCESS_URL: 'https://www.googleapis.com/oauth2/v3/tokeninfo',
+			CALLBACK_URL: 'https://www.zotero.org/connector_auth_complete',
+			CLIENT_KEY: '1064133182604-ofam14dnsunt1h5goa6v0mkr1guqf72a.apps.googleusercontent.com',
+		}
+	},
+	GOOGLE_DOCS_DEV_MODE: false
 };

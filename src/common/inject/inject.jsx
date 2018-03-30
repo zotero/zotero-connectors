@@ -121,9 +121,10 @@ Zotero.Inject = new function() {
 	 */
 	this.init = function(force) {	
 		// On OAuth completion, close window and call completion listener
-		if(document.location.href.substr(0, ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH_CALLBACK_URL+"?") {
+		if(document.location.href.substr(0, ZOTERO_CONFIG.OAUTH.ZOTERO.CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH.ZOTERO.CALLBACK_URL+"?") {
 			Zotero.API.onAuthorizationComplete(document.location.href.substr(ZOTERO_CONFIG.OAUTH_CALLBACK_URL.length+1));
-			return;
+		} else if (document.location.href.substr(0, ZOTERO_CONFIG.OAUTH.ZOTERO.CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH.GOOGLE_DOCS.CALLBACK_URL+"#") {
+			Zotero.GoogleDocs_API.onAuthComplete(document.location.href);
 		}
 		
 		// wrap this in try/catch so that errors will reach logError
@@ -228,14 +229,14 @@ Zotero.Inject = new function() {
 	 * @param components {Object[]} an array of component names to load
 	 * @return {Promise} resolves when components are injected
 	 */
-	this.loadReactComponents = async function(components) {
+	this.loadReactComponents = async function(components=[]) {
 		if (Zotero.isSafari) return;
 		var toLoad = [];
 		if (typeof ReactDOM === "undefined") {
 			toLoad = ['lib/react.js', 'lib/react-dom.js'];
 		}
 		for (let component of components) {
-			if (!Zotero.ui || !Zotero.ui[component]) {
+			if (!Zotero.UI || !Zotero.UI[component]) {
 				toLoad.push(`ui/${component.replace(/(.)([A-Z])/g, '$1-$2').toLowerCase()}.js`)
 			}
 		}
@@ -260,10 +261,7 @@ Zotero.Inject = new function() {
 			div.id = 'zotero-modal-prompt';
 			div.style.cssText = 'z-index: 1000000; position: fixed; top: 0; left: 0; width: 100%; height: 100%';
 			let prompt = (
-				<Zotero.ui.ModalPrompt 
-					onClose={onClose}
-					{...props}
-				/>
+				<Zotero.UI.ModalPrompt onClose={onClose} {...props}/>
 			);
 			function onClose(state, event) {
 				deferred.resolve({
@@ -304,7 +302,7 @@ Zotero.Inject = new function() {
 				await Zotero.Promise.delay(500);
 				await Zotero.Inject.loadReactComponents(['Notification']);
 				
-				var notification = new Zotero.ui.Notification(text, buttons);
+				var notification = new Zotero.UI.Notification(text, buttons);
 				if (timeout) setTimeout(notification.dismiss.bind(notification, null, 0), timeout);
 				return notification.show();
 			}.bind(this);
@@ -469,6 +467,18 @@ Zotero.Inject = new function() {
 			throw e;
 		}
 	};
+	
+	this.addKeyboardShortcut = function(eventDescriptor, fn, elem) {
+		elem = elem || document;
+		elem.addEventListener('keyup', function ZoteroKeyboardShortcut(event) {
+			for (let prop in eventDescriptor) {
+				if (event[prop] != eventDescriptor[prop]) return;
+			}
+			event.stopPropagation();
+			event.preventDefault();
+			fn();
+		});
+	}
 };
 
 // check whether this is a hidden browser window being used for scraping

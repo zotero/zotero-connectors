@@ -27,7 +27,7 @@
 var win = Zotero.isBookmarklet ? window.parent : window,
 	doc = Zotero.isBookmarklet ? window.parent.document : window.document;
 win.Zotero = win.Zotero || {};
-Zotero.ui = Zotero.ui || {};
+Zotero.UI = Zotero.UI || {};
 
 /**
  * @param {String} text notification text
@@ -37,7 +37,7 @@ Zotero.ui = Zotero.ui || {};
  * 	- {Boolean} dismiss	- whether the button click dismisses/removes the notification
  * @constructor
  */
-Zotero.ui.Notification = function(text, buttons) {
+Zotero.UI.Notification = function(text, buttons) {
 	this.text = text;
 	if (!buttons) {
 		buttons = [{
@@ -60,7 +60,7 @@ Zotero.ui.Notification = function(text, buttons) {
 
 // TODO: Put styles in a stylesheet that we insert, so we can use pseudo-classes properly, do proper
 // resetting, etc.
-Zotero.ui.Notification.rootStyle = {
+Zotero.UI.Notification.rootStyle = {
 	// Stay on top of other page elements
 	position: "relative",
 	zIndex: 2147483647,
@@ -77,7 +77,7 @@ Zotero.ui.Notification.rootStyle = {
 	transition: "margin-top 300ms, opacity 300ms"
 };
 
-Zotero.ui.Notification.textStyle = {
+Zotero.UI.Notification.textStyle = {
 	fontFamily: "Lucida Grande, Tahoma, sans",
 	fontSize: "8.5pt",
 	lineHeight: "1.4em",
@@ -85,24 +85,24 @@ Zotero.ui.Notification.textStyle = {
 	color: "rgba(0,0,0,0.95)"
 };
 
-Zotero.ui.Notification.buttonStyle = Object.assign({
+Zotero.UI.Notification.buttonStyle = Object.assign({
 	padding: "3px",
 	textDecoration: "none",
 	margin: "0",
 	marginLeft: "30px",
 	whiteSpace: "nowrap"
-}, Zotero.ui.Notification.textStyle);
+}, Zotero.UI.Notification.textStyle);
 
-Zotero.ui.Notification.prototype = {
+Zotero.UI.Notification.prototype = {
 	show: function() {
 		if (this.deferred) return deferred.promise;
 		this.deferred = Zotero.Promise.defer();
 		var elem = doc.createElement('div');
-		for (let param in Zotero.ui.Notification.rootStyle) {
-			elem.style[param] = Zotero.ui.Notification.rootStyle[param];
+		for (let param in Zotero.UI.Notification.rootStyle) {
+			elem.style[param] = Zotero.UI.Notification.rootStyle[param];
 		}
-		for (let param in Zotero.ui.Notification.textStyle) {
-			elem.style[param] = Zotero.ui.Notification.textStyle[param];
+		for (let param in Zotero.UI.Notification.textStyle) {
+			elem.style[param] = Zotero.UI.Notification.textStyle[param];
 		}
 		let margins = ['marginTop', 'marginRight', 'marginLeft'];
 		let bodyStyle = getComputedStyle(doc.body);
@@ -128,11 +128,11 @@ Zotero.ui.Notification.prototype = {
 			elem = doc.createElement('a');
 			elem.dataset.id = i;
 			elem.setAttribute('href', 'javascript:void(0)');
-			for (let param in Zotero.ui.Notification.buttonStyle) {
-				elem.style[param] = Zotero.ui.Notification.buttonStyle[param];
+			for (let param in Zotero.UI.Notification.buttonStyle) {
+				elem.style[param] = Zotero.UI.Notification.buttonStyle[param];
 			}
-			for (let param in Zotero.ui.Notification.textStyle) {
-				elem.style[param] = Zotero.ui.Notification.textStyle[param];
+			for (let param in Zotero.UI.Notification.textStyle) {
+				elem.style[param] = Zotero.UI.Notification.textStyle[param];
 			}
 			this.elems.buttons.push(elem);
 			this.elems.root.appendChild(elem);

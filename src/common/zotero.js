@@ -48,21 +48,25 @@ var Zotero = new function() {
 	this.isChrome = window.navigator.userAgent.indexOf("Chrome") !== -1 || window.navigator.userAgent.indexOf("Chromium") !== -1;
 	this.isBrowserExt = this.isFirefox || this.isEdge || this.isChrome;
 
+	this.isMac = (window.navigator.platform.substr(0, 3) == "Mac");
+	this.isWin = (window.navigator.platform.substr(0, 3) == "Win");
+	this.isLinux = (window.navigator.platform.substr(0, 5) == "Linux");
+
 	if (this.isFirefox) {
 		this.browser = "g";
-		this.clientName = 'Firefox Connector';
+		this.clientName = 'Zotero Connector for Firefox';
 	} else if (this.isSafari) {
 		this.browser = "s";
-		this.clientName = 'Safari Connector';
+		this.clientName = 'Zotero Connector for Safari';
 	} else if (this.isIE) {
 		this.browser = "i";
-		this.clientName = 'Internet Explorer';
+		this.clientName = 'Zotero Connector for Internet Explorer'; // ?
 	} else if (this.isEdge) {
 		this.browser = "c";
-		this.clientName = 'Edge Connector';
+		this.clientName = 'Zotero Connector for Edge';
 	} else if (this.isChrome) {
 		this.browser = "c";
-		this.clientName = 'Chrome Connector';
+		this.clientName = 'Zotero Connector for Chrome';
 	} else {
 		// Assume this is something with no more capabilities than IE
 		this.browser = "i";
@@ -190,6 +194,10 @@ var Zotero = new function() {
 		Zotero.isInject = true;
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
+		Zotero.ConnectorIntegration.init();
+		if (Zotero.GoogleDocs) {
+			Zotero.GoogleDocs.init();
+		}
 		Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
 			'reportTranslationFailure', 'capitalizeTitles']);
 		return Zotero.Prefs.loadNamespace('debug').then(function() {

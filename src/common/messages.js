@@ -131,7 +131,8 @@ var MESSAGES = {
 		firstSaveToServerPrompt: true,
 		openTab: false,
 		openConfigEditor: false,
-		openPreferences: false
+		openPreferences: false,
+		bringToFront: false
 	},
 	Connector_Debug: {
 		storing: true,
@@ -151,7 +152,12 @@ var MESSAGES = {
 		authorize: true,
 		onAuthorizationComplete: false,
 		clearCredentials: false,
-		getUserInfo: true
+		getUserInfo: true,
+		run: true
+	},
+	GoogleDocs_API: {
+		onAuthComplete: false,
+		run: true
 	},
 	Prefs: {
 		set: false,

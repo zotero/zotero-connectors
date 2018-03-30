@@ -91,8 +91,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onSelect = function(items, tab) {
 		var deferred = Zotero.Promise.defer();
-		var newTab = safari.application.openBrowserWindow().activeTab;
-		newTab.url = safari.extension.baseURI+"itemSelector/itemSelector.html#"+encodeURIComponent(JSON.stringify([tab.id, items]));
+		Zotero.Connector_Browser.openWindow(safari.extension.baseURI+"itemSelector/itemSelector.html#"+encodeURIComponent(JSON.stringify([tab.id, items])));
 		_selectCallbacksForTabIDs[tab.id] = deferred.resolve;
 		return deferred.promise;
 	}
@@ -174,6 +173,18 @@ Zotero.Connector_Browser = new function() {
 		let title = tab.title.split('/');
 		title = title[title.length-1];
 		return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.instanceID || 0, [title, withSnapshot]], tab);
+	}
+
+	this.openWindow = function(url, options={}) {
+		var newTab = safari.application.openBrowserWindow().activeTab;
+		newTab.url = url;
+		if (typeof options.onClose == 'function') {
+			newTab.addEventListener('close', options.onClose);
+		}
+	};
+	
+	this.bringToFront = function() {
+		safari.application.activeBrowserWindow.activate();
 	}
 
 	this.openTab = function(url) {

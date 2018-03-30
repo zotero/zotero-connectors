@@ -75,8 +75,9 @@ var injectInclude = [
 	'inject/http.js',
 	'inject/progressWindow.js',
 	'inject/translate_inject.js',
+	'integration/connectorIntegration.js',
 	'messages.js',
-	'messaging_inject.js'
+	'messaging_inject.js',
 ];
 var injectIncludeLast;
 if (argv.p) {
@@ -124,6 +125,7 @@ var backgroundInclude = [
 	'zotero/connectorTypeSchemaData.js',
 	'zotero/utilities.js',
 	'utilities.js',
+	'zotero-google-docs-integration/api.js',
 	'messages.js',
 	'messaging.js'
 ];
@@ -173,7 +175,7 @@ function processFile() {
 		var parts = file.path.split('/');
 		var basename = parts[parts.length-1];
 		var ext = basename.split('.')[1];
-		for (var i = parts.length-1; i > 0; i--) {
+		for (var i = 0; i < parts.length; i++) {
 			if ('src' === parts[i]) {
 				i++;
 				break;
@@ -214,12 +216,29 @@ function processFile() {
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);
 			}
+			if (type === 'zotero-google-docs-integration') {
+				f = file.clone({contents: false});
+				f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/zotero-google-docs-integration/' 
+					+ parts.slice(i+3).join('/');
+				console.log(`-> ${f.path.slice(f.cwd.length)}`);
+				this.push(f);
+				f = file.clone({contents: false});
+				f.path = parts.slice(0, i-1).join('/') + '/build/browserExt/zotero-google-docs-integration/' 
+					+ parts.slice(i+3).join('/');
+				console.log(`-> ${f.path.slice(f.cwd.length)}`);
+				this.push(f);
+			}
 			cb();
 		}.bind(this);
 		
 		var asyncAddFiles = false;
 		// Replace contents
 		switch (basename) {
+			case 'zotero_config.js':
+				if (!argv.p) {
+					file.contents = Buffer.from(file.contents.toString()
+						.replace('GOOGLE_DOCS_DEV_MODE: false', 'GOOGLE_DOCS_DEV_MODE: true'));
+				}
 			case 'zotero.js':
 				if (!argv.p) {
 					file.contents = Buffer.from(file.contents.toString()
@@ -268,7 +287,8 @@ function processFile() {
 }
 
 gulp.task('watch', function () {
-	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**']);
+	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**',
+		'./src/zotero-google-docs-integration/src/connector/**']);
 	watcher.on('change', function(event) {
 		gulp.src(event.path)
 			.pipe(plumber())
@@ -278,7 +298,8 @@ gulp.task('watch', function () {
 });
 
 gulp.task('watch-chrome', function () {
-	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**']);
+	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**',
+		'./src/zotero-google-docs-integration/src/connector/**']);
 	watcher.on('change', function(event) {
 		gulp.src(event.path)
 			.pipe(plumber())
@@ -298,6 +319,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/node_modules.js',
 		'./src/common/preferences/preferences.html',
 		'./src/common/zotero.js',
+		'./src/common/zotero_config.js',
 		'./src/common/test/**/*',
 		'./src/**/*.jsx'
 	];

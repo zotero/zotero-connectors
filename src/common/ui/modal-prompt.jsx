@@ -24,12 +24,12 @@
 */
 
 window.Zotero = window.Zotero || {};
-Zotero.ui = Zotero.ui || {};
+Zotero.UI = Zotero.UI || {};
 
 /**
  * Displays a prompt which is overlaid over the screen.
  */
-Zotero.ui.ModalPrompt = React.createClass({
+Zotero.UI.ModalPrompt = React.createClass({
 	propTypes: {
 		title: React.PropTypes.string,
 		/**
@@ -119,6 +119,18 @@ Zotero.ui.ModalPrompt = React.createClass({
 		document.removeEventListener('keyup', this.escListener);
 	},
 	
+	// With synthetic React events you cannot stop event propagation
+	attachButtonListeners: function() {
+		window.requestAnimationFrame(function() {
+			for (let a of document.querySelectorAll('.z-popup-buttons input[type=button]')) {
+				a.addEventListener('mousedown', (event) => {
+					event.stopPropagation();
+					this.state.onButton(this.state, event);
+				}, false);
+			}	
+		}.bind(this));
+	},
+	
 	escListener: function(event) {
 		if (event.key == "Escape") {
 			this.props.onClose(this.state);
@@ -178,8 +190,7 @@ Zotero.ui.ModalPrompt = React.createClass({
 		
 		for (let i = 1; i <= 3; i++) {
 			if (this.props[`button${i}Text`].length) {
-				let onClick = (e) => {e.stopPropagation(); this.state.onButton(this.state, e)};
-				buttons[i-1] = <input type="button" name={i} value={this.props[`button${i}Text`]} onClick={onClick}
+				buttons[i-1] = <input type="button" name={i} value={this.props[`button${i}Text`]}
 					disabled={i==1 && this.state.checkboxBlocked}
 					ref={`button${i}`}
 					style={{
@@ -200,6 +211,8 @@ Zotero.ui.ModalPrompt = React.createClass({
 				}}/>
 			}
 		}
+		
+		this.attachButtonListeners();
 		
 		let onClickOutside = e => {
 			e.stopPropagation();

@@ -155,6 +155,7 @@ if (isTopWindow) {
 	function hideFrame() {
 		var frame = document.getElementById(frameID);
 		frame.style.display = 'none';
+		addEvent("hidden");
 		
 		// Stop delaying syncs when the window closes
 		if (syncDelayIntervalID) {

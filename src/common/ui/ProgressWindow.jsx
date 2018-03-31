@@ -85,6 +85,10 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				this[event.data.event](...event.data.data);
 				break;
 			
+			case 'hidden':
+				this.onHidden();
+				break;
+			
 			case 'reset':
 				this.setState(this.getInitialState());
 				break;
@@ -122,6 +126,7 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	changeHeadline(text, target, targets) {
 		this.setState({
 			headlineText: text,
+			initialTarget: target,
 			target,
 			targets
 		});
@@ -287,6 +292,16 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.sendMessage('close');
 	}
 	
+	onHidden() {
+		// When hiding, make the initial target the current target, so it's at the top of the
+		// selector if the popup is reopened
+		this.setState((prevState) => {
+			return {
+				initialTarget: prevState.target
+			};
+		});
+	}
+	
 	//
 	// Render
 	//
@@ -303,17 +318,26 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	
 	renderHeadlineSelect() {
 		var rowTargets = [
-			this.state.target,
+			this.state.initialTarget,
 			{
-				id: "sep",
+				id: "sep1",
 				name: "",
 				disabled: true
-			},
-			{
-				id: "more",
-				name: "More…"
 			}
 		];
+		// Show recent targets
+		var recents = this.state.targets.filter(t => t.recent && t.id != this.state.initialTarget.id);
+		if (recents.length) {
+			rowTargets.push(...recents, {
+				id: "sep2",
+				name: "",
+				disabled: true
+			});
+		}
+		rowTargets.push({
+			id: "more",
+			name: "More…"
+		});
 		
 		return (
 			<div className="ProgressWindow-headlineSelectContainer">

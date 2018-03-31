@@ -1,3 +1,4 @@
 [submodule "src/zotero"]
 	path = src/zotero
 	url = git://github.com/zotero/zotero.git
+	branch = master

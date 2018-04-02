@@ -175,9 +175,18 @@ Zotero.ContentTypeHandler = {
 	 * Send an XHR request to retrieve and import the file into Standalone
 	 */
 	importFile: async function(details, type) {
+		var sessionID = Zotero.Utilities.randomString();
 		var tab = await browser.tabs.get(details.tabId);
 		// Make sure scripts injected so we can display the progress window
-		Zotero.Messaging.sendMessage('progressWindow.show', type == 'csl' ? 'Installing Style' : 'Importing', tab);
+		Zotero.Messaging.sendMessage(
+			'progressWindow.show',
+			[
+				sessionID,
+				type == 'csl' ? 'Installing Style' : null,
+				type != 'csl'
+			],
+			tab
+		);
 	
 		var xhr = new XMLHttpRequest();
 		// If the original request method was POST, this is likely to fail, because
@@ -190,14 +199,28 @@ Zotero.ContentTypeHandler = {
 			if (this.status < 200 || this.status >= 400) {
 				throw Error(`IMPORT: Retrieving ${details.url} failed with status ${this.status}.\nResponse body:\n${this.responseText}`);
 			}
-			let options = { headers: {"Content-Type": this.getResponseHeader('Content-Type')} };
+			let options = {
+				headers: {
+					"Content-Type": this.getResponseHeader('Content-Type')
+				}
+			};
+			// Style installation
 			if (type == 'csl') {
 				options.method = 'installStyle';
 				options.queryString = 'origin=' + encodeURIComponent(details.url);
 				try {
 					let result = await Zotero.Connector.callMethod(options, this.response);
-					Zotero.Messaging.sendMessage('progressWindow.itemProgress',
-						[browser.extension.getURL('images/csl-style.png'), result.name, null, 100], tab);
+					Zotero.Messaging.sendMessage(
+						'progressWindow.itemProgress',
+						[
+							null,
+							browser.extension.getURL('images/csl-style.png'),
+							result.name,
+							false,
+							100
+						],
+						tab
+					);
 					return Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
 				}
 				catch(e) {
@@ -209,16 +232,26 @@ Zotero.ContentTypeHandler = {
 							[false, 'clientRequired'], tab);
 					}
 				}
-			} else {
+			}
+			// RIS/BibTeX import
+			else {
 				options.method = 'import';
+				options.queryString = `session=${sessionID}`;
 				try {
 					let result = await Zotero.Connector.callMethod(options, this.response);
-					Zotero.Messaging.sendMessage('progressWindow.show', 
-						`Imported ${result.length} item` + (result.length > 1 ? 's' : ''), tab);
 					for (let i = 0; i < result.length && i < 20; i++) {
 						let item = result[i];
-						Zotero.Messaging.sendMessage('progressWindow.itemProgress',
-							[Zotero.ItemTypes.getImageSrc(item.itemType), item.title, null, 100], tab);
+						Zotero.Messaging.sendMessage(
+							'progressWindow.itemProgress',
+							[
+								null,
+								Zotero.ItemTypes.getImageSrc(item.itemType),
+								item.title,
+								false,
+								100
+							],
+							tab
+						);
 					}
 					Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
 				}

@@ -407,7 +407,7 @@ Zotero.Proxies = new function() {
 	 */
 	this.save = function(proxy) {
 		proxy.scheme = proxy.scheme.trim();
-		proxy.hosts = proxy.hosts.map(host => host.trim());
+		proxy.hosts = proxy.hosts.map(host => host.trim()).filter(host => host);
 		
 		// If empty or default scheme
 		var invalid = Zotero.Proxies.validate(proxy);
@@ -473,11 +473,6 @@ Zotero.Proxies = new function() {
 				(!Zotero_Proxy_schemeParameterRegexps["%d"].test(proxy.scheme) ||
 				!Zotero_Proxy_schemeParameterRegexps["%f"].test(proxy.scheme))) {
 			return ["scheme.noPath"];
-		}
-		
-		// If empty or unmodified hosts
-		if (proxy.hosts.length == 0 || proxy.hosts.length == 1 && proxy.hosts[0].trim().length == 0) {
-			return ["hosts.invalid"];
 		}
 		
 		for (let host in proxy.hosts) {

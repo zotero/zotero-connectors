@@ -29,119 +29,56 @@ Zotero.UI = Zotero.UI || {};
 /**
  * Displays a prompt which is overlaid over the screen.
  */
-Zotero.UI.ModalPrompt = React.createClass({
-	propTypes: {
-		title: React.PropTypes.string,
-		/**
-		 * Show/hide checkbox
-		 */
-		checkbox: React.PropTypes.bool,
-		checkboxChecked: React.PropTypes.bool,
-		/**
-		 * Whether unchecked checkbox should block pressing button1
-		 */
-		checkboxBlock: React.PropTypes.bool,
-		/**
-		 * Show/hide input box
-		 */
-		input: React.PropTypes.bool,
-		/**
-		 * Rightmost button. Empty string hides button.
-		 * @default Ok
-		 */
-		button1Text: React.PropTypes.string,
-		/**
-		 * Second to the right button. Empty string hides button.
-		 * @default Cancel
-		 */
-		button2Text: React.PropTypes.string,
-		/**
-		 * Leftmost button. Empty string hides button.
-		 * @default ''
-		 */
-		button3Text: React.PropTypes.string,
-		/**
-		 * Whether clicking outside the prompt should cause it to close
-		 * @default false
-		 */
-		clickOutsideToClose: React.PropTypes.bool,
-		/**
-		 * Triggered on <ESC> clicking outside of the prompt and on Cancel, unless overriden.
-		 * 
-		 * This is required because the component does not know how to remove itself from the DOM.
-		 */
-		onClose: React.PropTypes.func.isRequired,
-		/**
-		 * Triggered on clicking a button. Defaults to onClose
-		 * @default onClose
-		 */
-		onButton: React.PropTypes.func,
-		/**
-		 * The body of the prompt to be displayed. Can be a react element or a html string.
-		 * Newlines are NOT converted into <br/>
-		 */
-		message: React.PropTypes.any,
-		children: React.PropTypes.any
-	},
-
-	getInitialState: function() {
-		return {
+Zotero.UI.ModalPrompt = class ModalPrompt extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {
 			checkboxChecked: this.props.checkboxChecked || false,
 			checkboxBlocked: this.props.checkboxBlock && !this.props.checkboxChecked || false,
 			onButton: this.props.onButton || this.props.onClose,
 			inputText: this.props.inputText || "",
-		}
-	},
+		};
+		
+		this.escListener = this.escListener.bind(this);
+		this.onInputChange = this.onInputChange.bind(this);
+		this.onCheckboxChange = this.onCheckboxChange.bind(this);
+		this.onInputChange = this.onInputChange.bind(this);
+	}
 	
-	getDefaultProps: function() {
-		return {
-			title: "Zotero Connector",
-			checkbox: false,
-			checkboxText: "",
-			checkboxBlock: false,
-			input: false,
-			inputPlaceholder: "",
-			button1Text: "OK",
-			button2Text: "Cancel",
-			button3Text: "",
-			clickOutsideToClose: false
-		}
-	},
-	
-	componentDidMount: function() {
+	componentDidMount() {
 		document.addEventListener('keyup', this.escListener);
 		setTimeout(() => this.refs.button1.focus());
 		
 		this.newTabifyLinks();
-	},
+	}
 	
-	componentWillUnmount: function() {
+	componentWillUnmount() {
 		document.removeEventListener('keyup', this.escListener);
-	},
+	}
 	
 	// With synthetic React events you cannot stop event propagation
-	attachButtonListeners: function() {
+	attachButtonListeners() {
 		window.requestAnimationFrame(function() {
 			for (let a of document.querySelectorAll('.z-popup-buttons input[type=button]')) {
 				a.addEventListener('mousedown', (event) => {
 					event.stopPropagation();
 					this.state.onButton(this.state, event);
 				}, false);
-			}	
+			}
 		}.bind(this));
-	},
+	}
 	
-	escListener: function(event) {
+	escListener(event) {
 		if (event.key == "Escape") {
 			this.props.onClose(this.state);
 			event.preventDefault();
 		}
-	},
+	}
 	
 	/**
 	 * Update any links in `message` to open in new tabs
 	 */
-	newTabifyLinks: function () {
+	newTabifyLinks() {
 		var links = ReactDOM.findDOMNode(this).querySelectorAll('.z-popup-body a');
 		var component = this;
 		links.forEach(function (link) {
@@ -151,16 +88,16 @@ Zotero.UI.ModalPrompt = React.createClass({
 				return false;
 			};
 		});
-	},
+	}
 	
-	onCheckboxChange: function() {
+	onCheckboxChange() {
 		this.setState({checkboxChecked: !this.state.checkboxChecked, 
 			checkboxBlocked: this.props.checkboxBlock && this.state.checkboxChecked});
-	},
+	}
 	
-	onInputChange: function(event) {
+	onInputChange(event) {
 		this.setState({inputText: event.value});
-	},
+	}
 	
 	render() {
 		var checkbox, input, buttons = ["", "", ""];
@@ -278,7 +215,74 @@ Zotero.UI.ModalPrompt = React.createClass({
 			</div>
 		</div>)
 	}
-});
+};
+
+Zotero.UI.ModalPrompt.defaultProps = {
+	title: "Zotero Connector",
+	checkbox: false,
+	checkboxText: "",
+	checkboxBlock: false,
+	input: false,
+	inputPlaceholder: "",
+	button1Text: "OK",
+	button2Text: "Cancel",
+	button3Text: "",
+	clickOutsideToClose: false
+};
+
+Zotero.UI.ModalPrompt.PropTypes = {
+	title: PropTypes.string,
+	/**
+	 * Show/hide checkbox
+	 */
+	checkbox: PropTypes.bool,
+	checkboxChecked: PropTypes.bool,
+	/**
+	 * Whether unchecked checkbox should block pressing button1
+	 */
+	checkboxBlock: PropTypes.bool,
+	/**
+	 * Show/hide input box
+	 */
+	input: PropTypes.bool,
+	/**
+	 * Rightmost button. Empty string hides button.
+	 * @default Ok
+	 */
+	button1Text: PropTypes.string,
+	/**
+	 * Second to the right button. Empty string hides button.
+	 * @default Cancel
+	 */
+	button2Text: PropTypes.string,
+	/**
+	 * Leftmost button. Empty string hides button.
+	 * @default ''
+	 */
+	button3Text: PropTypes.string,
+	/**
+	 * Whether clicking outside the prompt should cause it to close
+	 * @default false
+	 */
+	clickOutsideToClose: PropTypes.bool,
+	/**
+	 * Triggered on <ESC> clicking outside of the prompt and on Cancel, unless overriden.
+	 *
+	 * This is required because the component does not know how to remove itself from the DOM.
+	 */
+	onClose: PropTypes.func.isRequired,
+	/**
+	 * Triggered on clicking a button. Defaults to onClose
+	 * @default onClose
+	 */
+	onButton: PropTypes.func,
+	/**
+	 * The body of the prompt to be displayed. Can be a react element or a html string.
+	 * Newlines are NOT converted into <br/>
+	 */
+	message: PropTypes.any,
+	children: PropTypes.any
+};
 
 var style = document.createElement('style');
 style.type = 'text/css';

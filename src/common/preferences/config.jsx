@@ -107,6 +107,8 @@ Zotero_Preferences_Config.Row = class Row extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {};
+		
+		this.edit = this.edit.bind(this);
 	}
 	
 	edit() {

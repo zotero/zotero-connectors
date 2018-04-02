@@ -74,7 +74,7 @@ Zotero.ConnectorIntegration = {
 				Zotero.Inject.confirm({
 					title: "Is Zotero Running?",
 						message: `
-							The Zotero Connector was unable to communicate with the Zotero desktop application. Zotero must be open to cite with ${client.name}.
+							The Zotero Connector was unable to communicate with the Zotero desktop application. Zotero must be open to use web-based citing.
 							You can <a href="https://www.zotero.org/download/">download Zotero</a> or <a href="https://www.zotero.org/support/kb/connector_zotero_unavailable">troubleshoot the connection</a> if necessary.
 						`,
 					button2Text: "", 

@@ -297,6 +297,10 @@ function copyResources {
 		"$EXTENSION_XPCOM_DIR/translation/translator.js" \
 		"$EXTENSION_XPCOM_DIR/translation/tlds.js" \
 		"$browser_builddir/zotero/translation"
+		
+	# Copy google docs integration code
+	cp -r "$SRCDIR/zotero-google-docs-integration/src/connector" \
+		 "$browser_builddir/zotero-google-docs-integration"
 	
 	# Copy node_modules libs
 	mkdir "$browser_builddir/lib"

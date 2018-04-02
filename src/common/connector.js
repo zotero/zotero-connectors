@@ -164,6 +164,7 @@ Zotero.Connector = new function() {
 	 *         method - method name
 	 *         headers - an object of HTTP headers to send
 	 *         queryString - a query string to pass on the HTTP call
+	 *         [timeout=15000] - the timeout for the HTTP request
 	 * @param {Object} data - RPC data to POST. If null or undefined, a GET request is sent.
 	 * @param {Function} callback - Function to be called when requests complete.
 	 */
@@ -181,6 +182,7 @@ Zotero.Connector = new function() {
 				"X-Zotero-Version":Zotero.version,
 				"X-Zotero-Connector-API-Version":CONNECTOR_API_VERSION
 			}, options.headers || {});
+		var timeout = "timeout" in options ? options.timeout : 15000;
 		var queryString = options.queryString ? ("?" + options.queryString) : "";
 		
 		var deferred = Zotero.Promise.defer();
@@ -240,7 +242,7 @@ Zotero.Connector = new function() {
 			if (headers["Content-Type"] == 'application/json') {
 				data = JSON.stringify(data);
 			}
-			let options = {body: data, headers, successCodes: false};
+			let options = {body: data, headers, successCodes: false, timeout};
 			let httpMethod = data == null || data == undefined ? "GET" : "POST";
 			Zotero.HTTP.request(httpMethod, uri, options)
 			.then(newCallback)

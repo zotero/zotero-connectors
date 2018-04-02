@@ -25,6 +25,7 @@
 
 Zotero.API = new function() {
 	var _tokenSecret;
+	var config = ZOTERO_CONFIG;
 	
 	/**
 	 * Decodes application/x-www-form-urlencoded data
@@ -53,23 +54,23 @@ Zotero.API = new function() {
 		this._deferred.promise
 			.then((r) => {this._deferred = null; return r}, (e) => {this._deferred = null; throw e});
 		
-		var oauthSimple = new OAuthSimple(ZOTERO_CONFIG.OAUTH_CLIENT_KEY,
-			ZOTERO_CONFIG.OAUTH_CLIENT_SECRET);
-		oauthSimple.setURL(ZOTERO_CONFIG.OAUTH_REQUEST_URL);
+		var oauthSimple = new OAuthSimple(config.OAUTH.ZOTERO.CLIENT_KEY,
+			config.OAUTH.ZOTERO.CLIENT_SECRET);
+		oauthSimple.setURL(config.REQUEST_URL);
 		oauthSimple.setAction("POST");
 		
 		let options = {
 			body: '',
 			headers: {"Authorization": oauthSimple.getHeaderString()}
 		};
-		Zotero.HTTP.request("POST", ZOTERO_CONFIG.OAUTH_REQUEST_URL, options).then(function(xmlhttp) {
+		Zotero.HTTP.request("POST", config.OAUTH.ZOTERO.REQUEST_URL, options).then(function(xmlhttp) {
 			// parse output and store token_secret
 			var data = _decodeFormData(xmlhttp.responseText);
 			_tokenSecret = data.oauth_token_secret;
 			
 			// get signed URL
 			oauthSimple.signatures(data);
-			oauthSimple.setURL(ZOTERO_CONFIG.OAUTH_AUTHORIZE_URL);
+			oauthSimple.setURL(config.OAUTH.ZOTERO.AUTHORIZE_URL);
 			var signature = oauthSimple.sign();
 			
 			// add parameters
@@ -84,16 +85,9 @@ Zotero.API = new function() {
 				url += "Edge";
 			}
 			
-			// open
-			if (Zotero.isBrowserExt) {
-				browser.windows.create({ url: url, height: 600, width: 900, type: 'popup' }).then(function(window) {
-					browser.windows.onRemoved.addListener(id => id == window.id && Zotero.API.onAuthorizationCancel());
-				});
-			} else if (Zotero.isSafari) {
-				var newTab = safari.application.openBrowserWindow().activeTab;
-				newTab.addEventListener('close', Zotero.API.onAuthorizationCancel.bind(this));
-				newTab.url = url;
-			}
+			Zotero.Connector_Browser.openWindow(url, {width: 900, height: 600, type: 'normal',
+				onClose: Zotero.API.onAuthorizationCancel.bind(Zotero.API)});
+				
 		}.bind(this), function(e) {
 			Zotero.logError(`OAuth request failed with ${e.status}; response was ${e.responseText}`);
 			return this._deferred.reject(new Error("An invalid response was received from the Zotero server"));
@@ -122,9 +116,9 @@ Zotero.API = new function() {
 			throw new Error("onAuthenticationComplete called with no outstanding OAuth request");
 		}
 		
-		var oauthSimple = new OAuthSimple(ZOTERO_CONFIG.OAUTH_CLIENT_KEY,
-			ZOTERO_CONFIG.OAUTH_CLIENT_SECRET);
-		oauthSimple.setURL(ZOTERO_CONFIG.OAUTH_ACCESS_URL);
+		var oauthSimple = new OAuthSimple(config.OAUTH.ZOTERO.CLIENT_KEY,
+			config.OAUTH.ZOTERO.CLIENT_SECRET);
+		oauthSimple.setURL(config.OAUTH.ZOTERO.ACCESS_URL);
 		oauthSimple.setParameters(_decodeFormData(data));
 		oauthSimple.signatures({oauth_token_secret: _tokenSecret});
 		oauthSimple.setAction("POST");
@@ -134,10 +128,10 @@ Zotero.API = new function() {
 			body: '',
 			headers: {"Authorization": oauthSimple.getHeaderString()}
 		};
-		return Zotero.HTTP.request("POST", ZOTERO_CONFIG.OAUTH_ACCESS_URL, options).then(function(xmlhttp) {
+		return Zotero.HTTP.request("POST", config.OAUTH.ZOTERO.ACCESS_URL, options).then(function(xmlhttp) {
 			var data = _decodeFormData(xmlhttp.responseText);
 			var xmlhttp = new XMLHttpRequest();
-			xmlhttp.open("GET", ZOTERO_CONFIG.API_URL+"users/"+encodeURI(data['auth-userID'])+
+			xmlhttp.open("GET", config.API_URL+"users/"+encodeURI(data['auth-userID'])+
 					"/keys/current", true);
 			xmlhttp.onreadystatechange = function() {
 				if(xmlhttp.readyState != 4) return;
@@ -237,7 +231,7 @@ Zotero.API = new function() {
 			})
 		}
 		
-		var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo['auth-userID'] + "/items";
+		var url = config.API_URL + "users/" + userInfo['auth-userID'] + "/items";
 		var options = {
 			body: JSON.stringify(payload),
 			headers: {
@@ -321,7 +315,7 @@ Zotero.API = new function() {
 				return;
 			}
 			
-			var url = ZOTERO_CONFIG.API_URL + "users/" + userInfo['auth-userID'] + "/items/" + attachment.key + "/file";
+			var url = config.API_URL + "users/" + userInfo['auth-userID'] + "/items/" + attachment.key + "/file";
 			let options = {
 				body: data,
 				headers: {

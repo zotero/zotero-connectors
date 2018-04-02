@@ -2,3 +2,7 @@
 	path = src/zotero
 	url = git://github.com/zotero/zotero.git
 	branch = master
+
+[submodule "src/zotero-google-docs-integration"]
+	path = src/zotero-google-docs-integration
+	url = git://github.com/zotero/zotero-google-docs-integration.git

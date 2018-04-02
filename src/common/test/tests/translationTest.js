@@ -165,17 +165,29 @@ describe("Translation", function() {
 			
 			describe("To zotero.org", function() {
 				before(async function () {
-					return background(function() {
+					await background(function() {
 						sinon.stub(Zotero.Connector, 'checkIsOnline').resolves(false);
 						sinon.stub(Zotero.Connector, "callMethod").rejects(new Zotero.Connector.CommunicationError('err'));
+					});
+					await tab.run(function() {
+						let confirm = Zotero.Inject.confirm;
+						let confirmStub = sinon.stub(Zotero.Inject, 'confirm');
+						confirmStub.deferred = Zotero.Promise.defer();
+						confirmStub.callsFake(function() {
+							confirm.apply(Zotero.Inject, arguments);
+							return confirmStub.deferred.promise;
+						});
 					});
 				});
 				
 				after(async function () {
-					return background(function() {
+					await background(function() {
 						Zotero.Connector.checkIsOnline.restore();
 						Zotero.Connector.callMethod.restore()
 					});	
+					await tab.run(function() {
+						Zotero.Inject.confirm.restore();
+					})
 				});	
 				
 				if (Zotero.isBrowserExt) {
@@ -216,8 +228,8 @@ describe("Translation", function() {
 							);
 
 							if (Zotero.isBrowserExt) {
-								document.querySelector('input[name="3"]').click();
-								// Allow the button click to propagate
+								Zotero.Inject.confirm.deferred.resolve({button: 3});
+								// Allow the confirm response to propagate
 								await Zotero.Promise.delay(10);
 							} else {
 								await Zotero.Inject.translate(Zotero.Inject.translators[0].translatorID);

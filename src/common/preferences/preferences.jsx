@@ -464,7 +464,7 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 };
 
 
-Zotero_Preferences.Components.Proxies = class Proxies extends React.Component {
+Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponent {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -497,18 +497,31 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.Component {
 		}
 	}
 	
+	/**
+	 * Update the current proxy with a new one and resave it
+	 *
+	 * A lot of this code could be cleaner if state flowed down from the prefs.
+	 */
+	updateCurrentProxyInState(proxy, prevState, newState) {
+		newState.currentProxy = proxy;
+		newState.proxies = prevState.proxies.map((p, i) => p.id == proxy.id ? proxy : p);
+		this.saveProxy(proxy);
+	}
+	
 	handleProxySelectChange(event) {
 		var target = event.target;
 		this.setState((prevState) => {
-			prevState.currentProxy = prevState.proxies.find(p => target && p.id == target.value);
-			prevState.currentHostIdx = -1;
-			return prevState;
+			return {
+				currentProxy: prevState.proxies.find(p => target && p.id == target.value),
+				currentHostIdx: -1
+			}
 		});
 	}
 	
 	handleProxyButtonClick(event) {
 		var value = event.target.value;
 		this.setState((prevState) => {
+			var newState = {};
 			// Add proxy
 			if (value == '+') {
 				let newProxy = {
@@ -517,75 +530,111 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.Component {
 					autoAssociate: true,
 					hosts: []
 				};
-				prevState.proxies.push(newProxy);
-				prevState.currentProxy = newProxy;
-				prevState.currentHostIdx = -1;
+				newState.proxies = prevState.proxies.concat([newProxy]);
+				newState.currentProxy = newProxy;
+				newState.currentHostIdx = -1;
 				this.focusSchemeInput = true;
 				this.saveProxy(newProxy);
 			}
 			// Delete proxy
 			else if (value == '-') {
-				let pos = prevState.proxies.findIndex(p => p == prevState.currentProxy);
-				prevState.proxies.splice(pos, 1);
+				let oldProxies = prevState.proxies;
+				let pos = oldProxies.findIndex(p => p == prevState.currentProxy);
+				newState.proxies = [
+					...oldProxies.slice(0, pos),
+					...oldProxies.slice(pos + 1)
+				];
 				Zotero.Proxies.remove(prevState.currentProxy);
-				prevState.currentProxy = prevState.proxies[pos] || prevState.proxies[pos - 1];
+				newState.currentProxy = oldProxies[pos] || oldProxies[pos - 1];
 			}
-			return prevState;
+			return newState;
 		});
 	}
 	
 	handleSchemeChange(event) {
 		var value = event.target.value;
 		this.setState((prevState) => {
-			prevState.currentProxy.scheme = value;
-			this.saveProxy(prevState.currentProxy);
-			return prevState;
+			var newState = {};
+			var oldProxy = prevState.currentProxy;
+			var newProxy = Object.assign(
+				{},
+				oldProxy,
+				{
+					scheme: value,
+					hosts: [...oldProxy.hosts]
+				}
+			);
+			this.updateCurrentProxyInState(newProxy, prevState, newState);
+			return newState;
 		});
 	}
 	
 	handleCheckboxChange(event) {
 		var target = event.target;
 		this.setState((prevState) => {
-			prevState.currentProxy[target.name] = target.checked;
-			this.saveProxy(prevState.currentProxy);
-			return prevState;
+			var newState = {};
+			var oldProxy = prevState.currentProxy;
+			var newProxy = Object.assign(
+				{},
+				oldProxy,
+				{
+					[target.name]: target.checked
+				}
+			);
+			this.updateCurrentProxyInState(newProxy, prevState, newState);
+			return newState;
 		});
 	}
 	
 	handleHostSelectChange(event) {
 		this.setState({
-			currentHostIdx: event.target.value !== "" ? event.target.value : -1
+			currentHostIdx: event.target.value !== "" ? parseInt(event.target.value) : -1
 		});
 	}
 	
 	handleHostButtonClick(event) {
 		var value = event.target.value;
 		this.setState((prevState) => {
+			var newState = {};
+			var oldProxy = prevState.currentProxy;
+			var newProxy = Object.assign({}, oldProxy);
 			// Add host to end
 			if (value == '+') {
-				prevState.currentProxy.hosts.push('');
-				prevState.currentHostIdx = prevState.currentProxy.hosts.length - 1;
+				newProxy.hosts = oldProxy.hosts.concat(['']);
+				newState.currentHostIdx = newProxy.hosts.length - 1;
 				this.focusHostInput = true;
 			}
 			// Delete host at current index
 			else if (value == '-') {
-				prevState.currentProxy.hosts.splice(prevState.currentHostIdx, 1);
+				newProxy.hosts = [
+					...oldProxy.hosts.slice(0, prevState.currentHostIdx),
+					...oldProxy.hosts.slice(prevState.currentHostIdx + 1)
+				];
 				// If this was the last host, select the previous one
-				if (prevState.currentHostIdx == prevState.currentProxy.hosts.length) {
-					prevState.currentHostIdx--;
+				if (prevState.currentHostIdx == newProxy.hosts.length) {
+					newState.currentHostIdx = prevState.currentHostIdx - 1;
 				}
 			}
-			this.saveProxy(prevState.currentProxy);
-			return prevState;
+			this.updateCurrentProxyInState(newProxy, prevState, newState);
+			return newState;
 		});
 	}
 	
 	handleHostnameChange(event) {
 		var value = event.target.value;
 		this.setState((prevState) => {
-			prevState.currentProxy.hosts[prevState.currentHostIdx] = value;
-			this.saveProxy(prevState.currentProxy);
-			return prevState;
+			var newState = {};
+			var oldProxy = prevState.currentProxy;
+			var newProxy = Object.assign(
+				{},
+				oldProxy,
+				{
+					// Replace the current host value
+					hosts: oldProxy.hosts.map((h, i) => i == prevState.currentHostIdx ? value : h)
+				}
+			);
+			this.updateCurrentProxyInState(newProxy, prevState, newState);
+			return newState;
 		});
 	}
 	
@@ -705,10 +754,15 @@ Zotero_Preferences.Components.MIMETypeHandling = class MIMETypeHandling extends 
 	
 	handleHostRemove() {
 		this.setState((prevState) => {
-			prevState.hosts.splice(this.state.currentHostIdx, 1);
-			prevState.currentHostIdx = -1;
-			this.updateHosts(prevState.hosts)
-			return prevState;
+			var newState = {
+				hosts: [
+					...prevState.hosts.slice(0, this.state.currentHostIdx),
+					...prevState.hosts.slice(this.state.currentHostIdx + 1)
+				],
+				currentHostIdx: -1
+			};
+			this.updateHosts(newState.hosts)
+			return newState;
 		});
 	}
 	

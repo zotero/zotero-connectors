@@ -70,7 +70,18 @@ Zotero.ConnectorIntegration = {
 			if (e.status == 503) {
 				Zotero.debug(e.message);
 				return;
-			} else if (e.status == 0) {
+			}
+			else if (e.status == 404) {
+				console.log(client);
+				Zotero.Inject.confirm({
+					title: "Upgrade Zotero",
+						message: `
+							Web-based citing requires Zotero 5.0.44 or later.
+						`,
+					button2Text: "",
+				});
+			}
+			else if (e.status == 0) {
 				Zotero.Inject.confirm({
 					title: "Is Zotero Running?",
 						message: `

@@ -227,8 +227,8 @@ if (isTopWindow) {
 		var style = {
 			position: 'fixed',
 			top: '15px',
-			right: '15px',
-			width: '340px',
+			right: '8px',
+			width: '347px',
 			height: '120px',
 			border: "none",
 			zIndex: 2147483647
@@ -279,7 +279,7 @@ if (isTopWindow) {
 			
 			// Adjust iframe height when inner document is resized
 			case 'zotero.progressWindow.resized':
-				iframe.style.height = (event.data.height + 20) + "px";
+				iframe.style.height = (event.data.height + 33) + "px";
 				break;
 			
 			// Update the client or API with changes

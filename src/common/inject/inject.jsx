@@ -153,6 +153,8 @@ if (isTopWindow) {
 	}
 	
 	function hideFrame() {
+		insideIframe = false;
+		
 		var frame = document.getElementById(frameID);
 		frame.style.display = 'none';
 		addEvent("hidden");

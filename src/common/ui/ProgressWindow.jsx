@@ -112,7 +112,9 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	// Let the parent window know it has to resize the iframe
 	componentDidUpdate() {
 		window.requestAnimationFrame(() => {
-			if (this.lastHeight != this.rootNode.scrollHeight) {
+			if (this.lastHeight != this.rootNode.scrollHeight
+					// In Firefox this ends up being 0 when the pane closes
+					&& this.rootNode.scrollHeight != 0) {
 				this.lastHeight = this.rootNode.scrollHeight;
 				this.sendMessage('resized', { height: this.rootNode.scrollHeight });
 			}

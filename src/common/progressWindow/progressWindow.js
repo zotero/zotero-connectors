@@ -25,6 +25,7 @@
 
 window.onload = function () {
 	var div = document.getElementById('progress-window');
+	Zotero.Messaging.init();
 	ReactDOM.render(
 		React.createElement(Zotero.ui.ProgressWindow,),
 		div

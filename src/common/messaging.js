@@ -49,7 +49,7 @@ Zotero.Messaging = new function() {
 	 * @param {TabObject} tab 
 	 * @param {Number} frameId not available in safari
 	 */
-	this.receiveMessage = Zotero.Promise.method(function(messageName, args, tab, frameId) {
+	this.receiveMessage = async function(messageName, args, tab, frameId) {
 		//Zotero.debug("Messaging: Received message: "+messageName);
 		if (!Array.isArray(args)) {
 			args = [args];
@@ -76,9 +76,11 @@ Zotero.Messaging = new function() {
 				args.push(undefined);
 			}
 		}
-		args.push(tab);
-		// Calls from inject pages to sendMessage are intended to go to top-frame
-		if (messageParts[1] != 'sendMessage') {
+
+		if (messageConfig.background && messageConfig.background.postReceive) {
+			args = await messageConfig.background.postReceive(args, tab, frameId);
+		} else {
+			args.push(tab);
 			args.push(frameId);
 		}
 		
@@ -93,7 +95,7 @@ Zotero.Messaging = new function() {
 				return response;
 			});
 		}
-	});
+	};
 	
 	/**
 	 * Sends a message to a tab

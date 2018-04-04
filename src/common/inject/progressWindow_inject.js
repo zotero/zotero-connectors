@@ -42,11 +42,9 @@ if (isTopWindow) {
 	// load complicated messaging code into the iframe).
 	//
 	var frameID = 'zotero-progress-window-frame';
-	var listenersRegistered = false;
 	var currentSessionID;
 	var lastSuccessfulTarget;
-	var frameWindow;
-	var eventQueue = [];
+	var frameReadyDeferred = Zotero.Promise.defer();
 	var closeTimeoutID;
 	var syncDelayIntervalID;
 	var insideIframe = false;
@@ -57,27 +55,17 @@ if (isTopWindow) {
 	else {
 		frameSrc = browser.extension.getURL('progressWindow/progressWindow.html');
 	}
-	var origin = frameSrc.match(/^[a-z\-]+:\/\/[^\/]+/)[0];
 	var scrollX;
 	var scrollY;
 	
 	// The progress window component is initialized asynchronously, so queue updates and send them
 	// to the iframe once the component is ready
 	function addEvent(name, data) {
-		eventQueue.push({
-			event: name,
-			data
+		frameReadyDeferred.promise.then(function() {
+			// frameId=null - send message to all frames
+			Zotero.Messaging.sendMessage(`progressWindowIframe.${name}`, data, null, null);
 		});
-		drainEventQueue();
 	}
-	
-	function drainEventQueue() {
-		if (!frameWindow) return;
-		var x;
-		while (x = eventQueue.shift()) {
-			frameWindow.postMessage(x, origin);
-		}
-	};
 	
 	function changeHeadline() {
 		addEvent("changeHeadline", Array.from(arguments));
@@ -140,15 +128,9 @@ if (isTopWindow) {
 		addEvent("updateProgress", Array.from(arguments));
 	}
 	
-	function addError() {
-		// DEBUG: Can this be called before the frame is created?
-		showFrame();
+	async function addError() {
+		await showFrame();
 		addEvent("addError", Array.from(arguments));
-	}
-	
-	function showFrame() {
-		var frame = document.getElementById(frameID);
-		frame.style.display = 'block';
 	}
 	
 	function hideFrame() {
@@ -165,7 +147,6 @@ if (isTopWindow) {
 	}
 	
 	function resetFrame() {
-		eventQueue = [];
 		stopCloseTimer();
 		addEvent('reset');
 	}
@@ -174,8 +155,7 @@ if (isTopWindow) {
 		stopCloseTimer();
 		var frame = document.getElementById(frameID);
 		document.body.removeChild(frame);
-		frameWindow = null;
-		eventQueue = [];
+		frameReadyDeferred = Zotero.Promise.defer();
 	}
 	
 	function startCloseTimer(delay) {
@@ -194,32 +174,7 @@ if (isTopWindow) {
 		}
 	}
 	
-	/**
-	 * This is called after an item has started to save in order to show the progress window
-	 */
-	Zotero.Messaging.addMessageListener("progressWindow.show", async function (args) {
-		var [sessionID, headline, useTargetSelector] = args;
-		if (useTargetSelector === undefined) {
-			useTargetSelector = true;
-		}
-		
-		if (currentSessionID) {
-			// If session has changed, reset state before reopening popup
-			if (currentSessionID != sessionID) {
-				resetFrame();
-				currentSessionID = sessionID;
-				if (useTargetSelector) {
-					await setHeadlineFromClient(headline);
-				}
-				else {
-					changeHeadline(headline);
-				}
-			}
-			showFrame();
-			return;
-		}
-		currentSessionID = sessionID;
-		
+	async function initFrame() {
 		// Create the iframe
 		var iframe = document.createElement('iframe');
 		iframe.id = frameID;
@@ -235,7 +190,7 @@ if (isTopWindow) {
 		};
 		for (let i in style) iframe.style[i] = style[i];
 		document.body.appendChild(iframe);
-		
+	
 		// Keep track of clicks on the window so that when the iframe document is blurred we can
 		// distinguish between a click on the document and switching to another window
 		var lastClick;
@@ -257,83 +212,104 @@ if (isTopWindow) {
 		//
 		// Handle messages from the progress window iframe
 		//
-		window.addEventListener("message", async function (event) {
-			if (event.origin != origin) return;
-			
-			//Zotero.debug("Got event");
-			//Zotero.debug(event.data);
-			
-			switch (event.data.event) {
-			// Save a reference to the iframe's window once it's ready
-			case 'zotero.progressWindow.registered':
-				frameWindow = event.source;
-				drainEventQueue();
-				
-				// Delay syncs by 10 seconds at a time (specified in server_connector.js) while
-				// the selector is open. Run every 7.5 seconds to make sure the request gets
-				// there in time.
-				syncDelayIntervalID = setInterval(() => {
-					Zotero.Connector.callMethod("delaySync", {});
-				}, 7500);
-				break;
-			
-			// Adjust iframe height when inner document is resized
-			case 'zotero.progressWindow.resized':
-				iframe.style.height = (event.data.height + 33) + "px";
-				break;
-			
-			// Update the client or API with changes
-			case 'zotero.progressWindow.updated':
-				try {
-					await Zotero.Connector.callMethod(
-						"updateSession",
-						{
-							sessionID: currentSessionID,
-							target: event.data.target.id,
-							tags: event.data.tags
-						}
-					);
-				}
-				// Collapse popup on error
-				catch (e) {
-					makeReadOnly();
-					throw e;
-				}
-				// Keep track of last successful target to show on failure
-				lastSuccessfulTarget = event.data.target;
-				break;
-			
-			// Keep track of when the mouse is over the popup, for various purposes
-			case 'zotero.progressWindow.mouseenter':
-				insideIframe = true;
-				stopCloseTimer();
-				
-				// See scroll listener above
-				scrollX = window.scrollX;
-				scrollY = window.scrollY;
-				break;
-			
-			case 'zotero.progressWindow.mouseleave':
-				insideIframe = false;
-				startCloseTimer();
-				break;
-			
-			// Hide iframe if it loses focus and the user recently clicked on the main page
-			// (i.e., they didn't just switch to another window)
-			case 'zotero.progressWindow.blurred':
-				setTimeout(function () {
-					if (lastClick > new Date() - 500) {
-						hideFrame();
+		
+		// Delay syncs by 10 seconds at a time (specified in server_connector.js) while
+		// the selector is open. Run every 7.5 seconds to make sure the request gets
+		// there in time.
+		Zotero.Messaging.addMessageListener('progressWindowIframe.registered', function() {
+			frameReadyDeferred.resolve();
+			syncDelayIntervalID = setInterval(() => {
+				Zotero.Connector.callMethod("delaySync", {});
+			}, 7500);
+		});
+
+		// Adjust iframe height when inner document is resized
+		Zotero.Messaging.addMessageListener('progressWindowIframe.resized', function(data) {
+			iframe.style.height = (data.height + 33) + "px";
+		});
+
+		// Update the client or API with changes
+		Zotero.Messaging.addMessageListener('progressWindowIframe.updated', async function(data) {
+			try {
+				await Zotero.Connector.callMethod(
+					"updateSession",
+					{
+						sessionID: currentSessionID,
+						target: data.target.id,
+						tags: data.tags
 					}
-				}, 150);
-				break;
+				);
+			}
+			// Collapse popup on error
+			catch (e) {
+				makeReadOnly();
+				throw e;
+			}
+			// Keep track of last successful target to show on failure
+			lastSuccessfulTarget = data.target;
+		});
+
+		// Keep track of when the mouse is over the popup, for various purposes
+		Zotero.Messaging.addMessageListener('progressWindowIframe.mouseenter', function() {
+			insideIframe = true;
+			stopCloseTimer();
 			
-			// Hide frame
-			case 'zotero.progressWindow.close':
+			// See scroll listener above
+			scrollX = window.scrollX;
+			scrollY = window.scrollY;
+		});
+		Zotero.Messaging.addMessageListener('progressWindowIframe.mouseleave', function() {
+			insideIframe = false;
+			startCloseTimer();
+		});
+
+		// Hide iframe if it loses focus and the user recently clicked on the main page
+		// (i.e., they didn't just switch to another window)
+		Zotero.Messaging.addMessageListener('progressWindowIframe.blurred', async function() {
+			await Zotero.Promise.delay(150);
+			if (lastClick > new Date() - 500) {
 				hideFrame();
-				break;
 			}
 		});
+		
+		Zotero.Messaging.addMessageListener('progressWindowIframe.close', function() {
+			hideFrame();
+		});
+
+		await frameReadyDeferred.promise;
+		return iframe;
+	}
+
+	/**
+	 * Shows the frame (initializing it if neccessary)
+	 * @returns {Promise<iframe>}
+	 */
+	async function showFrame() {
+		var iframe = document.getElementById(frameID);
+		if (!iframe) {
+			iframe = await initFrame();
+
+		}
+		iframe.style.display = 'block';
+		return iframe;
+	}
+	
+	/**
+	 * This is called after an item has started to save in order to show the progress window
+	 */
+	Zotero.Messaging.addMessageListener("progressWindow.show", async function (args) {
+		var [sessionID, headline, useTargetSelector] = args;
+		if (useTargetSelector === undefined) {
+			useTargetSelector = true;
+		}
+
+		// If session has changed, reset state before reopening popup
+		if (currentSessionID && currentSessionID != sessionID) {
+			resetFrame();
+		}
+		currentSessionID = sessionID;
+		
+		await showFrame();
 		
 		if (useTargetSelector) {
 			await setHeadlineFromClient(headline);

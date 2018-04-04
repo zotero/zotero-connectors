@@ -76,24 +76,11 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	componentDidMount() {
-		window.addEventListener("message", (event) => {
-			switch (event.data.event) {
-			case 'changeHeadline':
-			case 'makeReadOnly':
-			case 'updateProgress':
-			case 'addError':
-				this[event.data.event](...event.data.data);
-				break;
-			
-			case 'hidden':
-				this.onHidden();
-				break;
-			
-			case 'reset':
-				this.setState(this.getInitialState());
-				break;
-			}
-		});
+		for (let evt of ['changeHeadline', 'makeReadOnly', 'updateProgress', 'addError']) {
+			Zotero.Messaging.addMessageListener(`progressWindowIframe.${evt}`, (data) => this[evt](...data));
+		}
+		Zotero.Messaging.addMessageListener('hidden', this.onHidden.bind(this));
+		Zotero.Messaging.addMessageListener('reset', () => this.setState(this.getInitialState()));
 		
 		// Preload other disclosure triangle state
 		(new Image()).src = 'disclosure-open.svg';
@@ -199,15 +186,7 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	// Messaging
 	//
 	sendMessage(event, data = {}) {
-		window.parent.postMessage(
-			Object.assign(
-				{
-					event: `zotero.progressWindow.${event}`
-				},
-				data
-			),
-			"*"
-		);
+		Zotero.Messaging.sendMessage(`progressWindowIframe.${event}`, data);
 	}
 	
 	sendUpdate() {

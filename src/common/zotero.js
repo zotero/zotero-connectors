@@ -54,31 +54,30 @@ var Zotero = new function() {
 
 	if (this.isFirefox) {
 		this.browser = "g";
-		this.clientName = 'Zotero Connector for Firefox';
+		this.clientName = 'Firefox';
 	} else if (this.isSafari) {
 		this.browser = "s";
-		this.clientName = 'Zotero Connector for Safari';
+		this.clientName = 'Safari';
 	} else if (this.isIE) {
 		this.browser = "i";
-		this.clientName = 'Zotero Connector for Internet Explorer'; // ?
+		this.clientName = 'Internet Explorer'; // ?
 	} else if (this.isEdge) {
 		this.browser = "c";
-		this.clientName = 'Zotero Connector for Edge';
+		this.clientName = 'Edge';
 	} else if (this.isChrome) {
 		this.browser = "c";
-		this.clientName = 'Zotero Connector for Chrome';
+		this.clientName = 'Chrome';
 	} else {
 		// Assume this is something with no more capabilities than IE
 		this.browser = "i";
 		this.clientName = window.navigator.appName;
 	}
+	this.appName = `Zotero Connector for ${this.clientName}`;
 	
 	if (this.isBrowserExt) {
 		this.version = browser.runtime.getManifest().version;
-		this.appName = browser.runtime.getManifest().name;
 	} else if (this.isSafari) {
 		this.version = safari.extension.bundleVersion;
-		this.appName = 'Zotero Connector';
 	}
 	
 	// window.Promise and Promise differ (somehow) in Firefox and when certain
@@ -227,7 +226,7 @@ var Zotero = new function() {
 			userAgent: navigator.userAgent
 		};
 		
-		info.appName = Zotero.clientName;
+		info.appName = Zotero.appName;
 		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());
 		
 		var str = '';

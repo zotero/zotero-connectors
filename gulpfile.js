@@ -77,6 +77,7 @@ var injectInclude = [
 	'integration/connectorIntegration.js',
 	'messages.js',
 	'messaging_inject.js',
+	'inject/progressWindow_inject.js'
 ];
 var injectIncludeLast;
 if (argv.p) {

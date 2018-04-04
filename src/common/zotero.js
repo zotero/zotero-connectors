@@ -165,6 +165,10 @@ var Zotero = new function() {
 						this.platform = 'unix';
 				}
 			}.bind(this));
+			browser.runtime.getBrowserInfo().then(info => {
+				this.browserVersion = info.version;
+				this.browserMajorVersion = parseInt(info.version.match(/^[0-9]+/)[0]);
+			});
 		} else if (Zotero.isSafari) {
 			this.platform = 'mac';
 		} else {

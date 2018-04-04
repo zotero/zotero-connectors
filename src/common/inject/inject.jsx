@@ -228,7 +228,7 @@ if (isTopWindow) {
 			position: 'fixed',
 			top: '15px',
 			right: '8px',
-			width: '347px',
+			width: '351px',
 			height: '120px',
 			border: "none",
 			zIndex: 2147483647

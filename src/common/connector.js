@@ -283,7 +283,7 @@ Zotero.Connector = new function() {
 			//
 			// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/cookies/getAll
 			// [2] https://bugzilla.mozilla.org/show_bug.cgi?id=1315558
-			if (Zotero.isFirefox) {
+			if (Zotero.isFirefox && Zotero.platformMajorVersion >= 59) {
 				cookieParams.firstPartyDomain = null;
 			}
 			return browser.cookies.getAll(cookieParams)

@@ -165,17 +165,21 @@ var Zotero = new function() {
 						this.platform = 'unix';
 				}
 			}.bind(this));
-			browser.runtime.getBrowserInfo().then(info => {
-				this.browserVersion = info.version;
-				this.browserMajorVersion = parseInt(info.version.match(/^[0-9]+/)[0]);
-			});
 		} else if (Zotero.isSafari) {
 			this.platform = 'mac';
 		} else {
 			// IE and the likes? Who knows
 			this.platform = 'win';
 		}
-
+		
+		// Add browser version info
+		if (this.isFirefox) {
+			browser.runtime.getBrowserInfo().then(info => {
+				this.browserVersion = info.version;
+				this.browserMajorVersion = parseInt(info.version.match(/^[0-9]+/)[0]);
+			});
+		}
+		
 		await Zotero.Prefs.init();
 		
 		Zotero.Debug.init();

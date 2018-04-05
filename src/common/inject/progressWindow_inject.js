@@ -159,7 +159,6 @@ if (isTopWindow) {
 	}
 	
 	function startCloseTimer(delay) {
-		return;
 		// Don't start the timer if the mouse is over the popup
 		if (insideIframe) return;
 		

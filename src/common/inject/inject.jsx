@@ -52,7 +52,7 @@ if (isTopWindow) {
  */
 Zotero.Inject = new function() {
 	var _translate;
-	var _lastSessionDetails;
+	this.sessionDetails = {};
 	this.translators = [];
 		
 	/**
@@ -65,6 +65,10 @@ Zotero.Inject = new function() {
 		} else if (document.location.href.substr(0, ZOTERO_CONFIG.OAUTH.ZOTERO.CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH.GOOGLE_DOCS.CALLBACK_URL+"#") {
 			Zotero.GoogleDocs_API.onAuthComplete(document.location.href);
 		}
+
+		const noteImgSrc = Zotero.isSafari
+			? safari.extension.baseURI+"images/treeitem-note.png"
+			: browser.extension.getURL('images/treeitem-note.png');
 		
 		// wrap this in try/catch so that errors will reach logError
 		try {
@@ -138,6 +142,17 @@ Zotero.Inject = new function() {
 								item.id
 							]
 						);
+					}
+					if (item.notes) {
+						for (let note of item.notes) {
+							Zotero.Messaging.sendMessage('progressWindow.itemProgress', [
+								null,
+								noteImgSrc,
+								note.note,
+								item.id,
+								100
+							])
+						}
 					}
 				});
 				_translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
@@ -357,18 +372,19 @@ Zotero.Inject = new function() {
 		}
 	};
 	
-	this.translate = async function(translatorID, itemType, fallbackOnFailure = false) {
+	this.translate = async function(translatorID, options={}) {
 		let result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
+		var translator = this.translators.find((t) => t.translatorID == translatorID);
 		
 		// If the URL hasn't changed (from a history push) and the user triggered the same
 		// non-multiple translator as the last successful save, use the same session ID to reopen
 		// the popup.
-		if (_lastSessionDetails
-				&& document.location.href == _lastSessionDetails.url
-				&& translatorID == _lastSessionDetails.translatorID
-				&& itemType != 'multiple') {
-			let sessionID = _lastSessionDetails.id;
+		if (Zotero.Inject.sessionDetails.id
+				&& document.location.href == Zotero.Inject.sessionDetails.url
+				&& translatorID == Zotero.Inject.sessionDetails.translatorID
+				&& translator.itemType != 'multiple') {
+			let sessionID = Zotero.Inject.sessionDetails.id;
 			Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 			return;
 		}
@@ -376,12 +392,14 @@ Zotero.Inject = new function() {
 		var sessionID = Zotero.Utilities.randomString();
 		Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 		
+		Zotero.Inject.sessionDetails = {saveOptions: options};
+		
 		var translators = Array.from(this.translators);
 		while (translators[0].translatorID != translatorID) {
 			translators.shift();
 		}
 		while (true) {
-			var translator = translators.shift();
+			translator = translators.shift();
 			_translate.setTranslator(translator);
 			try {
 				let items = await _translate.translate({ sessionID });
@@ -389,14 +407,15 @@ Zotero.Inject = new function() {
 				// Record details for the last successful save. We're storing the translator
 				// chosen by the user, regardless of whether there was a fallback to another
 				// translator.
-				_lastSessionDetails = {
+				Object.assign(Zotero.Inject.sessionDetails, {
 					id: sessionID,
 					url: document.location.href,
 					translatorID
-				};
+				});
 				return items;
 			} catch (e) {
-				if (fallbackOnFailure && translators.length) {
+				// Should we fallback if translator.itemType == "multiple"?
+				if (options.fallbackOnFailure && translators.length) {
 					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
 				} else {
 					Zotero.Messaging.sendMessage("progressWindow.done", [false]);
@@ -413,10 +432,10 @@ Zotero.Inject = new function() {
 		if (!result) return;
 		
 		var translatorID = 'webpage' + (withSnapshot ? 'WithSnapshot' : '');
-		if (_lastSessionDetails
-				&& document.location.href == _lastSessionDetails.url
-				&& translatorID == _lastSessionDetails.translatorID) {
-			let sessionID = _lastSessionDetails.id;
+		if (Zotero.Inject.sessionDetails.id
+				&& document.location.href == Zotero.Inject.sessionDetails.url
+				&& translatorID == Zotero.Inject.sessionDetails.translatorID) {
+			let sessionID = Zotero.Inject.sessionDetails.id;
 			Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 			return;
 		}
@@ -461,11 +480,11 @@ Zotero.Inject = new function() {
 				]
 			);
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
-			_lastSessionDetails = {
+			Object.assign(Zotero.Inject.sessionDetails, {
 				id: sessionID,
 				url: document.location.href,
 				translatorID
-			};
+			});
 			return result;
 		} catch (e) {
 			// Client unavailable

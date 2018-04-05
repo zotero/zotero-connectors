@@ -451,6 +451,9 @@ Zotero.Connector_Browser = new function() {
 		if (translators && translators.length) {
 			_showTranslatorIcon(tab, translators[0]);
 			_showTranslatorContextMenuItem(translators, saveMenuID);
+			if (translators[0].itemType != "multiple") {
+				_showNoteContextMenuItems(saveMenuID);
+			}
 		} else if (isPDF) {
 			Zotero.Connector_Browser._showPDFIcon(tab);
 		} else {
@@ -604,6 +607,18 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 	
+	function _showNoteContextMenuItems(parentID) {
+		browser.contextMenus.create({
+			id: "zotero-context-menu-translator-save-with-selection-note",
+			title: "Create Zotero Item and Note from Selection",
+			onclick: function (info, tab) {
+					Zotero.Connector_Browser.saveWithTranslator(tab, 0, {note: info.selectionText});
+			},
+			parentId: parentID,
+			contexts: ['selection']
+		});
+	}
+	
 	function _showWebpageContextMenuItem(parentID) {
 		var fns = [];
 		fns.push(() => browser.contextMenus.create({
@@ -694,7 +709,7 @@ Zotero.Connector_Browser = new function() {
 			});
 		}
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
-			Zotero.Connector_Browser.saveWithTranslator(tab, 0, true);
+			Zotero.Connector_Browser.saveWithTranslator(tab, 0, {fallbackOnFailure: true});
 		} else {
 			if (_tabInfo[tab.id] && _tabInfo[tab.id].isPDF) {
 				Zotero.Connector_Browser.saveAsWebpage(tab, _tabInfo[tab.id].frameId, true);
@@ -705,8 +720,16 @@ Zotero.Connector_Browser = new function() {
 			}
 		}
 	}
-	
-	this.saveWithTranslator = function(tab, i, fallbackOnFailure = false) {
+
+	/**
+	 * @param tab <Tab>
+	 * @param i <Integer> the index of translator to save with
+	 * @param options <Object>
+	 * 		- fallbackOnFailure <Boolean> if translation fails, attempt to save with lower priority translators
+	 * 		- note <String> add string as a note to the saved item
+	 * @returns {Promise<*>}
+	 */
+	this.saveWithTranslator = function(tab, i, options) {
 		var translator = _tabInfo[tab.id].translators[i];
 		
 		// Set frameId to null - send message to all frames
@@ -716,8 +739,7 @@ Zotero.Connector_Browser = new function() {
 			[
 				_tabInfo[tab.id].instanceID,
 				translator.translatorID,
-				translator.itemType,
-				fallbackOnFailure
+				options
 			],
 			tab,
 			null

@@ -24,27 +24,27 @@
 */
 
 window.Zotero = window.Zotero || {};
-Zotero.ui = Zotero.ui || {};
-Zotero.ui.style = Zotero.ui.style || {};
+Zotero.UI = Zotero.UI || {};
+Zotero.UI.style = Zotero.UI.style || {};
 
 if (Zotero.isBookmarklet) {
-	Zotero.ui.style.imageBase = ZOTERO_CONFIG.BOOKMARKLET_URL + "images/";
+	Zotero.UI.style.imageBase = ZOTERO_CONFIG.BOOKMARKLET_URL + "images/";
 }
 else if (typeof safari != 'undefined') {
-	Zotero.ui.style.imageBase = safari.extension.baseURI + "images/";
+	Zotero.UI.style.imageBase = safari.extension.baseURI + "images/";
 }
 else if (typeof browser != 'undefined') {
-	Zotero.ui.style.imageBase = browser.extension.getURL("images/");
+	Zotero.UI.style.imageBase = browser.extension.getURL("images/");
 }
 else if (typeof chrome != 'undefined') {
-	Zotero.ui.style.imageBase = chrome.extension.getURL("images/");
+	Zotero.UI.style.imageBase = chrome.extension.getURL("images/");
 }
 
 function getTargetType(id) {
 	return id.startsWith('L') ? 'library': 'collection';
 }
 
-Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
+Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	constructor(props) {
 		super(props);
 		this.state = this.getInitialState();
@@ -430,12 +430,12 @@ Zotero.ui.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				left: `${item.parentItem ? '22' : '12'}px`
 			},
 			item.failed && {
-				backgroundImage: `url('${Zotero.ui.style.imageBase}cross.png')`,
+				backgroundImage: `url('${Zotero.UI.style.imageBase}cross.png')`,
 				backgroundPosition: ""
 			},
 			// Use circular indicator for partial progress
 			item.percentage && item.percentage != 100 && {
-				backgroundImage: `url('${Zotero.ui.style.imageBase}progress_arcs.png')`,
+				backgroundImage: `url('${Zotero.UI.style.imageBase}progress_arcs.png')`,
 				backgroundPosition: "-" + (Math.round(item.percentage / 100 * this.nArcs) * 16) + "px 0",
 				backgroundSize: "auto"
 			},
@@ -541,7 +541,7 @@ class TargetIcon extends React.Component {
 			? "treesource-library.png"
 			: "treesource-collection.png";
 		var style = {
-			backgroundImage: `url('${Zotero.ui.style.imageBase}${image}')`
+			backgroundImage: `url('${Zotero.UI.style.imageBase}${image}')`
 		};
 		return <div className="ProgressWindow-targetIcon" style={style} />;
 	}

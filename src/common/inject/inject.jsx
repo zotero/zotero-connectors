@@ -148,7 +148,7 @@ Zotero.Inject = new function() {
 							Zotero.Messaging.sendMessage('progressWindow.itemProgress', [
 								null,
 								noteImgSrc,
-								note.note,
+								Zotero.Utilities.cleanTags(note.note),
 								item.id,
 								100
 							])

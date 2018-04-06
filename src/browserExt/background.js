@@ -612,7 +612,13 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-translator-save-with-selection-note",
 			title: "Create Zotero Item and Note from Selection",
 			onclick: function (info, tab) {
-					Zotero.Connector_Browser.saveWithTranslator(tab, 0, {note: info.selectionText});
+				Zotero.Connector_Browser.saveWithTranslator(
+					tab,
+					0,
+					{
+						note: '<blockquote>' + info.selectionText + '</blockquote>'
+					}
+				);
 			},
 			parentId: parentID,
 			contexts: ['selection']

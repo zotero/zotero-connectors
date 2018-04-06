@@ -202,9 +202,6 @@ var Zotero = new function() {
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
 		Zotero.ConnectorIntegration.init();
-		if (Zotero.GoogleDocs) {
-			Zotero.GoogleDocs.init();
-		}
 		Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
 			'reportTranslationFailure', 'capitalizeTitles']);
 		return Zotero.Prefs.loadNamespace('debug').then(function() {

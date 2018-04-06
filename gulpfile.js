@@ -90,7 +90,7 @@ if (argv.p) {
 		'tools/testTranslators/translatorTester_inject.js'
 	];
 }
-var injectIncludeSafari = [].concat(injectInclude, ['ui/notification.js'], injectIncludeLast);
+var injectIncludeSafari = [].concat(injectInclude, ['ui/notification.js', 'browser_inject.js'], injectIncludeLast);
 var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(injectInclude, ['api.js'], injectIncludeLast);
 if (!argv.p) {
 	injectIncludeSafari = injectIncludeSafari.concat(['lib/sinon.js', 'test/testSetup.js'])

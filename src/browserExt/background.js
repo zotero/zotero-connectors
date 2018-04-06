@@ -451,9 +451,7 @@ Zotero.Connector_Browser = new function() {
 		if (translators && translators.length) {
 			_showTranslatorIcon(tab, translators[0]);
 			_showTranslatorContextMenuItem(translators, saveMenuID);
-			if (translators[0].itemType != "multiple") {
-				_showNoteContextMenuItems(saveMenuID);
-			}
+			_showNoteContextMenuItems(translators, saveMenuID);
 		} else if (isPDF) {
 			Zotero.Connector_Browser._showPDFIcon(tab);
 		} else {
@@ -607,7 +605,8 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 	
-	function _showNoteContextMenuItems(parentID) {
+	function _showNoteContextMenuItems(translators, parentID) {
+		if (translators[0].itemType == "multiple") return;
 		browser.contextMenus.create({
 			id: "zotero-context-menu-translator-save-with-selection-note",
 			title: "Create Zotero Item and Note from Selection",

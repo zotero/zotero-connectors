@@ -28,6 +28,7 @@ Zotero.Connector_Browser = new function() {
 	var _incompatibleVersionMessageShown;
 	var _zoteroButton;
 	
+	// Used to access the active tab within the popover
 	this.activeTab = null;
 
 	/**
@@ -104,12 +105,26 @@ Zotero.Connector_Browser = new function() {
 		delete _selectCallbacksForTabIDs[data[0]];
 	}
 	
+	this.onContextMenu = function(event) {
+		var tab = safari.application.activeBrowserWindow.activeTab;
+		var userInfo = event.userInfo && JSON.parse(event.userInfo);
+		if (userInfo && tab.translators && tab.translators.length
+				&& tab.translators[0].itemType != "multiple") {
+			event.contextMenu.appendContextMenuItem(
+				"zotero-context-menu-translator-save-with-selection-note",
+				"Create Zotero Item and Note from Selection",
+				"zotero-context-menu-translator-save-with-selection-note"
+			);
+		}
+	}
+	
 	/**
 	 * Called when Zotero button is pressed
 	 */
 	this.onPerformCommand = function(event) {
 		var command = event.command;
 		var tab = safari.application.activeBrowserWindow.activeTab;
+		var userInfo = event.userInfo && JSON.parse(event.userInfo);
 		if (command === "zotero-button") {
 			if(tab.translators && tab.translators.length) {
 				Zotero.Connector_Browser.saveWithTranslator(tab, 0, {fallbackOnFailure: true});
@@ -120,6 +135,14 @@ Zotero.Connector_Browser = new function() {
 			}
 		} else if (command === "zotero-preferences") {
 			Zotero.Connector_Browser.openTab(safari.extension.baseURI+"preferences/preferences.html");
+		} else if (command === "zotero-context-menu-translator-save-with-selection-note") {
+			Zotero.Connector_Browser.saveWithTranslator(
+					tab,
+					0,
+					{
+						note: '<blockquote>' + userInfo.selectionText + '</blockquote>'
+					}
+				);
 		}
 	}
 	
@@ -329,6 +352,8 @@ safari.application.addEventListener('beforeNavigate', function(e) {
 		Zotero.Connector.reportActiveURL(e.target.url);
 	}
 }, true);
+safari.application.addEventListener('contextmenu', Zotero.Connector_Browser.onContextMenu, false);
+
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
 
 // initialize

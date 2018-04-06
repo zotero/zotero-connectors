@@ -1,0 +1,8 @@
+{
+	"general_saveTo": {
+		"message": "Save to $1"
+	},
+	"progressWindow_savingTo": {
+		"message": "Saving to"
+	}
+}

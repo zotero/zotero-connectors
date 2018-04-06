@@ -443,7 +443,7 @@ Zotero.Connector_Browser = new function() {
 			saveMenuID = "zotero-context-menu-save-menu";
 			browser.contextMenus.create({
 				id: saveMenuID,
-				title: "Save to Zotero",
+				title: `${Zotero.getString('general_saveTo', 'Zotero')}`,
 				contexts: ['all']
 			});
 		}

@@ -226,8 +226,9 @@ Zotero.API = new function() {
 			}
 			return Zotero.API.authorize().then(function() {
 				return Zotero.API.createItem(payload, false);
-			}, function() {
-				throw new Error("Authentication failed");
+			}, function(e) {
+				e.message = `Authentication failed: ${e.message}`;
+				throw e;
 			})
 		}
 		

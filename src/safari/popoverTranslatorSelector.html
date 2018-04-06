@@ -100,6 +100,7 @@
 
 			var menu = document.getElementsByTagName('menu')[0];
 			var savePage = menu.firstChild;
+			var Zotero = safari.extension.globalPage.contentWindow.Zotero;
 			for (let i = 0; i < translators.length; i++) {
 				let translator = translators[i];
 				let li = document.createElement('li');
@@ -107,7 +108,7 @@
 
 				let a = document.createElement('a');
 				a.setAttribute('href', 'javascript:void(0);');
-				a.textContent = "Save to Zotero (" + translator.label + ")";
+				a.textContent = `${Zotero.getString('general_saveTo', 'Zotero')} (${translator.label})`;
 				a.onclick = function () {
 					Zotero.Connector_Browser.saveWithTranslator(i);
 					safari.self.hide();

@@ -77,7 +77,8 @@ var injectInclude = [
 	'integration/connectorIntegration.js',
 	'messages.js',
 	'messaging_inject.js',
-	'inject/progressWindow_inject.js'
+	'inject/progressWindow_inject.js',
+	'i18n.js'
 ];
 var injectIncludeLast;
 if (argv.p) {
@@ -100,6 +101,7 @@ var backgroundInclude = [
 	'node_modules.js',
 	'zotero_config.js',
 	'zotero.js',
+	'i18n.js',
 	'promise.js',
 	'prefs.js',
 	'api.js',

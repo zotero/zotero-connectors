@@ -178,7 +178,8 @@ var Zotero = new function() {
 				this.browserMajorVersion = parseInt(info.version.match(/^[0-9]+/)[0]);
 			});
 		}
-		
+
+		await Zotero.i18n.init();
 		await Zotero.Prefs.init();
 		
 		Zotero.Debug.init();
@@ -197,9 +198,12 @@ var Zotero = new function() {
 	/**
 	 * Initializes Zotero services for injected pages and the inject side of the bookmarklet
 	 */
-	this.initInject = function() {
+	this.initInject = async function() {
 		Zotero.isInject = true;
 		Zotero.Messaging.init();
+		if (Zotero.isSafari) {
+			await Zotero.i18n.init();
+		}
 		Zotero.Connector_Types.init();
 		Zotero.ConnectorIntegration.init();
 		Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
@@ -304,6 +308,10 @@ var Zotero = new function() {
 		} else {
 			Zotero.Errors.log(err.message ? err.message : err.toString(), fileName, lineNumber);
 		}
+	};
+	
+	this.getString = function() {
+		return Zotero.i18n.getString(...arguments);
 	};
 }
 

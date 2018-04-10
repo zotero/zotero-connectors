@@ -23,6 +23,8 @@
     ***** END LICENSE BLOCK *****
 */
 
+(function() {
+
 /**
  * Only register progress window code in top window
  */
@@ -358,3 +360,5 @@ if (isTopWindow) {
 		addError(args.shift(), ...args);
 	})
 }
+
+})();

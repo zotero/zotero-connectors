@@ -1,0 +1,74 @@
+html {
+	overflow: hidden;
+}
+
+.ModalPrompt-overlay {
+	position: fixed; 
+	top: 0;
+	width: 100%; 
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.3);
+	z-index: 2147483647;
+}
+
+.ModalPrompt {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background-color: #ececec;
+	color: #444;
+	border-radius: 5px;
+	box-shadow: 7px 10px 18px -6px rgba(0,0,0,0.45);
+	max-width: 570px;
+	min-width: 400px;
+	padding: 21px 17px 20px 21px;
+	line-height: 1.5;
+	font-size: 16px; 
+	font-family: Helvetica, Geneva, sans-serif;
+}
+
+.ModalPrompt-title {
+	color: inherit;
+	margin: 0 0 1em 0;
+	font-size: 1.5em;
+	font-weight: bold;
+}
+
+.ModalPrompt-body {
+	color: inherit;
+	font-weight: initial;
+	margin: 0 0 1em 0;
+}
+
+.ModalPrompt-buttons {
+	display: flex; 
+	flex-direction: row;
+	padding: 16px;
+	/* this should be -16px (to counter padding); but firefox has awful bugs.
+	 filed here: https://bugzilla.mozilla.org/show_bug.cgi?id=1072638 */
+	margin: 0 -15px -15px -15px;
+}
+
+.ModalPrompt-button {
+	-webkit-appearance: button;
+	text-align: center;
+	font-family: inherit;
+	white-space: nowrap;
+	margin-right: 16px;
+	min-width: 100px;
+	padding: 0 8px;
+	font-size: 13px;
+	background: #ffffff;
+	color: #444;
+	border-radius: 6px;
+	border: 1px solid #bbb;
+	height: 21px
+}
+.ModalPrompt-button:last-child {
+	margin-right: 0;
+}
+
+.ModalPrompt a { color: #38c; text-decoration: underline; }
+.ModalPrompt a:visited { color: #38c; }
+.ModalPrompt a:hover { color: #369; }

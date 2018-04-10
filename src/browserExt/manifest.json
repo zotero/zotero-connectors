@@ -34,6 +34,7 @@
 	"web_accessible_resources": [
 		"images/*",
 		"progressWindow/progressWindow.html",
+		"modalPrompt/modalPrompt.html",
 		"test/data/journalArticle-single.html"
 	],
 	"content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",

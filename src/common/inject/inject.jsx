@@ -231,38 +231,8 @@ Zotero.Inject = new function() {
 		}
 	}
 
-	/**
-	 * 
-	 * @param props {Object} to be passed to ModalPrompt component
-	 * @returns {Promise{Object}} Object with properties:
-	 * 		`button` - button number clicked (or 0 if clicked outside of prompt)
-	 * 		`checkboxChecked` - checkbox state on close
-	 * 		`inputText` - input field string on close	
-	 */
 	this.confirm = function(props) {
-		let deferred = Zotero.Promise.defer();
-		
-		Zotero.Inject.loadReactComponents(['ModalPrompt']).then(function() {
-			let div = document.createElement('div');
-			div.id = 'zotero-modal-prompt';
-			div.style.cssText = 'z-index: 1000000; position: fixed; top: 0; left: 0; width: 100%; height: 100%';
-			let prompt = (
-				<Zotero.UI.ModalPrompt onClose={onClose} {...props}/>
-			);
-			function onClose(state, event) {
-				deferred.resolve({
-					button: event ? parseInt(event.target.name || 0) : 0,
-					checkboxChecked: state.checkboxChecked,
-					inputText: state.inputText
-				});
-				ReactDOM.unmountComponentAtNode(div);
-				document.body.removeChild(div);
-			}
-			ReactDOM.render(prompt, div);
-			document.body.appendChild(div);	
-		}.bind(this));
-		
-		return deferred.promise;	
+		return Zotero.ModalPrompt.confirm(props);
 	};
 
 	/**
@@ -342,34 +312,25 @@ Zotero.Inject = new function() {
 	 * 
 	 * return {Promise<Boolean>} whether the action should proceed
 	 */
-	this.checkActionToServer = function() {
-		if (Zotero.isBrowserExt) {
-			return Zotero.Promise.all([
-				Zotero.Prefs.getAsync('firstSaveToServer'), 
-				Zotero.Connector.checkIsOnline()
-			])
-			.then(function (result) {
-				let firstSaveToServer = result[0];
-				let zoteroIsOnline = result[1];
-				if (zoteroIsOnline || !firstSaveToServer) {
-					return true;
-				}
-				return this.firstSaveToServerPrompt()
-				.then(function (result) {
-					if (result == 'server') {
-						Zotero.Prefs.set('firstSaveToServer', false);
-						return true;
-					} else if (result == 'retry') {
-						let deferred = Zotero.Promise.defer();
-						setTimeout(() => deferred.resolve(this.checkActionToServer()), 500);
-						return deferred.promise;
-					}
-					return false;
-				}.bind(this));
-			}.bind(this));
-		} else {
-			return Zotero.Promise.resolve(true);
+	this.checkActionToServer = async function() {
+		var [firstSaveToServer, zoteroIsOnline] = await Zotero.Promise.all([
+			Zotero.Prefs.getAsync('firstSaveToServer'), 
+			Zotero.Connector.checkIsOnline()
+		]);
+		if (zoteroIsOnline || !firstSaveToServer) {
+			return true;
 		}
+		var result = await this.firstSaveToServerPrompt();
+		if (result == 'server') {
+			Zotero.Prefs.set('firstSaveToServer', false);
+			return true;
+		} else if (result == 'retry') {
+			// If we perform the retry immediately and Zotero is still unavailable the prompt returns instantly
+			// making the user interaction confusing so we wait a bit first
+			await Zotero.Promise.delay(500);
+			return this.checkActionToServer();
+		}
+		return false;
 	};
 	
 	this.translate = async function(translatorID, options={}) {

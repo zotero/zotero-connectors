@@ -78,6 +78,7 @@ var injectInclude = [
 	'messages.js',
 	'messaging_inject.js',
 	'inject/progressWindow_inject.js',
+	'inject/modalPrompt_inject.js',
 	'i18n.js'
 ];
 var injectIncludeLast;

@@ -294,8 +294,7 @@ function copyResources {
 		 "$browser_builddir/zotero-google-docs-integration"
 		 
 	# Copy locales
-	cp -r "$SRCDIR/_locales" \
-		 "$browser_builddir/_locales"
+	cp -r "$SRCDIR/locales" "$browser_builddir/_locales"
 	
 	# Copy node_modules libs
 	mkdir "$browser_builddir/lib"

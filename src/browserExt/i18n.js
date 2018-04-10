@@ -26,7 +26,7 @@
 Zotero.i18n = {
 	init: () => Zotero.Promise.resolve(),
 	getString: function(name, substitutions) {
-		if (!Array.isArray(substitutions)) {
+		if (substitutions != undefined && !Array.isArray(substitutions)) {
 			substitutions = [substitutions];
 		}
 		var str;

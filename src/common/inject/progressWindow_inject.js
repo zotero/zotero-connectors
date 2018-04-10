@@ -109,7 +109,7 @@ if (isTopWindow) {
 		}
 		
 		if (!prefix) {
-			prefix = Zotero.getString('progressWindow_savingTo', '');
+			prefix = Zotero.getString('progressWindow_savingTo');
 		}
 		
 		var target = lastSuccessfulTarget = {

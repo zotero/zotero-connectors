@@ -58,12 +58,14 @@ Zotero.i18n = {
 			Zotero.logError(new Error(`Localised string '${name}' is not defined.`));
 			return name;
 		}
-		if (!Array.isArray(substitutions)) {
-			substitutions = [substitutions];
-		}
-		for (let i = 0; i < substitutions.length; i++) {
-			let sub = substitutions[i];
-			str = str.replace(new RegExp(`\\$${i+1}`, 'g'), sub)
+		if (substitutions != undefined) {
+			if (!Array.isArray(substitutions)) {
+				substitutions = [substitutions];
+			}
+			for (let i = 0; i < substitutions.length; i++) {
+				let sub = substitutions[i];
+				str = str.replace(new RegExp(`\\$${i+1}`, 'g'), sub)
+			}
 		}
 
 		return str;

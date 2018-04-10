@@ -56,7 +56,7 @@ Zotero.API = new function() {
 		
 		var oauthSimple = new OAuthSimple(config.OAUTH.ZOTERO.CLIENT_KEY,
 			config.OAUTH.ZOTERO.CLIENT_SECRET);
-		oauthSimple.setURL(config.REQUEST_URL);
+		oauthSimple.setURL(config.OAUTH.ZOTERO.REQUEST_URL);
 		oauthSimple.setAction("POST");
 		
 		let options = {

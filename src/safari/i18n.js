@@ -29,9 +29,22 @@
 Zotero.i18n = {
 	init: async function() {
 		if (Zotero.isBackground) {
-			// This is likely not to work for more obscure languages, but they are more likely
-			// to not have translations either
-			var localeURL = safari.extension.baseURI + '_locales/' + navigator.language.split('-')[0] + '/messages.json';
+			var locale = navigator.language;
+			// Some languages have multiple locales, in which case we include the one with more
+			// speakers with just the language code. The other, specified here, will use the
+			// region. Which one to use in these cases is debatable, but having a fallback to one
+			// of them for a non-matching language (e.g., if navigator.language is just 'zh'
+			// somehow) seems better than having a fallback to English. This should stay up to
+			// date with the script used to to sync languages with zotero/zotero.
+			var multiCountryLocales = ['pt-PT', 'zh-TW'];
+			if (multiCountryLocales.includes(locale)) {
+				locale = locale.replace('-', '_');
+			}
+			else {
+				locale = navigator.language.split('-')[0];
+			}
+			
+			var localeURL = safari.extension.baseURI + '_locales/' + locale + '/messages.json';
 			this.localeJSON = await new Zotero.Promise(function (resolve) {
 				var xhr = new XMLHttpRequest();
 				// Safari is awkward like that and acts weird for XHR requests for extension own resources

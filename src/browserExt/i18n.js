@@ -38,6 +38,7 @@ Zotero.i18n = {
 		}
 		if (!str) {
 			Zotero.logError(new Error(`Localised string '${name}' not defined`));
+			str = name;
 		}
 		return str;
 	}

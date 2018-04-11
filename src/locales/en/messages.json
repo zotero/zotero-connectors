@@ -22,11 +22,12 @@
 		"message": "Troubleshooting Translator Issues"
 	},
 	"progressWindow_error_fallback": {
-		"message": "An error occurred while saving with $1. Attempting to save using $2 instead."
+		"message": "An error occurred saving with $1. Attempting to save using $2 instead.",
+		"description": "The placeholders will contain the names of Zotero translators (e.g., JSTOR or Embedded Metadata)."
 	},
 	"progressWindow_error_upgradeClient": {
-		"message": "This feature is not supported by your version of Zotero. Please upgrade to the $1.",
-		"description": "The placeholder will be a link with the localized text 'latest version'."
+		"message": "This feature is not supported by your version of $1. Please upgrade to the $2.",
+		"description": "$2 will be a link with the localized text 'latest version'."
 	},
 	"progressWindow_error_upgradeClient_latestVersion": {
 		"message": "latest version"

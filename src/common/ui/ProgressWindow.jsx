@@ -51,6 +51,13 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		this.nArcs = 20;
 		
+		var translatorIssuesURL = "https://www.zotero.org/support/troubleshooting_translator_issues";
+		this.text = {
+			more: Zotero.getString('general_more'),
+			done: Zotero.getString('general_done'),
+			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder')
+		};
+		
 		this.onMouseEnter = this.onMouseEnter.bind(this);
 		this.onMouseLeave = this.onMouseLeave.bind(this);
 		this.onUserInteraction = this.onUserInteraction.bind(this);
@@ -297,7 +304,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!this.state.targetSelectorShown) {
 			rowTargets.push({
 				id: "more",
-				name: "More…"
+				name: this.text.more
 			});
 		}
 		
@@ -349,12 +356,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					<input className="ProgressWindow-tagsInput"
 						type="text"
 						value={this.state.tags}
-						placeholder="Tags (separated by commas)"
+						placeholder={this.text.tagsPlaceholder}
 						onClick={this.onUserInteraction}
 						onChange={this.onTagsChange}
 						onKeyPress={this.onTagsKeyPress}
 						onBlur={this.onTagsBlur} />
-					<button className="ProgressWindow-button" onClick={this.onDone}>Done</button>
+					<button className="ProgressWindow-button" onClick={this.onDone}>{this.text.done}</button>
 				</div>
 			</div>
 			: ""
@@ -455,16 +462,20 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		if (err === "translationError") {
 			let url = "https://www.zotero.org/support/troubleshooting_translator_issues";
-			contents = <span>
-				An error occurred while saving this item.
-				See <a href={url} title={url}>Troubleshooting Translator Issues</a> for more information.
-			</span>;
+			let pageName = Zotero.getString('progressWindow_error_troubleshootingTranslatorIssues');
+			let pageLink = `<a href="${url}" title="${url}">${pageName}</a>`;
+			let html = {
+				__html: Zotero.getString("progressWindow_error_translation", pageLink)
+			};
+			contents = <span dangerouslySetInnerHTML={html}/>;
 		}
 		else if (err === "fallback") {
-			contents = <span>
-				An error occurred while saving with <b>{args[0]}</b>. Attempting to save
-				using <b>{args[1]}</b> instead.
-			</span>;
+			let t1 = `<b>${args[0]}</b>`
+			let t2 = `<b>${args[1]}</b>`
+			let html = {
+				__html: Zotero.getString('progressWindow_error_fallback', [t1, t2])
+			};
+			contents = <span dangerouslySetInnerHTML={html}/>;
 		}
 		else if (err === "noTranslator") {
 			contents = "No items could be saved because this website "
@@ -481,10 +492,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		}
 		else if (err === "upgradeClient") {
 			let url = ZOTERO_CONFIG.CLIENT_DOWNLOAD_URL;
-			contents = <span>
-				This feature is not supported by your version of Zotero. Please upgrade to
-				the <a href={url} title={url}>latest version</a>.
-			</span>;
+			let pageName = Zotero.getString('progressWindow_error_upgradeClient_latestVersion');
+			let pageLink = `<a href="${url}" title="${url}">${pageName}</a>`;
+			let html = {
+				__html: Zotero.getString("progressWindow_error_upgradeClient", pageLink)
+			};
+			contents = <span dangerouslySetInnerHTML={html}/>;
 		}
 		else if (err === "unexpectedError") {
 			let url = "https://www.zotero.org/support/getting_help";

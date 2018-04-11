@@ -37,11 +37,10 @@ if(window.top) {
 
 if (isTopWindow) {
 	//
-	// Progress window popup initialization
+	// Progress window initialization
 	//
-	// The progress window is created using React in an iframe, and we use postMessage() to
-	// communicate with it based on events from the messaging system (so that we don't need to
-	// load complicated messaging code into the iframe).
+	// The progress window is created using React in an iframe, and we use the
+	// connector messaging system to communicate with.
 	//
 	var frameID = 'zotero-progress-window-frame';
 	var currentSessionID;

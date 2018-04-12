@@ -176,17 +176,10 @@ Zotero.ContentTypeHandler = {
 	 */
 	importFile: async function(details, type) {
 		var sessionID = Zotero.Utilities.randomString();
+		var headline = type == 'csl' ? 'Installing Style' : null;
+		var readOnly = type == 'csl';
 		var tab = await browser.tabs.get(details.tabId);
-		// Make sure scripts injected so we can display the progress window
-		Zotero.Messaging.sendMessage(
-			'progressWindow.show',
-			[
-				sessionID,
-				type == 'csl' ? 'Installing Style' : null,
-				type != 'csl'
-			],
-			tab
-		);
+		Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, headline, readOnly], tab);
 	
 		var xhr = new XMLHttpRequest();
 		// If the original request method was POST, this is likely to fail, because

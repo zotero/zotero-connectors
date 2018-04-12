@@ -50,6 +50,7 @@ if (isTopWindow) {
 	var syncDelayIntervalID;
 	var insideIframe = false;
 	var frameSrc;
+	var frameIsHidden = false;
 	if (Zotero.isSafari) {
 		frameSrc = safari.extension.baseURI.toLowerCase() + 'progressWindow/progressWindow.html';
 	}
@@ -138,8 +139,10 @@ if (isTopWindow) {
 		insideIframe = false;
 		
 		var frame = document.getElementById(frameID);
-		frame.style.display = 'none';
-		addEvent("hidden");
+		if (frame) {
+			frame.style.display = 'none';
+			addEvent("hidden");
+		}
 		
 		// Stop delaying syncs when the window closes
 		if (syncDelayIntervalID) {
@@ -186,7 +189,8 @@ if (isTopWindow) {
 			width: '351px',
 			height: '120px',
 			border: "none",
-			zIndex: 2147483647
+			zIndex: 2147483647,
+			display: 'none'
 		};
 		for (let i in style) iframe.style[i] = style[i];
 		document.body.appendChild(iframe);
@@ -288,9 +292,11 @@ if (isTopWindow) {
 		var iframe = document.getElementById(frameID);
 		if (!iframe) {
 			iframe = await initFrame();
-
 		}
-		iframe.style.display = 'block';
+		// If the frame has been hidden since we started to open it, don't make it visible
+		if (!frameIsHidden) {
+			iframe.style.display = 'block';
+		}
 		return iframe;
 	}
 	
@@ -298,11 +304,16 @@ if (isTopWindow) {
 	 * This is called after an item has started to save in order to show the progress window
 	 */
 	Zotero.Messaging.addMessageListener("progressWindow.show", async function (args) {
-		var [sessionID, headline, useTargetSelector] = args;
-		if (useTargetSelector === undefined) {
-			useTargetSelector = true;
+		// Mark frame as visible immediately, so that if it's hidden before it's done initializing
+		// (e.g., when displaying the Select Items window) we can skip displaying it
+		frameIsHidden = false;
+		
+		var [sessionID, headline, readOnly, delay] = args;
+		
+		if (delay) {
+			await Zotero.Promise.delay(delay);
 		}
-
+		
 		// If session has changed, reset state before reopening popup
 		if (currentSessionID && currentSessionID != sessionID) {
 			resetFrame();
@@ -311,11 +322,11 @@ if (isTopWindow) {
 		
 		await showFrame();
 		
-		if (useTargetSelector) {
-			await setHeadlineFromClient(headline);
+		if (readOnly) {
+			changeHeadline(headline);
 		}
 		else {
-			changeHeadline(headline);
+			await setHeadlineFromClient(headline);
 		}
 	});
 	
@@ -337,7 +348,14 @@ if (isTopWindow) {
 		updateProgress(id, data);
 	});
 	
-	Zotero.Messaging.addMessageListener("progressWindow.close", hideFrame);
+	Zotero.Messaging.addMessageListener("progressWindow.close", function () {
+		// Mark frame as hidden so that if this is called after a progressWindow.show but before
+		// the popup has been initialized (e.g., when displaying the Select Items dialog) it's
+		// not made visble
+		frameIsHidden = true;
+		
+		hideFrame();
+	});
 	
 	Zotero.Messaging.addMessageListener("progressWindow.done", (returnValue) => {
 		if (Zotero.isBrowserExt

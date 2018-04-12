@@ -86,8 +86,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		for (let evt of ['changeHeadline', 'makeReadOnly', 'updateProgress', 'addError']) {
 			Zotero.Messaging.addMessageListener(`progressWindowIframe.${evt}`, (data) => this[evt](...data));
 		}
-		Zotero.Messaging.addMessageListener('hidden', this.onHidden.bind(this));
-		Zotero.Messaging.addMessageListener('reset', () => this.setState(this.getInitialState()));
+		Zotero.Messaging.addMessageListener('progressWindowIframe.hidden', this.onHidden.bind(this));
+		Zotero.Messaging.addMessageListener('progressWindowIframe.reset', () => this.setState(this.getInitialState()));
 		
 		// Preload other disclosure triangle state
 		(new Image()).src = 'disclosure-open.svg';

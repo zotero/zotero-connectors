@@ -88,8 +88,11 @@ if (isTopWindow) {
 			if (!initialized) {
 				await init();
 			}
+			iframe.style.display = 'block';
 			deferred = Zotero.Promise.defer();
-			return Zotero.Messaging.sendMessage('modalPrompt.show', props, null, null);
+			let result = await Zotero.Messaging.sendMessage('modalPrompt.show', props, null, null);
+			iframe.style.display = 'none';
+			return result
 		}
 	}
 }

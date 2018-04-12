@@ -325,7 +325,8 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/zotero.js',
 		'./src/common/zotero_config.js',
 		'./src/common/test/**/*',
-		'./src/**/*.jsx'
+		'./src/**/*.jsx',
+		'./src/zotero-google-docs-integration/src/connector/**'
 	];
 	if (!argv.p) {
 		sources.push('./src/common/test/**/*.js');	

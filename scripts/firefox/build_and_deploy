@@ -51,7 +51,9 @@ if [ $channel != "release" ]; then
 	version="$version$channel$rev"
 fi
 
-CMP=$(node -e "console.log(require('semver').compare('$version', '$current_version', true))")
+# Replace 'beta' with 'beta.' so that semver sorts beta10 > beta9
+# https://github.com/npm/node-semver/issues/30#issuecomment-64028037
+CMP=$(node -e "console.log(require('semver').compare('$version'.replace('beta', 'beta.'), '$current_version'.replace('beta', 'beta.'), true))")
 if [ "$CMP" = "-1" ]; then
 	echo "$version must be greater than $current_version"
 	exit 1
@@ -61,7 +63,7 @@ if [ "$CMP" = "0" ]; then
 	exit 1
 fi
 if [ "$CMP" != "1" ]; then
-	echo "Unexpected response $CMP from semver-compare"
+	echo "Unexpected response $CMP from semver.compare()"
 	exit 1
 fi
 

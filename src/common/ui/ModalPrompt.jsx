@@ -48,8 +48,6 @@ Zotero.UI.ModalPrompt = class ModalPrompt extends React.Component {
 	componentDidMount() {
 		document.addEventListener('keyup', this.escListener);
 		setTimeout(() => this.refs.button1.focus());
-		
-		this.newTabifyLinks();
 	}
 	
 	componentWillUnmount() {
@@ -73,21 +71,6 @@ Zotero.UI.ModalPrompt = class ModalPrompt extends React.Component {
 			this.props.onClose(this.state);
 			event.preventDefault();
 		}
-	}
-	
-	/**
-	 * Update any links in `message` to open in new tabs
-	 */
-	newTabifyLinks() {
-		var links = ReactDOM.findDOMNode(this).querySelectorAll('.ModalPrompt-body a');
-		var component = this;
-		links.forEach(function (link) {
-			link.onclick = function (event) {
-				let href = this.getAttribute('href');
-				Zotero.Connector_Browser.openTab(href);
-				return false;
-			};
-		});
 	}
 	
 	onCheckboxChange() {

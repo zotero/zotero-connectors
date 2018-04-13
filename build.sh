@@ -300,7 +300,31 @@ function copyResources {
 		 "$browser_builddir/zotero-google-docs-integration"
 		 
 	# Copy locales
-	cp -r "$SRCDIR/locales" "$browser_builddir/_locales"
+	mkdir -p "$browser_builddir/_locales/en"
+	# Get English strings from this repo
+	cp "$SRCDIR/messages.json" "$browser_builddir/_locales/en"
+	# And other locales from the Zotero submodule
+	pushd "$SRCDIR/zotero/chrome/locale" > /dev/null
+	for code in ?? ??-??; do
+		if [ $code = 'en-US' ]; then
+			continue
+		fi
+		
+		lang=${code:0:2}
+		# Keep in sync with i18n.js in Safari connector
+		if [[ $code = 'pt-PT' ]] || [[ $code = 'zh-TW' ]]; then
+			target_dir="$browser_builddir/_locales/$code"
+			
+		else
+			target_dir="$browser_builddir/_locales/$lang"
+		fi
+		
+		if [ -f $code/zotero/connector.json ]; then
+			mkdir -p $target_dir
+			cp $code/zotero/connector.json "$target_dir/messages.json"
+		fi
+	done
+	popd > /dev/null
 	
 	# Copy node_modules libs
 	mkdir "$browser_builddir/lib"

@@ -64,12 +64,12 @@ Zotero.i18n = {
 	getString: function(name, substitutions) {
 		if (!this.localeJSON) {
 			Zotero.logError(new Error(`i18n.getString called for ${name} before i18n.localeJSON was loaded.`));
-			return name;
+			return '{' + name + '}';
 		}
 		var str = this.localeJSON[name] && this.localeJSON[name].message;
 		if (!str) {
-			Zotero.logError(new Error(`Localised string '${name}' is not defined.`));
-			return name;
+			Zotero.logError(new Error(`Localized string '${name}' is not defined.`));
+			return '{' + name + '}';
 		}
 		if (substitutions != undefined) {
 			if (!Array.isArray(substitutions)) {

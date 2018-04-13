@@ -37,8 +37,8 @@ Zotero.i18n = {
 			str = browser.i18n.getMessage(name, substitutions);
 		}
 		if (!str) {
-			Zotero.logError(new Error(`Localised string '${name}' not defined`));
-			str = name;
+			Zotero.logError(new Error(`Localized string '${name}' not defined`));
+			str = '{' + name + '}';
 		}
 		return str;
 	}

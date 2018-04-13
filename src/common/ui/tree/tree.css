@@ -42,7 +42,7 @@
 /* For non expandable root nodes, we don't have .tree-indent elements, so we declare
    the margin on the start of the node */
 .tree-node[data-expandable="false"][aria-level="0"] {
-  padding-left: 5px
+  padding-left: 22px
 }
 
 .tree .tree-node[data-expandable="true"] {

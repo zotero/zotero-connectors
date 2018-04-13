@@ -58,7 +58,7 @@ Zotero.UI.ModalPrompt = class ModalPrompt extends React.Component {
 	attachButtonListeners() {
 		window.requestAnimationFrame(function() {
 			for (let a of document.querySelectorAll('.ModalPrompt-buttons input[type=button]')) {
-				a.addEventListener('mousedown', (event) => {
+				a.addEventListener('click', (event) => {
 					event.stopPropagation();
 					this.state.onButton(this.state, event);
 				}, false);

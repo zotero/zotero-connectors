@@ -287,15 +287,23 @@ Zotero.Inject = new function() {
 	};
 	
 	this.firstSaveToServerPrompt = function() {
+		var clientName = ZOTERO_CONFIG.CLIENT_NAME;
+		
 		return this.confirm({
-			button1Text: "Try Again",
-			button2Text: "Cancel",
-			button3Text: "Enable Saving to Online Library",
-			title: "Is Zotero Running?",
-			message: `
-				The Zotero Connector was unable to communicate with the Zotero desktop application. The Connector can save some pages directly to your zotero.org account, but for best results you should make sure Zotero is open before attempting to save.<br/><br/>
-				You can <a href="https://www.zotero.org/download/">download Zotero</a> or <a href="https://www.zotero.org/support/kb/connector_zotero_unavailable">troubleshoot the connection</a> if necessary.
-			`
+			button1Text: Zotero.getString('general_tryAgain'),
+			button2Text: Zotero.getString('general_cancel'),
+			button3Text: Zotero.getString('error_connection_enableSavingToOnlineLibrary'),
+			title: Zotero.getString('error_connection_isAppRunning', clientName),
+			message: Zotero.getString(
+					'error_connection_save',
+					[
+						Zotero.getString('appConnector', clientName),
+						clientName,
+						ZOTERO_CONFIG.DOMAIN_NAME
+					]
+				)
+				+ '<br /><br />'
+				+ Zotero.Inject.getConnectionErrorTroubleshootingString()
 		}).then(function(result) {
 			switch (result.button) {
 			case 1:
@@ -308,6 +316,18 @@ Zotero.Inject = new function() {
 				return 'cancel';
 			}
 		});
+	};
+	
+	
+	this.getConnectionErrorTroubleshootingString = function () {
+		var clientName = ZOTERO_CONFIG.CLIENT_NAME;
+		var connectorName = Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME);
+		var downloadLink = 'https://www.zotero.org/download/';
+		var troubleshootLink = 'https://www.zotero.org/support/kb/connector_zotero_unavailable';
+		return Zotero.getString(
+			'error_connection_downloadOrTroubleshoot',
+			[downloadLink, clientName, troubleshootLink]
+		);
 	};
 	
 	/**

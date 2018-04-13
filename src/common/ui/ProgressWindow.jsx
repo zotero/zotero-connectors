@@ -491,11 +491,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				+ "Please open Zotero and try again.";
 		}
 		else if (err === "upgradeClient") {
+			let clientName = ZOTERO_CONFIG.CLIENT_NAME;
 			let url = ZOTERO_CONFIG.CLIENT_DOWNLOAD_URL;
-			let pageName = Zotero.getString('progressWindow_error_upgradeClient_latestVersion');
-			let pageLink = `<a href="${url}" title="${url}">${pageName}</a>`;
+			let pageName = Zotero.getString('progressWindow_error_upgradeApp_latestVersion');
+			let pageLink = `<a href="${url}">${pageName}</a>`;
 			let html = {
-				__html: Zotero.getString("progressWindow_error_upgradeClient", pageLink)
+				__html: Zotero.getString("progressWindow_error_upgradeApp", [clientName, pageLink])
 			};
 			contents = <span dangerouslySetInnerHTML={html}/>;
 		}

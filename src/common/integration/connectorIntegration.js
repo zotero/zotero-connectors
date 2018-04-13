@@ -74,20 +74,23 @@ Zotero.ConnectorIntegration = {
 			else if (e.status == 404) {
 				console.log(client);
 				Zotero.Inject.confirm({
-					title: "Upgrade Zotero",
-						message: `
-							Web-based citing requires Zotero 5.0.44 or later.
-						`,
+					title: Zotero.getString('upgradeApp', ZOTERO_CONFIG.CLIENT_NAME),
+					message: Zotero.getString(
+						'integration_error_clientUpgrade',
+						ZOTERO_CONFIG.CLIENT_NAME + ' 5.0.45'
+					),
 					button2Text: "",
 				});
 			}
 			else if (e.status == 0) {
 				Zotero.Inject.confirm({
-					title: "Is Zotero Running?",
-						message: `
-							The Zotero Connector was unable to communicate with the Zotero desktop application. Zotero must be open to use web-based citing.
-							You can <a href="https://www.zotero.org/download/">download Zotero</a> or <a href="https://www.zotero.org/support/kb/connector_zotero_unavailable">troubleshoot the connection</a> if necessary.
-						`,
+					title: Zotero.getString('error_connection_isAppRunning', ZOTERO_CONFIG.CLIENT_NAME),
+					message: Zotero.getString(
+							'integration_error_communication',
+							[connectorName, clientName]
+						)
+						+ '<br /><br />'
+						+ Zotero.Inject.getConnectionErrorTroubleshootingString(),
 					button2Text: "", 
 				});
 			}

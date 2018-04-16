@@ -2,7 +2,7 @@ html {
 	overflow: hidden;
 }
 
-.zotero-modal-prompt {
+#zotero-modal-prompt {
 	z-index: 1000000;
 	position: fixed;
 	top: 0;

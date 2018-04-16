@@ -286,10 +286,10 @@ Zotero.Inject = new function() {
 		});
 	};
 	
-	this.firstSaveToServerPrompt = function() {
+	this.firstSaveToServerPrompt = async function() {
 		var clientName = ZOTERO_CONFIG.CLIENT_NAME;
 		
-		return this.confirm({
+		var result = await this.confirm({
 			button1Text: Zotero.getString('general_tryAgain'),
 			button2Text: Zotero.getString('general_cancel'),
 			button3Text: Zotero.getString('error_connection_enableSavingToOnlineLibrary'),
@@ -304,8 +304,9 @@ Zotero.Inject = new function() {
 				)
 				+ '<br /><br />'
 				+ Zotero.Inject.getConnectionErrorTroubleshootingString()
-		}).then(function(result) {
-			switch (result.button) {
+		});
+		
+		switch (result.button) {
 			case 1:
 				return 'retry';
 			
@@ -314,8 +315,7 @@ Zotero.Inject = new function() {
 			
 			default:
 				return 'cancel';
-			}
-		});
+		}
 	};
 	
 	

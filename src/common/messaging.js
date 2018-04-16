@@ -116,7 +116,7 @@ Zotero.Messaging = new function() {
 			if (typeof frameId == 'number') options = {frameId};
 			
 			try {
-				response = await browser.tabs.sendMessage(tab.id, [messageName, args], options).catch(() => undefined)
+				response = await browser.tabs.sendMessage(tab.id, [messageName, args], options);
 			} catch (e) {}
 			if (response && response[0] == 'error') {
 				response[1] = JSON.parse(response[1]);

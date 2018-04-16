@@ -34,7 +34,7 @@ Zotero.Messaging = new function() {
 	 * Add a message listener
 	 */
 	this.addMessageListener = function(messageName, callback) {
-		_messageListeners[messageName] = Zotero.Promise.method(callback);
+		_messageListeners[messageName] = callback;
 	}
 	
 	/**
@@ -103,18 +103,31 @@ Zotero.Messaging = new function() {
 			}
 		}
 				
-		browser.runtime.onMessage.addListener(function(request, sender) {
+		// NOTE: Do not convert to `browser.` API!
+		// If there are message listeners on multiple frames (or multiple listeners on the same frame)
+		// and you need to respond from a specific one, Firefox does not respect the `undefined`
+		// return value and will resolve the `undefined` back to the background page
+		// from whichever listener returns undefined first.
+		// There is also extended discussion on what's going to be the final API,
+		// e.g. on the browser-polyfill github https://github.com/mozilla/webextension-polyfill/pull/97
+		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			if (typeof request !== "object" || !request.length || !_messageListeners[request[0]]) return;
-			Zotero.debug(request[0] + " message received in injected page " + window.location.href);
-			return _messageListeners[request[0]](request[1]).catch(function(err) {
-				Zotero.logError(err);
-				err = JSON.stringify(Object.assign({
-					name: err.name,
-					message: err.message,
-					stack: err.stack
-				}, err));
-				return ['error', err]
-			});
+			(async function messageListener() {
+				Zotero.debug(request[0] + " message received in injected page " + window.location.href);
+				var result;
+				try {
+					result = await _messageListeners[request[0]](request[1])
+				} catch (err) {
+					Zotero.logError(err);
+					result = ['error', JSON.stringify(Object.assign({
+						name: err.name,
+						message: err.message,
+						stack: err.stack
+					}, err))];
+				}
+				sendResponse(result);
+			})();
+			return true;
 		});
 	}
 }

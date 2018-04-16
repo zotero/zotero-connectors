@@ -26,9 +26,7 @@
 window.onload = async function () {
 	Zotero.Messaging.addMessageListener('modalPrompt.show', async function(props) {
 		var deferred = Zotero.Promise.defer();
-		let div = document.createElement('div');
-		div.id = 'zotero-modal-prompt';
-		div.style.cssText = 'z-index: 1000000; position: fixed; top: 0; left: 0; width: 100%; height: 100%';
+		let div = document.querySelector('#zotero-modal-prompt');
 		let prompt = (
 			<Zotero.UI.ModalPrompt onClose={onClose} {...props}/>
 		);
@@ -39,11 +37,10 @@ window.onload = async function () {
 				inputText: state.inputText
 			});
 			ReactDOM.unmountComponentAtNode(div);
-			document.body.removeChild(div);
 		}
 		ReactDOM.render(prompt, div);
 		document.body.appendChild(div);
-		return deferred.promise;
+		return await deferred.promise;
 	});
 	
 	await Zotero.Messaging.init();

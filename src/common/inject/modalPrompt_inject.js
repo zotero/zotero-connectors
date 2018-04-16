@@ -41,7 +41,6 @@ if (isTopWindow) {
 	//
 	var frameID = 'zotero-modal-prompt';
 	var iframe;
-	var deferred;
 	var initialized = false;
 	var frameSrc;
 	if (Zotero.isSafari) {
@@ -89,7 +88,6 @@ if (isTopWindow) {
 				await init();
 			}
 			iframe.style.display = 'block';
-			deferred = Zotero.Promise.defer();
 			let result = await Zotero.Messaging.sendMessage('modalPrompt.show', props, null, null);
 			iframe.style.display = 'none';
 			return result

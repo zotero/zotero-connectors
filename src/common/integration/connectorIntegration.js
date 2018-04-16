@@ -40,7 +40,7 @@ Zotero.ConnectorIntegration = {
 			try {
 				await Zotero.ConnectorIntegration.execCommand(client, event.data.command);
 			} catch (e) {
-				Zotero.debug(`Exception in ${e.data.command}`);
+				Zotero.debug(`Exception in ${event.data.command}`);
 				Zotero.logError(e);
 				var result = {
 					error: e.type || `Connector Error`,
@@ -83,11 +83,12 @@ Zotero.ConnectorIntegration = {
 				});
 			}
 			else if (e.status == 0) {
+				var connectorName = Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME);
 				Zotero.Inject.confirm({
 					title: Zotero.getString('error_connection_isAppRunning', ZOTERO_CONFIG.CLIENT_NAME),
 					message: Zotero.getString(
-							'integration_error_communication',
-							[connectorName, clientName]
+							'integration_error_connection',
+							[connectorName, ZOTERO_CONFIG.CLIENT_NAME]
 						)
 						+ '<br /><br />'
 						+ Zotero.Inject.getConnectionErrorTroubleshootingString(),

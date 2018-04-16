@@ -671,7 +671,7 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponen
 				
 				<div style={{display: "flex", flexDirection: "column", marginTop: "10px"}}>
 					<label>Hostnames</label>
-					<select size="8" multiple
+					<select className="Preferences-Proxies-hostSelect" size="8" multiple
 							value={[this.state.currentHostIdx]}
 							onChange={this.handleHostSelectChange}>
 						{currentProxy.hosts.map((host, i) =>
@@ -697,7 +697,7 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponen
 	render() {
 		return (
 			<div style={{display: "flex", flexDirection: "column"}}>
-				<select size="8" multiple
+				<select className="Preferences-Proxies-proxySelect" size="8" multiple
 						value={[this.state.currentProxy ? this.state.currentProxy.id : '']}
 						onChange={this.handleProxySelectChange}
 						disabled={!this.props.transparent}>
@@ -796,7 +796,7 @@ Zotero_Preferences.Components.MIMETypeHandling = class MIMETypeHandling extends 
 				</p>
 				<div style={{display: this.state.enabled ? 'flex' : 'none', flexDirection: "column", marginTop: "10px"}}>
 					<label>Enabled Hostnames</label>
-					<select size="8" multiple
+					<select className="Preferences-MIMETypeHandling-hostSelect" size="8" multiple
 							value={this.state.currentHostIdx}
 							onChange={this.handleSelectChange}>
 						{hosts}

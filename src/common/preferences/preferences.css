@@ -101,6 +101,10 @@ label {
 	margin-right: 5px;
 }
 
+input {
+	max-width: 24em;
+}
+
 input[type=checkbox] {
 	vertical-align: middle;
 }
@@ -127,4 +131,13 @@ input[type=button]:active:hover:not([disabled="true"]) {
 input[type=button][disabled="true"] {
   background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(230,230,230)), to(rgb(200,200,200)));
   color: rgb(120,120,120);
+}
+
+.Preferences-MIMETypeHandling-hostSelect {
+	width: 18em;
+}
+
+.Preferences-Proxies-proxySelect,
+.Preferences-Proxies-hostSelect {
+	width: 24em;
 }

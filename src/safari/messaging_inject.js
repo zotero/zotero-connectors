@@ -92,6 +92,8 @@ Zotero.Messaging = new function() {
 										reject(e);
 									}
 								}
+							} else {
+								resolve();
 							}
 
 							// send message

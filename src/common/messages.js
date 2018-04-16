@@ -132,7 +132,7 @@ var MESSAGES = {
 		openTab: false,
 		openConfigEditor: false,
 		openPreferences: false,
-		bringToFront: false
+		bringToFront: true
 	},
 	Connector_Debug: {
 		storing: true,

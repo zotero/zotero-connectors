@@ -23,6 +23,7 @@
 	***** END LICENSE BLOCK *****
 */
 
+(async function() {
 Zotero.Connector_Browser = new function() {
 	var _selectCallbacksForTabIDs = {};
 	var _incompatibleVersionMessageShown;
@@ -341,6 +342,9 @@ Zotero.Connector_Browser = new function() {
 	}
 }
 
+// initialize
+await Zotero.initGlobal();
+
 // register handlers
 safari.application.addEventListener("command", Zotero.Connector_Browser.onPerformCommand, false);
 safari.application.addEventListener("validate", Zotero.Connector_Browser.onValidateCommand, false);
@@ -356,5 +360,17 @@ safari.application.addEventListener('contextmenu', Zotero.Connector_Browser.onCo
 
 Zotero.Messaging.addMessageListener("selectDone", Zotero.Connector_Browser.onSelectDone);
 
-// initialize
-Zotero.initGlobal();
+// Google Docs content scripts with URL whitelisting
+var scripts = [
+	"lib/react.js",
+	"lib/react-dom.js",
+	"lib/prop-types.js",
+	"zotero-google-docs-integration/kixAddZoteroMenu.js",
+	"zotero-google-docs-integration/client.js",
+	"zotero-google-docs-integration/ui.js"
+];
+for (let script of scripts) {
+	safari.extension.addContentScriptFromURL(safari.extension.baseURI+script, ["https://docs.google.com/*"], [], false);
+}
+
+})();

@@ -189,7 +189,14 @@ function processFile() {
 		
 		if (ext == 'jsx') {
 			try {
-				file.contents = new Buffer(babel.transform(file.contents, {plugins: ['transform-react-jsx']}).code);
+				file.contents = new Buffer(
+					babel.transform(
+						file.contents,
+						{
+							plugins: ['transform-react-jsx', 'transform-class-properties']
+						}
+					).code
+				);
 			} catch (e) {
 				console.log(e.message);
 				return;

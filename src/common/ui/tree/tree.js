@@ -574,15 +574,23 @@ class Tree extends Component {
           return closestScrolledParent(node.parentNode);
         };
         const scrolledParent = closestScrolledParent(treeElement);
+        // Modified by Zotero to work when the scrolled parent isn't at the top of the page.
+        // Previously this used 0 and clientHeight.
+        var scrolledParentTop = 0;
+        var scrolledParentBottom = 0;
+        if (scrolledParent) {
+            scrolledParentTop = scrolledParent.getBoundingClientRect().top;
+            scrolledParentBottom = scrolledParent.getBoundingClientRect().bottom;
+        }
         const isVisible = !scrolledParent
           || (
-            top >= 0
-            && bottom <= scrolledParent.clientHeight
+            top >= scrolledParentTop
+            && bottom <= scrolledParentBottom
           );
 
         if (!isVisible) {
           let scrollToTop =
-            (!options.alignTo && top < 0)
+            (!options.alignTo && top < scrolledParentTop)
             || options.alignTo === "top";
           element.scrollIntoView(scrollToTop);
         }

@@ -29,6 +29,12 @@ button:active {
 	position: relative
 }
 
+/* Hack to check whether the mouse is over the pane when switching back from another tab.
+   We use a property that has no effect and check its computed state in handleVisibilityChange(). */
+.ProgressWindow-box:hover {
+	background-size: cover;
+}
+
 .ProgressWindow-headline {
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 	font-size: 13px;

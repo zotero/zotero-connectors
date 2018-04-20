@@ -144,7 +144,7 @@ if (isTopWindow) {
 			addEvent("hidden");
 		}
 		
-		// Stop delaying syncs when the window closes
+		// Stop delaying syncs when the frame closes
 		if (syncDelayIntervalID) {
 			clearInterval(syncDelayIntervalID);
 		}
@@ -160,6 +160,20 @@ if (isTopWindow) {
 		var frame = document.getElementById(frameID);
 		document.body.removeChild(frame);
 		frameReadyDeferred = Zotero.Promise.defer();
+	}
+	
+	function handleMouseEnter() {
+		insideIframe = true;
+		stopCloseTimer();
+		
+		// See scroll listener in initFrame()
+		scrollX = window.scrollX;
+		scrollY = window.scrollY;
+	}
+	
+	function handleMouseLeave() {
+		insideIframe = false;
+		startCloseTimer();
 	}
 	
 	function startCloseTimer(delay) {
@@ -216,17 +230,10 @@ if (isTopWindow) {
 		//
 		// Handle messages from the progress window iframe
 		//
-		
-		// Delay syncs by 10 seconds at a time (specified in server_connector.js) while
-		// the selector is open. Run every 7.5 seconds to make sure the request gets
-		// there in time.
 		Zotero.Messaging.addMessageListener('progressWindowIframe.registered', function() {
 			frameReadyDeferred.resolve();
-			syncDelayIntervalID = setInterval(() => {
-				Zotero.Connector.callMethod("delaySync", {});
-			}, 7500);
 		});
-
+		
 		// Adjust iframe height when inner document is resized
 		Zotero.Messaging.addMessageListener('progressWindowIframe.resized', function(data) {
 			iframe.style.height = (data.height + 33) + "px";
@@ -254,18 +261,8 @@ if (isTopWindow) {
 		});
 
 		// Keep track of when the mouse is over the popup, for various purposes
-		Zotero.Messaging.addMessageListener('progressWindowIframe.mouseenter', function() {
-			insideIframe = true;
-			stopCloseTimer();
-			
-			// See scroll listener above
-			scrollX = window.scrollX;
-			scrollY = window.scrollY;
-		});
-		Zotero.Messaging.addMessageListener('progressWindowIframe.mouseleave', function() {
-			insideIframe = false;
-			startCloseTimer();
-		});
+		Zotero.Messaging.addMessageListener('progressWindowIframe.mouseenter', handleMouseEnter);
+		Zotero.Messaging.addMessageListener('progressWindowIframe.mouseleave', handleMouseLeave);
 
 		// Hide iframe if it loses focus and the user recently clicked on the main page
 		// (i.e., they didn't just switch to another window)
@@ -289,6 +286,8 @@ if (isTopWindow) {
 	 * @returns {Promise<iframe>}
 	 */
 	async function showFrame() {
+		stopCloseTimer();
+		
 		var iframe = document.getElementById(frameID);
 		if (!iframe) {
 			iframe = await initFrame();
@@ -297,6 +296,22 @@ if (isTopWindow) {
 		if (!frameIsHidden) {
 			iframe.style.display = 'block';
 		}
+		
+		// Delay syncs by 10 seconds at a time (specified in server_connector.js) while
+		// the selector is open. Run every 7.5 seconds to make sure the request gets
+		// there in time.
+		if (syncDelayIntervalID) {
+			clearInterval(syncDelayIntervalID);
+		}
+		syncDelayIntervalID = setInterval(() => {
+			// Don't prevent syncing when tab isn't visible. See note in handleVisibilityChange()
+			// in ProgressWindow.jsx.
+			if (document.hidden) {
+				return;
+			}
+			Zotero.Connector.callMethod("delaySync", {});
+		}, 7500);
+		
 		return iframe;
 	}
 	

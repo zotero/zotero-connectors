@@ -58,9 +58,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder')
 		};
 		
-		this.onMouseEnter = this.onMouseEnter.bind(this);
-		this.onMouseLeave = this.onMouseLeave.bind(this);
-		this.onUserInteraction = this.onUserInteraction.bind(this);
+		this.handleMouseEnter = this.handleMouseEnter.bind(this);
+		this.handleMouseLeave = this.handleMouseLeave.bind(this);
+		this.handleUserInteraction = this.handleUserInteraction.bind(this);
 		this.onHeadlineSelectChange = this.onHeadlineSelectChange.bind(this);
 		this.onDisclosureChange = this.onDisclosureChange.bind(this);
 		this.onTargetChange = this.onTargetChange.bind(this);
@@ -88,6 +88,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		}
 		Zotero.Messaging.addMessageListener('progressWindowIframe.hidden', this.onHidden.bind(this));
 		Zotero.Messaging.addMessageListener('progressWindowIframe.reset', () => this.setState(this.getInitialState()));
+		
+		document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 		
 		// Preload other disclosure triangle state
 		(new Image()).src = 'disclosure-open.svg';
@@ -202,15 +204,38 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	//
 	// Handlers
 	//
-	onMouseEnter() {
+	handleMouseEnter() {
 		this.sendMessage('mouseenter');
 	}
 	
-	onMouseLeave() {
+	handleMouseLeave() {
 		this.sendMessage('mouseleave');
 	}
 	
-	onUserInteraction() {
+	handleMouseMove() {
+		this.sendMessage('mousemove');
+	}
+	
+	handleVisibilityChange() {
+		// When the tab becomes visible, check whether the mouse is over the frame and trigger a
+		// mouseenter/mouseleave accordingly. We don't trigger a mouseleave when the tab becomes
+		// hidden so that the popup doesn't change state in the background, but we skip the
+		// delaySync() request in the setInterval() in progressWindow_inject.js when it's hidden.
+		if (!document.hidden) {
+			// This is a hack to synchronously check whether we're over the iframe, using a no-op
+			// CSS property on hover
+			let hovering = window.getComputedStyle(this.rootNode)
+				.getPropertyValue('background-size') == 'cover';
+			if (hovering) {
+				this.handleMouseEnter();
+			}
+			else {
+				this.handleMouseLeave();
+			}
+		}
+	}
+	
+	handleUserInteraction() {
 		// After the user has interacted with the popup, let the parent know when the document
 		// is blurred in case it wants to close the frame
 		document.body.onblur = this.onDocumentBlur.bind(this);
@@ -235,8 +260,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	onDisclosureChange() {
-		this.onUserInteraction();
-		
 		this.setState((prevState, props) => {
 			if (!prevState.targetSelectorShown) {
 				setTimeout(() => this.focusTree(), 100);
@@ -248,8 +271,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	onTargetChange(id) {
-		this.onUserInteraction();
-		
 		var target = this.state.targets.find(row => row.id == id);
 		this.setState({target});
 		this.target = target;
@@ -312,7 +333,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			<div className="ProgressWindow-headlineSelectContainer">
 				<select ref={(el) => {this.headlineSelectNode = el}}
 						className="ProgressWindow-headlineSelect"
-						onFocus={this.onUserInteraction}
+						onFocus={this.handleUserInteraction}
 						onChange={this.onHeadlineSelectChange}
 						value={this.state.target.id}>
 					{rowTargets.map((row) => {
@@ -357,7 +378,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						type="text"
 						value={this.state.tags}
 						placeholder={this.text.tagsPlaceholder}
-						onClick={this.onUserInteraction}
 						onChange={this.onTagsChange}
 						onKeyPress={this.onTagsKeyPress}
 						onBlur={this.onTagsBlur} />
@@ -519,8 +539,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		return (
 			<div ref={(el) => {this.rootNode = el}}
 					className="ProgressWindow-box"
-					onMouseEnter={this.onMouseEnter}
-					onMouseLeave={this.onMouseLeave}>
+					onMouseEnter={this.handleMouseEnter}
+					onMouseLeave={this.handleMouseLeave}
+					onClick={this.handleUserInteraction}>
 				{this.renderHeadline()}
 				{this.renderTargetSelector()}
 				{this.renderProgress()}

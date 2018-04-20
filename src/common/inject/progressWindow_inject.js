@@ -44,6 +44,7 @@ if (isTopWindow) {
 	//
 	var frameID = 'zotero-progress-window-frame';
 	var currentSessionID;
+	var closeOnLeave = false;
 	var lastSuccessfulTarget;
 	var frameReadyDeferred = Zotero.Promise.defer();
 	var closeTimeoutID;
@@ -173,7 +174,9 @@ if (isTopWindow) {
 	
 	function handleMouseLeave() {
 		insideIframe = false;
-		startCloseTimer();
+		if (closeOnLeave) {
+			startCloseTimer();
+		}
 	}
 	
 	function startCloseTimer(delay) {
@@ -304,8 +307,8 @@ if (isTopWindow) {
 			clearInterval(syncDelayIntervalID);
 		}
 		syncDelayIntervalID = setInterval(() => {
-			// Don't prevent syncing when tab isn't visible. See note in handleVisibilityChange()
-			// in ProgressWindow.jsx.
+			// Don't prevent syncing when tab isn't visible.
+			// See note in ProgressWindow.jsx::handleVisibilityChange().
 			if (document.hidden) {
 				return;
 			}
@@ -332,6 +335,9 @@ if (isTopWindow) {
 		// If session has changed, reset state before reopening popup
 		if (currentSessionID && currentSessionID != sessionID) {
 			resetFrame();
+			// Disable closing on mouseleave until save finishes. (This is disabled initially
+			// but is enabled when a save finishes, so we have to redisable it for a new session.)
+			closeOnLeave = false;
 		}
 		currentSessionID = sessionID;
 		
@@ -373,6 +379,7 @@ if (isTopWindow) {
 	});
 	
 	Zotero.Messaging.addMessageListener("progressWindow.done", (returnValue) => {
+		closeOnLeave = true;
 		if (Zotero.isBrowserExt
 				&& document.location.href.startsWith(browser.extension.getURL('confirm.html'))) {
 			setTimeout(function() {

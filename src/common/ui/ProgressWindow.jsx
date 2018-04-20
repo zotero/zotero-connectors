@@ -58,16 +58,22 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder')
 		};
 		
+		this.headlineSelectNode = React.createRef();
+		
 		this.handleMouseEnter = this.handleMouseEnter.bind(this);
 		this.handleMouseLeave = this.handleMouseLeave.bind(this);
 		this.handleUserInteraction = this.handleUserInteraction.bind(this);
+		this.handleHeadlineSelectFocus = this.handleHeadlineSelectFocus.bind(this);
 		this.onHeadlineSelectChange = this.onHeadlineSelectChange.bind(this);
 		this.onDisclosureChange = this.onDisclosureChange.bind(this);
+		this.handleDisclosureKeyPress = this.handleDisclosureKeyPress.bind(this);
 		this.onTargetChange = this.onTargetChange.bind(this);
+		this.handleKeyDown = this.handleKeyDown.bind(this);
+		this.handleKeyPress = this.handleKeyPress.bind(this);
 		this.onTagsChange = this.onTagsChange.bind(this);
 		this.onTagsKeyPress = this.onTagsKeyPress.bind(this);
 		this.onTagsBlur = this.onTagsBlur.bind(this);
-		this.onDone = this.onDone.bind(this);
+		this.handleDone = this.handleDone.bind(this);
 	}
 	
 	getInitialState() {
@@ -86,7 +92,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		for (let evt of ['changeHeadline', 'makeReadOnly', 'updateProgress', 'addError']) {
 			Zotero.Messaging.addMessageListener(`progressWindowIframe.${evt}`, (data) => this[evt](...data));
 		}
-		Zotero.Messaging.addMessageListener('progressWindowIframe.hidden', this.onHidden.bind(this));
+		Zotero.Messaging.addMessageListener('progressWindowIframe.shown', this.handleShown.bind(this));
+		Zotero.Messaging.addMessageListener('progressWindowIframe.hidden', this.handleHidden.bind(this));
 		Zotero.Messaging.addMessageListener('progressWindowIframe.reset', () => this.setState(this.getInitialState()));
 		
 		document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
@@ -94,19 +101,34 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		// Preload other disclosure triangle state
 		(new Image()).src = 'disclosure-open.svg';
 		
-		// Focus the content window after initialization so that keyboard navigation works
-		this.rootNode.click();
-		if (this.headlineSelectNode) {
-			// Does this work?
-			this.headlineSelectNode.focus();
-		}
-		
 		this.sendMessage('registered');
 	}
 	
 	
-	// Let the parent window know it has to resize the iframe
 	componentDidUpdate() {
+		// Focus the recents drop-down
+		if (this.focusHeadlineSelect) {
+			this.focusHeadlineSelect = false;
+			if (this.headlineSelectNode.current) {
+				// Don't count this focus as a user interaction
+				this.ignoreHeadlineSelectFocus = true;
+				this.headlineSelectNode.current.focus();
+			}
+		}
+		// Focus the focused tree
+		else if (this.focusTreeOnUpdate) {
+			this.focusTreeOnUpdate = false;
+			// This is a hacky approach, but figuring out when the focused tree row was rendered
+			// would be way more convoluted.
+			setTimeout(function () {
+				var focused = document.querySelector('.focused');
+				if (focused) {
+					focused.click();
+				}
+			}, 100);
+		}
+		
+		// Let the parent window know it has to resize the iframe
 		window.requestAnimationFrame(() => {
 			if (this.lastHeight != this.rootNode.scrollHeight
 					// In Firefox this ends up being 0 when the pane closes
@@ -122,6 +144,14 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	// State update
 	//
 	changeHeadline(text, target, targets) {
+		// Target selector mode
+		if (targets) {
+			// On initialization or if collapsed, focus the recents drop-down
+			if (!this.state.targets || !this.state.targetSelectorShown) {
+				this.focusHeadlineSelect = true;
+			}
+		}
+		
 		this.setState({
 			headlineText: text,
 			target,
@@ -183,13 +213,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 	}
 	
-	focusTree() {
-		var focused = document.querySelector('.focused');
-		if (focused) {
-			focused.click();
-		}
-	}
-	
 	//
 	// Messaging
 	//
@@ -204,6 +227,16 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	//
 	// Handlers
 	//
+	handleShown() {
+		// If previously hidden and now reopened with the target selector shown, focus the tree
+		if (this.state.targetSelectorShown) {
+			this.focusTreeOnUpdate = true;
+		}
+	}
+	
+	handleHidden() {
+	}
+	
 	handleMouseEnter() {
 		this.sendMessage('mouseenter');
 	}
@@ -246,12 +279,21 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.sendMessage('blurred');
 	}
 	
+	handleHeadlineSelectFocus() {
+		// The select sometimes gets auto-focused, and we don't want to count those as user interaction
+		if (this.ignoreHeadlineSelectFocus) {
+			this.ignoreHeadlineSelectFocus = false;
+			return;
+		}
+		this.handleUserInteraction();
+	}
+	
 	onHeadlineSelectChange(event) {
 		if (event.target.value == 'more') {
+			this.focusTreeOnUpdate = true;
 			this.setState({
 				targetSelectorShown: true
 			});
-			setTimeout(() => this.focusTree(), 100);
 			return;
 		}
 		
@@ -260,14 +302,19 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	onDisclosureChange() {
-		this.setState((prevState, props) => {
-			if (!prevState.targetSelectorShown) {
-				setTimeout(() => this.focusTree(), 100);
-			}
-			return {
-				targetSelectorShown: !prevState.targetSelectorShown
-			};
+		var show = !this.state.targetSelectorShown;
+		if (show) {
+			this.focusTreeOnUpdate = true;
+		}
+		this.setState({
+			targetSelectorShown: show
 		});
+	}
+	
+	handleDisclosureKeyPress(event) {
+		if (event.key == 'Enter') {
+			event.stopPropagation();
+		}
 	}
 	
 	onTargetChange(id) {
@@ -275,6 +322,20 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.setState({target});
 		this.target = target;
 		this.sendUpdate();
+	}
+	
+	handleKeyDown(event) {
+		if (event.key == 'Escape') {
+			this.handleDone();
+		}
+	}
+	
+	handleKeyPress(event) {
+		if (event.altKey || event.ctrlKey || event.metaKey) return;
+		
+		if (event.key == 'Enter') {
+			this.handleDone();
+		}
 	}
 	
 	onTagsChange(event) {
@@ -286,7 +347,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		// Commit tags and close popup on Enter
 		if (event.which == 13) {
 			this.sendUpdate();
-			this.onDone();
+			this.handleDone();
 		}
 	}
 	
@@ -294,12 +355,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.sendUpdate();
 	}
 	
-	onDone() {
-		this.headlineSelectNode.focus();
+	handleDone() {
+		//this.headlineSelectNode.current.focus();
 		this.sendMessage('close');
-	}
-	
-	onHidden() {
 	}
 	
 	//
@@ -331,9 +389,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		return (
 			<div className="ProgressWindow-headlineSelectContainer">
-				<select ref={(el) => {this.headlineSelectNode = el}}
+				<select ref={this.headlineSelectNode}
 						className="ProgressWindow-headlineSelect"
-						onFocus={this.handleUserInteraction}
+						onFocus={this.handleHeadlineSelectFocus}
 						onChange={this.onHeadlineSelectChange}
 						value={this.state.target.id}>
 					{rowTargets.map((row) => {
@@ -347,7 +405,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				</select>
 				<button className={"ProgressWindow-disclosure"
 							+ (this.state.targetSelectorShown ? " is-open" : "")}
-						onClick={this.onDisclosureChange} />
+						onClick={this.onDisclosureChange}
+						onKeyPress={this.handleDisclosureKeyPress}/>
 			</div>
 		);
 	}
@@ -371,7 +430,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					<TargetTree
 						rows={this.state.targets}
 						focused={this.state.targets.find(row => row.id == this.state.target.id)}
-						onRowFocus={this.onTargetChange} />
+						onRowFocus={this.onTargetChange}/>
 				</div>
 				<div className="ProgressWindow-inputRow ProgressWindow-targetSelectorTagsRow">
 					<input className="ProgressWindow-tagsInput"
@@ -381,7 +440,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						onChange={this.onTagsChange}
 						onKeyPress={this.onTagsKeyPress}
 						onBlur={this.onTagsBlur} />
-					<button className="ProgressWindow-button" onClick={this.onDone}>{this.text.done}</button>
+					<button className="ProgressWindow-button" onClick={this.handleDone}>{this.text.done}</button>
 				</div>
 			</div>
 			: ""
@@ -541,7 +600,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					className="ProgressWindow-box"
 					onMouseEnter={this.handleMouseEnter}
 					onMouseLeave={this.handleMouseLeave}
-					onClick={this.handleUserInteraction}>
+					onClick={this.handleUserInteraction}
+					onKeyDown={this.handleKeyDown}
+					onKeyPress={this.handleKeyPress}>
 				{this.renderHeadline()}
 				{this.renderTargetSelector()}
 				{this.renderProgress()}
@@ -566,17 +627,16 @@ class TargetIcon extends React.Component {
 
 
 class TargetTree extends React.Component {
-	/*static get propTypes() {
-		return {
-			rows: PropTypes.object.isRequired
-		};
-	}*/
+	static propTypes = {
+		rows: PropTypes.object.isRequired,
+		onKeyPress: PropTypes.func
+	};
 	
 	constructor(props) {
 		super(props);
 		
 		this.state = {
-			expanded: {}
+			expanded: new Set()
 		};
 	}
 	
@@ -618,20 +678,21 @@ class TargetTree extends React.Component {
 	}
 	
 	itemIsExpanded(id) {
-		return !!this.state.expanded[id];
+		return this.state.expanded.has(id);
 	}
 	
 	onRowToggle(item) {
 		var id = item.id;
 		this.setState((prevState) => {
+			var newExpanded = new Set(prevState.expanded);
+			if (prevState.expanded.has(id)) {
+				newExpanded.delete(id);
+			}
+			else {
+				newExpanded.add(id);
+			}
 			return {
-				expanded: Object.assign(
-					{},
-					prevState.expanded,
-					{
-						[id]: !prevState.expanded[id]
-					}
-				)
+				expanded: newExpanded
 			};
 		});
 	}
@@ -639,30 +700,22 @@ class TargetTree extends React.Component {
 	onRowExpand(item) {
 		var id = item.id;
 		this.setState((prevState) => {
+			var newExpanded = new Set(prevState.expanded);
+			newExpanded.add(id);
 			return {
-				expanded: Object.assign(
-					{},
-					prevState.expanded,
-					{
-						[id]: true
-					}
-				)
-			};
+				expanded: newExpanded
+			}
 		});
 	}
 	
 	onRowCollapse(item) {
 		var id = item.id;
 		this.setState((prevState) => {
+			var newExpanded = new Set(prevState.expanded);
+			newExpanded.delete(id);
 			return {
-				expanded: Object.assign(
-					{},
-					prevState.expanded,
-					{
-						[id]: false
-					}
-				)
-			};
+				expanded: newExpanded
+			}
 		});
 	}
 	
@@ -674,10 +727,105 @@ class TargetTree extends React.Component {
 		this.props.onRowFocus(id);
 	}
 	
+	handleKeyPress(event) {
+		if (!event.altKey && !event.ctrlKey && !event.metaKey) {
+			// Collapse/expand current library on "-" or "+"
+			if (event.key == '-') {
+				this.collapseCurrentLibrary();
+			}
+			else if (event.key == '+') {
+				this.expandCurrentLibrary();
+			}
+			else {
+				// TODO: Find-as-you-type navigation
+			}
+		}
+		
+		if (this.props.onKeyPress) {
+			this.props.onKeyPress(event);
+		}
+	}
+	
+	collapseCurrentLibrary() {
+		var focused = this.props.focused;
+		var pos = this.props.rows.findIndex(row => row.id == focused.id);
+		var collapse = [];
+		// First find the last row in the library
+		while (pos + 1 < this.props.rows.length) {
+			pos++;
+			let current = this.props.rows[pos].id;
+			// If we hit another library, go back one
+			if (getTargetType(current) == 'library') {
+				pos--;
+				break;
+			}
+		}
+		
+		while (true) {
+			if (pos == -1) break;
+			let current = this.props.rows[pos];
+			collapse.push(current.id);
+			// When we reach a library, select it and stop
+			if (getTargetType(current.id) == 'library') {
+				this.props.onRowFocus(current.id);
+				break;
+			}
+			pos--;
+		}
+		this.setState((prevState) => {
+			var newExpanded = new Set(prevState.expanded);
+			collapse.forEach(id => newExpanded.delete(id));
+			return {
+				expanded: newExpanded
+			}
+		});
+	}
+	
+	
+	expandCurrentLibrary() {
+		var focused = this.props.focused;
+		var pos = this.props.rows.findIndex(row => row.id == focused.id);
+		var expand = [];
+		// First find the library row
+		while (pos >= 0) {
+			let current = this.props.rows[pos].id;
+			if (getTargetType(current) == 'library') {
+				break;
+			}
+			pos--;
+		}
+		var libraryID = this.props.rows[pos].id;
+		
+		while (true) {
+			if (pos == this.props.rows.length) break;
+			let current = this.props.rows[pos];
+			// When we reach another library, select it and stop
+			if (getTargetType(current.id) == 'library' && current.id != libraryID) {
+				break;
+			}
+			// If the next row exists, isn't a library, and is one level higher, expand this row
+			let next = this.props.rows[pos + 1];
+			if (next && getTargetType(next.id) != 'library' && next.level > current.level) {
+				expand.push(current.id);
+			}
+			pos++;
+		}
+		this.setState((prevState) => {
+			var newExpanded = new Set(prevState.expanded);
+			expand.forEach(id => newExpanded.add(id));
+			return {
+				expanded: newExpanded
+			}
+		});
+	}
+	
+	
 	render() {
 		return React.createElement(
 			Tree,
 			{
+				onKeyPress: event => this.handleKeyPress(event),
+				
 				itemHeight: 20, // px
 				
 				getRoots: () => this.getRoots(),

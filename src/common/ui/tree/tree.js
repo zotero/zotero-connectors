@@ -779,7 +779,14 @@ class Tree extends Component {
         role: "tree",
         tabIndex: "0",
         onKeyDown: this._onKeyDown,
-        onKeyPress: this._preventArrowKeyScrolling,
+        onKeyPress: (event) => {
+          this._preventArrowKeyScrolling(event);
+
+          // Added by Zotero
+          if (this.props.onKeyPress) {
+            this.props.onKeyPress(event);
+          }
+        },
         onKeyUp: this._preventArrowKeyScrolling,
         onFocus: ({nativeEvent}) => {
           if (focused || !nativeEvent || !this.treeRef) {

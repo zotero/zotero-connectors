@@ -116,11 +116,16 @@ if (isTopWindow) {
 		if (!prefix) {
 			prefix = Zotero.getString('progressWindow_savingTo');
 		}
-		
 		var target = lastSuccessfulTarget = {
 			id,
 			name: response.name
 		};
+		// Make sure libraries have levels
+		for (let row of response.targets) {
+			if (!row.level) {
+				row.level = 0;
+			}
+		}
 		changeHeadline(prefix, target, response.targets);
 		if (!response.targets && response.libraryEditable === false) {
 			// TODO: Update
@@ -317,6 +322,7 @@ if (isTopWindow) {
 		}
 		// If the frame has been hidden since we started to open it, don't make it visible
 		if (!frameIsHidden) {
+			addEvent('shown');
 			iframe.style.display = 'block';
 		}
 		

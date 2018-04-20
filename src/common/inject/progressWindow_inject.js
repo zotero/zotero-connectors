@@ -48,6 +48,8 @@ if (isTopWindow) {
 	var lastSuccessfulTarget;
 	var frameReadyDeferred = Zotero.Promise.defer();
 	var closeTimeoutID;
+	var updatingSession;
+	var nextSessionUpdateData;
 	var syncDelayIntervalID;
 	var insideIframe = false;
 	var frameSrc;
@@ -241,9 +243,17 @@ if (isTopWindow) {
 		Zotero.Messaging.addMessageListener('progressWindowIframe.resized', function(data) {
 			iframe.style.height = (data.height + 33) + "px";
 		});
-
+		
 		// Update the client or API with changes
-		Zotero.Messaging.addMessageListener('progressWindowIframe.updated', async function(data) {
+		Zotero.Messaging.addMessageListener('progressWindowIframe.updated', async function handleUpdated(data) {
+			// If a session update is already in progress, store the data to run after,
+			// overwriting any already-queued data
+			if (updatingSession) {
+				nextSessionUpdateData = data;
+				return;
+			}
+			updatingSession = true;
+			
 			try {
 				await Zotero.Connector.callMethod(
 					"updateSession",
@@ -259,6 +269,16 @@ if (isTopWindow) {
 				makeReadOnly();
 				throw e;
 			}
+			finally {
+				updatingSession = false;
+			}
+			
+			if (nextSessionUpdateData) {
+				data = nextSessionUpdateData;
+				nextSessionUpdateData = null;
+				return handleUpdated(data);
+			}
+			
 			// Keep track of last successful target to show on failure
 			lastSuccessfulTarget = data.target;
 		});

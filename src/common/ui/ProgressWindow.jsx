@@ -594,11 +594,11 @@ class TargetTree extends React.Component {
 			pos--;
 			// This shouldn't happen unless a root is missing
 			if (!rows[pos]) {
-				return pos + 1;
+				return rows[pos + 1];
 			}
 			// If item's level is one below the current one or is a root, that's the parent
 			if (rows[pos].level == level - 1 || !rows[pos].level) {
-				return pos;
+				return rows[pos];
 			}
 		}
 	}

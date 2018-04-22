@@ -49,18 +49,19 @@
 		var saveWithSnapshotElem = document.getElementById('zotero-save-page-with-snapshot');
 		saveWithSnapshotElem.onclick = function () {
 			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.saveAsWebpage(true);
+			Zotero_Connector_Browser.saveAsWebpage(Zotero_Connector_Browser.activeTab, true);
 			safari.self.hide();
 		};
 		var saveWithoutSnapshotElem = document.getElementById('zotero-save-page-without-snapshot');
 		saveWithoutSnapshotElem.onclick = function () {
 			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.saveAsWebpage(false);
+			Zotero_Connector_Browser.saveAsWebpage(Zotero_Connector_Browser.activeTab, false);
 			safari.self.hide();
 		};
 
 		safari.application.addEventListener('popover', function (event) {
 			var Zotero = safari.extension.globalPage.contentWindow.Zotero;
+			var tab = Zotero.Connector_Browser.activeTab;
 			setTimeout(function () {
 				safari.self.height = document.documentElement.offsetHeight;
 				let width = 0;
@@ -89,13 +90,13 @@
 					.insertBefore(saveWithoutSnapshotElem.parentNode, saveWithSnapshotElem.parentNode);
 			}
 
-			if (Zotero.Connector_Browser.activeTab.contentType == 'application/pdf' ||
-				Zotero.Connector_Browser.activeTab.isPDFFrame) {
+			if (tab.contentType == 'application/pdf' ||
+				tab.isPDFFrame) {
 				document.getElementById('zotero-save-page-with-snapshot').textContent = "Save to Zotero (PDF)";
 				document.getElementById('zotero-save-page-without-snapshot').style.display = 'none';
 			}
 
-			var translators = Zotero.Connector_Browser.activeTab.translators;
+			var translators = tab.translators;
 			if (!translators || event.target.identifier != 'zotero-translatorSelector') return;
 
 			var menu = document.getElementsByTagName('menu')[0];
@@ -110,7 +111,7 @@
 				a.setAttribute('href', 'javascript:void(0);');
 				a.textContent = `${Zotero.getString('general_saveTo', 'Zotero')} (${translator.label})`;
 				a.onclick = function () {
-					Zotero.Connector_Browser.saveWithTranslator(i);
+					Zotero.Connector_Browser.saveWithTranslator(tab, i);
 					safari.self.hide();
 				};
 

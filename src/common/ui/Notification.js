@@ -157,9 +157,11 @@ Zotero.UI.Notification.prototype = {
 };
 })();
 
-var style = document.createElement('style');
-style.type = 'text/css';
-style.innerHTML = `
-.zotero-notification a:hover { color: rgba(0,0,0,0.95) !important; }
-`;
-document.getElementsByTagName('head')[0].appendChild(style);
+window.addEventListener('load', function () {
+	var style = document.createElement('style');
+	style.type = 'text/css';
+	style.innerHTML = `
+	.zotero-notification a:hover { color: rgba(0,0,0,0.95) !important; }
+	`;
+	document.getElementsByTagName('head')[0].appendChild(style);
+});

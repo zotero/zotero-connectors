@@ -105,7 +105,8 @@ Zotero.Translate.ItemSaver.prototype = {
 		}
 		payload.proxy = this._proxy && this._proxy.toJSON();
 		return Zotero.Connector.callMethodWithCookies("saveItems", payload).then(function(data) {
-			Zotero.debug("Translate: Save via Standalone succeeded");
+			Zotero.debug("Translate: Save via Zotero succeeded");
+			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID: this._sessionID });
 			var haveAttachments = false;
 			if(data && data.items) {
 				for(var i=0; i<data.items.length; i++) {

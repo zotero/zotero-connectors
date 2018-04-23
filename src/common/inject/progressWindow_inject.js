@@ -43,13 +43,16 @@ if (isTopWindow) {
 	// connector messaging system to communicate with.
 	//
 	var frameID = 'zotero-progress-window-frame';
-	var currentSessionID;
 	var closeOnLeave = false;
 	var lastSuccessfulTarget;
 	var frameReadyDeferred = Zotero.Promise.defer();
 	var closeTimeoutID;
+	
+	var currentSessionID;
+	var createdSessions = new Set();
 	var updatingSession;
 	var nextSessionUpdateData;
+	
 	var syncDelayIntervalID;
 	var insideIframe = false;
 	var frameSrc;
@@ -250,10 +253,10 @@ if (isTopWindow) {
 		});
 		
 		// Update the client or API with changes
-		Zotero.Messaging.addMessageListener('progressWindowIframe.updated', async function handleUpdated(data) {
-			// If a session update is already in progress, store the data to run after,
-			// overwriting any already-queued data
-			if (updatingSession) {
+		var handleUpdated = async function (data) {
+			// If the session isn't yet registered or a session update is in progress,
+			// store the data to run after, overwriting any already-queued data
+			if (!createdSessions.has(currentSessionID) || updatingSession) {
 				nextSessionUpdateData = data;
 				return;
 			}
@@ -286,8 +289,22 @@ if (isTopWindow) {
 			
 			// Keep track of last successful target to show on failure
 			lastSuccessfulTarget = data.target;
+		};
+		
+		// Once a session is created in the client, send any queued session data
+		Zotero.Messaging.addMessageListener('progressWindow.sessionCreated', async function (args) {
+			var sessionID = args.sessionID;
+			createdSessions.add(sessionID);
+			if (nextSessionUpdateData) {
+				let data = nextSessionUpdateData;
+				nextSessionUpdateData = null;
+				handleUpdated(data)
+			}
 		});
-
+		
+		// Sent by the progress window when changes are made in the target selector
+		Zotero.Messaging.addMessageListener('progressWindowIframe.updated', handleUpdated);
+		
 		// Keep track of when the mouse is over the popup, for various purposes
 		Zotero.Messaging.addMessageListener('progressWindowIframe.mouseenter', handleMouseEnter);
 		Zotero.Messaging.addMessageListener('progressWindowIframe.mouseleave', handleMouseLeave);

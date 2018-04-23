@@ -464,7 +464,7 @@ Zotero.Inject = new function() {
 		);
 		try {
 			result = await Zotero.Connector.callMethodWithCookies("saveSnapshot", data);
-		
+			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
 			Zotero.Messaging.sendMessage(
 				"progressWindow.itemProgress",
 				[

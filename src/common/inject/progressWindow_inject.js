@@ -58,7 +58,7 @@ if (isTopWindow) {
 	var frameSrc;
 	var frameIsHidden = false;
 	if (Zotero.isSafari) {
-		frameSrc = safari.extension.baseURI.toLowerCase() + 'progressWindow/progressWindow.html';
+		frameSrc = safari.extension.baseURI + 'progressWindow/progressWindow.html';
 	}
 	else {
 		frameSrc = browser.extension.getURL('progressWindow/progressWindow.html');

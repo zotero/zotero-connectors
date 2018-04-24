@@ -56,8 +56,8 @@
 							<input type="button" value="Clear Credentials" id="general-button-clear-credentials"/>
 						</p>
 						<p>
-							<label><input type="checkbox" id="general-checkbox-automaticSnapshots"/>&nbsp;Automatically take snapshots when saving items</label><br/>
-							<label><input type="checkbox" id="general-checkbox-downloadAssociatedFiles"/>&nbsp;Automatically download associated PDFs and other files when saving items</label><br/>
+							<label><input type="checkbox" data-pref="automaticSnapshots"/>&nbsp;Automatically take snapshots when saving items</label><br/>
+							<label><input type="checkbox" data-pref="downloadAssociatedFiles"/>&nbsp;Automatically download associated PDFs and other files when saving items</label><br/>
 						</p>
 					</div>
 				</div>
@@ -120,6 +120,7 @@
 			<div class="group" id="advanced-group-config-editor">
 				<div class="group-title">Advanced Configuration</div>
 				<div class="group-content">
+					<p><label><input type="checkbox" data-pref="integration.googleDocs.enabled"/>Enable Google Docs Integration (experimental)</label></p>
 					<p>
 						<input type="button" id="advanced-button-config-editor" value="Config Editor"/>
 						<!--BEGIN DEBUG-->

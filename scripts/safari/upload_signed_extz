@@ -11,7 +11,7 @@ ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
 
 S3_PATH="$S3_BUCKET/connector/safari/"
 EXTZ="`"$DIR"/get_extz_path`"
-VERSION="$( xar -x -f "$EXTZ" --to-stdout | grep -C 2 CFBundleVersion | head -n 2 | tail -n 1 | sed -n -E 's/.*<string>([0-9.]+)<\/string>.*/\1/p' )"
+VERSION="$( xar -x -f "$EXTZ" --to-stdout | grep -C 2 CFBundleVersion | head -n 2 | tail -n 1 | sed -n -E 's/.*<string>([0-9.]+(beta[0-9]+)?)<\/string>.*/\1/p' )"
 
 if [ -z "$VERSION" ]; then
 	echo "Error extracting version from Info.plist"

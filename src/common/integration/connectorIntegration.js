@@ -72,12 +72,11 @@ Zotero.ConnectorIntegration = {
 				return;
 			}
 			else if (e.status == 404) {
-				console.log(client);
 				Zotero.Inject.confirm({
 					title: Zotero.getString('upgradeApp', ZOTERO_CONFIG.CLIENT_NAME),
 					message: Zotero.getString(
 						'integration_error_clientUpgrade',
-						ZOTERO_CONFIG.CLIENT_NAME + ' 5.0.45'
+						ZOTERO_CONFIG.CLIENT_NAME + ' 5.0.46'
 					),
 					button2Text: "",
 				});

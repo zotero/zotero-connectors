@@ -135,7 +135,7 @@ Zotero.Translate.ItemSaver.prototype = {
 	
 	_processItems: function(items) {
 		var saveOptions = Zotero.Inject.sessionDetails.saveOptions;
-		if (saveOptions.note && items.length == 1) {
+		if (saveOptions && saveOptions.note && items.length == 1) {
 			if (items[0].notes) {
 				items[0].notes.push({note: saveOptions.note})
 			} else {

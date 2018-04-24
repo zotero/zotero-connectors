@@ -35,7 +35,7 @@ const ZOTERO_CONFIG = {
 	CLIENT_DOWNLOAD_URL: 'https://www.zotero.org/download',
 	API_URL: 'https://api.zotero.org/',
 	CONNECTOR_SERVER_URL: "http://127.0.0.1:23119/",
-	GOOGLE_DOCS_API_URL: "https://script.googleapis.com/v1/scripts/MLcaOTd_PUYyG7cBwJxdOKvYlDj38wupO:run",
+	GOOGLE_DOCS_API_URL: "https://script.googleapis.com/v1/scripts/1yB-M2ynZPu5fDKJW96sCvNTenn9VRRgJi1e-b_Kq6TJjMs_F2rdxXK30:run",
 	OAUTH: {
 		ZOTERO: {
 			REQUEST_URL: 'https://www.zotero.org/oauth/request',
@@ -49,7 +49,7 @@ const ZOTERO_CONFIG = {
 			AUTHORIZE_URL: 'https://accounts.google.com/o/oauth2/v2/auth',
 			ACCESS_URL: 'https://www.googleapis.com/oauth2/v3/tokeninfo',
 			CALLBACK_URL: 'https://www.zotero.org/connector_auth_complete',
-			CLIENT_KEY: '1064133182604-ofam14dnsunt1h5goa6v0mkr1guqf72a.apps.googleusercontent.com',
+			CLIENT_KEY: '222339878061-13uqre19u268oo9pdapuaifklbu8d6js.apps.googleusercontent.com',
 		}
 	},
 	GOOGLE_DOCS_DEV_MODE: false

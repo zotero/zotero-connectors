@@ -44,6 +44,24 @@ function getTargetType(id) {
 	return id.startsWith('L') ? 'library': 'collection';
 }
 
+function getParent(rows, id) {
+	var pos = rows.findIndex(row => row.id == id);
+	var row = rows[pos];
+	var level = row.level;
+	if (!level) return null;
+	while (true) {
+		pos--;
+		// This shouldn't happen unless a root is missing
+		if (!rows[pos]) {
+			return rows[pos + 1];
+		}
+		// If item's level is one below the current one or is a root, that's the parent
+		if (rows[pos].level == level - 1 || !rows[pos].level) {
+			return rows[pos];
+		}
+	}
+}
+
 Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	constructor(props) {
 		super(props);
@@ -68,6 +86,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.onDisclosureChange = this.onDisclosureChange.bind(this);
 		this.handleDisclosureKeyPress = this.handleDisclosureKeyPress.bind(this);
 		this.onTargetChange = this.onTargetChange.bind(this);
+		this.handleExpandRows = this.handleExpandRows.bind(this);
+		this.handleCollapseRows = this.handleCollapseRows.bind(this);
+		this.handleRowToggle = this.handleRowToggle.bind(this);
 		this.handleKeyDown = this.handleKeyDown.bind(this);
 		this.handleKeyPress = this.handleKeyPress.bind(this);
 		this.onTagsChange = this.onTagsChange.bind(this);
@@ -150,13 +171,36 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			if (!this.state.targets || !this.state.targetSelectorShown) {
 				this.focusHeadlineSelect = true;
 			}
+			
+			// Auto-expand libraries
+			targets.forEach((t) => {
+				if (getTargetType(t.id) == 'library') {
+					t.expanded = true;
+				}
+			});
+			
+			// Expand to selected node
+			let parent = getParent(targets, target.id);
+			while (parent) {
+				if (parent.expanded) {
+					break;
+				}
+				parent.expanded = true;
+				parent = getParent(targets, parent.id);
+			}
 		}
 		
-		this.setState({
+		var state = {
 			headlineText: text,
 			target,
 			targets
-		});
+		};
+		// If client is closed after a successful save with the target selector open and then the
+		// button is clicked again and save-to-server is enabled, we need to collapse the pane
+		if (!targets) {
+			state.targetSelectorShown = false;
+		}
+		this.setState(state);
 	}
 	
 	makeReadOnly(target) {
@@ -324,6 +368,43 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.sendUpdate();
 	}
 	
+	handleExpandRows(ids) {
+		ids = new Set(ids);
+		this.setState((prevState) => {
+			return {
+				targets: [...prevState.targets.map((target) => {
+					return ids.has(target.id)
+						? Object.assign({}, target, { expanded: true })
+						: target;
+				})]
+			};
+		});
+	}
+	
+	handleCollapseRows(ids) {
+		ids = new Set(ids);
+		this.setState((prevState) => {
+			return {
+				targets: [...prevState.targets.map((target) => {
+					return ids.has(target.id)
+						? Object.assign({}, target, { expanded: false })
+						: target;
+				})]
+			};
+		});
+	}
+	
+	handleRowToggle(id) {
+		this.setState((prevState) => {
+			return {
+				targets: [...prevState.targets.map((target) => {
+					if (target.id != id) return target;
+					return Object.assign({}, target, { expanded: !target.expanded });
+				})]
+			};
+		});
+	}
+	
 	handleKeyDown(event) {
 		if (event.key == 'Escape') {
 			this.handleDone();
@@ -430,6 +511,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					<TargetTree
 						rows={this.state.targets}
 						focused={this.state.targets.find(row => row.id == this.state.target.id)}
+						onExpandRows={this.handleExpandRows}
+						onCollapseRows={this.handleCollapseRows}
+						onRowToggle={this.handleRowToggle}
 						onRowFocus={this.onTargetChange}/>
 				</div>
 				<div className="ProgressWindow-inputRow ProgressWindow-targetSelectorTagsRow">
@@ -629,38 +713,26 @@ class TargetIcon extends React.Component {
 class TargetTree extends React.Component {
 	static propTypes = {
 		rows: PropTypes.object.isRequired,
+		focused: PropTypes.object,
+		onExpandRows: PropTypes.func.isRequired,
+		onCollapseRows: PropTypes.func.isRequired,
+		onRowToggle: PropTypes.func.isRequired,
+		onRowFocus: PropTypes.func.isRequired,
 		onKeyPress: PropTypes.func
 	};
 	
 	constructor(props) {
 		super(props);
-		
-		this.state = {
-			expanded: new Set()
+	}
+	
+	static getDerivedStateFromProps(nextProps) {
+		return {
+			expanded: new Set(nextProps.rows.filter(row => row.expanded).map(t => t.id))
 		};
 	}
 	
 	getRoots() {
 		return this.props.rows.filter(row => !row.level);
-	}
-	
-	getParent(id) {
-		var rows = this.props.rows;
-		var pos = rows.findIndex(row => row.id == id);
-		var row = rows[pos];
-		var level = row.level;
-		if (!level) return null;
-		while (true) {
-			pos--;
-			// This shouldn't happen unless a root is missing
-			if (!rows[pos]) {
-				return rows[pos + 1];
-			}
-			// If item's level is one below the current one or is a root, that's the parent
-			if (rows[pos].level == level - 1 || !rows[pos].level) {
-				return rows[pos];
-			}
-		}
 	}
 	
 	getChildren(id) {
@@ -681,50 +753,11 @@ class TargetTree extends React.Component {
 		return this.state.expanded.has(id);
 	}
 	
-	onRowToggle(item) {
-		var id = item.id;
-		this.setState((prevState) => {
-			var newExpanded = new Set(prevState.expanded);
-			if (prevState.expanded.has(id)) {
-				newExpanded.delete(id);
-			}
-			else {
-				newExpanded.add(id);
-			}
-			return {
-				expanded: newExpanded
-			};
-		});
-	}
-	
-	onRowExpand(item) {
-		var id = item.id;
-		this.setState((prevState) => {
-			var newExpanded = new Set(prevState.expanded);
-			newExpanded.add(id);
-			return {
-				expanded: newExpanded
-			}
-		});
-	}
-	
-	onRowCollapse(item) {
-		var id = item.id;
-		this.setState((prevState) => {
-			var newExpanded = new Set(prevState.expanded);
-			newExpanded.delete(id);
-			return {
-				expanded: newExpanded
-			}
-		});
-	}
-	
-	onRowFocus(item) {
+	handleRowFocus(item) {
 		if (!item) {
 			return;
 		}
-		var id = item.id;
-		this.props.onRowFocus(id);
+		this.props.onRowFocus(item.id);
 	}
 	
 	handleKeyPress(event) {
@@ -772,13 +805,7 @@ class TargetTree extends React.Component {
 			}
 			pos--;
 		}
-		this.setState((prevState) => {
-			var newExpanded = new Set(prevState.expanded);
-			collapse.forEach(id => newExpanded.delete(id));
-			return {
-				expanded: newExpanded
-			}
-		});
+		this.props.onCollapseRows(collapse);
 	}
 	
 	
@@ -810,13 +837,7 @@ class TargetTree extends React.Component {
 			}
 			pos++;
 		}
-		this.setState((prevState) => {
-			var newExpanded = new Set(prevState.expanded);
-			expand.forEach(id => newExpanded.add(id));
-			return {
-				expanded: newExpanded
-			}
-		});
+		this.props.onExpandRows(expand);
 	}
 	
 	
@@ -830,7 +851,7 @@ class TargetTree extends React.Component {
 				
 				getRoots: () => this.getRoots(),
 				getKey: item => item.id,
-				getParent: item => this.getParent(item.id),
+				getParent: item => getParent(this.props.rows, item.id),
 				getChildren: item => this.getChildren(item.id),
 				isExpanded: item => this.itemIsExpanded(item.id),
 				
@@ -845,7 +866,7 @@ class TargetTree extends React.Component {
 							{/* Add toggle on arrow click, since we disabled it in tree.js for
 							    clicking on the row itself. If the tree is updated to have less
 							    annoying behavior, this can be reverted. */}
-							<span onClick={() => this.onRowToggle(item)}>{arrow}</span>
+							<span onClick={() => this.props.onRowToggle(item.id)}>{arrow}</span>
 							<TargetIcon type={getTargetType(item.id)} />
 							<span className="tree-item-label">{item.name}</span>
 						</div>
@@ -854,12 +875,12 @@ class TargetTree extends React.Component {
 				
 				focused: this.props.focused,
 				
-				onFocus: item => this.onRowFocus(item),
-				onExpand: item => this.onRowExpand(item),
-				onCollapse: item => this.onRowCollapse(item),
+				onFocus: item => this.handleRowFocus(item),
+				onExpand: item => this.props.onExpandRows([item.id]),
+				onCollapse: item => this.props.onCollapseRows([item.id]),
 				
-				autoExpandAll: true,
-				autoExpandDepth: 1
+				autoExpandAll: false,
+				autoExpandDepth: 0
 			}
 		);
 	}

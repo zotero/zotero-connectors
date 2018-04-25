@@ -81,6 +81,11 @@ var Zotero_Preferences = {
 		Zotero.initDeferred.resolve();
 		Zotero_Preferences.refreshData();
 		window.setInterval(() => Zotero_Preferences.refreshData(), 1000);
+		
+		// Hide Google Docs for non-beta users
+		if (!Zotero.version.includes('beta') && !Zotero.version.includes('999')) {
+			document.getElementById('google-docs-pref').style.display = 'none';
+		}
 	},
 
 	/**

@@ -53,6 +53,7 @@ if (isTopWindow) {
 	var updatingSession;
 	var nextSessionUpdateData;
 	
+	var isReadOnly = false;
 	var syncDelayIntervalID;
 	var insideIframe = false;
 	var frameSrc;
@@ -76,10 +77,12 @@ if (isTopWindow) {
 	}
 	
 	function changeHeadline() {
+		isReadOnly = arguments.length <= 2;
 		addEvent("changeHeadline", Array.from(arguments));
 	}
 	
 	function makeReadOnly() {
+		isReadOnly = true;
 		addEvent("makeReadOnly", [lastSuccessfulTarget]);
 	}
 	
@@ -350,11 +353,10 @@ if (isTopWindow) {
 			clearInterval(syncDelayIntervalID);
 		}
 		syncDelayIntervalID = setInterval(() => {
-			// Don't prevent syncing when tab isn't visible.
-			// See note in ProgressWindow.jsx::handleVisibilityChange().
-			if (document.hidden) {
-				return;
-			}
+			// Don't prevent syncing when read-only or when tab isn't visible.
+			// See note in ProgressWindow.jsx::handleVisibilityChange() for latter.
+			if (isReadOnly || document.hidden) return;
+			
 			Zotero.Connector.callMethod("delaySync", {});
 		}, 7500);
 		

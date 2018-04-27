@@ -346,8 +346,6 @@ if (isTopWindow) {
 	 * @returns {Promise<iframe>}
 	 */
 	async function showFrame() {
-		stopCloseTimer();
-		
 		var iframe = document.getElementById(frameID);
 		if (!iframe) {
 			iframe = await initFrame();
@@ -389,12 +387,19 @@ if (isTopWindow) {
 			await Zotero.Promise.delay(delay);
 		}
 		
-		// If session has changed, reset state before reopening popup
-		if (currentSessionID && currentSessionID != sessionID) {
-			resetFrame();
-			// Disable closing on mouseleave until save finishes. (This is disabled initially
-			// but is enabled when a save finishes, so we have to redisable it for a new session.)
-			closeOnLeave = false;
+		// Reopening existing popup
+		if (currentSessionID) {
+			// If session has changed, reset state before reopening
+			if (currentSessionID != sessionID) {
+				resetFrame();
+				// Disable closing on mouseleave until save finishes. (This is disabled initially
+				// but is enabled when a save finishes, so we have to redisable it for a new session.)
+				closeOnLeave = false;
+			}
+			// If not a new session, start close timer
+			else {
+				startCloseTimer(5000);
+			}
 		}
 		currentSessionID = sessionID;
 		

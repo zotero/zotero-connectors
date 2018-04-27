@@ -251,9 +251,13 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	
 	addError() {
 		this.setState((prevState) => {
-			return {
-				errors: prevState.errors.concat([Array.from(arguments)])
-			};
+			let errors = [...prevState.errors];
+			let newError = Array.from(arguments);
+			// Add error if new
+			if (!errors.find(e => JSON.stringify(e) == JSON.stringify(newError))) {
+				errors.push(newError);
+			}
+			return { errors };
 		});
 	}
 	

@@ -89,7 +89,7 @@ if (isTopWindow) {
 	/**
 	 * Get selected collection and collections list from client and update popup
 	 */
-	async function setHeadlineFromClient(prefix) {
+	async function updateFromClient(prefix) {
 		try {
 			var response = await Zotero.Connector.callMethod("getSelectedCollection", {})
 		}
@@ -99,11 +99,20 @@ if (isTopWindow) {
 			return;
 		}
 		
-		// TODO: Change client to default to My Library root
-		if (response.targets && response.libraryEditable === false) {
-			let target = response.targets[0];
-			response.id = target.id;
-			response.name = target.name;
+		// If we're reshowing the current session's popup, override the selected location with the
+		// last successful tarGet, since the selected collection in the client might have changed
+		if (lastSuccessfulTarget) {
+			response.id = lastSuccessfulTarget.id;
+			response.name = lastSuccessfulTarget.name;
+			response.libraryEditable = true;
+		}
+		
+		// Disable target selector for read-only library (which normally shouldn't happen,
+		// because the client switches automatically to My Library)
+		if (response.libraryEditable === false) {
+			response.targets = undefined;
+			addError("collectionNotEditable");
+			startCloseTimer(8000);
 		}
 		
 		var id;
@@ -122,22 +131,25 @@ if (isTopWindow) {
 		if (!prefix) {
 			prefix = Zotero.getString('progressWindow_savingTo');
 		}
-		var target = lastSuccessfulTarget = {
+		var target = {
 			id,
 			name: response.name
 		};
-		// Make sure libraries have levels
-		for (let row of response.targets) {
-			if (!row.level) {
-				row.level = 0;
+		
+		if (response.libraryEditable) {
+			lastSuccessfulTarget = target;
+		}
+		
+		// TEMP: Make sure libraries have levels (added to client in 5.0.46)
+		if (response.targets) {
+			for (let row of response.targets) {
+				if (!row.level) {
+					row.level = 0;
+				}
 			}
 		}
+		
 		changeHeadline(prefix, target, response.targets);
-		if (!response.targets && response.libraryEditable === false) {
-			// TODO: Update
-			addError("collectionNotEditable");
-			startCloseTimer(8000);
-		}
 	}
 	
 	function updateProgress() {
@@ -290,7 +302,7 @@ if (isTopWindow) {
 				return handleUpdated(data);
 			}
 			
-			// Keep track of last successful target to show on failure
+			// Keep track of last successful target to show on reopen and failure
 			lastSuccessfulTarget = data.target;
 		};
 		
@@ -392,7 +404,7 @@ if (isTopWindow) {
 			changeHeadline(headline);
 		}
 		else {
-			await setHeadlineFromClient(headline);
+			await updateFromClient(headline);
 		}
 	});
 	

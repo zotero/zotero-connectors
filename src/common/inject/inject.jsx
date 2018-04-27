@@ -408,10 +408,17 @@ Zotero.Inject = new function() {
 				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return items;
 			} catch (e) {
+				// TEMP: Remove once client switches automatically (added in 5.0.46)
+				if (e.value && e.value.libraryEditable == false) {
+					// Allow another attempt to save again
+					this.sessionDetails = {};
+					return;
+				}
 				// Should we fallback if translator.itemType == "multiple"?
-				if (options.fallbackOnFailure && translators.length) {
+				else if (options.fallbackOnFailure && translators.length) {
 					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
-				} else {
+				}
+				else {
 					// Clear session details on failure, so another save click tries again
 					this.sessionDetails = {};
 					Zotero.Messaging.sendMessage("progressWindow.done", [false]);

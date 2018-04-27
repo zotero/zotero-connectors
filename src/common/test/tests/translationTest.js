@@ -125,7 +125,7 @@ describe("Translation", function() {
 						await background(async function (tabId) {
 							sinon.stub(Zotero.Connector, "callMethod").resolves([]);
 							let tab = await Zotero.Background.getTabByID(tabId);
-							await Zotero.Connector_Browser.saveAsWebpage(tab, false);
+							await Zotero.Connector_Browser.saveAsWebpage(tab);
 						}, tab.tabId);
 						await Zotero.Promise.delay(20);
 						var message = await tab.run(function () {

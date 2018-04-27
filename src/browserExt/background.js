@@ -596,7 +596,7 @@ Zotero.Connector_Browser = new function() {
 				title: _getTranslatorLabel(translators[i]),
 				onclick: (function (i) {
 					return function (info, tab) {
-						Zotero.Connector_Browser.saveWithTranslator(tab, i);
+						Zotero.Connector_Browser.saveWithTranslator(tab, i, { resave: true });
 					};
 				})(i),
 				parentId: parentID,
@@ -630,7 +630,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-webpage-withSnapshot-save",
 			title: "Save to Zotero (Web Page with Snapshot)",
 			onclick: function (info, tab) {
-				Zotero.Connector_Browser.saveAsWebpage(tab, 0, true);
+				Zotero.Connector_Browser.saveAsWebpage(tab, 0, { snapshot: true });
 			},
 			parentId: parentID,
 			contexts: ['page', 'browser_action']
@@ -639,7 +639,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-webpage-withoutSnapshot-save",
 			title: "Save to Zotero (Web Page without Snapshot)",
 			onclick: function (info, tab) {
-				Zotero.Connector_Browser.saveAsWebpage(tab, 0, false);
+				Zotero.Connector_Browser.saveAsWebpage(tab, 0);
 			},
 			parentId: parentID,
 			contexts: ['page', 'browser_action']
@@ -717,11 +717,17 @@ Zotero.Connector_Browser = new function() {
 			Zotero.Connector_Browser.saveWithTranslator(tab, 0, {fallbackOnFailure: true});
 		} else {
 			if (_tabInfo[tab.id] && _tabInfo[tab.id].isPDF) {
-				Zotero.Connector_Browser.saveAsWebpage(tab, _tabInfo[tab.id].frameId, true);
+				Zotero.Connector_Browser.saveAsWebpage(
+					tab,
+					_tabInfo[tab.id].frameId,
+					{
+						snapshot: true
+					}
+				);
 			} else {
 				let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
 					Zotero.Prefs.get('automaticSnapshots');
-				Zotero.Connector_Browser.saveAsWebpage(tab, 0, withSnapshot);
+				Zotero.Connector_Browser.saveAsWebpage(tab, 0, { snapshot: withSnapshot });
 			}
 		}
 	}
@@ -751,9 +757,9 @@ Zotero.Connector_Browser = new function() {
 		);
 	}
 	
-	this.saveAsWebpage = function(tab, frameId, withSnapshot) {
+	this.saveAsWebpage = function(tab, frameId, options) {
 		if (tab.id != -1) {
-			return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, withSnapshot], tab, frameId);
+			return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, options], tab, frameId);
 		}
 		// Handle right-click on PDF overlay, which exists in a weird non-tab state
 		else {

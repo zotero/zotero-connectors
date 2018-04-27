@@ -363,13 +363,18 @@ Zotero.Inject = new function() {
 		if (!result) return;
 		var translator = this.translators.find((t) => t.translatorID == translatorID);
 		
-		// If the URL hasn't changed (from a history push) and the user triggered the same
-		// non-multiple translator as the last successful save, use the same session ID to reopen
-		// the popup.
+		// In some cases, we just reopen the popup instead of saving again
 		if (this.sessionDetails.id
+				// Same page (no history push)
 				&& document.location.href == this.sessionDetails.url
+				// Same translator
 				&& translatorID == this.sessionDetails.translatorID
-				&& translator.itemType != 'multiple') {
+				// Not a multiple page
+				&& translator.itemType != 'multiple'
+				// Not "Create Zotero Item and Note from Selection"
+				&& !options.note
+				// Not from the context menu, which always triggers a resave
+				&& !options.resave) {
 			let sessionID = this.sessionDetails.id;
 			Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 			return;
@@ -429,15 +434,20 @@ Zotero.Inject = new function() {
 	};
 	
 	this.saveAsWebpage = async function (args) {
-		var title = args[0] || document.title, withSnapshot = args[1];
+		var title = args[0] || document.title, options = args[1] || {};
 		var image;
 		var result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
 		
-		var translatorID = 'webpage' + (withSnapshot ? 'WithSnapshot' : '');
+		var translatorID = 'webpage' + (options.snapshot ? 'WithSnapshot' : '');
+		// Reopen if popup instead of resaving
 		if (this.sessionDetails.id
+				// Same page (no history push)
 				&& document.location.href == this.sessionDetails.url
-				&& translatorID == this.sessionDetails.translatorID) {
+				// Same translator
+				&& translatorID == this.sessionDetails.translatorID
+				// Not from the context menu, which always triggers a resave
+				&& !options.resave) {
 			let sessionID = this.sessionDetails.id;
 			Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 			return;
@@ -450,7 +460,7 @@ Zotero.Inject = new function() {
 			url: document.location.toString(),
 			cookie: document.cookie,
 			html: document.documentElement.innerHTML,
-			skipSnapshot: !withSnapshot
+			skipSnapshot: !options.snapshot
 		};
 		
 		if (document.contentType == 'application/pdf') {

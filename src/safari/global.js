@@ -132,7 +132,7 @@ Zotero.Connector_Browser = new function() {
 			} else {
 				var withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
 					Zotero.Prefs.get('automaticSnapshots');
-				Zotero.Connector_Browser.saveAsWebpage(tab, withSnapshot);
+				Zotero.Connector_Browser.saveAsWebpage(tab, { snapshot: withSnapshot });
 			}
 		} else if (command === "zotero-preferences") {
 			Zotero.Connector_Browser.openTab(safari.extension.baseURI+"preferences/preferences.html");
@@ -201,10 +201,20 @@ Zotero.Connector_Browser = new function() {
 		);
 	}
 
-	this.saveAsWebpage = function(tab, withSnapshot) {
+	this.saveAsWebpage = function(tab, options) {
 		let title = tab.title.split('/');
 		title = title[title.length-1];
-		return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.instanceID || 0, [title, withSnapshot]], tab);
+		return Zotero.Messaging.sendMessage(
+			"saveAsWebpage",
+			[
+				tab.instanceID || 0,
+				[
+					title,
+					options
+				]
+			],
+			tab
+		);
 	}
 
 	this.openWindow = function(url, options={}) {

@@ -49,13 +49,24 @@
 		var saveWithSnapshotElem = document.getElementById('zotero-save-page-with-snapshot');
 		saveWithSnapshotElem.onclick = function () {
 			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.saveAsWebpage(Zotero_Connector_Browser.activeTab, true);
+			Zotero_Connector_Browser.saveAsWebpage(
+				Zotero_Connector_Browser.activeTab,
+				{
+					snapshot: true,
+					resave: true
+				}
+			);
 			safari.self.hide();
 		};
 		var saveWithoutSnapshotElem = document.getElementById('zotero-save-page-without-snapshot');
 		saveWithoutSnapshotElem.onclick = function () {
 			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.saveAsWebpage(Zotero_Connector_Browser.activeTab, false);
+			Zotero_Connector_Browser.saveAsWebpage(
+				Zotero_Connector_Browser.activeTab,
+				{
+					resave: true
+				}
+			);
 			safari.self.hide();
 		};
 
@@ -111,7 +122,13 @@
 				a.setAttribute('href', 'javascript:void(0);');
 				a.textContent = `${Zotero.getString('general_saveTo', 'Zotero')} (${translator.label})`;
 				a.onclick = function () {
-					Zotero.Connector_Browser.saveWithTranslator(tab, i);
+					Zotero.Connector_Browser.saveWithTranslator(
+						tab,
+						i,
+						{
+							resave: true
+						}
+					);
 					safari.self.hide();
 				};
 

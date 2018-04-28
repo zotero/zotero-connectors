@@ -443,6 +443,8 @@ Zotero.Inject = new function() {
 					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
 				}
 				else {
+					Zotero.debug(e.stack ? e.stack : e, 1);
+					
 					// Clear session details on failure, so another save click tries again
 					this.sessionDetails = {};
 					Zotero.Messaging.sendMessage("progressWindow.done", [false]);

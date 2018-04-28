@@ -414,6 +414,7 @@ if (isTopWindow) {
 	});
 	
 	/**
+	 * @param {String} sessionID
 	 * @param {Integer} id
 	 * @param {String} iconSrc
 	 * @param {String} title
@@ -421,14 +422,9 @@ if (isTopWindow) {
 	 * @param {Integer|false} progress
 	 */
 	Zotero.Messaging.addMessageListener("progressWindow.itemProgress", (data) => {
-		var id = data[0];
-		var data = {
-			iconSrc: data[1],
-			title: data[2],
-			parentItem: data[3],
-			progress: data[4] // false === error
-		};
-		updateProgress(id, data);
+		// Skip progress updates for a previous session
+		if (data.sessionID && data.sessionID != currentSessionID) return;
+		updateProgress(data.id, data);
 	});
 	
 	Zotero.Messaging.addMessageListener("progressWindow.close", function () {

@@ -205,13 +205,12 @@ Zotero.ContentTypeHandler = {
 					let result = await Zotero.Connector.callMethod(options, this.response);
 					Zotero.Messaging.sendMessage(
 						'progressWindow.itemProgress',
-						[
-							null,
-							browser.extension.getURL('images/csl-style.png'),
-							result.name,
-							false,
-							100
-						],
+						{
+							id: null,
+							iconSrc: browser.extension.getURL('images/csl-style.png'),
+							title: result.name,
+							progress: 100
+						},
 						tab
 					);
 					return Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
@@ -236,13 +235,12 @@ Zotero.ContentTypeHandler = {
 						let item = result[i];
 						Zotero.Messaging.sendMessage(
 							'progressWindow.itemProgress',
-							[
-								null,
-								Zotero.ItemTypes.getImageSrc(item.itemType),
-								item.title,
-								false,
-								100
-							],
+							{
+								id: null,
+								iconSrc: Zotero.ItemTypes.getImageSrc(item.itemType),
+								title: item.title,
+								progress: 100
+							},
 							tab
 						);
 					}

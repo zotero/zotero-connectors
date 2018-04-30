@@ -145,7 +145,6 @@ Zotero.Inject = new function() {
 			}.bind(this));
 			translate.setHandler("itemSaving", function(obj, item) {
 				// this relays an item from this tab to the top level of the window
-				console.log("A");
 				Zotero.Messaging.sendMessage(
 					"progressWindow.itemProgress",
 					{
@@ -158,7 +157,6 @@ Zotero.Inject = new function() {
 			});
 			translate.setHandler("itemDone", function(obj, dbItem, item) {
 				// this relays an item from this tab to the top level of the window
-				console.log("B");
 				Zotero.Messaging.sendMessage(
 					"progressWindow.itemProgress",
 					{
@@ -171,7 +169,6 @@ Zotero.Inject = new function() {
 				);
 				for(var i=0; i<item.attachments.length; i++) {
 					var attachment = item.attachments[i];
-					console.log("C");
 					Zotero.Messaging.sendMessage(
 						"progressWindow.itemProgress",
 						{
@@ -185,7 +182,6 @@ Zotero.Inject = new function() {
 				}
 				if (item.notes) {
 					for (let note of item.notes) {
-						console.log("D");
 						Zotero.Messaging.sendMessage(
 							'progressWindow.itemProgress',
 							{
@@ -202,7 +198,6 @@ Zotero.Inject = new function() {
 			});
 			translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
 				if(progress === 0) return;
-				console.log("E");
 				Zotero.Messaging.sendMessage(
 					"progressWindow.itemProgress",
 					{

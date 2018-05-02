@@ -473,7 +473,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		}
 		
 		return (
-			<div className="ProgressWindow-headlineSelectContainer">
+			<React.Fragment>
 				<select ref={this.headlineSelectNode}
 						className="ProgressWindow-headlineSelect"
 						onFocus={this.handleHeadlineSelectFocus}
@@ -492,7 +492,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 							+ (this.state.targetSelectorShown ? " is-open" : "")}
 						onClick={this.onDisclosureChange}
 						onKeyPress={this.handleDisclosureKeyPress}/>
-			</div>
+			</React.Fragment>
 		);
 	}
 	

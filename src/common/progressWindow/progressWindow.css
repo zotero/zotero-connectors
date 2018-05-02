@@ -48,16 +48,10 @@ button:active {
 	user-select: none
 }
 
-.ProgressWindow-headlineSelectContainer {
-	display: flex;
-	align-items: center;
-	margin-left: 5px;
-	flex-grow: 1
-}
-
 .ProgressWindow-headlineSelect {
-	max-width: 200px;
+	margin-left: 5px;
 	height: 22px;
+	width: 100%;
 	font-size: 12px;
 	flex-grow: 1
 }

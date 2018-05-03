@@ -120,9 +120,14 @@ Zotero.initDeferred.promise.then(function() {
 	}
 	else if (Zotero.isInject || Zotero.isPreferences) {
 		// injected page
-		Zotero.Messaging.addMessageListener('run', function(args) {
-			let code = args[0];
+		var listenerName = 'run';
+		if (window.top != window) {
+			listenerName = `run-${document.location.href}`;
+		}
+		Zotero.Messaging.addMessageListener(listenerName, function(args) {
+			var code = args[0];
 			eval(`var fn = ${code}`);
+			code = undefined;
 			return fn.apply(null, args.slice(1));
 		});
 	}
@@ -173,13 +178,31 @@ if (typeof mocha != 'undefined') {
 		}),
 		
 		run: Promise.coroutine(function* (code) {
+			return this.runInFrame.apply(this, [null].concat(Array.from(arguments)));
+		}),
+		
+		runInFrame: async function(frameURL, code) {
 			if (this.tabId == undefined) {
 				throw new Error('Must run Tab#init() before Tab#run');
 			}
 			if (typeof code == 'function') {
-				arguments[0] = code.toString();
+				arguments[1] = code.toString();
 			}
-			return browser.tabs.sendMessage(this.tabId, ['run', Array.from(arguments)], {})
+			var listenerName = 'run';
+			if (frameURL) {
+				listenerName = `run-${frameURL}`;
+				// Seems that frames are not initialized if the tab is inactive in Chrome
+				// so we focus the tab for a bit.
+				await background(async function(tabId) {
+					var prevActiveTab = await browser.tabs.query({active: true, currentWindow: true});
+					await browser.tabs.update(tabId, {active: true});
+					await Zotero.Promise.delay(100);
+					await browser.tabs.update(prevActiveTab[0].id, {active: true});
+				}, this.tabId)
+			}
+			var args = Array.from(arguments).slice(1);
+			// NOTE: Due to chrome/browser API-compat stuff this needs to use Promise#then(). Do not change!
+			return browser.tabs.sendMessage(this.tabId, [listenerName, args], {})
 			.then(function(response) {
 				if (response && response[0] == 'error') {
 					response[1] = JSON.parse(response[1]);
@@ -193,7 +216,7 @@ if (typeof mocha != 'undefined') {
 					throw new Error(e.message);
 				}
 			});
-		}),
+		},
 		
 		close: Promise.coroutine(function* () {
 			if (this.tabId == undefined) {

@@ -119,9 +119,14 @@ Zotero.initDeferred.promise.then(function() {
 	}
 	else if (Zotero.isInject || Zotero.isPreferences) {
 		// injected page
-		Zotero.Messaging.addMessageListener('run', function(args) {
-			let code = args[0];
+		var listenerName = 'run';
+		if (window.top != window) {
+			listenerName = `run-${document.location.href}`;
+		}
+		Zotero.Messaging.addMessageListener(listenerName, function(args) {
+			var code = args[0];
 			eval(`var fn = ${code}`);
+			code = undefined;
 			return fn.apply(null, args.slice(1));
 		});
 	}
@@ -171,16 +176,33 @@ if (typeof mocha != 'undefined') {
 		}),
 		
 		run: Promise.coroutine(function* (code) {
+			return this.runInFrame(null, code);
+		}),
+		
+		runInFrame: async function (frameURL, code) {
 			if (!this.tabId) {
 				throw new Error('Must run Tab#init() before Tab#run');
 			}
 			if (typeof code == 'function') {
-				arguments[0] = code.toString();
+				arguments[1] = code.toString();
 			}
-			return background(async function(tabId, args) {
-				return Zotero.Messaging.sendMessage('run', args, (await Zotero.Background.getTabByID(tabId)));
-			}, this.tabId, Array.from(arguments));
-		}),
+			var listenerName = 'run';
+			if (frameURL) {
+				listenerName = `run-${frameURL}`;
+				await background(async function() {
+					// Seems that frames are not initialized if the tab is inactive in Safari
+					// so we focus the tab for a bit.
+					safari.application.activeBrowserWindow.tabs[safari.application.activeBrowserWindow.tabs.length-1].activate();
+					await Zotero.Promise.delay(100);
+					safari.application.activeBrowserWindow.tabs[safari.application.activeBrowserWindow.tabs.length-2].activate();
+				})
+				
+			}
+			var args = Array.from(arguments).slice(1);
+			return background(async function(tabId, args, listenerName) {
+				return Zotero.Messaging.sendMessage(listenerName, args, (await Zotero.Background.getTabByID(tabId)));
+			}, this.tabId, args, listenerName);
+		},
 		
 		close: Promise.coroutine(function* () {
 			if (this.tabId == undefined) {

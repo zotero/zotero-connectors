@@ -31,4 +31,8 @@ window.onload = async function () {
 		React.createElement(Zotero.UI.ProgressWindow),
 		div
 	);
+
+	// To enable testing with mocha
+	Zotero.isInject = true;
+	Zotero.initDeferred.resolve();
 };

@@ -87,10 +87,11 @@ describe("Translation", function() {
 					}, tab.tabId);
 					assert.equal(items.length, 1);
 					assert.equal(items[0].itemType, 'journalArticle');
-					var message = await tab.run(function() {
-						var message = document.getElementById('zotero-progress-window').textContent;
-						Zotero.ProgressWindow.close();
-						return message;
+					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
+					var message = await tab.runInFrame(frameURL, async function() {
+						// TODO: A more robust way to wait for the text to show up.
+						Zotero.Promise.delay(100);
+						return document.querySelector('.ProgressWindow-progressBox').textContent;
 					});
 					assert.include(message, items[0].title);
 				});

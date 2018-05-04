@@ -659,7 +659,7 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponen
 			<div className="group" style={{marginTop: "10px"}}>
 				<p style={{display: "flex", alignItems: "center", flexWrap: "wrap"}}>
 					<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={this.handleCheckboxChange} checked={currentProxy.autoAssociate}/>&nbsp;Automatically associate new hosts</label><br/>
-					<label><input type="checkbox" name="dotsToHyphens" onChange={this.handleCheckboxChange} checked={currentProxy.dotsToHyphens}/>&nbsp;Automatically convert hyphens to dots in proxied hostnames</label><br/>
+					<label><input type="checkbox" name="dotsToHyphens" onChange={this.handleCheckboxChange} checked={currentProxy.dotsToHyphens}/>&nbsp;Automatically convert between dots and hyphens in proxied hostnames</label><br/>
 				</p>
 				<p style={{display: "flex", alignItems: "center"}}>
 					<label style={{alignSelf: "center", marginRight: "5px"}}>Scheme: </label>

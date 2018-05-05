@@ -286,6 +286,7 @@ function processFile() {
 					file.contents.toString(), "<!--SCRIPTS-->", backgroundInclude));
 				break;
 			case 'preferences.html':
+			case 'progressWindow.html':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/g, argv.p ? '' : '$1'));
 				break;
@@ -341,6 +342,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/safari/Info.plist',
 		'./src/common/node_modules.js',
 		'./src/common/preferences/preferences.html',
+		'./src/common/progressWindow/progressWindow.html',
 		'./src/common/zotero.js',
 		'./src/common/zotero_config.js',
 		'./src/common/test/**/*',

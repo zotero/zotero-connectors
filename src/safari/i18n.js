@@ -54,6 +54,18 @@ Zotero.i18n = {
 						resolve(JSON.parse(xhr.responseText));
 					}
 				};
+				// If the request for the current locale fails, fall back to English
+				xhr.onerror = function () {
+					var xhr = new XMLHttpRequest();
+					var localeURL = safari.extension.baseURI + '_locales/en/messages.json';
+					xhr.onprogress = function () {
+						if (xhr.responseText) {
+							resolve(JSON.parse(xhr.responseText));
+						}
+					};
+					xhr.open('GET', localeURL, true);
+					xhr.send();
+				};
 				xhr.open('GET', localeURL, true);
 				xhr.send();
 			});

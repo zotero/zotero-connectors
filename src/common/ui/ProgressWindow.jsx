@@ -413,6 +413,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (event.key == 'Escape') {
 			this.handleDone();
 		}
+		// Consider arrow-key navigation of the drop-down equivalent to clicking in the popup
+		else {
+			this.sendMessage('mouseenter');
+			this.handleUserInteraction();
+		}
 	}
 	
 	handleKeyPress(event) {
@@ -420,6 +425,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		if (event.key == 'Enter') {
 			this.handleDone();
+		}
+		// Consider keyboard navigation of the drop-down equivalent to clicking in the popup
+		else {
+			this.sendMessage('mouseenter');
+			this.handleUserInteraction();
 		}
 	}
 	

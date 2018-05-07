@@ -335,6 +335,7 @@ if (isTopWindow) {
 		
 		Zotero.Messaging.addMessageListener('progressWindowIframe.close', function() {
 			hideFrame();
+			window.focus();
 		});
 
 		await frameReadyDeferred.promise;

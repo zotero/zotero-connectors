@@ -78,6 +78,8 @@ if (Zotero.isFirefox) {
 			Zotero.Connector_Browser._tabInfo[tab.id].isPDF = false;
 		
 		} catch (e) {
+			Zotero.logError(e);
+			
 			browser.browserAction.setIcon({
 				tabId:tab.id,
 				path: "images/cross.png"
@@ -87,7 +89,6 @@ if (Zotero.isFirefox) {
 				tabId:tab.id,
 				title: "Saving failed. Is Zotero running?"
 			});
-			Zotero.Connector_Browser._tabInfo[tab.id].isPDF = false;
 		}
 	}
 }

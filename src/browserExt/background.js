@@ -57,7 +57,7 @@ Zotero.Connector_Browser = new function() {
 		var isPDF = contentType == 'application/pdf';
 		_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {injections: {}}, {translators, instanceID, isPDF});
 		
-		_updateExtensionUI(tab);
+		Zotero.Connector_Browser._updateExtensionUI(tab);
 	}
 
 	/**
@@ -72,7 +72,7 @@ Zotero.Connector_Browser = new function() {
 		browser.tabs.get(tabId).then(function(tab) {
 			_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {injections: {}}, {translators: [], isPDF: true, frameId});
 			Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
-			_updateExtensionUI(tab);
+			Zotero.Connector_Browser._updateExtensionUI(tab);
 		});
 	}
 	
@@ -114,7 +114,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	this.onTabActivated = function(tab) {
-		_updateExtensionUI(tab);
+		Zotero.Connector_Browser._updateExtensionUI(tab);
 	};
 	
 	/**
@@ -416,7 +416,7 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Update status and tooltip of Zotero button
 	 */
-	function _updateExtensionUI(tab) {
+	this._updateExtensionUI = function (tab) {
 		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) return _showFirstUseUI(tab);
 		browser.contextMenus.removeAll();
 
@@ -710,7 +710,7 @@ Zotero.Connector_Browser = new function() {
 			Zotero.Messaging.sendMessage("firstUse", null, tab)
 			.then(function () {
 				Zotero.Prefs.set('firstUse', false);
-				_updateExtensionUI(tab);
+				Zotero.Connector_Browser._updateExtensionUI(tab);
 			});
 		}
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
@@ -758,6 +758,10 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	this.saveAsWebpage = function(tab, frameId, options) {
+		if (Zotero.isFirefox && _tabInfo[tab.id].isPDF) {
+			return Zotero.Utilities.saveFirefoxPDF(tab);
+		}
+	
 		if (tab.id != -1) {
 			return Zotero.Messaging.sendMessage("saveAsWebpage", [tab.title, options], tab, frameId);
 		}
@@ -822,7 +826,7 @@ Zotero.Connector_Browser = new function() {
 			// Ignore item selector
 			if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
 			_updateInfoForTab(tab);
-			_updateExtensionUI(tab);
+			Zotero.Connector_Browser._updateExtensionUI(tab);
 			Zotero.Connector.reportActiveURL(tab.url);
 		}
 		// _updateInfoForTab will reject pending injections, but we need to make sure this

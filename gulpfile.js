@@ -145,6 +145,7 @@ if (!argv.p) {
 var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclude, [
 	'webRequestIntercept.js',
 	'contentTypeHandler.js',
+	'firefoxPDF.js'
 ]);
 
 function reloadChromeExtensionsTab(cb) {

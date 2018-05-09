@@ -52,6 +52,7 @@ if (isTopWindow) {
  */
 Zotero.Inject = new function() {
 	var _translate;
+	var _noteImageSrc;
 	this.sessionDetails = {};
 	this.translators = [];
 		
@@ -66,7 +67,7 @@ Zotero.Inject = new function() {
 			Zotero.GoogleDocs_API.onAuthComplete(document.location.href);
 		}
 
-		const noteImgSrc = Zotero.isSafari
+		_noteImgSrc = Zotero.isSafari
 			? safari.extension.baseURI+"images/treeitem-note.png"
 			: browser.extension.getURL('images/treeitem-note.png');
 		
@@ -187,7 +188,7 @@ Zotero.Inject = new function() {
 							{
 								sessionID,
 								id: null,
-								iconSrc: noteImgSrc,
+								iconSrc: _noteImgSrc,
 								title: Zotero.Utilities.cleanTags(note.note),
 								parentItem: item.id,
 								progress: 100

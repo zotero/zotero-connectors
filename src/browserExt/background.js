@@ -350,9 +350,15 @@ Zotero.Connector_Browser = new function() {
 		}
 	};
 	
-	this.bringToFront = async function(drawAttention=false) {
-		let win = await browser.windows.getLastFocused();
-		browser.windows.update(win.id, {drawAttention, focused: true});
+	this.bringToFront = async function(drawAttention=false, tab) {
+		var windowId;
+		if (tab && tab.windowId) {
+			windowId = tab.windowId;
+		} else {
+			let win = await browser.windows.getLastFocused();
+			windowId = win.id;
+		}
+		browser.windows.update(windowId, {drawAttention, focused: true});
 	}
 
 	this.openTab = function(url, tab) {

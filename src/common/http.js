@@ -74,34 +74,52 @@ Zotero.HTTP = new function() {
 			successCodes: null
 		}, options);
 		
-		if (Zotero.isInject && !Zotero.HTTP.isSameOrigin(url)) {
-			if(Zotero.isBookmarklet) {
-				Zotero.debug("HTTP: Attempting cross-site request from bookmarklet; this may fail");
-			} else if(Zotero.isSafari || Zotero.HTTP.isLessSecure(url)) {
-				// Make a cross-origin request via the background page, parsing the responseText with
-				// DOMParser and returning a Proxy with 'response' set to the parsed document
-				let isDocRequest = options.responseType == 'document';
-				let coOptions = Object.assign({}, options);
-				if (isDocRequest) {
-					coOptions.responseType = 'text';
+		var useContentXHR = false;
+		
+		if (Zotero.isInject) {
+			// The privileged XHR that Firefox makes available to content scripts so that they
+			// can make cross-domain requests doesn't include the Referer header in requests [1],
+			// so sites that check for it don't work properly. As long as we're not making a
+			// cross-domain request, we can use the content XHR that it provides, which does
+			// include Referer. Chrome's XHR in content scripts includes Referer by default.
+			//
+			// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#XHR_and_Fetch
+			if (Zotero.HTTP.isSameOrigin(url)) {
+				if (typeof content != 'undefined' && content.XMLHttpRequest) {
+					Zotero.debug("Using content XHR");
+					useContentXHR = true;
 				}
-				return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
-					if (!isDocRequest) return xmlhttp;
-					
-					Zotero.debug("Parsing cross-origin response for " + url);
-					let parser = new DOMParser();
-					let contentType = xmlhttp.getResponseHeader("Content-Type");
-					if (contentType != 'application/xml' && contentType != 'text/xml') {
-						contentType = 'text/html';
+			}
+			else {
+				if (Zotero.isBookmarklet) {
+					Zotero.debug("HTTP: Attempting cross-site request from bookmarklet; this may fail");
+				}
+				else if (Zotero.isSafari || Zotero.HTTP.isLessSecure(url)) {
+					// Make a cross-origin request via the background page, parsing the responseText with
+					// DOMParser and returning a Proxy with 'response' set to the parsed document
+					let isDocRequest = options.responseType == 'document';
+					let coOptions = Object.assign({}, options);
+					if (isDocRequest) {
+						coOptions.responseType = 'text';
 					}
-					let doc = parser.parseFromString(xmlhttp.responseText, contentType);
-					
-					return new Proxy(xmlhttp, {
-						get: function (target, name) {
-							return name == 'response' ? doc : target[name];
+					return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
+						if (!isDocRequest) return xmlhttp;
+						
+						Zotero.debug("Parsing cross-origin response for " + url);
+						let parser = new DOMParser();
+						let contentType = xmlhttp.getResponseHeader("Content-Type");
+						if (contentType != 'application/xml' && contentType != 'text/xml') {
+							contentType = 'text/html';
 						}
+						let doc = parser.parseFromString(xmlhttp.responseText, contentType);
+						
+						return new Proxy(xmlhttp, {
+							get: function (target, name) {
+								return name == 'response' ? doc : target[name];
+							}
+						});
 					});
-				});
+				}
 			}
 		}
 		
@@ -131,7 +149,7 @@ Zotero.HTTP = new function() {
 		}
 		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
 		
-		var xmlhttp = new XMLHttpRequest();
+		var xmlhttp = useContentXHR ? new content.XMLHttpRequest() : new XMLHttpRequest();
 		xmlhttp.timeout = options.timeout;
 		var promise = Zotero.HTTP._attachHandlers(url, xmlhttp, options);
 		

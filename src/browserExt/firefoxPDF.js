@@ -30,7 +30,7 @@
 
 if (Zotero.isFirefox) {
 	Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
-		if (details.responseHeadersObject['content-type'] != "application/pdf" || details.method != "GET") return;
+		if (!details.responseHeadersObject['content-type'].includes("application/pdf") || details.method != "GET") return;
 		
 		// Somehow browser.webNavigation.onCommitted runs later than headersReceived
 		setTimeout(async function() {

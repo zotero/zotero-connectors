@@ -83,23 +83,22 @@ sleep 1
 if [ $channel != "release" ]; then
 	# Add Git commit hash to XPI files
 	hash=$(git rev-parse --short HEAD)
-	echo "$version+$hash" > $BUILD_DIR/browserExt/build_id
+	echo "$version+$hash" > $BUILD_DIR/firefox/build_id
 fi
 
 FIREFOX_UPDATE_URL=${FIREFOX_UPDATE_URL/CHANNEL/$channel}
-cat "$BUILD_DIR/browserExt/manifest.json" | jq ".applications.gecko.update_url = \"$FIREFOX_UPDATE_URL\"" > $BUILD_DIR/browserExt/manifest.json-new
-mv $BUILD_DIR/browserExt/manifest.json-new $BUILD_DIR/browserExt/manifest.json
+cat "$BUILD_DIR/firefox/manifest.json" | jq ".applications.gecko.update_url = \"$FIREFOX_UPDATE_URL\"" > $BUILD_DIR/firefox/manifest.json-new
+mv $BUILD_DIR/firefox/manifest.json-new $BUILD_DIR/firefox/manifest.json
 
 echo
 echo manifest.json:
 echo
-grep '"version"' $BUILD_DIR/browserExt/manifest.json
-grep update_url $BUILD_DIR/browserExt/manifest.json
+grep '"version"' $BUILD_DIR/firefox/manifest.json
+grep update_url $BUILD_DIR/firefox/manifest.json
 echo
 sleep 2
 
 cd "$DIR"
-./prep_dir
 ./sign_xpi
 echo "Pushing XPI"
 

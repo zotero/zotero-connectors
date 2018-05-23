@@ -201,7 +201,11 @@ BOOKMARKLET_AUXILIARY_JS=( \
 rm -f "$LOG"
 
 # Remove old build directories
-rm -rf "$BUILD_DIR/browserExt" "$BUILD_DIR/safari.safariextension" "$BUILD_DIR/bookmarklet"
+rm -rf "$BUILD_DIR/browserExt" \
+	"$BUILD_DIR/chrome" \
+	"$BUILD_DIR/firefox" \
+	"$BUILD_DIR/safari.safariextension" \
+	"$BUILD_DIR/bookmarklet"
 
 # Make directories if they don't exist
 for dir in "$DISTDIR" \
@@ -245,15 +249,6 @@ cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
 rm -rf "$BUILD_DIR/browserExt/images"
 mkdir "$BUILD_DIR/browserExt/images"
 cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/browserExt/images"
-# Use larger icons where available, since Chrome actually wants 19px icons
-# 2x
-for img in "$BUILD_DIR"/browserExt/images/*2x.png; do
-	mv $img `echo $img | sed 's/@2x//'`
-done
-## 2.5x
-for img in "$BUILD_DIR"/browserExt/images/*48px.png; do
-	mv $img `echo $img | sed 's/@48px//'`
-done
 
 cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
 
@@ -362,6 +357,12 @@ if [[ $BUILD_SAFARI == 1 ]]; then
 	copyResources 'safari'
 fi
 
+# Make separate Chrome and Firefox directories
+if [[ $BUILD_BROWSER_EXT == 1 ]]; then
+	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/chrome/
+	mv $BUILD_DIR/browserExt $BUILD_DIR/firefox
+fi
+
 if [[ $BUILD_BROWSER_EXT == 1 ]] || [[ $BUILD_SAFARI == 1 ]]; then
 	gulp -v >/dev/null 2>&1 || { echo >&2 "gulp not found -- aborting"; exit 1; }
 
@@ -371,6 +372,46 @@ if [[ $BUILD_BROWSER_EXT == 1 ]] || [[ $BUILD_SAFARI == 1 ]]; then
 	else
 		gulp process-custom-scripts --version "$VERSION" -p > "$LOG" 2>&1
 	fi
+fi
+
+if [[ $BUILD_BROWSER_EXT == 1 ]]; then
+	# Chrome modifications
+	
+	# Use larger icons where available in Chrome, which actually wants 19px icons
+	# 2x
+	for img in "$BUILD_DIR"/chrome/images/*2x.png; do
+		cp $img `echo $img | sed 's/@2x//'`
+	done
+	## 2.5x
+	for img in "$BUILD_DIR"/chrome/images/*48px.png; do
+		cp $img `echo $img | sed 's/@48px//'`
+	done
+	
+	# Remove the 'applications' property used by Firefox from the manifest
+	pushd $BUILD_DIR/chrome > /dev/null
+	cat manifest.json | jq '. |= del(.applications)' > manifest.json-tmp
+	mv manifest.json-tmp manifest.json
+	popd > /dev/null
+	
+	# Firefox modifications
+	
+	# TEMP: Copy 2x icons to 1x until getImageSrc() is updated to detect HiDPI
+	for img in "$BUILD_DIR"/firefox/images/*2x.png; do
+		cp $img `echo $img | sed 's/@2x//'`
+	done
+	## 2.5x
+	for img in "$BUILD_DIR"/firefox/images/*48px.png; do
+		cp $img `echo $img | sed 's/@48px//'`
+	done
+	
+	# Remove 'optional_permissions' property used by Chrome from the manifest.
+	# If we start using other optional permissions in Firefox before 'management'
+	# is supported in Firefox, we can probably get jq to delete just 'management'.
+	pushd $BUILD_DIR/firefox > /dev/null
+	cat manifest.json | jq '. |= del(.optional_permissions)' > manifest.json-tmp
+	mv manifest.json-tmp manifest.json
+	popd > /dev/null
+
 fi
 
 echo "done"

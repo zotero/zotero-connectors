@@ -10,10 +10,6 @@ rm -rf "$ROOT_DIR"/dist/Zotero_Connector*.zip
 rsync -a --delete "$BUILD_DIR/browserExt/" "$BUILD_DIR/chrome/"
 cd "$BUILD_DIR/chrome/"
 
-# Remove the 'applications' property used by Firefox from the manifest
-cat manifest.json | jq '. |= del(.applications)' > manifest.json-tmp
-mv manifest.json-tmp manifest.json
-
 version=$(cat manifest.json | jq -r .version)
 filename="Zotero_Connector-$version.zip"
 

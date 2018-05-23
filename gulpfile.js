@@ -207,16 +207,20 @@ function processFile() {
 		}
 		
 		var addFiles = function(file) {
+			var f;
+			
 			// Amend paths
 			if (type === 'common' || type === 'browserExt') {
 				if (file.path.includes('.html')) {
 					file.contents = Buffer.from(replaceScriptsHTML(
 						file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
 				}
-				var f = file.clone({contents: false});
-				f.path = parts.slice(0, i-1).join('/') + '/build/browserExt/' + parts.slice(i+1).join('/');
-				console.log(`-> ${f.path.slice(f.cwd.length)}`);
-				this.push(f);
+				['chrome', 'firefox'].forEach((browser) => {
+					f = file.clone({contents: false});
+					f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
+					console.log(`-> ${f.path.slice(f.cwd.length)}`);
+					this.push(f);
+				});
 			}
 			if (type === 'common' || type === 'safari') {
 				if (file.path.includes('test/data') && file.path.includes('.html')) {
@@ -234,11 +238,13 @@ function processFile() {
 					+ parts.slice(i+3).join('/');
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);
-				f = file.clone({contents: false});
-				f.path = parts.slice(0, i-1).join('/') + '/build/browserExt/zotero-google-docs-integration/' 
-					+ parts.slice(i+3).join('/');
-				console.log(`-> ${f.path.slice(f.cwd.length)}`);
-				this.push(f);
+				['chrome', 'firefox'].forEach((browser) => {
+					f = file.clone({contents: false});
+					f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/zotero-google-docs-integration/`
+						+ parts.slice(i+3).join('/');
+					console.log(`-> ${f.path.slice(f.cwd.length)}`);
+					this.push(f);
+				});
 			}
 			cb();
 		}.bind(this);

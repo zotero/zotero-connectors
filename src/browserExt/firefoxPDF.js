@@ -30,9 +30,10 @@
 
 if (Zotero.isFirefox) {
 	Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
-		if ((details.responseHeadersObject['content-type']
-				&& !details.responseHeadersObject['content-type'].includes("application/pdf"))
-				|| details.method != "GET") return;
+		if (!details.responseHeadersObject['content-type']
+				|| !details.responseHeadersObject['content-type'].includes("application/pdf")
+				// Proxy login is a POST method that gets redirected to the final destination via a 302
+				|| (details.method != "GET" && details.statusCode < 300 && details.statusCode >= 400)) return;
 		
 		// Somehow browser.webNavigation.onCommitted runs later than headersReceived
 		setTimeout(async function() {

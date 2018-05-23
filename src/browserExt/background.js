@@ -504,22 +504,22 @@ Zotero.Connector_Browser = new function() {
 		delete _tabInfo[tabID];
 	}
 	
-	function _updateInfoForTab(tab) {
-		if (!(tab.id in _tabInfo)) {
-			_tabInfo[tab.id] = {
-				url: tab.url,
+	function _updateInfoForTab(tabId, url) {
+		if (!(tabId in _tabInfo)) {
+			_tabInfo[tabId] = {
+				url: url,
 				injections: {}
 			}
 		}
-		if (_tabInfo[tab.id].url != tab.url) {
-			Zotero.debug(`Connector_Browser: URL changed from ${_tabInfo[tab.id].url} to ${tab.url}`);
-			if (_tabInfo[tab.id].injections) {
-				for (let frameId in _tabInfo[tab.id].injections) {
-					_tabInfo[tab.id].injections[frameId].reject(new Error(`URL changed for tab ${tab.url}`));
+		if (_tabInfo[tabId].url != url) {
+			Zotero.debug(`Connector_Browser: URL changed from ${_tabInfo[tabId].url} to ${url}`);
+			if (_tabInfo[tabId].injections) {
+				for (let frameId in _tabInfo[tabId].injections) {
+					_tabInfo[tabId].injections[frameId].reject(new Error(`URL changed for tab ${url}`));
 				}
 			}
-			_tabInfo[tab.id] = {
-				url: tab.url,
+			_tabInfo[tabId] = {
+				url: url,
 				injections: {}
 			};
 		}
@@ -824,16 +824,21 @@ Zotero.Connector_Browser = new function() {
 	}));
 	
 	browser.webNavigation.onCommitted.addListener(logListenerErrors(async function(details) {
-		var tab = await browser.tabs.get(details.tabId);
-		// Ignore developer tools
-		if (tab.id < 0 || _isDisabledForURL(tab.url, true)) return;
+		// Ignore developer tools, item selector
+		if (details.tabId < 0 || _isDisabledForURL(details.url, true)
+				|| details.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
 
 		if (details.frameId == 0) {
-			// Ignore item selector
-			if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
-			_updateInfoForTab(tab);
+			_updateInfoForTab(details.tabId, details.url);
+			// Getting the tab is uber slow in Firefox. Since _updateInfoForTab() resets the
+			// object we use to store tab related metadata, it needs to fire ASAP, so that other hooks
+			// such as those from webNavigation events can update the metadata, without it being overwritten
+			var tab = await browser.tabs.get(details.tabId);
 			Zotero.Connector_Browser._updateExtensionUI(tab);
 			Zotero.Connector.reportActiveURL(tab.url);
+		}
+		if (!tab) {
+			var tab = await browser.tabs.get(details.tabId);
 		}
 		// _updateInfoForTab will reject pending injections, but we need to make sure this
 		// executes in the next event loop such that the rejections can be processed

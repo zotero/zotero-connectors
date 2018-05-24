@@ -231,6 +231,7 @@ Zotero.ContentTypeHandler = {
 				options.queryString = `session=${sessionID}`;
 				try {
 					let result = await Zotero.Connector.callMethod(options, this.response);
+					Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
 					for (let i = 0; i < result.length && i < 20; i++) {
 						let item = result[i];
 						Zotero.Messaging.sendMessage(

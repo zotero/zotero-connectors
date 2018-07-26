@@ -198,7 +198,7 @@ Zotero.Connector = new function() {
 				}
 				var val = null;
 				if(req.responseText) {
-					if(req.getResponseHeader("Content-Type") === "application/json") {
+					if(req.getResponseHeader("Content-Type").includes("application/json")) {
 						val = JSON.parse(req.responseText);
 					} else {
 						val = req.responseText;

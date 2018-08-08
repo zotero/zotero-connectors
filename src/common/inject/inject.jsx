@@ -93,6 +93,8 @@ Zotero.Inject = new function() {
 					Zotero.Connector_Browser.onPageLoad();
 					Zotero.Messaging.sendMessage("pageModified", null);
 				}, false);
+			} else {
+				_translate.setDocument(document);
 			}
 			return _translate.getTranslators(true).then(function(translators) {
 				if (!translators.length && Zotero.isSafari) {

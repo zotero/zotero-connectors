@@ -200,7 +200,6 @@ Zotero.Inject = new function() {
 				}
 			});
 			translate.setHandler("attachmentProgress", function(obj, attachment, progress, err) {
-				if(progress === 0) return;
 				Zotero.Messaging.sendMessage(
 					"progressWindow.itemProgress",
 					{
@@ -208,6 +207,7 @@ Zotero.Inject = new function() {
 						id: attachment.id,
 						iconSrc: determineAttachmentIcon(attachment),
 						title: attachment.title,
+						parentItem: attachment.parentItem,
 						progress
 					}
 				);
@@ -220,8 +220,10 @@ Zotero.Inject = new function() {
 		if(attachment.linkMode === "linked_url") {
 			return Zotero.ItemTypes.getImageSrc("attachment-web-link");
 		}
-		return Zotero.ItemTypes.getImageSrc(attachment.mimeType === "application/pdf"
-							? "attachment-pdf" : "attachment-snapshot");
+		var contentType = attachment.contentType || attachment.mimeType;
+		return Zotero.ItemTypes.getImageSrc(
+			contentType === "application/pdf" ? "attachment-pdf" : "attachment-snapshot"
+		);
 	}
 
 	/**
@@ -427,7 +429,6 @@ Zotero.Inject = new function() {
 			translate.setTranslator(translator);
 			try {
 				let items = await translate.translate({ sessionID });
-				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return items;
 			} catch (e) {
 				// TEMP: Remove once client switches automatically (added in 5.0.46)

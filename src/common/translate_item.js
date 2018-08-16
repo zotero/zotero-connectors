@@ -104,30 +104,32 @@ Zotero.Translate.ItemSaver.prototype = {
 			payload.cookie = document.cookie;
 		}
 		payload.proxy = this._proxy && this._proxy.toJSON();
-		return Zotero.Connector.callMethodWithCookies("saveItems", payload).then(function(data) {
-			Zotero.debug("Translate: Save via Zotero succeeded");
-			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID: this._sessionID });
-			var haveAttachments = false;
-			if(data && data.items) {
-				for(var i=0; i<data.items.length; i++) {
-					var attachments = items[i].attachments = data.items[i].attachments;
-					for(var j=0; j<attachments.length; j++) {
-						if(attachments[j].id) {
-							if (!attachments[j].title) attachments[j].title = 'Attachment';
-							attachmentCallback(attachments[j], 0);
-							haveAttachments = true;
-						}
-					}
-				}
-			}
-			if (haveAttachments) this._pollForProgress(items, attachmentCallback);
-			return items;
-		}.bind(this), function(e) {
+		try {
+			var data = await Zotero.Connector.callMethodWithCookies("saveItems", payload)
+		}
+		catch (e) {
 			if (e.status == 0) {
 				return this._saveToServer(items, attachmentCallback);
 			}
   			throw e;
-		}.bind(this));
+		}
+		
+		Zotero.debug("Translate: Save via Zotero succeeded");
+		Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID: this._sessionID });
+		
+		if (data && data.items) {
+			for (let i = 0; i < data.items.length; i++) {
+				let attachments = items[i].attachments = data.items[i].attachments;
+				for (let attachment of attachments) {
+					if (attachment.id) {
+						if (!attachment.title) attachment.title = 'Attachment';
+						attachmentCallback(attachment, 0);
+					}
+				}
+			}
+		}
+		this._pollForProgress(data.items, attachmentCallback);
+		return data.items;
 	},
 	
 	_processItems: function(items) {
@@ -150,49 +152,105 @@ Zotero.Translate.ItemSaver.prototype = {
 	 *     on failure or attachmentCallback(attachment, progressPercent) periodically during saving.
 	 *     attachmentCallback() will be called with all attachments that will be saved 
 	 */
-	"_pollForProgress":function(items, attachmentCallback) {
+	_pollForProgress: async function (items, attachmentCallback) {
 		var attachments = [];
-		var progressIDs = [];
-		var previousStatus = [];
-		for(var i=0; i<items.length; i++) {
-			var itemAttachments = items[i].attachments;
-			for(var j=0; j<itemAttachments.length; j++) {
-				if(itemAttachments[j].id) {
-					attachments.push(itemAttachments[j]);
-					progressIDs.push(itemAttachments[j].id);
-					previousStatus.push(0);
+		for (let item of items) {
+			if (!item.attachments) continue;
+			for (let attachment of item.attachments) {
+				if (itemAttachment.id) {
+					attachments.push(itemAttachment);
 				}
 			}
 		}
 		
 		var nPolls = 0;
-		var poll = function() {
-			return Zotero.Connector.callMethod("attachmentProgress", progressIDs).then(function(currentStatus) {
-				for(var i=0; i<attachments.length; i++) {
-					if(currentStatus[i] === 100 || currentStatus[i] === false) {
-						attachmentCallback(attachments[i], currentStatus[i]);
-						attachments.splice(i, 1);
-						progressIDs.splice(i, 1);
-						previousStatus.splice(i, 1);
-						currentStatus.splice(i, 1);
-						i--;
-					} else if(currentStatus[i] !== previousStatus[i]) {
-						attachmentCallback(attachments[i], currentStatus[i]);
-						previousStatus[i] = currentStatus[i];
-					}
+		while (true) {
+			try {
+				var response = await Zotero.Connector.callMethod(
+					"sessionProgress", { sessionID: this._sessionID }
+				)
+			}
+			catch (e) {
+				// Zotero <=5.0.55
+				if (e.status == 404) {
+					Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+					return this._pollForProgressLegacy(items, attachmentCallback);
 				}
 				
-				if(nPolls++ < 60 && attachments.length) {
-					setTimeout(poll, 1000);
+				for (let attachment of attachments) {
+					attachmentCallback(attachment, false, "Lost connection to Zotero");
 				}
-			}, function() {
-				for(var i=0; i<attachments.length; i++) {
-					attachmentCallback(attachments[i], false, "Lost connection to Zotero Standalone");
-				}	
-			});
-		};
-		poll();
+				return;
+			}
+			
+			// Store last version of attachments so we can cancel them if a subsequent request fails
+			let newAttachments = [];
+			for (let item of response.items) {
+				if (!item.attachments) continue;
+				for (let attachment of item.attachments) {
+					attachment.parentItem = item.id;
+					attachmentCallback(attachment, attachment.progress);
+					newAttachments.push(attachment);
+				}
+			}
+			attachments = newAttachments;
+			
+			if (nPolls++ < 60 && !response.done) {
+				await Zotero.Promise.delay(1000);
+			}
+			else {
+				break;
+			}
+		}
+		
+		Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 	},
+	
+	
+	_pollForProgressLegacy: function (items, attachmentCallback) {
+			var attachments = [];
+			var progressIDs = [];
+			var previousStatus = [];
+			for(var i=0; i<items.length; i++) {
+					var itemAttachments = items[i].attachments;
+					for(var j=0; j<itemAttachments.length; j++) {
+							if(itemAttachments[j].id) {
+									attachments.push(itemAttachments[j]);
+									progressIDs.push(itemAttachments[j].id);
+									previousStatus.push(0);
+							}
+					}
+			}
+
+			var nPolls = 0;
+			var poll = function() {
+					return Zotero.Connector.callMethod("attachmentProgress", progressIDs).then(function(currentStatus) {
+							for(var i=0; i<attachments.length; i++) {
+									if(currentStatus[i] === 100 || currentStatus[i] === false) {
+											attachmentCallback(attachments[i], currentStatus[i]);
+											attachments.splice(i, 1);
+											progressIDs.splice(i, 1);
+											previousStatus.splice(i, 1);
+											currentStatus.splice(i, 1);
+											i--;
+									} else if(currentStatus[i] !== previousStatus[i]) {
+											attachmentCallback(attachments[i], currentStatus[i]);
+											previousStatus[i] = currentStatus[i];
+									}
+							}
+
+							if(nPolls++ < 60 && attachments.length) {
+									setTimeout(poll, 1000);
+							}
+					}, function() {
+							for(var i=0; i<attachments.length; i++) {
+									attachmentCallback(attachments[i], false, "Lost connection to Zotero Standalone");
+							}
+					});
+			};
+			poll();
+	},
+	
 	
 	/**
 	 * Saves items to server

@@ -446,7 +446,7 @@ if (isTopWindow) {
 			}, 1000);
 		}
 		else if (returnValue[0]) {
-			startCloseTimer(2500);
+			startCloseTimer(3000);
 		}
 		else {
 			addError(returnValue[1] || "translationError");

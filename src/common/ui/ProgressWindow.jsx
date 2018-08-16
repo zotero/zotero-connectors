@@ -233,6 +233,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				newState.itemProgress.set(id, p);
 				p.order = prevState.itemProgress.size - 1;
 			}
+			p.title = title;
 			if (iconSrc) {
 				p.iconSrc = iconSrc;
 			}
@@ -241,6 +242,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			}
 			if (progress === false) {
 				p.failed = true;
+			}
+			// Just remove the line if an optional PDF wasn't found
+			else if (progress == -1) {
+				newState.itemProgress.delete(id);
 			}
 			else if (typeof progress == 'number') {
 				p.percentage = progress;

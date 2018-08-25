@@ -157,8 +157,8 @@ Zotero.Translate.ItemSaver.prototype = {
 		for (let item of items) {
 			if (!item.attachments) continue;
 			for (let attachment of item.attachments) {
-				if (itemAttachment.id) {
-					attachments.push(itemAttachment);
+				if (attachment.id) {
+					attachments.push(attachment);
 				}
 			}
 		}

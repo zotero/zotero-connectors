@@ -34,7 +34,8 @@ const chalk = require('chalk');
 
 const scriptDir = __dirname;
 const rootDir = path.normalize(path.join(scriptDir, '..'));
-const extensionDir = path.join(rootDir, 'build', 'browserExt');
+const chromeExtensionDir = path.join(rootDir, 'build', 'chrome');
+const firefoxExtensionDir = path.join(rootDir, 'build', 'firefox');
 const KEEP_BROWSER_OPEN = 'KEEP_BROWSER_OPEN' in process.env;
 
 
@@ -82,36 +83,43 @@ results.promise = new Promise(function(resolve, reject) {
 	results.reject = reject;
 });
 if ('TEST_CHROME' in process.env) {
-	require('chromedriver');
-	let caps = selenium.Capabilities.chrome();
-	
-	let options = {'args': [`load-extension=${extensionDir}`]};
-	if ('BROWSER_EXECUTABLE' in process.env) {
-		options['binary'] = process.env['BROWSER_EXECUTABLE']
-	}
+	(async function() {
+		try {
+			require('chromedriver');
+			let caps = selenium.Capabilities.chrome();
+			
+			let options = {'args': [`load-extension=${chromeExtensionDir}`]};
+			if ('BROWSER_EXECUTABLE' in process.env) {
+				options['binary'] = process.env['BROWSER_EXECUTABLE']
+			}
 
-	caps.set('chromeOptions', options);
-	let driver = new selenium.Builder()
-		.withCapabilities(caps)
-		.build();
-	
-	driver.get("chrome://extensions/").then(function() {
-		return driver.findElements({className: 'extension-list-item-wrapper'});
-	}).then(function(extIdElem) {
-		return extIdElem[1].getAttribute('id');
-	}).then(function(extId) {
-		let testUrl = `chrome-extension://${extId}/test/test.html`;
-		return new Promise((resolve) => setTimeout(() => resolve(driver.get(testUrl)), 500));
-	}).then(function() {
-		return driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10*60*1000);
-	}).then(function() {
-		return driver.executeScript('return window.testResults');
-	}).catch(results.reject).then(function(testResults) {
-		if (KEEP_BROWSER_OPEN) {
-			return results.resolve(testResults);
+			caps.set('chromeOptions', options);
+			let driver = new selenium.Builder()
+				.withCapabilities(caps)
+				.build();
+			
+			// No API to retrieve extension ID. Hacks, sigh.
+			await driver.get("chrome://system/");
+			let extBtn = await driver.findElement({css: '#extensions-value-btn'});
+			await extBtn.click();
+			let contentElem = await driver.findElement({css: '#content'});
+			let text = await contentElem.getText();
+			let extId = text.match(/([^\s]*) : Zotero Connector/)[1];
+			
+			// We got the extension ID and test URL, let's test
+			let testUrl = `chrome-extension://${extId}/test/test.html`;
+			await new Promise((resolve) => setTimeout(() => resolve(driver.get(testUrl)), 500));
+			await driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10*60*1000);
+			let testResults = await driver.executeScript('return window.testResults');
+			
+			if (KEEP_BROWSER_OPEN) {
+				return results.resolve(testResults);
+			}
+			return driver.quit().then(() => results.resolve(testResults));
+		} catch (e) {
+			results.reject(e);
 		}
-		return driver.quit().then(() => results.resolve(testResults));
-	});
+	})();
 }
 if ('TEST_FX' in process.env) {
 	require('geckodriver');
@@ -126,7 +134,7 @@ if ('TEST_FX' in process.env) {
 	}
 	fs.mkdirSync(path.join(profileDir, 'extensions'));
 	let proxyFile = path.join(profileDir, 'extensions/zotero@chnm.gmu.edu');
-	fs.writeFileSync(proxyFile, extensionDir);
+	fs.writeFileSync(proxyFile, firefoxExtensionDir);
 	const firefox = require('selenium-webdriver/firefox');
 	var profile = new firefox.Profile(profileDir);
 	var options = new firefox.Options();

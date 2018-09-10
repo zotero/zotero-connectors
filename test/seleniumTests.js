@@ -35,7 +35,6 @@ const chalk = require('chalk');
 const scriptDir = __dirname;
 const rootDir = path.normalize(path.join(scriptDir, '..'));
 const chromeExtensionDir = path.join(rootDir, 'build', 'chrome');
-const firefoxExtensionDir = path.join(rootDir, 'build', 'firefox');
 const KEEP_BROWSER_OPEN = 'KEEP_BROWSER_OPEN' in process.env;
 
 
@@ -122,60 +121,46 @@ if ('TEST_CHROME' in process.env) {
 	})();
 }
 if ('TEST_FX' in process.env) {
-	require('geckodriver');
+	(async function() {
+		try {
+			require('geckodriver');
 
-	// Building the extension proxy file
-	// https://developer.mozilla.org/en-US/Add-ons/Setting_up_extension_development_environment#Firefox_extension_proxy_file
-	// currently the only functional way of installing webexts
-	try {
-		var profileDir = fs.mkdtempSync('/tmp/fx-profile');
-	} catch (e) {
-		if (e.code !== 'EEXIST') throw e
-	}
-	fs.mkdirSync(path.join(profileDir, 'extensions'));
-	let proxyFile = path.join(profileDir, 'extensions/zotero@chnm.gmu.edu');
-	fs.writeFileSync(proxyFile, firefoxExtensionDir);
-	const firefox = require('selenium-webdriver/firefox');
-	var profile = new firefox.Profile(profileDir);
-	var options = new firefox.Options();
-	options.setProfile(profile);
-	if ('BROWSER_EXECUTABLE' in process.env) {
-		options.setBinary(process.env['BROWSER_EXECUTABLE'])
-	}
-	
-	let driver = new selenium.Builder()
-		.forBrowser('firefox')
-		.setFirefoxOptions(options)
-		.build();
-	
-	driver.get("about:support").then(function() {
-		// Switch to chrome context to get the UUIDs pref
-		driver.setContext(firefox.Context.CHROME);
-		return driver.executeScript(`
-			var prefBranch = Services.prefs.getBranch("");
-			if (!prefBranch.prefHasUserValue('extensions.webextensions.uuids')) return;
-			return ''+prefBranch.getComplexValue('extensions.webextensions.uuids', Components.interfaces.nsISupportsString);
-		`);
-	}).then(function(uuids) {
-		driver.setContext(firefox.Context.CONTENT);
-		if (!uuids) {
-			console.log('Failed to retrieve the extension UUID');
-			throw new Error('Failed to retrieve the extension UUID');
+			
+			const firefox = require('selenium-webdriver/firefox');
+			var options = new firefox.Options();
+			if ('BROWSER_EXECUTABLE' in process.env) {
+				options.setBinary(process.env['BROWSER_EXECUTABLE'])
+			}
+			
+			let driver = new selenium.Builder()
+				.forBrowser('firefox')
+				.setFirefoxOptions(options)
+				.build();
+
+			await driver.setContext(firefox.Context.CHROME);
+			await driver.executeScript(`
+				var prefBranch = Services.prefs.getBranch("");
+				prefBranch.setBoolPref('xpinstall.signatures.required', false);
+			`);
+			await driver.setContext(firefox.Context.CONTENT);
+
+			await driver.installAddon('/tmp/zoteroConnector.xpi');
+			await driver.get('about:debugging');
+			let elem = await driver.findElement({css: '.internal-uuid span'});
+			let extId = await elem.getText();
+			let testUrl = `moz-extension://${extId}/test/test.html#console`;
+			await new Promise((resolve) => setTimeout(() => resolve(driver.get(testUrl)), 500));
+			
+			await driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10*60*1000);
+			let testResults = await driver.executeScript('return window.testResults');
+			if (KEEP_BROWSER_OPEN) {
+				return results.resolve(testResults);
+			}
+			return driver.quit().then(() => results.resolve(testResults));
+		} catch (e) {
+			results.reject(e);
 		}
-		let extId = JSON.parse(uuids)['zotero@chnm.gmu.edu'];
-		let testUrl = `moz-extension://${extId}/test/test.html#console`;
-		// extUUID retrieved, continue in web content
-		return new Promise((resolve) => setTimeout(() => resolve(driver.get(testUrl)), 500));
-	}).then(function() {
-		return driver.wait(until.elementLocated({id: 'mocha-tests-complete'}), 10*60*1000);
-	}).then(function() {
-		return driver.executeScript('return window.testResults');
-	}).catch(results.reject).then(function(testResults) {
-		if (KEEP_BROWSER_OPEN) {
-			return results.resolve(testResults);
-		}
-		return driver.quit().then(() => results.resolve(testResults));
-	});
+	}());
 }
 
 results.promise.then(function(results) {

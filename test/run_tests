@@ -73,14 +73,16 @@ if [ ! -z "$TEST_SAFARI" ]; then
 	exit 1
 fi
 
+if [[ -z "$SKIP_BUILD" ]]; then
+	$ROOT_DIR/build.sh -d
+fi
+
 if [[ ! -z "$TEST_CHROME" ]]; then
 	export TEST_CHROME
 elif [[ ! -z "$TEST_FX" ]]; then
+	cd $ROOT_DIR/build/firefox
+	zip -q -r /tmp/zoteroConnector.xpi *
 	export TEST_FX
-fi
-
-if [[ -z "$SKIP_BUILD" ]]; then
-	$ROOT_DIR/build.sh -d
 fi
 
 $DIR/seleniumTests.js

@@ -139,7 +139,7 @@ Zotero.Connector_Browser = new function() {
 	 * @param frameId
 	 * @param url - url of the frame
 	 */
-	this.onFrameLoaded = Zotero.Promise.method(function(tab, frameId, url) {
+	this.onFrameLoaded = async function(tab, frameId, url) {
 		if (_isDisabledForURL(tab.url) && frameId == 0 || _isDisabledForURL(url)) {
 			return;
 		}
@@ -155,6 +155,11 @@ Zotero.Connector_Browser = new function() {
 				// Also in the first frame detected
 				// See https://github.com/zotero/zotero-connectors/issues/156
 				_tabInfo[tab.id].frameChecked = true;
+				// If you try to inject here immediately Firefox throws
+				// "Frame not found, or missing host permission"
+				if (Zotero.isFirefox) {
+					await Zotero.Promise.delay(100);
+				}
 				return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
 			}
 		}
@@ -172,7 +177,7 @@ Zotero.Connector_Browser = new function() {
 			Zotero.debug(translators[0].length+  " translators found. Injecting into [tab.url, url]: " + tab.url + " , " + url);
 			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
 		});
-	});
+	};
 	
 	this.isIncognito = function(tab) {
 		return tab.incognito;
@@ -746,7 +751,7 @@ Zotero.Connector_Browser = new function() {
 	 * 		- note <String> add string as a note to the saved item
 	 * @returns {Promise<*>}
 	 */
-	this.saveWithTranslator = function(tab, i, options) {
+	this.saveWithTranslator = function(tab, i, options={}) {
 		var translator = _tabInfo[tab.id].translators[i];
 		
 		// Set frameId to null - send message to all frames

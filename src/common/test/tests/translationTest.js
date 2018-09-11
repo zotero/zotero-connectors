@@ -48,6 +48,9 @@ describe("Translation", function() {
 		after(async function () {
 			await tab.close();
 		});
+		afterEach(async function () {
+			await tab.run(() => Zotero.Inject.sessionDetails = {});
+		});
 		
 		describe("Detection", function() {
 			it('detects expected translators', async function () {
@@ -76,7 +79,9 @@ describe("Translation", function() {
 				
 				it('saves with a translator', async function () {
 					var items = await background(async function(tabId) {
-						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
+						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async function(_, payload){
+							return payload;
+						});
 						let tab = await Zotero.Background.getTabByID(tabId);
 						try {
 							var items = await Zotero.Connector_Browser.saveWithTranslator(tab, 0)
@@ -90,15 +95,17 @@ describe("Translation", function() {
 					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
 					var message = await tab.runInFrame(frameURL, async function() {
 						// TODO: A more robust way to wait for the text to show up.
-						Zotero.Promise.delay(100);
+						await Zotero.Promise.delay(100);
 						return document.querySelector('.ProgressWindow-progressBox').textContent;
 					});
 					assert.include(message, items[0].title);
 				});
 				
-				it('saves with a translator that uses the select dialog', Promise.coroutine(function* () {
-					var items = yield background(async function(tabId) {
-						var stub1 = sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
+				it('saves with a translator that uses the select dialog', async function () {
+					var items = await background(async function(tabId) {
+						var stub1 = sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async function(_, payload){
+							return payload;
+						});
 						var stub2 = sinon.stub(Zotero.Connector_Browser, "onSelect").callsFake(function(items) {
 							return items;
 						});
@@ -113,13 +120,14 @@ describe("Translation", function() {
 					}, tab.tabId);
 					assert.equal(items.length, 1);
 					assert.equal(items[0].itemType, 'journalArticle');
-					var message = yield tab.run(function() {
-						var message = document.getElementById('zotero-progress-window').textContent;
-						Zotero.ProgressWindow.close();
-						return message;
+					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
+					var message = await tab.runInFrame(frameURL, async function() {
+						// TODO: A more robust way to wait for the text to show up.
+						await Zotero.Promise.delay(100);
+						return document.querySelector('.ProgressWindow-progressBox').textContent;
 					});
 					assert.include(message, items[0].title);
-				}));
+				});
 			
 				it('saves as snapshot', async function () {
 					try {
@@ -129,10 +137,11 @@ describe("Translation", function() {
 							await Zotero.Connector_Browser.saveAsWebpage(tab);
 						}, tab.tabId);
 						await Zotero.Promise.delay(20);
-						var message = await tab.run(function () {
-							var message = document.getElementById('zotero-progress-window').textContent;
-							Zotero.ProgressWindow.close();
-							return message;
+						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
+						var message = await tab.runInFrame(frameURL, async function() {
+							// TODO: A more robust way to wait for the text to show up.
+							await Zotero.Promise.delay(100);
+							return document.querySelector('.ProgressWindow-progressBox').textContent;
 						});
 						assert.include(message, "Scarcity or Abundance? Preserving the Past in a Digital Era");
 					} finally {
@@ -155,10 +164,11 @@ describe("Translation", function() {
 							stub.restore(); stub2.restore();	
 						}
 					}, tab.tabId);
-					var message = await tab.run(function() {
-						var message = document.getElementById('zotero-progress-window').textContent;
-						Zotero.ProgressWindow.close();
-						return message;
+					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
+					var message = await tab.runInFrame(frameURL, async function() {
+						// TODO: A more robust way to wait for the text to show up.
+						await Zotero.Promise.delay(100);
+						return document.querySelector('.ProgressWindow-error').textContent;
 					});
 					assert.include(message, 'An error occurred while saving this item.');
 				});
@@ -193,22 +203,26 @@ describe("Translation", function() {
 				
 				if (Zotero.isBrowserExt) {
 					it('displays a prompt when attempting to save to zotero.org for the first time', async function () {
-						await background(async function (tabId) {
-							// First-time save
-							sinon.stub(Zotero.Prefs, 'get').returns(true);
-							var deferred = Zotero.Promise.defer();
-							var tab = await Zotero.Background.getTabByID(tabId);
-							Zotero.Connector_Browser.saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
-						}, tab.tabId);
-						// Waiting for modal-prompt to be displayed
-						await Zotero.Promise.delay(50);
-						var message = await tab.run(function () {
-							return document.getElementById('zotero-modal-prompt').textContent;
-						});
-						assert.include(message, 'The Zotero Connector was unable to communicate with the Zotero desktop application.');
-						await background(function() {
-							Zotero.Prefs.get.restore();
-						});
+						try {
+							await background(async function (tabId) {
+								// First-time save
+								sinon.stub(Zotero.Prefs, 'get').returns(true);
+								var deferred = Zotero.Promise.defer();
+								var tab = await Zotero.Background.getTabByID(tabId);
+								Zotero.Connector_Browser.saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
+							}, tab.tabId);
+							var frameURL = getExtensionURL('modalPrompt/modalPrompt.html');
+							var message = await tab.runInFrame(frameURL, async function() {
+								// TODO: A more robust way to wait for the text to show up.
+								await Zotero.Promise.delay(100);
+								return document.getElementById('zotero-modal-prompt').textContent;
+							});
+							assert.include(message, 'The Zotero Connector was unable to communicate with the Zotero desktop application.');
+						} finally {
+							await background(function() {
+								Zotero.Prefs.get.restore();
+							});
+						}
 					});
 				}
 				
@@ -247,11 +261,14 @@ describe("Translation", function() {
 
 						assert.equal(items.length, 1);
 						assert.equal(items[0].itemType, 'journalArticle');
-						var message = await tab.run(function () {
-							var message = document.getElementById('zotero-progress-window').textContent;
-							// Zotero.ProgressWindow.close();
-							return message;
+
+						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
+						var message = await tab.runInFrame(frameURL, async function() {
+							// TODO: A more robust way to wait for the text to show up.
+							await Zotero.Promise.delay(100);
+							return document.querySelector('.ProgressWindow-box').textContent;
 						});
+
 						assert.include(message, 'zotero.org');
 						assert.include(message, items[0].title);
 					} finally {

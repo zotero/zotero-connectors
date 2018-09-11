@@ -42,6 +42,10 @@ window.onload = async function () {
 		document.body.appendChild(div);
 		return await deferred.promise;
 	});
+
+	// To enable testing with mocha
+	Zotero.isInject = true;
+	Zotero.initDeferred.resolve();
 	
 	await Zotero.Messaging.init();
 	Zotero.Messaging.sendMessage('modalPrompt.init', null);

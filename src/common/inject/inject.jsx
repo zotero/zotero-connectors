@@ -23,9 +23,6 @@
     ***** END LICENSE BLOCK *****
 */
 
-/**
- * Only register progress window code in top window
- */
 var isTopWindow = false;
 if(window.top) {
 	try {
@@ -52,7 +49,7 @@ if (isTopWindow) {
  */
 Zotero.Inject = new function() {
 	var _translate;
-	var _noteImageSrc;
+	var _noteImgSrc;
 	this.sessionDetails = {};
 	this.translators = [];
 		

@@ -29,5 +29,5 @@
 function sendMessage() {
 	if(responseSent) return;
 	responseSent = true;
-	window.parent.postMessage(JSON.stringify(["selectDone", items]), "*");
+	window.parent.postMessage(["selectDone", items], "*");
 }

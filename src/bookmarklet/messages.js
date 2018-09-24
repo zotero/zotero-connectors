@@ -52,38 +52,59 @@
  *
  * See other messaging scripts for more details.
  */
-const MESSAGE_SEPARATOR = ".";
-const MESSAGES = {
-	"Translators":
-		{
-			"get":{
-				"preSend":function(translators) {
-					return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
+window.MESSAGE_SEPARATOR = ".";
+window.MESSAGES = {
+	Translators: {
+		get: {
+			background: {
+				preSend: function(translators) {
+					return Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES);
 				}
 			},
-			"getAllForType":{
-				"preSend":function(translators) {
-					return [Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES)];
-				},
-				"callbackArg":1
-			},
-			"getWebTranslatorsForLocation":{
-				"preSend":function(data) {
-					return [[Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES), data[1]]];
-				},
-				"postReceive":function(data) {
-					return [[data[0], Zotero.Translators.getConverterFunctions(data[1])]];
+			inject: {
+				postReceive: function(translator) {
+					return new Zotero.Translator(translator);
 				}
 			}
 		},
-	"Connector":
-		{
-			"checkIsOnline":true,
-			"callMethod":true
+		getAllForType: {
+			background: {
+				preSend: function(translators) {
+					return Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES);
+				},
+			},
+			inject: {
+				postReceive: function(translators) {
+					return translators.map(function(translator) {return new Zotero.Translator(translator)});
+				}
+			}
 		},
-	"API":
-		{
-			"createItem":true,
-			"uploadAttachment":false
-		}
+		getWebTranslatorsForLocation: {
+			background: {
+				preSend: function(data) {
+					return [Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES), data[1]];
+				}
+			},
+			inject: {
+				postReceive: function(data) {
+					// Deserialize to class objects
+					data[0] = data[0].map((translator) => new Zotero.Translator(translator));
+					data[1] = data[1].map((proxy) => proxy && new Zotero.Proxy(proxy));
+					return [data[0], data[1]];
+				}
+			}
+		},
+	},
+	Messaging: {
+		sendMessage: true
+	},
+	Connector: {
+		checkIsOnline: true,
+		callMethod: true,
+		callMethodWithCookies: true
+	},
+	API: {
+		createItem: true,
+		uploadAttachment: false
+	}
 };

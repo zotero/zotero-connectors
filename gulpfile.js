@@ -25,6 +25,7 @@
 
 'use strict';
 
+const { watchBookmarklet, processBookmarkletScripts } = require('./scripts/gulpfile_bookmarklet');
 const exec = require('child_process').exec;
 const through = require('through2');
 const gulp = require('gulp');
@@ -269,6 +270,7 @@ function processFile() {
 					);
 				}
 				file.contents = Buffer.from(contents);
+				break;
 			case 'zotero.js':
 				if (!argv.p) {
 					file.contents = Buffer.from(file.contents.toString()
@@ -363,5 +365,9 @@ gulp.task('process-custom-scripts', function() {
 		.pipe(processFile())
 		.pipe(gulp.dest((data) => data.base));
 });
+
+gulp.task('watch-bookmarklet', watchBookmarklet(argv))
+
+gulp.task('process-bookmarklet-scripts', processBookmarkletScripts(argv));
 
 gulp.task('default', ['watch']);

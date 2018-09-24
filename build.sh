@@ -173,7 +173,7 @@ BOOKMARKLET_COMMON_INCLUDE=("$SRCDIR/bookmarklet/zotero_config.js" \
 
 BOOKMARKLET_AUXILIARY_JS=( \
 	"$SRCDIR/bookmarklet/loader.js" \
-	"$SRCDIR/bookmarklet/itemSelector/itemSelector_browserSpecific.js" )
+	)
 
 # Remove log file
 rm -f "$LOG"
@@ -439,64 +439,35 @@ if [ $BUILD_BOOKMARKLET == 1 ]; then
 	echo -n "Building bookmarklet..."
 	
 	# Make bookmarklet
-	for scpt in "iframe" "common" "inject"
-	do
-		tmpScript="$BUILD_DIR/bookmarklet/${scpt}_tmp.js"
-		
-		if [ "$scpt" == "iframe" ]; then
-			files=("${BOOKMARKLET_IFRAME_INCLUDE[@]}")
-		elif [ "$scpt" == "common" ]; then
-			files=("${BOOKMARKLET_COMMON_INCLUDE[@]}")
-			
-			echo "/******** BEGIN zotero.js ********/" >> "$tmpScript"
-			perl -p -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$SRCDIR/common/zotero.js" | LC_CTYPE=C tr -d '\r' >> "$tmpScript"
-			echo "" >> "$tmpScript"
-			echo "/******** END zotero.js ********/" >> "$tmpScript"
-		elif [ "$scpt" == "inject" ]; then
-			files=("${BOOKMARKLET_INJECT_INCLUDE[@]}")
-		fi
-		
-		# Bundle scripts
-		for f in "${files[@]}"
-		do
-			# Remove Windows CRs when bundling
-			echo "/******** BEGIN `basename $f` ********/"
-			LC_CTYPE=C tr -d '\r' < $f
-			echo ""
-			echo "/******** END `basename $f` ********/"
-		done >> "$tmpScript"
-		builtScript="$BUILD_DIR/bookmarklet/${scpt}.js"
-		
-		# Transpile. Minify if not in debug mode
-		if [ ! -z $DEBUG ]; then
-			"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015 -q >> "$LOG" 2>&1
-			rm "$tmpScript"
-		else
-			"$CWD/node_modules/babel-cli/bin/babel.js" "$tmpScript" --out-file "$builtScript" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
-			rm "$tmpScript"
-		fi
-	done
 	
 	# Copy/minify auxiliary JS
-		if [ ! -z $DEBUG ]; then
+	if [ ! -z $DEBUG ]; then
 		cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BUILD_DIR/bookmarklet"
 	else	
 		for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
 		do
-			"$CWD/node_modules/babel-cli/bin/babel.js" "$scpt" --out-file "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`" --presets es2015,babili --no-comments -q >> "$LOG" 2>&1
+			"$CWD/node_modules/babel-cli/bin/babel.js" "$scpt" --out-file "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`" --presets minify --no-comments -q >> "$LOG" 2>&1
 		done
-	fi
+	fi	
 	
 	# Copy HTML to dist directory
-	cp "$SRCDIR/bookmarklet/bookmarklet.html" \
-		"$SRCDIR/bookmarklet/debug_mode.html" \
+	cp -R "$SRCDIR/bookmarklet/debug_mode.html" \
 		"$SRCDIR/bookmarklet/iframe.html" \
 		"$SRCDIR/bookmarklet/auth_complete.html" \
-		"$SRCDIR/common/itemSelector/"* \
+		"$SRCDIR/common/itemSelector" \
+		"$SRCDIR/common/progressWindow" \
 		"$BUILD_DIR/bookmarklet"
 	rm -rf "$BUILD_DIR/bookmarklet/images"
 	mkdir "$BUILD_DIR/bookmarklet/images"
 	cp $ICONS $IMAGES "$BUILD_DIR/bookmarklet/images"
+	
+	# Update scripts
+	if [ ! -z $DEBUG ]; then
+		"$GULP" process-bookmarklet-scripts --version "$VERSION" > "$LOG" 2>&1
+	else
+		"$GULP" process-bookmarklet-scripts --version "$VERSION" -p > "$LOG" 2>&1
+	fi
+	
 	echo "done"
 else
 	rmdir "$BUILD_DIR/bookmarklet"

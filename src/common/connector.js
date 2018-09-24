@@ -28,11 +28,7 @@ Zotero.Connector = new function() {
 	const CONNECTOR_API_VERSION = 2;
 	
 	var _ieStandaloneIframeTarget, _ieConnectorCallbacks;
-	// As of Chrome 38 (and corresponding Opera version 24?) pages loaded over
-	// https (i.e. the zotero bookmarklet iframe) can not send requests over
-	// http, so pinging Standalone at http://127.0.0.1 fails.
-	// Disable for all browsers, except IE, which may be used frequently with ZSA
-	this.isOnline = Zotero.isBookmarklet && !Zotero.isIE ? false : null;
+	this.isOnline = (Zotero.isSafari || Zotero.isFirefox) ? false : null;
 	this.shouldReportActiveURL = true;
 	
 	/**
@@ -45,98 +41,12 @@ Zotero.Connector = new function() {
 			return this.isOnline;
 		}
 
-		var deferred = Zotero.Promise.defer();
-		
-		if (Zotero.isIE) {
-			if (window.location.protocol !== "http:") {
-				this.isOnline = false;
+		return this.ping({}).catch(function(e) {
+			if (e.status == 0) {
 				return false;
 			}
-		
-			Zotero.debug("Connector: Looking for Zotero Standalone");
-			var fail = function() {
-				if (this.isOnline !== null) return;
-				Zotero.debug("Connector: Zotero Standalone is not online or cannot be contacted");
-				this.isOnline = false;
-				deferred.resolve(false);
-			}.bind(this);
-			
-			window.setTimeout(fail, 1000);
-			try {
-				var xdr = new XDomainRequest();
-				xdr.timeout = 700;
-				xdr.open("POST", `${Zotero.Prefs.get('connector.url')}connector/ping`, true);
-				xdr.onerror = function() {
-					Zotero.debug("Connector: XDomainRequest to Zotero Standalone experienced an error");
-					fail();
-				};
-				xdr.ontimeout = function() {
-					Zotero.debug("Connector: XDomainRequest to Zotero Standalone timed out");
-					fail();
-				};
-				xdr.onload = function() {
-					if(me.isOnline !== null) return;
-					me.isOnline = true;
-					Zotero.debug("Connector: Standalone found; trying IE hack");
-					
-					_ieConnectorCallbacks = [];
-					var listener = function(event) {
-						if(!Zotero.Prefs.get('connector.url').includes(event.origin)
-								|| event.source !== iframe.contentWindow) return;
-						if(event.stopPropagation) {
-							event.stopPropagation();
-						} else {
-							event.cancelBubble = true;
-						}
-						
-						// If this is the first time the target was loaded, then this is a loaded
-						// event
-						if(!_ieStandaloneIframeTarget) {
-							Zotero.debug("Connector: Standalone loaded");
-							_ieStandaloneIframeTarget = iframe.contentWindow;
-							deferred.resolve(true);
-						}
-						
-						// Otherwise, this is a response event
-						try {
-							var data = JSON.parse(event.data);
-						} catch(e) {
-							Zotero.debug("Invalid JSON received: "+event.data);
-							return;
-						}
-						var xhrSurrogate = {
-							"status":data[1],
-							"responseText":data[2],
-							"getResponseHeader":function(x) { return data[3][x.toLowerCase()] }
-						};
-						_ieConnectorCallbacks[data[0]](xhrSurrogate);
-						delete _ieConnectorCallbacks[data[0]];
-					};
-					
-					if(window.addEventListener) {
-						window.addEventListener("message", listener, false);
-					} else {
-						window.attachEvent("onmessage", function() { listener(event); });
-					}
-					
-					var iframe = document.createElement("iframe");
-					iframe.src = `${Zotero.Prefs.get('connector.url')}connector/ieHack`;
-					document.documentElement.appendChild(iframe);
-				};
-				xdr.send("");
-			} catch(e) {
-				Zotero.logError(e);
-				fail();
-			}
-		} else {
-			return this.ping({}).catch(function(e) {
-				if (e.status == 0) {
-					return false;
-				}
-				throw e
-			});
-		}
-		return deferred.promise;
+			throw e;
+		});
 	});
 
 	this.reportActiveURL = function(url) {
@@ -171,7 +81,7 @@ Zotero.Connector = new function() {
 	this.callMethod = Zotero.Promise.method(function(options, data, tab) {
 		// Don't bother trying if not online in bookmarklet
 		if (Zotero.isBookmarklet && this.isOnline === false) {
-			throw new Zotero.CommunicationError("Zotero Offline", 0);
+			throw new Zotero.Connector.CommunicationError("Zotero Offline", 0);
 		}
 		if (typeof options == 'string') {
 			options = {method: options};
@@ -227,31 +137,19 @@ Zotero.Connector = new function() {
 			}
 		};
 		
-		if(Zotero.isIE) {	// IE requires XDR for CORS
-			if(_ieStandaloneIframeTarget) {
-				var requestID = Zotero.Utilities.randomString();
-				_ieConnectorCallbacks[requestID] = newCallback;
-				_ieStandaloneIframeTarget.postMessage(JSON.stringify([null, "connectorRequest",
-					[requestID, method, JSON.stringify(data)]]), `${Zotero.Prefs.get('connector.url')}/connector/ieHack`);
-			} else {
-				Zotero.debug("Connector: No iframe target; not sending to Standalone");
-				throw new Zotero.Connector.CommunicationError("No iframe target; not sending to Standalone", 0);
-			}
-		} else {							// Other browsers can use plain doPost
-			var uri = Zotero.Prefs.get('connector.url') + "connector/" + method + queryString;
-			if (headers["Content-Type"] == 'application/json') {
-				data = JSON.stringify(data);
-			}
-			let options = {body: data, headers, successCodes: false, timeout};
-			let httpMethod = data == null || data == undefined ? "GET" : "POST";
-			Zotero.HTTP.request(httpMethod, uri, options)
-			.then(newCallback)
-			// Unexpected error, including a timeout
-			.catch(function (e) {
-				Zotero.logError(e);
-				deferred.reject(e);
-			});
+		var uri = Zotero.Prefs.get('connector.url') + "connector/" + method + queryString;
+		if (headers["Content-Type"] == 'application/json') {
+			data = JSON.stringify(data);
 		}
+		options = {body: data, headers, successCodes: false, timeout};
+		let httpMethod = data == null || data == undefined ? "GET" : "POST";
+		Zotero.HTTP.request(httpMethod, uri, options)
+		.then(newCallback)
+		// Unexpected error, including a timeout
+		.catch(function (e) {
+			Zotero.logError(e);
+			deferred.reject(e);
+		});
 		return deferred.promise;
 	}),
 	

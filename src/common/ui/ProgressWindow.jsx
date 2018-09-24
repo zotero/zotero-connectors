@@ -69,7 +69,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		this.nArcs = 20;
 		
-		var translatorIssuesURL = "https://www.zotero.org/support/troubleshooting_translator_issues";
 		this.text = {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
@@ -111,11 +110,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	
 	componentDidMount() {
 		for (let evt of ['changeHeadline', 'makeReadOnly', 'updateProgress', 'addError']) {
-			Zotero.Messaging.addMessageListener(`progressWindowIframe.${evt}`, (data) => this[evt](...data));
+			this.addMessageListener(`progressWindowIframe.${evt}`, (data) => this[evt](...data));
 		}
-		Zotero.Messaging.addMessageListener('progressWindowIframe.shown', this.handleShown.bind(this));
-		Zotero.Messaging.addMessageListener('progressWindowIframe.hidden', this.handleHidden.bind(this));
-		Zotero.Messaging.addMessageListener('progressWindowIframe.reset', () => this.setState(this.getInitialState()));
+		this.addMessageListener('progressWindowIframe.shown', this.handleShown.bind(this));
+		this.addMessageListener('progressWindowIframe.hidden', this.handleHidden.bind(this));
+		this.addMessageListener('progressWindowIframe.reset', () => this.setState(this.getInitialState()));
 		
 		document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 		
@@ -269,8 +268,22 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	//
 	// Messaging
 	//
-	sendMessage(event, data = {}) {
-		Zotero.Messaging.sendMessage(`progressWindowIframe.${event}`, data);
+	sendMessage(name, data = {}) {
+		if (!Zotero.isBookmarklet) {
+			return Zotero.Messaging.sendMessage(`progressWindowIframe.${name}`, data);
+		}
+		return window.top.postMessage([`progressWindowIframe.${name}`, data], "*");
+	}
+
+	addMessageListener(name, handler) {
+		if (!Zotero.isBookmarklet) {
+			return Zotero.Messaging.addMessageListener(name, handler);
+		}
+		window.addEventListener('message', function(event) {
+			if (event.data && event.data[0] == name) {
+				handler(event.data[1]);
+			}
+		});
 	}
 	
 	sendUpdate() {

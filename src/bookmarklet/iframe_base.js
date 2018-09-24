@@ -32,7 +32,7 @@ Zotero.API = new function() {
 	 *                            (if authorization failed) or the username (if authorization 
 	 *                            succeeded)
 	 */
-	this.authorize = function(callback) {
+	this.authorize = function() {return new Zotero.Promise(function(resolve, reject) {
 		var iframe = document.createElement("iframe");
 		iframe.src = ZOTERO_CONFIG.LOGIN_URL;
 		iframe.style.borderStyle = "none";
@@ -56,68 +56,55 @@ Zotero.API = new function() {
 						var str = "User ID and session token";
 					}
 					str += " not available";
-					callback(false, str);
-					return;
+					return reject(new Error(str));
 				}
 				
 				Zotero.Messaging.sendMessage("hideZoteroIFrame", null);
 				document.body.removeChild(iframe);
-				callback(true);
+				return resolve([userID, sessionToken]);
 			}
 		};
 		
 		document.body.appendChild(iframe);
 		Zotero.Messaging.sendMessage("revealZoteroIFrame", null);
-	};
+	})};
 	
 	/**
 	 * Creates a new item
 	 * @param {Object} payload Item(s) to create, in the object format expected by the server.
 	 * @param {String|null} itemKey Parent item key, or null if a top-level item.
-	 * @param {Function} callback Callback to be executed upon request completion. Passed true if
-	 *     succeeded, or false if failed, along with the response body.
 	 * @param {Boolean} [askForAuth] If askForAuth === false, don't ask for authorization if not 
 	 *     already authorized.
 	 */
-	this.createItem = function(payload, callback, askForAuth) {
-		var c = _getCredentials(document), userID = c[0], sessionToken = c[1],
-			reauthorize = function() {
-			Zotero.API.authorize(function(status, msg) {
-				if(!status) {
-					Zotero.logError("Authentication failed with message "+msg);
-					callback(403, "Authentication failed");
-					return;
-				}
-				
-				Zotero.API.createItem(payload, callback, false);
-			});
-		};
+	this.createItem = async function(payload, askForAuth) {
+		var [userID, sessionToken] = _getCredentials(document);
 		
-		if(!userID || !sessionToken) {
-			if(askForAuth === false) {
-				callback(403, "Not authorized");
+		if((!userID || !sessionToken)) {
+			if (askForAuth !== false) {
+				[userID, sessionToken] = await Zotero.API.authorize();
+				askForAuth = false;
 			} else {
-				reauthorize();
-				return;
+				throw new Error("Not authorized");
 			}
 		}
 		
 		var url = ZOTERO_CONFIG.API_URL+"users/"+userID+"/items?session="+sessionToken;
-		Zotero.HTTP.doPost(url, JSON.stringify(payload), function(xmlhttp) {
-			if(xmlhttp.status !== 0 && xmlhttp.status < 400) {
-				callback(xmlhttp.status, xmlhttp.responseText);
-			} else if(xmlhttp.status == 403 && askForAuth) {
+		try {
+			let xmlhttp = await Zotero.HTTP.request('POST', url, {
+				body: JSON.stringify(payload), 
+				headers: {
+					"Content-Type": "application/json",
+					"Zotero-API-Version":"3"
+				}
+			});
+			return xmlhttp.responseText;
+		} catch (e) {
+			if (e.status == 403 && askForAuth !== false) {
 				Zotero.debug("API request failed with 403 ("+xmlhttp.responseText+"); reauthorizing");
-				reauthorize();
-			} else {
-				var msg = xmlhttp.status+" ("+xmlhttp.responseText+")";
-				Zotero.logError("API request failed with "+msg);
-				callback(xmlhttp.status, xmlhttp.responseText);
+				return this.createItem(payload, askForAuth);
 			}
-		}, {
-			"Content-Type": "application/json",
-			"Zotero-API-Version":"2"
-		});
+			throw (e);
+		}
 	};
 	
 	/**
@@ -232,10 +219,14 @@ Zotero.API = new function() {
 			var cookie = cookies[i],
 				equalsIndex = cookie.indexOf("="),
 				key = cookie.substr(0, equalsIndex);
-			if(key === "zoteroUserInfo") {
-				var m = /"userID";(?:s:[0-9]+:"|i:)([0-9]+)/.exec(unescape(cookie.substr(equalsIndex+1)));
+			if (key === "zoteroUserInfo") {
+				let val = decodeURIComponent(cookie.substr(equalsIndex+1));
+				var m = /"userID";(?:s:[0-9]+:"|i:)([0-9]+)/.exec(val);
 				if(m) userID = m[1];
-			} else if(key === "zotero_www_session_v2") {
+				try {
+					userID = JSON.parse(val).userID;
+				} catch (e) {}
+			} else if (key.indexOf("zotero_www_session") === 0) {
 				sessionToken = cookie.substr(equalsIndex+1);
 			} 
 		}
@@ -324,16 +315,10 @@ Zotero.API = new function() {
 Zotero.isBookmarklet = true;
 Zotero.Debug.init();
 Zotero.Messaging.init();
-if(Zotero.isIE) {
-	Zotero.Connector.checkIsOnline(function(status) {
-		if(!status && window.location.protocol === "http:") {
-			Zotero.debug("Switching to https");
-			window.location.replace("https:"+window.location.toString().substr(5));
-		} else {
-			Zotero.debug("Sending translate message");
-			Zotero.Messaging.sendMessage("translate", null);
-		}
-	});
-} else {
-	Zotero.Messaging.sendMessage("translate", null);
-}
+
+var sessionID = Zotero.Utilities.randomString();
+(async function() {
+	let status = await Zotero.Connector.checkIsOnline();
+	Zotero.debug("Sending translate message");
+	Zotero.Messaging.sendMessage("translate", sessionID);
+})();

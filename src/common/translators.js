@@ -24,9 +24,9 @@
 */
 
 // Enumeration of types of translators
-var TRANSLATOR_TYPES = {"import":1, "export":2, "web":4, "search":8};
+window.TRANSLATOR_TYPES = {"import":1, "export":2, "web":4, "search":8};
 
-var TRANSLATOR_CACHING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["browserSupport", "targetAll"]);
+window.TRANSLATOR_CACHING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["browserSupport", "targetAll"]);
 
 /**
  * Singleton to handle loading and caching of translators

@@ -76,6 +76,8 @@
 	</dict>
 	<key>Description</key>
 	<string>Saves references to Zotero from Safari</string>
+	<key>DeveloperIdentifier</key>
+	<string>8LAYR367YV</string>
 	<key>ExtensionInfoDictionaryVersion</key>
 	<string>1.0</string>
 	<key>Permissions</key>

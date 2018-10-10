@@ -126,6 +126,15 @@ function processFile(argv) { return through.obj(async function(file, enc, cb) {
 		}
 		file.contents = Buffer.from(contents);
 		break;
+	case 'zotero_config.js':
+		if (!argv.p) {
+			file.contents = Buffer.from(file.contents.toString()
+				.replace(/www\.zotero\.org/g, 'staging.zotero.net')
+				.replace(/REPOSITORY_URL:.*/, 'REPOSITORY_URL: "https://www.zotero.org/repo",')
+				.replace(/API_URL:.*/, 'API_URL: "https://apidev.zotero.org/",')
+			);
+		}
+		break;
 	case 'progressWindow.html':
 	case 'itemSelector.html':
 		file.contents = Buffer.from(file.contents.toString()

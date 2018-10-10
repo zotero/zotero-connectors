@@ -557,6 +557,8 @@ Zotero.Proxies = new function() {
 	 * Check the url for potential proxies and deproxify, providing a schema to build
 	 * a proxy object.
 	 * 
+	 * NOTE: Keep in sync with bookmarklet Translators._getPotentialProxies()
+	 *
 	 * @param URL
 	 * @returns {Object} Unproxied url to proxy object
 	 */

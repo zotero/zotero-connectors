@@ -30,8 +30,7 @@
 Zotero.Messaging = new function() {
 	var _callbacks = {},
 		_messageListeners = {},
-		_listenerRegistered = false,
-		_structuredCloneSupported = false;
+		_listenerRegistered = false;
 	
 	/**
 	 * Add a message listener
@@ -55,14 +54,14 @@ Zotero.Messaging = new function() {
 					var messageConfig = MESSAGES[ns][meth];
 					return function() {
 						// make sure last argument is a callback
-						var callback, callbackArg;
+						var callback, callbackArg = null;
 						if(messageConfig) {
 							callbackArg = (messageConfig.callbackArg
 								? messageConfig.callbackArg : arguments.length-1);
 							callback = arguments[callbackArg];
 							if(typeof callback !== "function") {
-								Zotero.logError(new Error("Zotero: "+messageName+" must be called with a callback"));
-								return;
+								// Zotero.debug("Message `"+messageName+"` has no callback arg. It should use the returned promise");
+								callbackArg = null;
 							}
 						}
 						
@@ -73,16 +72,43 @@ Zotero.Messaging = new function() {
 						}
 					
 						// set up a request ID and save the callback
-						if(callback) {
+						if(typeof callback !== "function") {
 							var requestID = Math.floor(Math.random()*1e12);
 							_callbacks[requestID] = callback;
 						}
 						
-						// send message
-						var message = [requestID, messageName, newArgs];
-						zoteroIFrame.contentWindow.postMessage(
-							(_structuredCloneSupported ? message : JSON.stringify(message)),
-							ZOTERO_CONFIG.BOOKMARKLET_URL+(Zotero.isIE ? "iframe_ie.html" : "iframe.html"));
+						return new Zotero.Promise(function(resolve, reject) {
+							// set up a request ID and save the callback
+							if (messageConfig) {
+								var requestID = Math.floor(Math.random() * 1e12);
+								_callbacks[requestID] = function (response) {
+									if (response && response[0] == 'error') {
+										response[1] = JSON.parse(response[1]);
+										let e = new Error(response[1].message);
+										for (let key in response[1]) e[key] = response[1][key];
+										return reject(e);
+									}
+									try {
+										if (messageConfig.inject && messageConfig.inject.postReceive) {
+											response = messageConfig.inject.postReceive(response);
+										}
+										if (callbackArg !== null) callback(response);
+										resolve(response);
+									} catch (e) {
+										Zotero.logError(e);
+										reject(e);
+									}
+								}
+							} else {
+								resolve();
+							}
+
+							// send message
+							var message = [requestID, messageName, newArgs];
+							zoteroIFrame.contentWindow.postMessage(
+								message,
+								ZOTERO_CONFIG.BOOKMARKLET_URL+"iframe.html");
+						});
 					};
 				};
 			}
@@ -93,21 +119,10 @@ Zotero.Messaging = new function() {
 		var listener = function(event) {
 			try {
 				var data = event.data, origin = event.origin;
-				if(event.origin !== ZOTERO_CONFIG.BOOKMARKLET_ORIGIN
-						&& (!Zotero.isIE || event.origin !== ZOTERO_CONFIG.HTTP_BOOKMARKLET_ORIGIN)) {
-					throw "Received message from invalid origin";
-				}
-				
-				if(typeof data === "string") {
-					try {
-						// parse out the data
-						data = JSON.parse(data);
-					} catch(e) {
-						return;
-					}
-				} else if(!_structuredCloneSupported) {
-					_structuredCloneSupported = true;
-					Zotero.debug("Structured clone algorithm is supported");
+				var name = data[0];
+				if((event.origin !== ZOTERO_CONFIG.BOOKMARKLET_ORIGIN
+					&& event.origin !== 'about:blank') && !name.includes("progressWindow.")) {
+					throw new Error("Received message from invalid origin");
 				}
 				
 				// first see if there is a message listener
@@ -116,25 +131,13 @@ Zotero.Messaging = new function() {
 					return;
 				}
 				
-				// next determine original function name
-				var messageParts = data[1].split(MESSAGE_SEPARATOR);
-				var ns = messageParts[0];
-				var meth = messageParts[1];
-				
 				var callback = _callbacks[data[0]];
 				// if no function matching, message must have been for another instance in this tab
 				if(!callback) return;
 				delete _callbacks[data[0]];
-				
-				// run postReceive function
-				var response = data[2];
-				var messageConfig = MESSAGES[ns][meth];
-				if(messageConfig.postReceive) {
-					response = messageConfig.postReceive.apply(null, response);
-				}
-				
+
 				// run callback
-				callback.apply(null, response);
+				callback(data[2]);
 			} catch(e) {
 				Zotero.logError(e);
 			}

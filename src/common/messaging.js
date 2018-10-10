@@ -32,8 +32,7 @@ Zotero.Messaging = new function() {
 		_messageListeners = {
 			"structuredCloneTest":function() {}
 		},
-		_nextTabIndex = 1,
-		_structuredCloneSupported = false;
+		_nextTabIndex = 1;
 	
 	/**
 	 * Add a message listener
@@ -103,8 +102,7 @@ Zotero.Messaging = new function() {
 	this.sendMessage = async function(messageName, args, tab, frameId=0) {
 		var response;
 		if(Zotero.isBookmarklet) {
-			window.parent.postMessage((_structuredCloneSupported
-				? [messageName, args] : JSON.stringify([messageName, args])), "*");
+			window.parent.postMessage([messageName, args], "*");
 		}
 		// Use the promise or response callback in BrowserExt for advanced functionality
 		else if(Zotero.isBrowserExt) {
@@ -172,37 +170,33 @@ Zotero.Messaging = new function() {
 	 */
 	this.init = function() {
 		if(Zotero.isBookmarklet) {
-			var listener = function(event) {
+			async function listener(event) {
 				var data = event.data, source = event.source;
 				
 				// Ensure this message was sent by Zotero
 				if(event.source !== window.parent && event.source !== window) return;
-				
-				// Parse and receive message
-				if(typeof data === "string") {
-					try {
-						// parse out the data
-						data = JSON.parse(data);
-					} catch(e) {
-						return;
-					}
-				} else {
-					_structuredCloneSupported = true;
+			
+				try {
+					let response = await Zotero.Messaging.receiveMessage(data[1], data[2]);
+					var message = [data[0], data[1], response];
+					source.postMessage(message, "*");
+				} catch (err) {
+					// Zotero.logError(err);
+					err = JSON.stringify(Object.assign({
+						name: err.name,
+						message: err.message,
+						stack: err.stack
+					}, err));
+					var message = [data[0], data[1], ['error', err]];
+					source.postMessage(message, "*");
 				}
-				
-				Zotero.Messaging.receiveMessage(data[1], data[2], function(output) {
-					var message = [data[0], data[1], output];
-					source.postMessage(_structuredCloneSupported ? message : JSON.stringify(message), "*");
-				}, event);
 			};
 			
-			if(window.addEventListener) {
+			if (window.addEventListener) {
 				window.addEventListener("message", listener, false);
 			} else {
 				window.attachEvent("onmessage", function() { listener(event) });
 			}
-			
-			window.postMessage([null, "structuredCloneTest", null], window.location.href);
 		} else if(Zotero.isBrowserExt) {
 			browser.runtime.onMessage.addListener(function(request, sender) {
 				return Zotero.Messaging.receiveMessage(request[0], request[1], sender.tab, sender.frameId)

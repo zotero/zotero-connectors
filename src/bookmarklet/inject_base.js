@@ -23,15 +23,16 @@
     ***** END LICENSE BLOCK *****
 */
 
-var pos = (Zotero.isIE && document.compatMode === "BackCompat" ? "absolute" : "fixed");
-var cssBookmarkletFrameDimmer = {"background":"black", "opacity":"0.5", "position":pos,
+var cssBookmarkletFrameDimmer = {"background":"black", "opacity":"0.5", "position":"fixed",
 	"top":"0px", "bottom":"0px", "left":"0px", "right":"0px", "zIndex":"16777270",
 	"height":"100%", "width":"100%", "filter":"alpha(opacity = 50);"};
-var cssBookmarkletFrame = {"position":pos, "zIndex":"16777271", "top":"50%",
+var cssBookmarkletFrame = {"position":"fixed", "zIndex":"16777271", "top":"50%",
 	"left":"50%", "background":"white"};
 
 Zotero.initInject();
 Zotero.Connector_Types.init();
+
+var sessionID;
 
 /**
  * Creates a new frame with the specified width and height
@@ -64,7 +65,6 @@ var BookmarkletFrame = function(url, width, height) {
 	width = Math.min(windowWidth-10, width);
 	
 	this._dimmer = parentDoc.createElement("div");
-	this._dimmer.style.cssText = cssDivClearString;
 	for(var i in cssBookmarkletFrameDimmer) this._dimmer.style[i] = cssBookmarkletFrameDimmer[i];
 	this._appendDimmerTo.appendChild(this._dimmer);
 	
@@ -105,99 +105,275 @@ BookmarkletFrame.prototype.remove = function() {
 	}
 	window.frameElement.style.display = "none";
 }
+	
+function determineAttachmentIcon(attachment) {
+	if(attachment.linkMode === "linked_url") {
+		return Zotero.ItemTypes.getImageSrc("attachment-web-link");
+	}
+	var contentType = attachment.contentType || attachment.mimeType;
+	return Zotero.ItemTypes.getImageSrc(
+		contentType === "application/pdf" ? "attachment-pdf" : "attachment-snapshot"
+	);
+}
 
 var translate = new Zotero.Translate.Web(),
 	selectCallback, cancelled, haveItem, attachmentsSaving;
 translate.setDocument(window.parent.document);
-translate.setHandler("translators", function(obj, translators) {
-	selectCallback = cancelled = haveItem = null;
-	
-	if(translators && translators.length) {
-		if(translators[0].runMode === Zotero.Translator.RUN_MODE_IN_BROWSER) {
-			Zotero.ProgressWindow.changeHeadline("Saving Item...");
-		} else if(translators[0].runMode === Zotero.Translator.RUN_MODE_ZOTERO_SERVER) {
-			Zotero.ProgressWindow.changeHeadline("Saving via Server...");
-		} else {
-			Zotero.ProgressWindow.changeHeadline("Saving via Zotero Standalone...");
+translate.setHandler("select", function(obj, items, callback) {
+	// If the handler returns a non-undefined value then it is passed
+	// back to the callback due to backwards compat code in translate.js
+	(async function() {
+		// Close the progress window before displaying Select Items
+		Zotero.Messaging.sendMessage("progressWindow.close", null);
+			
+		// If the handler returns a non-undefined value then it is passed
+		// back to the callback due to backwards compat code in translate.js
+		try {
+			let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
+			if (response.libraryEditable === false) {
+				return callback([]);
+			}
+		} catch (e) {
+			// Zotero is online but an error occured anyway, so let's log it and display
+			// the dialog just in case
+			if (e.status != 0) {
+				Zotero.logError(e);
+			}
 		}
 		
-		translate.setTranslator(translators[0]);
-		translate.translate();
-	} else {
-		Zotero.ProgressWindow.changeHeadline("Saving Failed");
+		var frame = new BookmarkletFrame(ZOTERO_CONFIG.BOOKMARKLET_URL+"itemSelector/itemSelector.html#"
+			+encodeURIComponent(JSON.stringify([null, items])), 600, 350);
 		
-		new Zotero.ProgressWindow.ErrorMessage("noTranslator");
-		Zotero.ProgressWindow.startCloseTimer(8000);
-		cleanup();
-	}
-});
-translate.setHandler("select", function(obj, items, callback) {
-	var frame = new BookmarkletFrame(ZOTERO_CONFIG.BOOKMARKLET_URL+"itemSelector.html#"
-		+encodeURIComponent(JSON.stringify([null, items])), 600, 350);
-	
-	selectCallback = function(items) {
+		let deferred = Zotero.Promise.defer();
+		selectCallback = deferred.resolve;
+		let returnItems = await deferred.promise;
 		frame.remove();
-		callback(items);
-	};
+
+		// If items were selected, reopen the save popup
+		if (returnItems && !Zotero.Utilities.isEmpty(returnItems)) {
+			Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
+		}
+		
+		callback(returnItems);
+	})();
 });
-var _itemProgress = {};
 translate.setHandler("itemSaving", function(obj, item) {
-	if(!_itemProgress[item.id]) {
-		_itemProgress[item.id] = new Zotero.ProgressWindow.ItemProgress(
-			Zotero.ItemTypes.getImageSrc(item.itemType), item.title);
-	}
+	Zotero.Messaging.sendMessage(
+		"progressWindow.itemProgress",
+		{
+			sessionID,
+			id: item.id,
+			iconSrc: Zotero.ItemTypes.getImageSrc(item.itemType),
+			title: item.title
+		}
+	);
 });
 translate.setHandler("itemDone", function(obj, dbItem, item) {
-	var itemProgress = _itemProgress[item.id];
-	if(!itemProgress) {
-		itemProgress = _itemProgress[item.id] = new Zotero.ProgressWindow.ItemProgress(
-			Zotero.ItemTypes.getImageSrc(item.itemType), item.title);
-	}
-	itemProgress.setProgress(100);
-	haveItem = true;
+	Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
+	// this relays an item from this tab to the top level of the window
+	Zotero.Messaging.sendMessage(
+		"progressWindow.itemProgress",
+		{
+			sessionID,
+			id: item.id,
+			iconSrc: Zotero.ItemTypes.getImageSrc(item.itemType),
+			title: item.title,
+			progress: 100
+		}
+	);
 	for(var i=0; i<item.attachments.length; i++) {
 		var attachment = item.attachments[i];
-		_itemProgress[attachment.id] = new Zotero.ProgressWindow.ItemProgress(
-			Zotero.ItemTypes.getImageSrc(attachment.mimeType === "application/pdf"
-				? "attachment-pdf" : "attachment-snapshot"), attachment.title, itemProgress);
+		if (!attachment.id) continue;
+		Zotero.Messaging.sendMessage(
+			"progressWindow.itemProgress",
+			{
+				sessionID,
+				id: attachment.id,
+				iconSrc: determineAttachmentIcon(attachment),
+				title: attachment.title,
+				parentItem: item.id
+			}
+		);
+	}
+
+	if (item.notes) {
+		let _noteImgSrc = ZOTERO_CONFIG.BOOKMARKLET_URL+"images/treeitem-note.png";
+		for (let note of item.notes) {
+			Zotero.Messaging.sendMessage(
+				'progressWindow.itemProgress',
+				{
+					sessionID,
+					id: null,
+					iconSrc: _noteImgSrc,
+					title: Zotero.Utilities.cleanTags(note.note),
+					parentItem: item.id,
+					progress: 100
+				}
+			)
+		}
 	}
 });
 translate.setHandler("attachmentProgress", function(obj, attachment, progress) {
-	var attachmentProgress = _itemProgress[attachment.id];
-	if(!attachmentProgress) return;
-	if(progress === false) {
-		attachmentProgress.setError();
-	} else {
-		if(attachment.linkMode === "linked_url") {
-			attachmentProgress.setIcon(Zotero.ItemTypes.getImageSrc("attachment-web-link"));
+	Zotero.Messaging.sendMessage(
+		"progressWindow.itemProgress",
+		{
+			sessionID,
+			id: attachment.id,
+			iconSrc: determineAttachmentIcon(attachment),
+			title: attachment.title,
+			parentItem: attachment.parentItem,
+			progress
 		}
-		attachmentProgress.setProgress(progress);
-	}
-});
-translate.setHandler("done", function(obj, returnValue) {
-	if(returnValue && haveItem) {
-		Zotero.ProgressWindow.startCloseTimer(2500);
-	} else if(!cancelled) {
-		new Zotero.ProgressWindow.ErrorMessage("translationError");
-		Zotero.ProgressWindow.startCloseTimer(8000);
-	}
-	cleanup();
+	);
 });
 
-// Add message listener for translate, so we don't call until the iframe is loaded
-Zotero.Messaging.addMessageListener("translate", function(data, event) {
-	Zotero.ProgressWindow.changeHeadline("Looking for Translators...");
-	if(Zotero.isIE) installXPathIfNecessary(window.parent);
+async function doTranslate(data, event) {
+	sessionID = data;
+	Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Looking for Translators..."]);
+	await Zotero.progressWindowReady;
 	if(event.origin.substr(0, 6) === "https:" && ZOTERO_CONFIG.BOOKMARKLET_URL.substr(0, 5) === "http:") {
 		ZOTERO_CONFIG.BOOKMARKLET_URL = "https:"+ZOTERO_CONFIG.BOOKMARKLET_URL.substr(5);
 	}
-	translate.getTranslators();
-});
+	
+	let translatorIDs = new Set();
+	let translators = await translate.getTranslators();
+	// Remove duplicate translators (returned from RPC vs native)
+	translators = translators.filter(translator => {
+		let keep = !translatorIDs.has(translator.translatorID);
+		translatorIDs.add(translator.translatorID);
+		return keep;
+	});
+	selectCallback = cancelled = haveItem = null;
+	
+	while (translators && translators.length) {
+		var translator = translators.shift();
+		if (translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER) {
+			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, null, null, true]);
+		} else if (translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_SERVER) {
+			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Server...", true, null, true]);
+		} else {
+			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Zotero Standalone", null, null, true]);
+		}
+		translate.setTranslator(translator);	
+		
+		try {
+			await translate.translate({ sessionID });
+			cleanup();
+			return;
+		} catch (e) {
+			// Should we fallback if translator.itemType == "multiple"?
+			if (translators.length) {
+				sessionID = Zotero.Utilities.randomString();
+				Zotero.Messaging.sendMessage("progressWindow.setSession", sessionID);
+				Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
+			}
+			else {
+				Zotero.logError(e);
+				try {
+					sessionID = Zotero.Utilities.randomString();
+					Zotero.Messaging.sendMessage("progressWindow.setSession", sessionID);
+					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, "Save as Webpage"]);
+					await saveAsWebpage();
+				} catch (e) {
+					Zotero.Messaging.sendMessage("progressWindow.error", ["unexpectedError"])
+				}
+				return cleanup();
+			}
+		}
+	}
+	
+	await saveAsWebpage();
+	cleanup();
+}
+
+async function saveAsWebpage() {
+	var doc = window.parent.document;
+	var title = doc.title;
+	var image;
+
+	var data = {
+		sessionID,
+		url: doc.location.toString(),
+		cookie: doc.cookie,
+		html: doc.documentElement.innerHTML,
+	};
+	
+	if (doc.contentType == 'application/pdf') {
+		data.pdf = true;
+		image = "attachment-pdf";
+	} else {
+		image = "webpage";
+	}
+
+	Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving as Webpage", null, null, true]);
+
+	Zotero.Messaging.sendMessage(
+		"progressWindow.itemProgress",
+		{
+			sessionID,
+			id: title,
+			iconSrc: Zotero.ItemTypes.getImageSrc(image),
+			title: title
+		}
+	);
+	var clientAvailable = await Zotero.Connector.checkIsOnline();
+	if (clientAvailable) {
+		try {
+			result = await Zotero.Connector.callMethodWithCookies("saveSnapshot", data);
+			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
+			Zotero.Messaging.sendMessage(
+				"progressWindow.itemProgress",
+				{
+					sessionID,
+					id: title,
+					iconSrc: Zotero.ItemTypes.getImageSrc(image),
+					title,
+					parentItem: false,
+					progress: 100
+				}
+			);
+			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+			return result;
+		} catch (e) {
+			// Unexpected error, including a timeout (which we don't want to
+			// result in a save to the server, because it's possible the request
+			// will still be processed)
+			if (!e.value || e.value.libraryEditable != false) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
+			}
+			throw e;
+		}
+	} else {
+		// Attempt saving to server if not pdf
+		if (doc.contentType != 'application/pdf') {
+			let itemSaver = new Zotero.Translate.ItemSaver({});
+			let items = await itemSaver.saveAsWebpage();
+			if (items.length) {
+				Zotero.Messaging.sendMessage(
+					"progressWindow.itemProgress",
+					{
+						id: title,
+						iconSrc: Zotero.ItemTypes.getImageSrc(image),
+						title,
+						parentItem: false,
+						progress: 100
+					}
+				);
+			}
+			return;
+		} else {
+			Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
+		}
+	}
+}
+
+// Add message listener for translate, so we don't call until the iframe is loaded
+Zotero.Messaging.addMessageListener("translate", doTranslate);
 Zotero.Messaging.addMessageListener("selectDone", function(returnItems) {
 	// if no items selected, close save dialog immediately
 	if(!returnItems || Zotero.Utilities.isEmpty(returnItems)) {
 		cancelled = true;
-		Zotero.ProgressWindow.close();
+		Zotero.Messaging.sendMessage('progressWindow.close', null);
 	}
 	selectCallback(returnItems);
 });
@@ -213,23 +389,15 @@ Zotero.Messaging.addMessageListener("hideZoteroIFrame", function() {
 	revealedFrame.remove();
 });
 
-// For IE, load from http to avoid a warning
-if(Zotero.isIE && window.parent.location.protocol === "http:") {
-	ZOTERO_CONFIG.BOOKMARKLET_URL = ZOTERO_CONFIG.BOOKMARKLET_URL.replace("https", "http");
-}
-
-var zoteroIFrame;
+window.zoteroIFrame = null;
 
 /**
  * Load privileged iframe and begin translation
  */
 function startTranslation() {
-	Zotero.ProgressWindow.show();
-	Zotero.ProgressWindow.changeHeadline("Looking for Zotero Standalone...");
-	
 	zoteroIFrame = document.createElement("iframe");
 	zoteroIFrame.id = "zotero-privileged-iframe";
-	zoteroIFrame.src = ZOTERO_CONFIG.BOOKMARKLET_URL+"iframe"+(Zotero.isIE ? "_ie" : "")+".html";
+	zoteroIFrame.src = ZOTERO_CONFIG.BOOKMARKLET_URL+"iframe.html";
 	zoteroIFrame.style.display = "none";
 	document.body.appendChild(zoteroIFrame);
 	document.body.style.overflow = "hidden";
@@ -238,7 +406,16 @@ function startTranslation() {
 /**
  * Remove the frames
  */
-function cleanup() {
+async function cleanup() {
+	await new Promise(function(resolve) {
+		window.top.addEventListener('message', function progressWindowClose(event) {
+			var [name, data] = event.data || [];
+			if (name == 'progressWindowIframe.close') {
+				resolve();
+			}
+			window.top.removeEventListener('message', progressWindowClose);
+		});
+	});
 	zoteroIFrame.parentNode.removeChild(zoteroIFrame);
 	window.frameElement.parentNode.removeChild(window.frameElement);
 }

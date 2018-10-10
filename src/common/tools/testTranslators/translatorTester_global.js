@@ -90,7 +90,7 @@ Zotero.TranslatorTester.runAutomatedTesting = new function() {
 		window.setTimeout(function() {
 			Zotero_TranslatorTesters.runAllTests(4, {}, function(data) {
 				isRunning = false;
-				Zotero.HTTP.request('POST', `${ZOTERO_CONFIG.CONNECTOR_SERVER_URL}provo/save`, {
+				Zotero.HTTP.request('POST', `http://127.0.0.1:23119/provo/save`, {
 					body: JSON.stringify(data),
 					headers: {"Content-Type":"application/json"}})
 			});

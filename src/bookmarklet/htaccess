@@ -1,2 +1,0 @@
-Header set P3P "CP=\"ALL CUR OUR STP COM STA\""
-Redirect /bookmarklet/ie_compat.js https://www.zotero.org/bookmarklet/common_ie.js

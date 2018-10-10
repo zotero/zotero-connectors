@@ -376,17 +376,15 @@ Zotero.Translate.ItemSaver.prototype = {
 							xhr.abort();
 						}
 					}
-					if (xhr.readyState == 4) {
-						deferredAttachmentData.resolve(xhr.response)
-					}
 				}.bind(this);
 				xhr.onprogress = function(event) {
 					if(event.total && attachmentCallback) {
 						attachmentCallback(attachment, event.loaded/event.total*50);
 					}
 				};
-				xhr.onerror = deferredAttachmentData.reject;
+				xhr.onerror = e => deferredAttachmentData.reject(e.error);
 				xhr.onabort = () => deferredAttachmentData.reject(new Error('Attachment download aborted'));
+				xhr.onload = () => deferredAttachmentData.resolve(xhr.response);
 				xhr.send();
 			
 				if (attachmentCallback) attachmentCallback(attachment, 0);

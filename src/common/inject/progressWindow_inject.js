@@ -313,6 +313,8 @@ if (isTopWindow || Zotero.isBookmarklet) {
 						sessionID: currentSessionID,
 						target: data.target.id,
 						tags: data.tags
+							// TEMP: Avoid crash on leading/trailing comma pre-5.0.57
+							? data.tags.replace(/(^,|,$)/g, '') : data.tags
 					}
 				);
 			}

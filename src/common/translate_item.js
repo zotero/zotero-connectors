@@ -72,11 +72,12 @@ Zotero.Translate.ItemSaver.ATTACHMENT_MODE_DOWNLOAD = 1;
 Zotero.Translate.ItemSaver.ATTACHMENT_MODE_FILE = 2;
 
 Zotero.Translate.ItemSaver.prototype = {
-	saveAsWebpage: function() {
+	saveAsWebpage: function(doc) {
+		var doc = doc || document;
 		var item = {
 			itemType: 'webpage',
-			title: document.title,
-			url: document.location.href,
+			title: doc.title,
+			url: doc.location.href,
 			attachments: [],
 			accessDate: Zotero.Date.dateToSQL(new Date(), true)
 		};

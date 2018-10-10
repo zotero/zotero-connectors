@@ -347,7 +347,7 @@ async function saveAsWebpage() {
 		// Attempt saving to server if not pdf
 		if (doc.contentType != 'application/pdf') {
 			let itemSaver = new Zotero.Translate.ItemSaver({});
-			let items = await itemSaver.saveAsWebpage();
+			let items = await itemSaver.saveAsWebpage(doc);
 			if (items.length) {
 				Zotero.Messaging.sendMessage(
 					"progressWindow.itemProgress",

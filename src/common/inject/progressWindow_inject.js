@@ -181,10 +181,6 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		changeHeadline(prefix, target, response.targets);
 	}
 	
-	function updateProgress() {
-		addEvent("updateProgress", Array.from(arguments));
-	}
-	
 	async function addError() {
 		await showFrame();
 		addEvent("addError", Array.from(arguments));
@@ -233,7 +229,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	function handleMouseLeave() {
 		insideIframe = false;
 		if (closeOnLeave) {
-			startCloseTimer();
+			startCloseTimer(2500);
 		}
 	}
 	
@@ -241,7 +237,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		// Don't start the timer if the mouse is over the popup
 		if (insideIframe) return;
 		
-		if (!delay) delay = 2500;
+		if (!delay) delay = 5000;
 		stopCloseTimer();
 		closeTimeoutID = setTimeout(hideFrame, delay);
 	}
@@ -436,7 +432,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 			}
 			// If not a new session, start close timer
 			else if (!dontClose) {
-				startCloseTimer(5000);
+				startCloseTimer();
 			}
 		}
 		currentSessionID = sessionID;
@@ -462,7 +458,9 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	Zotero.Messaging.addMessageListener("progressWindow.itemProgress", (data) => {
 		// Skip progress updates for a previous session
 		if (data.sessionID && data.sessionID != currentSessionID) return;
-		updateProgress(data.id, data);
+		// Keep progress window open as long as we're receiving updates
+		startCloseTimer();
+		addEvent("updateProgress", [data.id, data]);
 	});
 	
 	Zotero.Messaging.addMessageListener("progressWindow.close", function () {

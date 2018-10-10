@@ -162,9 +162,13 @@ Zotero.Translators = new function() {
 		} catch (e) {
 			// Then attempt the repo
 			for (let uri in searchURIs) {
-				let xmlhttp = await Zotero.HTTP.request("POST", ZOTERO_CONFIG.REPOSITORY_URL+"/metadata",
-					{body: "url="+encodeURIComponent(uri)});
-						
+				try {
+					var xmlhttp = await Zotero.HTTP.request("POST", ZOTERO_CONFIG.REPOSITORY_URL+"/metadata",
+						{body: "url="+encodeURIComponent(uri)});
+				} catch (e) {
+					// If the repo call fails for whatever reason, try other search URIs
+					continue;
+				}
 				try {
 					var foundTranslators = JSON.parse(xmlhttp.responseText);
 				} catch(e) {

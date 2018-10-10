@@ -454,6 +454,7 @@ if [ $BUILD_BOOKMARKLET == 1 ]; then
 	cp -R "$SRCDIR/bookmarklet/debug_mode.html" \
 		"$SRCDIR/bookmarklet/iframe.html" \
 		"$SRCDIR/bookmarklet/auth_complete.html" \
+		"$SRCDIR/bookmarklet/upload.js" \
 		"$SRCDIR/common/itemSelector" \
 		"$SRCDIR/common/progressWindow" \
 		"$BUILD_DIR/bookmarklet"

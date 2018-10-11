@@ -143,10 +143,15 @@ function processFile(argv) { return through.obj(async function(file, enc, cb) {
 		);
 		break;
 	case 'loader.js':
-		let config = await fs.readFile(join(__dirname, '../src/bookmarklet/zotero_config.js'), 'utf-8');
-		let url = /BOOKMARKLET_URL: ?['"]([^'"]*)['"]/.exec(config)[1];
-		file.contents = Buffer.from(file.contents.toString()
-			.replace('https://www.zotero.org/bookmarklet/', url));
+		if (!argv.p) {
+			file.contents = Buffer.from(file.contents.toString()
+				.replace('www.zotero.org', 'staging.zotero.net'));
+		} else {
+			let config = await fs.readFile(join(__dirname, '../src/bookmarklet/zotero_config.js'), 'utf-8');
+			let url = /BOOKMARKLET_URL: ?['"]([^'"]*)['"]/.exec(config)[1];
+			file.contents = Buffer.from(file.contents.toString()
+				.replace('https://www.zotero.org/bookmarklet/', url));
+		}
 	}
 
 	

@@ -38,14 +38,14 @@ var Zotero = window.Zotero = new function() {
 	// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
 	// Firefox 1.0+
 	this.isFirefox = typeof InstallTrigger !== 'undefined';
-	// At least Safari 10+
-	this.isSafari = typeof safari !== 'undefined';
 	// Internet Explorer 6-11
 	this.isIE = /*@cc_on!@*/false || !!document.documentMode;
 	// Edge 20+
 	this.isEdge = !this.isIE && !!window.StyleMedia;
 	// Chrome and Chromium
 	this.isChrome = window.navigator.userAgent.indexOf("Chrome") !== -1 || window.navigator.userAgent.indexOf("Chromium") !== -1;
+	// At least Safari 10+
+	this.isSafari = window.navigator.userAgent.includes("Safari") && !this.isChrome;
 	this.isBrowserExt = this.isFirefox || this.isEdge || this.isChrome;
 
 	this.isMac = (window.navigator.platform.substr(0, 3) == "Mac");

@@ -262,22 +262,26 @@ async function doTranslate(data, event) {
 			cleanup();
 			return;
 		} catch (e) {
-			// Should we fallback if translator.itemType == "multiple"?
-			if (translators.length) {
-				sessionID = Zotero.Utilities.randomString();
-				Zotero.Messaging.sendMessage("progressWindow.setSession", sessionID);
-				Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
-			}
-			else {
-				Zotero.logError(e);
-				try {
+			if (translator.itemType != "multiple") {
+				if (translators.length) {
 					sessionID = Zotero.Utilities.randomString();
 					Zotero.Messaging.sendMessage("progressWindow.setSession", sessionID);
-					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, "Save as Webpage"]);
-					await saveAsWebpage();
-				} catch (e) {
-					Zotero.Messaging.sendMessage("progressWindow.error", ["unexpectedError"])
+					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
 				}
+				else {
+					Zotero.logError(e);
+					try {
+						sessionID = Zotero.Utilities.randomString();
+						Zotero.Messaging.sendMessage("progressWindow.setSession", sessionID);
+						Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, "Save as Webpage"]);
+						await saveAsWebpage();
+					} catch (e) {
+						Zotero.Messaging.sendMessage("progressWindow.error", ["unexpectedError"])
+					}
+					return cleanup();
+				}
+			} else {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false]);
 				return cleanup();
 			}
 		}

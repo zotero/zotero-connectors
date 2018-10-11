@@ -142,6 +142,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 			response.targets = undefined;
 			addError("collectionNotEditable");
 			startCloseTimer(8000);
+			return;
 		}
 		
 		var id;
@@ -417,7 +418,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		// (e.g., when displaying the Select Items window) we can skip displaying it
 		frameIsHidden = false;
 		
-		var [sessionID, headline, readOnly, delay, dontClose] = args;
+		var [sessionID, headline, readOnly, delay] = args;
 		
 		if (delay) {
 			await Zotero.Promise.delay(delay);
@@ -431,10 +432,6 @@ if (isTopWindow || Zotero.isBookmarklet) {
 				// Disable closing on mouseleave until save finishes. (This is disabled initially
 				// but is enabled when a save finishes, so we have to redisable it for a new session.)
 				closeOnLeave = false;
-			}
-			// If not a new session, start close timer
-			else if (!dontClose) {
-				startCloseTimer();
 			}
 		}
 		currentSessionID = sessionID;
@@ -461,7 +458,6 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		// Skip progress updates for a previous session
 		if (data.sessionID && data.sessionID != currentSessionID) return;
 		// Keep progress window open as long as we're receiving updates
-		startCloseTimer();
 		addEvent("updateProgress", [data.id, data]);
 	});
 	

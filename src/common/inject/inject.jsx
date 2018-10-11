@@ -426,6 +426,7 @@ Zotero.Inject = new function() {
 			translate.setTranslator(translator);
 			try {
 				let items = await translate.translate({ sessionID });
+				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return items;
 			} catch (e) {
 				// TEMP: Remove once client switches automatically (added in 5.0.46)
@@ -537,6 +538,7 @@ Zotero.Inject = new function() {
 							}
 						);
 					}
+					Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 					return;
 				} else {
 					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);

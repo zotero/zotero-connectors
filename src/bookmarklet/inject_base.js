@@ -248,16 +248,17 @@ async function doTranslate(data, event) {
 	while (translators && translators.length) {
 		var translator = translators.shift();
 		if (translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER) {
-			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, null, null, true]);
+			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID]);
 		} else if (translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_SERVER) {
-			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Server...", true, null, true]);
+			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Server...", true]);
 		} else {
-			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Zotero Standalone", null, null, true]);
+			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Zotero Standalone"]);
 		}
 		translate.setTranslator(translator);	
 		
 		try {
 			await translate.translate({ sessionID });
+			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			cleanup();
 			return;
 		} catch (e) {
@@ -305,7 +306,7 @@ async function saveAsWebpage() {
 		image = "webpage";
 	}
 
-	Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving as Webpage", null, null, true]);
+	Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving as Webpage"]);
 
 	Zotero.Messaging.sendMessage(
 		"progressWindow.itemProgress",
@@ -360,6 +361,7 @@ async function saveAsWebpage() {
 					}
 				);
 			}
+			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			return;
 		} else {
 			Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);

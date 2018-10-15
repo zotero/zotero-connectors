@@ -252,7 +252,7 @@ async function doTranslate(data, event) {
 		} else if (translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_SERVER) {
 			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Server...", true]);
 		} else {
-			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Zotero Standalone"]);
+			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Zotero..."]);
 		}
 		translate.setTranslator(translator);	
 		

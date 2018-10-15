@@ -458,6 +458,7 @@ if [ $BUILD_BOOKMARKLET == 1 ]; then
 		"$SRCDIR/common/itemSelector" \
 		"$SRCDIR/common/progressWindow" \
 		"$BUILD_DIR/bookmarklet"
+	cp "$SRCDIR/bookmarklet/htaccess" "$BUILD_DIR/bookmarklet/.htaccess"
 	rm -rf "$BUILD_DIR/bookmarklet/images"
 	mkdir "$BUILD_DIR/bookmarklet/images"
 	cp $ICONS $IMAGES "$BUILD_DIR/bookmarklet/images"

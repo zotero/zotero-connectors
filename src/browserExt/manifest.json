@@ -26,7 +26,7 @@
 			"run_at": "document_start",
 			"js": [/*INJECT SCRIPTS*/]
 		},{
-			"matches": ["https://docs.google.com/*"],
+			"matches": ["https://docs.google.com/document/*"],
 			"run_at": "document_start",
 			"js": ["zotero-google-docs-integration/kixAddZoteroMenu.js", "zotero-google-docs-integration/client.js"]
 		}

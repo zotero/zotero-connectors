@@ -259,6 +259,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 			top: '15px',
 			right: '8px',
 			width: '351px',
+			maxWidth: '95%',
 			height: '120px',
 			border: "none",
 			zIndex: 2147483647,

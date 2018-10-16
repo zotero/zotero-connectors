@@ -17,6 +17,7 @@ button:active {
 
 .ProgressWindow-box {
 	width: 300px;
+	max-width: 92%;
 	border-color: #adadad #9a9a9a #ababab;
 	border-width: 1px;
 	border-style: solid;

@@ -229,7 +229,7 @@ translate.setHandler("attachmentProgress", function(obj, attachment, progress) {
 
 async function doTranslate(data, event) {
 	sessionID = data;
-	Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Looking for Translators..."]);
+	Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Looking for Translators…"]);
 	await Zotero.progressWindowReady;
 	if(event.origin.substr(0, 6) === "https:" && ZOTERO_CONFIG.BOOKMARKLET_URL.substr(0, 5) === "http:") {
 		ZOTERO_CONFIG.BOOKMARKLET_URL = "https:"+ZOTERO_CONFIG.BOOKMARKLET_URL.substr(5);
@@ -250,9 +250,9 @@ async function doTranslate(data, event) {
 		if (translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER) {
 			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID]);
 		} else if (translator.runMode === Zotero.Translator.RUN_MODE_ZOTERO_SERVER) {
-			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Server...", true]);
+			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving to zotero.org…", true]);
 		} else {
-			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving via Zotero..."]);
+			Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving to Zotero…"]);
 		}
 		translate.setTranslator(translator);	
 		

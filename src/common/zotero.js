@@ -354,7 +354,7 @@ Zotero.Prefs = new function() {
 		"proxies.proxies": [],
 		"proxies.clientChecked": false,
 		
-		"integration.googleDocs.enabled": false
+		"integration.googleDocs.enabled": true
 	};
 	
 	this.syncStorage = {};

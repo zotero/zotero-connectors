@@ -310,7 +310,7 @@ async function saveAsWebpage() {
 		image = "webpage";
 	}
 
-	Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, "Saving as Webpage"]);
+	Zotero.Messaging.sendMessage('progressWindow.show', [sessionID]);
 
 	Zotero.Messaging.sendMessage(
 		"progressWindow.itemProgress",

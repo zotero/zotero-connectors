@@ -440,12 +440,8 @@ Zotero.Inject = new function() {
 					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
 				}
 				else {
-					Zotero.debug(e.stack ? e.stack : e, 1);
-					
-					// Clear session details on failure, so another save click tries again
-					this.sessionDetails = {};
-					Zotero.Messaging.sendMessage("progressWindow.done", [false]);
-					return;
+					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, "Save as Webpage"]);
+					return await this._saveAsWebpage({sessionID, snapshot: true});
 				}
 			}
 		}
@@ -453,7 +449,6 @@ Zotero.Inject = new function() {
 	
 	this.saveAsWebpage = async function (args) {
 		var title = args[0] || document.title, options = args[1] || {};
-		var image;
 		var result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
 		
@@ -472,7 +467,16 @@ Zotero.Inject = new function() {
 		}
 		
 		var sessionID = Zotero.Utilities.randomString();
-		
+		return await this._saveAsWebpage({sessionID, title, snapshot: options.snapshot});
+	};
+	
+	this._saveAsWebpage = async function(options={}) {
+		var sessionID = options.sessionID;
+		var title = options.title || document.title;
+		var translatorID = 'webpage' + (options.snapshot ? 'WithSnapshot' : '');
+		if (!sessionID) {
+			throw new Error("Trying to save as webpage without session ID");
+		}
 		var data = {
 			sessionID,
 			url: document.location.toString(),
@@ -480,7 +484,8 @@ Zotero.Inject = new function() {
 			html: document.documentElement.innerHTML,
 			skipSnapshot: !options.snapshot
 		};
-		
+
+		var image;
 		if (document.contentType == 'application/pdf') {
 			data.pdf = true;
 			image = "attachment-pdf";
@@ -499,7 +504,7 @@ Zotero.Inject = new function() {
 			}
 		);
 		try {
-			result = await Zotero.Connector.callMethodWithCookies("saveSnapshot", data);
+			var result = await Zotero.Connector.callMethodWithCookies("saveSnapshot", data);
 			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
 			Zotero.Messaging.sendMessage(
 				"progressWindow.itemProgress",
@@ -552,7 +557,7 @@ Zotero.Inject = new function() {
 			}
 			throw e;
 		}
-	};
+	}
 	
 	this.addKeyboardShortcut = function(eventDescriptor, fn, elem) {
 		elem = elem || document;

@@ -118,7 +118,7 @@ Zotero.Messaging = new function() {
 				try {
 					result = await _messageListeners[request[0]](request[1])
 				} catch (err) {
-					Zotero.logError(err);
+					// Zotero.logError(err);
 					result = ['error', JSON.stringify(Object.assign({
 						name: err.name,
 						message: err.message,

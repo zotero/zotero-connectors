@@ -201,7 +201,7 @@ Zotero.Messaging = new function() {
 			browser.runtime.onMessage.addListener(function(request, sender) {
 				return Zotero.Messaging.receiveMessage(request[0], request[1], sender.tab, sender.frameId)
 				.catch(function(err) {
-					Zotero.logError(err);
+					// Zotero.logError(err);
 					err = JSON.stringify(Object.assign({
 						name: err.name,
 						message: err.message,
@@ -222,7 +222,7 @@ Zotero.Messaging = new function() {
 				}
 				Zotero.Messaging.receiveMessage(event.name, event.message[1], tab)
 				.then(dispatchResponse, function(err) {
-					Zotero.logError(err);
+					// Zotero.logError(err);
 					err = JSON.stringify(Object.assign({
 						name: err.name,
 						message: err.message,

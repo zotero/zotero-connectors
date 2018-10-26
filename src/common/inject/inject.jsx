@@ -435,13 +435,18 @@ Zotero.Inject = new function() {
 					this.sessionDetails = {};
 					return;
 				}
-				// Should we fallback if translator.itemType == "multiple"?
-				else if (options.fallbackOnFailure && translators.length) {
-					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
-				}
-				else {
-					Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, "Save as Webpage"]);
-					return await this._saveAsWebpage({sessionID, snapshot: true});
+				if (translator.itemType != 'multiple') {
+					if (options.fallbackOnFailure && translators.length) {
+						Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
+					}
+					else {
+						Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, "Save as Webpage"]);
+						return await this._saveAsWebpage({sessionID, snapshot: true});
+					}
+				} else {
+					// Clear session details on failure, so another save click tries again
+					this.sessionDetails = {};
+					Zotero.Messaging.sendMessage("progressWindow.done", [false]);
 				}
 			}
 		}

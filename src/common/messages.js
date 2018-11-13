@@ -173,7 +173,9 @@ var MESSAGES = {
 	},
 	GoogleDocs_API: {
 		onAuthComplete: false,
-		run: true
+		run: {
+			background: {minArgs: 4}
+		}
 	},
 	Prefs: {
 		set: false,

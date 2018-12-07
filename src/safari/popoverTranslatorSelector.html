@@ -34,10 +34,10 @@
 </head>
 <body>
 <menu>
-	<li><a id="zotero-save-page-with-snapshot" href="javascript:void(0)">Save to Zotero (Web Page with Snapshot)</a></li>
-	<li><a id="zotero-save-page-without-snapshot" href="javascript:void(0)">Save to Zotero (Web Page without Snapshot)</a></li>
+	<li id="zotero-save-page-with-snapshot"><a href="javascript:void(0)">Save to Zotero (Web Page with Snapshot)</a></li>
+	<li id="zotero-save-page-without-snapshot"><a href="javascript:void(0)">Save to Zotero (Web Page without Snapshot)</a></li>
 	<hr/>
-	<li><a id="zotero-preferences" href="javascript:void(0)">Zotero Preferences</a></li>
+	<li id="zotero-preferences"><a href="javascript:void(0)">Zotero Preferences</a></li>
 </menu>
 <script>
 	(function () {
@@ -121,7 +121,7 @@
 				let a = document.createElement('a');
 				a.setAttribute('href', 'javascript:void(0);');
 				a.textContent = `${Zotero.getString('general_saveTo', 'Zotero')} (${translator.label})`;
-				a.onclick = function () {
+				li.onclick = function () {
 					Zotero.Connector_Browser.saveWithTranslator(
 						tab,
 						i,

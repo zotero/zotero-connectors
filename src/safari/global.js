@@ -66,8 +66,13 @@ Zotero.Connector_Browser = new function() {
 	 * Called when translators are available for a given page
 	 */
 	this.onTranslators = function(translators, instanceID, contentType, tab) {
-		if (!translators.length) return;
 		tab.contentType = contentType;
+		if (!translators.length) {
+			if (contentType == 'application/pdf') {
+				_updateButtonStatus();
+			}
+			return;
+		}
 		
 		let existingTranslators = tab.translators;
 		// If translators already exist for tab we need to figure out if the new translators

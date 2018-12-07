@@ -36,6 +36,7 @@
 <menu>
 	<li id="zotero-save-page-with-snapshot"><a href="javascript:void(0)">Save to Zotero (Web Page with Snapshot)</a></li>
 	<li id="zotero-save-page-without-snapshot"><a href="javascript:void(0)">Save to Zotero (Web Page without Snapshot)</a></li>
+	<li id="zotero-save-PDF" style="display: none"><a href="javascript:void(0)">Save to Zotero (PDF)</a></li>
 	<hr/>
 	<li id="zotero-preferences"><a href="javascript:void(0)">Zotero Preferences</a></li>
 </menu>
@@ -46,29 +47,23 @@
 			Zotero_Connector_Browser.openTab(safari.extension.baseURI + "preferences/preferences.html");
 			safari.self.hide();
 		};
+		function saveAsWebpage(snapshot=true) {
+			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
+			Zotero_Connector_Browser.saveAsWebpage(
+				Zotero_Connector_Browser.activeTab,
+				{
+					snapshot,
+					resave: true
+				}
+			);
+			safari.self.hide();
+		}
 		var saveWithSnapshotElem = document.getElementById('zotero-save-page-with-snapshot');
-		saveWithSnapshotElem.onclick = function () {
-			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.saveAsWebpage(
-				Zotero_Connector_Browser.activeTab,
-				{
-					snapshot: true,
-					resave: true
-				}
-			);
-			safari.self.hide();
-		};
 		var saveWithoutSnapshotElem = document.getElementById('zotero-save-page-without-snapshot');
-		saveWithoutSnapshotElem.onclick = function () {
-			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.saveAsWebpage(
-				Zotero_Connector_Browser.activeTab,
-				{
-					resave: true
-				}
-			);
-			safari.self.hide();
-		};
+		var savePDFElem = document.getElementById('zotero-save-PDF');
+		saveWithSnapshotElem.onclick = saveAsWebpage;
+		savePDFElem.onclick = saveAsWebpage;
+		saveWithoutSnapshotElem.onclick = saveAsWebpage.bind(this, [false]);
 
 		safari.application.addEventListener('popover', function (event) {
 			var Zotero = safari.extension.globalPage.contentWindow.Zotero;
@@ -95,17 +90,16 @@
 				Zotero.Prefs.get('automaticSnapshots');
 			if (withSnapshot) {
 				document.getElementsByTagName('menu')[0]
-					.insertBefore(saveWithSnapshotElem.parentNode, saveWithoutSnapshotElem.parentNode);
+					.insertBefore(saveWithSnapshotElem, saveWithoutSnapshotElem);
 			} else {
 				document.getElementsByTagName('menu')[0]
-					.insertBefore(saveWithoutSnapshotElem.parentNode, saveWithSnapshotElem.parentNode);
+					.insertBefore(saveWithoutSnapshotElem, saveWithSnapshotElem);
 			}
 
-			if (tab.contentType == 'application/pdf' ||
-				tab.isPDFFrame) {
-				document.getElementById('zotero-save-page-with-snapshot').textContent = "Save to Zotero (PDF)";
-				document.getElementById('zotero-save-page-without-snapshot').style.display = 'none';
-			}
+			var isPDF = tab.contentType == 'application/pdf' || tab.isPDFFrame;
+			saveWithoutSnapshotElem.style.display = isPDF ? 'none' : null;
+			saveWithSnapshotElem.style.display = isPDF ? 'none' : null;
+			savePDFElem.style.display = isPDF ? null : 'none';
 
 			var translators = tab.translators;
 			if (!translators || event.target.identifier != 'zotero-translatorSelector') return;

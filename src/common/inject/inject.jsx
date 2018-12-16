@@ -63,7 +63,11 @@ Zotero.Inject = new function() {
 		} else if (document.location.href.substr(0, ZOTERO_CONFIG.OAUTH.ZOTERO.CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH.GOOGLE_DOCS.CALLBACK_URL+"#") {
 			Zotero.GoogleDocs_API.onAuthComplete(document.location.href);
 		}
-
+		
+		// Reset session on every init so a new save is triggered after JS-based changes
+		// (monitorDOMChanges/ZoteroItemUpdated)
+		this.sessionDetails = {};
+		
 		_noteImgSrc = Zotero.isSafari
 			? safari.extension.baseURI+"images/treeitem-note.png"
 			: browser.extension.getURL('images/treeitem-note.png');

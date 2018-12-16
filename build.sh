@@ -197,39 +197,6 @@ done
 
 echo -n "Building connectors..."
 
-# Make alpha images for Safari
-rm -rf "$BUILD_DIR/safari.safariextension/images"
-mkdir "$BUILD_DIR/safari.safariextension/images"
-mkdir "$BUILD_DIR/safari.safariextension/images/toolbar"
-set +e
-convert -version > /dev/null 2>&1
-RETVAL=$?
-set -e
-if [ $RETVAL == 0 ]; then
-	cp $ICONS "$BUILD_DIR/safari.safariextension/images"
-	cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari.safariextension/images"
-	for f in $ICONS
-	do
-		convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
-				Opacity -contrast-stretch 50 "$BUILD_DIR/safari.safariextension/images/toolbar/"`basename $f`
-	done
-else
-	echo
-	echo "ImageMagick not installed; not creating monochrome Safari icons"
-	cp $ICONS "$BUILD_DIR/safari.safariextension/images"
-	cp $ICONS "$BUILD_DIR/safari.safariextension/images/toolbar"
-	cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari.safariextension/images"
-fi
-cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
-	"$BUILD_DIR/safari.safariextension"
-
-# Copy images for Chrome
-rm -rf "$BUILD_DIR/browserExt/images"
-mkdir "$BUILD_DIR/browserExt/images"
-cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/browserExt/images"
-
-cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
-
 # Copy translation-related resources for Chrome/Safari
 function copyResources {
 	browser="$1"
@@ -329,9 +296,42 @@ function copyResources {
 }
 
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
+	# Copy images for Chrome
+	rm -rf "$BUILD_DIR/browserExt/images"
+	mkdir "$BUILD_DIR/browserExt/images"
+	cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/browserExt/images"
+	cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
+	
 	copyResources 'browserExt'
 fi
+
 if [[ $BUILD_SAFARI == 1 ]]; then
+	# Make alpha images
+	rm -rf "$BUILD_DIR/safari.safariextension/images"
+	mkdir "$BUILD_DIR/safari.safariextension/images"
+	mkdir "$BUILD_DIR/safari.safariextension/images/toolbar"
+	set +e
+	convert -version > /dev/null 2>&1
+	RETVAL=$?
+	set -e
+	if [ $RETVAL == 0 ]; then
+		cp $ICONS "$BUILD_DIR/safari.safariextension/images"
+		cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari.safariextension/images"
+		for f in $ICONS
+		do
+			convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
+					Opacity -contrast-stretch 50 "$BUILD_DIR/safari.safariextension/images/toolbar/"`basename $f`
+		done
+	else
+		echo
+		echo "ImageMagick not installed; not creating monochrome Safari icons"
+		cp $ICONS "$BUILD_DIR/safari.safariextension/images"
+		cp $ICONS "$BUILD_DIR/safari.safariextension/images/toolbar"
+		cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari.safariextension/images"
+	fi
+	cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
+		"$BUILD_DIR/safari.safariextension"
+	
 	copyResources 'safari'
 fi
 

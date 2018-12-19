@@ -63,10 +63,10 @@ Zotero.HTTP.isLessSecure = function(url) {
  * @param {Function} processor - Callback to be executed for each document loaded
  * @return {Promise<Array>} - A promise for an array of results from the processor runs
  */
-Zotero.HTTP.processDocuments = async function (urls, processor) {
+Zotero.HTTP.processDocuments = async function (urls, processor, options = {}) {
 	// Handle old signature: urls, processor, onDone, onError
-	if (arguments.length > 2) {
-		Zotero.debug("Zotero.HTTP.processDocuments() now takes only 2 arguments -- update your code");
+	if (typeof arguments[2] == 'function' || typeof arguments[3] == 'function') {
+		Zotero.debug("Zotero.HTTP.processDocuments() no longer takes onDone or onError -- update your code");
 		var onDone = arguments[2];
 		var onError = arguments[3];
 	}

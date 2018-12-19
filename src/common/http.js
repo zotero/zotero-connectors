@@ -31,9 +31,9 @@ Zotero.HTTP = new function() {
 	this.StatusError = function(xmlhttp, url) {
 		this.message = `HTTP request to ${url} rejected with status ${xmlhttp.status}`;
 		this.status = xmlhttp.status;
-		if (typeof xmlhttp.responseText == 'string') {
-			this.responseText = xmlhttp.responseText;
-		}
+		try {
+			this.responseText = typeof xmlhttp.responseText == 'string' ? xmlhttp.responseText : undefined;
+		} catch (e) {}
 	};
 	this.StatusError.prototype = Object.create(Error.prototype);
 

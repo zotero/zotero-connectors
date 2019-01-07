@@ -429,6 +429,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this._updateExtensionUI = function (tab) {
 		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) return _showFirstUseUI(tab);
+		if (!tab.active) return;
 		browser.contextMenus.removeAll();
 
 		if (_isDisabledForURL(tab.url, true)) {

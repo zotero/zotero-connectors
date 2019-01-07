@@ -434,6 +434,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 				// Disable closing on mouseleave until save finishes. (This is disabled initially
 				// but is enabled when a save finishes, so we have to redisable it for a new session.)
 				closeOnLeave = false;
+				lastSuccessfulTarget = null;
 			}
 		}
 		currentSessionID = sessionID;

@@ -126,7 +126,7 @@ Zotero.Connector = new function() {
 					}
 					
 					Zotero.debug("Connector: Method "+method+" failed with status "+req.status);
-					deferred.reject(new Zotero.Connector.CommunicationError(`Method ${options.method} failed`, req.status, val));
+					deferred.reject(new Zotero.Connector.CommunicationError(`Method ${method} failed`, req.status, val));
 				} else {
 					Zotero.debug("Connector: Method "+method+" succeeded");
 					deferred.resolve(val);

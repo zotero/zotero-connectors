@@ -424,6 +424,11 @@ Zotero.Connector_Browser = new function() {
 		return this.notify(text, buttons, seenTimeout, tab);
 	};
 
+	this.getShortcuts = function() {
+		Zotero.debug('getting shortcuts');
+		return browser.commands.getAll();
+	};
+
 	/**
 	 * Update status and tooltip of Zotero button
 	 */
@@ -851,6 +856,10 @@ Zotero.Connector_Browser = new function() {
 		await Zotero.Promise.delay(1);
 		await Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
 	}));
+	
+	browser.commands.onCommand.addListener(function(command) {
+		Zotero.Messaging.sendMessage('command', command);
+	});
 }
 
 Zotero.initGlobal();

@@ -54,6 +54,13 @@
 			"suggested_key": {
 				"default": "Ctrl+Shift+S"
 			}
+		},
+		"cite": {
+			"suggested_key": {
+				"default": "Ctrl+Shift+C",
+				"mac": "Command+Ctrl+C"
+			},
+			"description": "Add/Edit Citation on Google Docs"
 		}
 	},
 	"minimum_chrome_version": "55",

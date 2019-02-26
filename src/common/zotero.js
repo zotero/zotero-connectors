@@ -354,8 +354,14 @@ Zotero.Prefs = new function() {
 		"proxies.proxies": [],
 		"proxies.clientChecked": false,
 		
-		"integration.googleDocs.enabled": true
+		"integration.googleDocs.enabled": true,
+		
+		"hotkeys.cite": {ctrlKey: true, altKey: true, key: 'c'}
 	};
+
+	if (Zotero.isMac) {
+		DEFAULTS['hotkeys.cite'] = {metaKey: true, ctrlKey: true, key: 'c'}
+	}
 	
 	this.syncStorage = {};
 

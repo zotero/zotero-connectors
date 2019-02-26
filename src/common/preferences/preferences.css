@@ -102,7 +102,9 @@ label {
 }
 
 input {
+	font-size: 1em;
 	max-width: 24em;
+	margin-left: 0.5em;
 }
 
 input[type=checkbox] {
@@ -131,6 +133,10 @@ input[type=button]:active:hover:not([disabled="true"]) {
 input[type=button][disabled="true"] {
   background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(230,230,230)), to(rgb(200,200,200)));
   color: rgb(120,120,120);
+}
+
+input.hotkey-input.invalid{
+	color: rgba(255, 0, 0, 0.7);
 }
 
 .Preferences-MIMETypeHandling-hostSelect {

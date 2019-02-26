@@ -67,8 +67,8 @@ var Zotero_Preferences = {
 		
 		Zotero_Preferences.General.init();
 		Zotero_Preferences.Advanced.init();
-		
-		var checkboxes = document.querySelectorAll('[data-pref]');
+
+		var checkboxes = document.querySelectorAll('[type="checkbox"][data-pref]');
 		for (let checkbox of checkboxes) {
 			checkbox.onchange = Zotero_Preferences.onPrefCheckboxChange;
 			checkbox.checked = await Zotero.Prefs.getAsync(checkbox.dataset.pref);
@@ -76,6 +76,13 @@ var Zotero_Preferences = {
 
 		Zotero.Prefs.loadNamespace('proxies').then(function() {
 			Zotero_Preferences.Proxies.init();
+		});
+
+		Zotero.Prefs.loadNamespace('hotkeys').then(function() {
+			let spans = document.querySelectorAll('.hotkey-input[data-pref]');
+			for (let span of spans) {
+				ReactDOM.render(<Zotero_Preferences.Components.HotkeyInput pref={span.dataset.pref} />, span);
+			}
 		});
 
 		Zotero.initDeferred.resolve();
@@ -142,10 +149,10 @@ Zotero_Preferences.General = {
 			this.mimeTypeHandlingComponent = React.createElement(Zotero_Preferences.Components.MIMETypeHandling, null);
 			ReactDOM.render(this.mimeTypeHandlingComponent, elem.querySelectorAll('.group-content')[0]);
 		}
-		
+
 		ReactDOM.render(React.createElement(Zotero_Preferences.Components.ClientStatus, null),
 			document.getElementById("client-status"));
-		document.getElementById("general-button-authorize").onclick = 
+		document.getElementById("general-button-authorize").onclick =
 			document.getElementById("general-button-reauthorize").onclick = Zotero_Preferences.General.authorize;
 		document.getElementById("general-button-clear-credentials").onclick = Zotero_Preferences.General.clearCredentials;
 
@@ -804,10 +811,53 @@ Zotero_Preferences.Components.MIMETypeHandling = class MIMETypeHandling extends 
 					<p> <input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostRemove} disabled={disabled} value="Remove"/> </p>
 					{hostname}
 				</div>
-				
+
 			</div>
 		);
 	}
 };
+
+Zotero_Preferences.Components.HotkeyInput = class extends React.Component {
+	constructor(props) {
+		super(props);
+		this.handleKeyDown = this.handleKeyDown.bind(this);
+		this.state = {modifiers: Zotero.Prefs.get(props.pref) || {}};
+	}
+
+	async handleKeyDown(e) {
+		const keys = ['ctrlKey', 'altKey', 'shiftKey', 'metaKey'];
+		let modifiers = {};
+		let invalid = false;
+		for (let key of keys) {
+			modifiers[key] = e[key];
+		}
+		if (e.key.length == 1) {
+			modifiers.key = e.key;
+		} else {
+			modifiers.key = '';
+		}
+		if (modifiers.key && keys.some(k => modifiers[k])) {
+			Zotero.Prefs.set(this.props.pref, modifiers);
+		} else {
+			modifiers.invalid = true;
+		}
+		if (e.key == 'Backspace' || e.key == 'Escape' || e.key == 'Delete') {
+			Zotero.Prefs.clear(this.props.pref);
+			modifiers = await Zotero.Prefs.getAsync(this.props.pref) || {};
+		}
+		this.setState({modifiers, invalid});
+	}
+
+	render() {
+		let val = Zotero.Utilities.kbEventToHotkeyString(this.state.modifiers);
+
+		let classes = "hotkey-input";
+		if (this.state.invalid) {
+			classes += " invalid"
+		}
+
+		return <input className={classes} onKeyDown={this.handleKeyDown} value={val}/>
+	}
+}
 
 window.addEventListener("load", Zotero_Preferences.init, false);

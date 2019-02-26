@@ -139,6 +139,15 @@ Zotero_Preferences_Config.Row = class Row extends React.Component {
 			this.setState({value});
 		}.bind(this));
 	}
+
+	componentDidUpdate() {
+		Zotero.Prefs.getAsync(this.props.name).then(function(value) {
+			if (typeof value != 'string') {
+				value = JSON.stringify(value);
+			}
+			this.setState({value});
+		}.bind(this));
+	}
 	
 	render() {
 		return (

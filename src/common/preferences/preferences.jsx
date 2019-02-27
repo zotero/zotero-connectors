@@ -821,6 +821,7 @@ Zotero_Preferences.Components.ShortcutInput = class extends React.Component {
 	constructor(props) {
 		super(props);
 		this.handleKeyDown = this.handleKeyDown.bind(this);
+		this.handleBlur = this.handleBlur.bind(this);
 		this.state = {modifiers: Zotero.Prefs.get(props.pref) || {}};
 	}
 
@@ -852,6 +853,14 @@ Zotero_Preferences.Components.ShortcutInput = class extends React.Component {
 		this.setState({modifiers, invalid});
 	}
 
+	async handleBlur() {
+		const keys = ['ctrlKey', 'altKey', 'shiftKey', 'metaKey'];
+		if (!this.state.modifiers.key || !keys.some(k => this.state.modifiers[k])) {
+			let modifiers = await Zotero.Prefs.getAsync(this.props.pref) || {};
+			this.setState({modifiers, invalid: false});
+		}
+	}
+
 	render() {
 		let val = Zotero.Utilities.kbEventToShortcutString(this.state.modifiers);
 
@@ -860,7 +869,7 @@ Zotero_Preferences.Components.ShortcutInput = class extends React.Component {
 			classes += " invalid"
 		}
 
-		return <input className={classes} onKeyDown={this.handleKeyDown} value={val}/>
+		return <input className={classes} onKeyDown={this.handleKeyDown} onBlur={this.handleBlur} value={val}/>
 	}
 }
 

@@ -136,7 +136,7 @@ input[type=button][disabled="true"] {
 }
 
 input.shortcut-input.invalid{
-	color: rgba(255, 0, 0, 0.7);
+	/*color: rgba(255, 0, 0, 0.7);*/
 }
 
 #google-docs-shortcut {

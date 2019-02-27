@@ -189,7 +189,7 @@ Zotero.Utilities.itemToAPIJSON = function(item) {
 	return newItems;
 }
 
-Zotero.Utilities.kbEventToHotkeyString = function(e) {
+Zotero.Utilities.kbEventToShortcutString = function(e) {
 	const keymap = [
 		['ctrlKey', 'Ctrl+'],
 		['shiftKey', 'Shift+'],

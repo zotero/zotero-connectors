@@ -135,7 +135,7 @@ input[type=button][disabled="true"] {
   color: rgb(120,120,120);
 }
 
-input.hotkey-input.invalid{
+input.shortcut-input.invalid{
 	color: rgba(255, 0, 0, 0.7);
 }
 

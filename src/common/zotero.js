@@ -356,11 +356,11 @@ Zotero.Prefs = new function() {
 		
 		"integration.googleDocs.enabled": true,
 		
-		"hotkeys.cite": {ctrlKey: true, altKey: true, key: 'c'}
+		"shortcuts.cite": {ctrlKey: true, altKey: true, key: 'c'}
 	};
 
 	if (Zotero.isMac) {
-		DEFAULTS['hotkeys.cite'] = {metaKey: true, ctrlKey: true, key: 'c'}
+		DEFAULTS['shortcuts.cite'] = {metaKey: true, ctrlKey: true, key: 'c'}
 	}
 	
 	this.syncStorage = {};

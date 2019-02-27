@@ -78,10 +78,10 @@ var Zotero_Preferences = {
 			Zotero_Preferences.Proxies.init();
 		});
 
-		Zotero.Prefs.loadNamespace('hotkeys').then(function() {
-			let spans = document.querySelectorAll('.hotkey-input[data-pref]');
+		Zotero.Prefs.loadNamespace('shortcuts').then(function() {
+			let spans = document.querySelectorAll('.shortcut-input[data-pref]');
 			for (let span of spans) {
-				ReactDOM.render(<Zotero_Preferences.Components.HotkeyInput pref={span.dataset.pref} />, span);
+				ReactDOM.render(<Zotero_Preferences.Components.ShortcutInput pref={span.dataset.pref} />, span);
 			}
 		});
 
@@ -817,7 +817,7 @@ Zotero_Preferences.Components.MIMETypeHandling = class MIMETypeHandling extends 
 	}
 };
 
-Zotero_Preferences.Components.HotkeyInput = class extends React.Component {
+Zotero_Preferences.Components.ShortcutInput = class extends React.Component {
 	constructor(props) {
 		super(props);
 		this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -849,9 +849,9 @@ Zotero_Preferences.Components.HotkeyInput = class extends React.Component {
 	}
 
 	render() {
-		let val = Zotero.Utilities.kbEventToHotkeyString(this.state.modifiers);
+		let val = Zotero.Utilities.kbEventToShortcutString(this.state.modifiers);
 
-		let classes = "hotkey-input";
+		let classes = "shortcut-input";
 		if (this.state.invalid) {
 			classes += " invalid"
 		}

@@ -88,11 +88,11 @@ body {
 	font-size: 11px;
 }
 
-.group-content p:first-child {
+.group-content div:first-child, .group-content p:first-child {
 	margin: 0;
 }
 
-.group-content p {
+.group-content div, .group-content p {
 	margin: 10px 0 0 0;
 }
 
@@ -137,6 +137,11 @@ input[type=button][disabled="true"] {
 
 input.shortcut-input.invalid{
 	color: rgba(255, 0, 0, 0.7);
+}
+
+#google-docs-shortcut {
+	margin-top: 4px;
+	margin-left: 7px;
 }
 
 .Preferences-MIMETypeHandling-hostSelect {

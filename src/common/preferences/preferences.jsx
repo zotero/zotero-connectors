@@ -825,6 +825,9 @@ Zotero_Preferences.Components.ShortcutInput = class extends React.Component {
 	}
 
 	async handleKeyDown(e) {
+		if (e.key == 'Tab') {
+			return;
+		}
 		const keys = ['ctrlKey', 'altKey', 'shiftKey', 'metaKey'];
 		let modifiers = {};
 		let invalid = false;
@@ -839,11 +842,12 @@ Zotero_Preferences.Components.ShortcutInput = class extends React.Component {
 		if (modifiers.key && keys.some(k => modifiers[k])) {
 			Zotero.Prefs.set(this.props.pref, modifiers);
 		} else {
-			modifiers.invalid = true;
+			invalid = true;
 		}
 		if (e.key == 'Backspace' || e.key == 'Escape' || e.key == 'Delete') {
 			Zotero.Prefs.clear(this.props.pref);
 			modifiers = await Zotero.Prefs.getAsync(this.props.pref) || {};
+			invalid = false;
 		}
 		this.setState({modifiers, invalid});
 	}

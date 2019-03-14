@@ -94,7 +94,7 @@ Zotero.HTTP = new function() {
 				if (Zotero.isBookmarklet) {
 					Zotero.debug("HTTP: Attempting cross-site request from bookmarklet; this may fail");
 				}
-				else if (Zotero.isSafari || Zotero.HTTP.isLessSecure(url)) {
+				else if (Zotero.isChrome || Zotero.isSafari || Zotero.HTTP.isLessSecure(url)) {
 					// Make a cross-origin request via the background page, parsing the responseText with
 					// DOMParser and returning a Proxy with 'response' set to the parsed document
 					let isDocRequest = options.responseType == 'document';

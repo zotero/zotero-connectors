@@ -63,6 +63,7 @@ if (isTopWindow) {
 		var style = {
 			position: 'fixed',
 			top: '0px',
+			left: 'unset',
 			right: '0px',
 			width: '100%',
 			height: '100%',

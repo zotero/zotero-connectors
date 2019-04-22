@@ -257,7 +257,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		var style = {
 			position: 'fixed',
 			top: '15px',
-			left: 'auto',
+			left: 'unset',
 			right: '8px',
 			width: '351px',
 			maxWidth: '95%',

@@ -114,3 +114,10 @@ Zotero.ConnectorIntegration = {
 	}
 };
 
+Zotero.ConnectorIntegration.Alert = class extends Error {
+	constructor(message) {
+		super(message);
+		this.name = "Alert";
+		this.type = "Alert";
+	}
+}

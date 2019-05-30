@@ -67,8 +67,9 @@ Zotero.Connector = new function() {
 		});
 	}
 	
-	this.getClientVersion = function() {
-		return this.isOnline && this.clientVersion;
+	this.getClientVersion = async function() {
+		let isOnline = await this.checkIsOnline();
+		return isOnline && this.clientVersion;
 	}
 	
 	/**

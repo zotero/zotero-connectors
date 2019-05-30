@@ -129,7 +129,7 @@ var MESSAGES = {
 		onTranslators: false,
 		injectScripts: true,
 		isIncognito: true,
-		firstSaveToServerPrompt: true,
+		newerVersionRequiredPrompt: true,
 		openTab: false,
 		openConfigEditor: false,
 		openPreferences: false,

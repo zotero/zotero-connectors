@@ -130,6 +130,22 @@ Zotero.Connector_Browser = new function() {
 			'https://www.zotero.org/download for more details.');
 		_incompatibleVersionMessageShown = true;
 	}
+	
+	/**
+	 * Called if Zotero version is determined to be incompatible with Standalone
+	 */
+	this.newerVersionRequiredPrompt = function() {
+		let clientName = ZOTERO_CONFIG.CLIENT_NAME;
+		let url = ZOTERO_CONFIG.CLIENT_DOWNLOAD_URL;
+		let pageName = Zotero.getString('progressWindow_error_upgradeClient_latestVersion');
+		let pageLink = `<a href="${url}">${pageName}</a>`;
+		
+		return Zotero.Messaging.sendMessage('confirm', {
+			title: Zotero.getString("general_warning"),
+			button2Text: "",
+			message: Zotero.getString("progressWindow_error_upgradeClient", [clientName, pageLink])
+		});
+	}
 
 	/**
 	 * Checks whether a given frame has any matching translators. Injects translation code

@@ -104,10 +104,10 @@ Zotero.Connector = new function() {
 		var newCallback = function(req) {
 			try {
 				var isOnline = req.status !== 0 && req.status !== 403 && req.status !== 412;
-				
+
+				Zotero.Connector.clientVersion = req.getResponseHeader('X-Zotero-Version');
 				if (Zotero.Connector.isOnline !== isOnline) {
 					Zotero.Connector.isOnline = isOnline;
-					Zotero.Connector.clientVersion = req.getResponseHeader('X-Zotero-Version');
 					if (Zotero.Connector_Browser && Zotero.Connector_Browser.onStateChange) {
 						Zotero.Connector_Browser.onStateChange(isOnline && Zotero.Connector.clientVersion);
 					}

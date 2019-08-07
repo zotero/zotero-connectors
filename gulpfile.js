@@ -363,7 +363,8 @@ gulp.task('process-custom-scripts', function() {
 	if (!argv.p) {
 		sources.push('./src/common/test/**/*.js');	
 	}
-	gulp.src(sources).pipe(plumber())
+	return gulp.src(sources)
+		.pipe(plumber())
 		.pipe(processFile())
 		.pipe(gulp.dest((data) => data.base));
 });
@@ -372,4 +373,4 @@ gulp.task('watch-bookmarklet', watchBookmarklet(argv))
 
 gulp.task('process-bookmarklet-scripts', processBookmarkletScripts(argv));
 
-gulp.task('default', ['watch']);
+gulp.task('default', gulp.series(['watch']));

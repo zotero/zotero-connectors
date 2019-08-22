@@ -9,7 +9,7 @@
     "babel-preset-env": "^1.7.0",
     "babel-preset-minify": "^0.4.3",
     "bluebird": "^3.5.3",
-    "browserify": "^13.1.0",
+    "browserify": "^16.5.0",
     "chai": "^4.2.0",
     "chalk": "^2.4.1",
     "chromedriver": "^2.45.0",

@@ -175,7 +175,7 @@ function replaceScriptsHTML(string, match, scripts) {
 }
 
 function processFile() {
-	return through.obj(function(file, enc, cb) {
+	return through.obj(async function(file, enc, cb) {
 		console.log(file.path.slice(file.cwd.length));
 		var offset = file.cwd.split('/').length;
 		var parts = file.path.split('/');
@@ -189,6 +189,7 @@ function processFile() {
 		}
 		var type = parts[i];
 		
+		// Transform react
 		if (ext == 'jsx') {
 			try {
 				file.contents = new Buffer(
@@ -203,54 +204,10 @@ function processFile() {
 				console.log(e.message);
 				return;
 			}
+			// Remove the 'x' from '.jsx'
 			parts[parts.length-1] = basename = basename.substr(0, basename.length-1);
-			ext = 'js';
 		}
 		
-		var addFiles = function(file) {
-			var f;
-			
-			// Amend paths
-			if (type === 'common' || type === 'browserExt') {
-				if (file.path.includes('.html')) {
-					file.contents = Buffer.from(replaceScriptsHTML(
-						file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
-				}
-				['chrome', 'firefox'].forEach((browser) => {
-					f = file.clone({contents: false});
-					f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
-					console.log(`-> ${f.path.slice(f.cwd.length)}`);
-					this.push(f);
-				});
-			}
-			if (type === 'common' || type === 'safari') {
-				if (file.path.includes('test/data') && file.path.includes('.html')) {
-					file.contents = Buffer.from(replaceScriptsHTML(
-						file.contents.toString(), "<!--SCRIPTS-->", injectIncludeSafari.map(s => `../../${s}`)));
-				}
-				f = file.clone({contents: false});
-				f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/' + parts.slice(i+1).join('/');
-				console.log(`-> ${f.path.slice(f.cwd.length)}`);
-				this.push(f);
-			}
-			if (type === 'zotero-google-docs-integration') {
-				f = file.clone({contents: false});
-				f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/zotero-google-docs-integration/' 
-					+ parts.slice(i+3).join('/');
-				console.log(`-> ${f.path.slice(f.cwd.length)}`);
-				this.push(f);
-				['chrome', 'firefox'].forEach((browser) => {
-					f = file.clone({contents: false});
-					f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/zotero-google-docs-integration/`
-						+ parts.slice(i+3).join('/');
-					console.log(`-> ${f.path.slice(f.cwd.length)}`);
-					this.push(f);
-				});
-			}
-			cb();
-		}.bind(this);
-		
-		var asyncAddFiles = false;
 		// Replace contents
 		switch (basename) {
 			case 'zotero_config.js':
@@ -308,15 +265,59 @@ function processFile() {
 						 '$1<string>'+argv.version+'</string>'));
 				break;
 			case 'node_modules.js':
-				asyncAddFiles = true;
-				// Stream needs to be converted to a buffer because of complicated stream cloning quantum bugs
-				browserify(file).bundle((err, buf) => {file.contents = buf; addFiles(file)});
+				await new Promise((resolve) => {
+					// Stream needs to be converted to a buffer because of complicated stream cloning quantum bugs
+					// so we cannot just do file = browserify.bundle()
+					//   Also
+					// We used to be able to pass in the whole file object here before gulp 4.
+					// It doesn't work anymore and produces weird minified content
+					// so we pass in the file path instead which works well
+					browserify(file.path).bundle((err, buf) => {file.contents = buf; resolve()});
+				});
 				break;
 		}
 		
-		if (!asyncAddFiles) {
-			addFiles(file);
+		let f;
+		
+		// Amend paths
+		if (type === 'common' || type === 'browserExt') {
+			if (file.path.includes('.html')) {
+				file.contents = Buffer.from(replaceScriptsHTML(
+					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
+			}
+			['chrome', 'firefox'].forEach((browser) => {
+				f = file.clone({contents: false});
+				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
+				console.log(`-> ${f.path.slice(f.cwd.length)}`);
+				this.push(f);
+			});
 		}
+		if (type === 'common' || type === 'safari') {
+			if (file.path.includes('test/data') && file.path.includes('.html')) {
+				file.contents = Buffer.from(replaceScriptsHTML(
+					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeSafari.map(s => `../../${s}`)));
+			}
+			f = file.clone({contents: false});
+			f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/' + parts.slice(i+1).join('/');
+			console.log(`-> ${f.path.slice(f.cwd.length)}`);
+			this.push(f);
+		}
+		if (type === 'zotero-google-docs-integration') {
+			f = file.clone({contents: false});
+			f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/zotero-google-docs-integration/'
+				+ parts.slice(i+3).join('/');
+			console.log(`-> ${f.path.slice(f.cwd.length)}`);
+			this.push(f);
+			['chrome', 'firefox'].forEach((browser) => {
+				f = file.clone({contents: false});
+				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/zotero-google-docs-integration/`
+					+ parts.slice(i+3).join('/');
+				console.log(`-> ${f.path.slice(f.cwd.length)}`);
+				this.push(f);
+			});
+		}
+		
+		cb();
 	});
 }
 

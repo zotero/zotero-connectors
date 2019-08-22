@@ -192,7 +192,7 @@ function processFile() {
 		// Transform react
 		if (ext == 'jsx') {
 			try {
-				file.contents = new Buffer(
+				file.contents = Buffer.from(
 					babel.transform(
 						file.contents,
 						{
@@ -324,8 +324,8 @@ function processFile() {
 gulp.task('watch', function () {
 	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**',
 		'./src/zotero-google-docs-integration/src/connector/**']);
-	watcher.on('change', function(event) {
-		gulp.src(event.path)
+	watcher.on('change', function(path) {
+		gulp.src(path)
 			.pipe(plumber())
 			.pipe(processFile())
 			.pipe(gulp.dest((data) => data.base));

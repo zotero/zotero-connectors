@@ -36,11 +36,11 @@ const argv = require('yargs')
 	.boolean('p')
 	.alias('p', 'production')
 	.describe('p', 'Production. Do not include translator tester.')
-	.alias('v', 'version')
-	.describe('v', 'Version of the extension')
+	.string('connector-version')
+	.describe('connector-version', 'Version of the extension')
 	.help('h')
 	.alias('h', 'help')
-	.default({'v': '4.999.0', p: false})
+	.default({'connector-version': '4.999.0', p: false})
 	.argv;
 
 var injectInclude = [
@@ -240,7 +240,7 @@ function processFile() {
 						backgroundIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
 					.replace("/*INJECT SCRIPTS*/",
 						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
-					.replace(/"version": "[^"]*"/, '"version": "'+argv.version+'"'));
+					.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"'));
 				break;
 			case 'background.js':
 				file.contents = Buffer.from(file.contents.toString()
@@ -262,7 +262,7 @@ function processFile() {
 					.replace("<!--SCRIPTS-->",
 						injectIncludeSafari.map((s) => `<string>${s}</string>`).join('\n\t\t\t\t'))
 					.replace(/(<key>(?:CFBundleShortVersionString|CFBundleVersion)<\/key>\s*)<string>[^<]*<\/string>/g,
-						 '$1<string>'+argv.version+'</string>'));
+						 '$1<string>' + argv.connectorVersion + '</string>'));
 				break;
 			case 'node_modules.js':
 				await new Promise((resolve) => {

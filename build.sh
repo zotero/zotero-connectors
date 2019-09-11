@@ -346,9 +346,9 @@ if [[ $BUILD_BROWSER_EXT == 1 ]] || [[ $BUILD_SAFARI == 1 ]]; then
 
 	# Update scripts
 	if [ ! -z $DEBUG ]; then
-		"$GULP" process-custom-scripts > "$LOG" 2>&1
+		"$GULP" process-custom-scripts --connector-version "$VERSION" > "$LOG" 2>&1
 	else
-		"$GULP" process-custom-scripts -p > "$LOG" 2>&1
+		"$GULP" process-custom-scripts --connector-version "$VERSION" -p > "$LOG" 2>&1
 	fi
 fi
 
@@ -465,9 +465,9 @@ if [ $BUILD_BOOKMARKLET == 1 ]; then
 	
 	# Update scripts
 	if [ ! -z $DEBUG ]; then
-		"$GULP" process-bookmarklet-scripts --version "$VERSION" > "$LOG" 2>&1
+		"$GULP" process-bookmarklet-scripts --connector-version "$VERSION" > "$LOG" 2>&1
 	else
-		"$GULP" process-bookmarklet-scripts --version "$VERSION" -p > "$LOG" 2>&1
+		"$GULP" process-bookmarklet-scripts --connector-version "$VERSION" -p > "$LOG" 2>&1
 	fi
 	
 	echo "done"

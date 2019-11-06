@@ -30,14 +30,14 @@ Zotero.UI.style = Zotero.UI.style || {};
 if (Zotero.isBookmarklet) {
 	Zotero.UI.style.imageBase = ZOTERO_CONFIG.BOOKMARKLET_URL + "images/";
 }
-else if (typeof safari != 'undefined') {
-	Zotero.UI.style.imageBase = safari.extension.baseURI + "images/";
-}
 else if (typeof browser != 'undefined') {
 	Zotero.UI.style.imageBase = browser.extension.getURL("images/");
 }
 else if (typeof chrome != 'undefined') {
 	Zotero.UI.style.imageBase = chrome.extension.getURL("images/");
+}
+else {
+	Zotero.UI.style.imageBase = `${safari.extension.baseURI}safari/` + "images/";
 }
 
 function getTargetType(id) {

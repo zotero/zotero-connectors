@@ -29,46 +29,8 @@
 Zotero.i18n = {
 	init: async function() {
 		if (Zotero.isBackground) {
-			var locale = navigator.language;
-			// Some languages have multiple locales, in which case we include the one with more
-			// speakers with just the language code. The other, specified here, will use the
-			// region. Which one to use in these cases is debatable, but having a fallback to one
-			// of them for a non-matching language (e.g., if navigator.language is just 'zh'
-			// somehow) seems better than having a fallback to English. This should stay up to
-			// date with the script used to to sync languages with zotero/zotero.
-			var multiCountryLocales = ['pt-PT', 'zh-TW'];
-			if (multiCountryLocales.includes(locale)) {
-				locale = locale.replace('-', '_');
-			}
-			else {
-				locale = navigator.language.split('-')[0];
-			}
-			
-			var localeURL = safari.extension.baseURI + '_locales/' + locale + '/messages.json';
-			this.localeJSON = await new Zotero.Promise(function (resolve) {
-				var xhr = new XMLHttpRequest();
-				// Safari is awkward like that and acts weird for XHR requests for extension own resources
-				// Hopefully this is not too brittle and safari doesn't break it
-				xhr.onprogress = function () {
-					if (xhr.responseText) {
-						resolve(JSON.parse(xhr.responseText));
-					}
-				};
-				// If the request for the current locale fails, fall back to English
-				xhr.onerror = function () {
-					var xhr = new XMLHttpRequest();
-					var localeURL = safari.extension.baseURI + '_locales/en/messages.json';
-					xhr.onprogress = function () {
-						if (xhr.responseText) {
-							resolve(JSON.parse(xhr.responseText));
-						}
-					};
-					xhr.open('GET', localeURL, true);
-					xhr.send();
-				};
-				xhr.open('GET', localeURL, true);
-				xhr.send();
-			});
+			this.localeJSON = await Zotero.Messaging.sendMessage('Swift.getLocale');
+			this.localeJSON = JSON.parse(this.localeJSON);
 		} else {
 			this.localeJSON = await Zotero.i18n.getStrings();
 		}

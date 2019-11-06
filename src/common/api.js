@@ -100,7 +100,7 @@ Zotero.API = new function() {
 	 * @param {String} data The query string received from OAuth
 	 * @param {Tab} tab The object corresponding to the tab where OAuth completed
 	 */
-	this.onAuthorizationComplete = function(data, tab) {
+	this.onAuthorizationComplete = async function(data, tab) {
 		// close auth window
 		// ensure that tab close listeners don't have a promise they can reject
 		// this is kinda awful.
@@ -108,8 +108,8 @@ Zotero.API = new function() {
 		this._deferred = null;
 		if(Zotero.isBrowserExt) {
 			browser.tabs.remove(tab.id);
-		} else if(Zotero.isSafari) {
-			tab.close();
+		} else if (Zotero.isSafari) {
+			Zotero.Connector_Browser.closeTab(tab);
 		}
 		
 		if(!_tokenSecret) {
@@ -128,47 +128,48 @@ Zotero.API = new function() {
 			body: '',
 			headers: {"Authorization": oauthSimple.getHeaderString()}
 		};
-		return Zotero.HTTP.request("POST", config.OAUTH.ZOTERO.ACCESS_URL, options).then(function(xmlhttp) {
-			var data = _decodeFormData(xmlhttp.responseText);
-			var xmlhttp = new XMLHttpRequest();
-			xmlhttp.open("GET", config.API_URL+"users/"+encodeURI(data['auth-userID'])+
-					"/keys/current", true);
-			xmlhttp.onreadystatechange = function() {
-				if(xmlhttp.readyState != 4) return;
-				try {
-					var json = JSON.parse(xmlhttp.responseText),
-					    access = json.access;
-				} catch(e) {};
-				
-				let responseText = xmlhttp.responseText.replace(data.oauth_token_secret, '[API_KEY_HIDDEN]');
-
-				if(!access || !access.user) {
-					Zotero.logError("Key verification failed with "+xmlhttp.status+'; response was '+responseText);
-					Zotero.logError("Key verification failed with "+xmlhttp.status+'; response was '+xmlhttp.responseText);
-					return deferred.reject(new Error("API key could not be verified"));
-				}
-				
-				if(!access.user.library || !access.user.write) {
-					Zotero.logError("Generated key had inadequate permissions; response was "+responseText);
-					return deferred.reject(new Error("The key you have generated does not have adequate "+
-						"permissions to save items to your Zotero library. Please try again "+
-						"without modifying your key's permissions."));
-				}
-			
-				Zotero.Prefs.set('auth-token', data.oauth_token);
-				Zotero.Prefs.set('auth-token_secret', data.oauth_token_secret);
-				Zotero.Prefs.set('auth-userID', data.userID);
-				Zotero.Prefs.set('auth-username', data.username);
-				
-				return deferred.resolve({"auth-username": data.username, "auth-userID": data.userID});
-			};
-			xmlhttp.setRequestHeader('Zotero-API-Key', data.oauth_token_secret);
-			xmlhttp.setRequestHeader("Zotero-API-Version", "3");
-			xmlhttp.send();
-		}, function(e) {
+		try {
+			var xmlhttp = await Zotero.HTTP.request("POST", config.OAUTH.ZOTERO.ACCESS_URL, options)
+		}
+		catch(e) {
 			Zotero.logError(`OAuth access failed with ${e.status}; response was ${e.responseText}`);
 			return deferred.reject(new Error("An invalid response was received from the Zotero server"));
+		}
+		data = _decodeFormData(xmlhttp.responseText);
+
+		let keysUrl = config.API_URL+"users/"+encodeURI(data['auth-userID']) + "/keys/current";
+		xmlhttp = await Zotero.HTTP.request("GET", keysUrl, {
+			headers: {
+				"Zotero-API-Key": data.oauth_token_secret,
+				"Zotero-API-Version": "3"
+			}
 		});
+		try {
+			var json = JSON.parse(xmlhttp.responseText),
+				access = json.access;
+		} catch(e) {};
+		
+		let responseText = xmlhttp.responseText.replace(data.oauth_token_secret, '[API_KEY_HIDDEN]');
+
+		if(!access || !access.user) {
+			Zotero.logError("Key verification failed with "+xmlhttp.status+'; response was '+responseText);
+			Zotero.logError("Key verification failed with "+xmlhttp.status+'; response was '+xmlhttp.responseText);
+			return deferred.reject(new Error("API key could not be verified"));
+		}
+		
+		if(!access.user.library || !access.user.write) {
+			Zotero.logError("Generated key had inadequate permissions; response was "+responseText);
+			return deferred.reject(new Error("The key you have generated does not have adequate "+
+				"permissions to save items to your Zotero library. Please try again "+
+				"without modifying your key's permissions."));
+		}
+	
+		Zotero.Prefs.set('auth-token', data.oauth_token);
+		Zotero.Prefs.set('auth-token_secret', data.oauth_token_secret);
+		Zotero.Prefs.set('auth-userID', data.userID);
+		Zotero.Prefs.set('auth-username', data.username);
+		
+		return deferred.resolve({"auth-username": data.username, "auth-userID": data.userID});
 	};
 	
 	this.onAuthorizationCancel = function() {
@@ -178,14 +179,10 @@ Zotero.API = new function() {
 	};
 	
 	/**
-	 * Clears OAuth credentials from localStorage
+	 * Clears OAuth credentials from storage
 	 */
 	this.clearCredentials = function() {
 		let keys = ['auth-token', 'auth-token_secret', 'auth-userID', 'auth-username'];
-		// TODO: Remove after all connectors updated
-		for (let key of keys) {
-			delete localStorage[key];
-		}
 		Zotero.Prefs.clear(keys);
 		// TODO revoke key
 	};
@@ -197,15 +194,6 @@ Zotero.API = new function() {
 	this.getUserInfo = Zotero.Promise.method(function() {
 		let keys = ['auth-token_secret', 'auth-userID', 'auth-username'];
 		return Zotero.Prefs.getAsync(keys).catch(function() {
-			// TODO: Remove after all connectors updated
-			if (localStorage.hasOwnProperty("auth-token")) {
-				let info = {};
-				for (let key of keys) {
-					Zotero.Prefs.set(key, localStorage[key]);
-					info[key] = localStorage[key];
-				}
-				return info;
-			}
 			return null;
 		});
 	});

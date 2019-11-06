@@ -1,7 +1,7 @@
 /*
 	***** BEGIN LICENSE BLOCK *****
 	
-	Copyright © 2018 Center for History and New Media
+	Copyright © 2019 Center for History and New Media
 					George Mason University, Fairfax, Virginia, USA
 					http://zotero.org
 	
@@ -23,11 +23,18 @@
 	***** END LICENSE BLOCK *****
 */
 
-document.addEventListener('contextmenu', function(event) {
-	var selectionText = window.getSelection().toString().trim();
-	if (selectionText.length) {
-		// Cannot be an object! Obviously!
-		var userInfo = JSON.stringify({selectionText});
-		safari.self.tab.setContextMenuEventUserInfo(event, userInfo);
+// These are shims to bring the Apple JSContext running in Swift
+// closer to what a real browser is so that we can run our global page properly
+
+const consFuncs = ['log', 'info', 'error', 'warn'];
+for (const prop of consFuncs) {
+	if (typeof console[prop] == "undefined") continue;
+	const func = console[prop];
+	console[prop] = function() {
+		func.apply(this, arguments);
+		typeof _consoleLog != "undefined" && _consoleLog(`console.${prop}: ` + arguments[0]);
 	}
-}, false);
+}
+
+// Default variable name for "the global" variable in the JSContext
+var window = globalThis;

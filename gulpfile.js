@@ -93,11 +93,7 @@ if (argv.p) {
 		'tools/testTranslators/translatorTester_inject.js'
 	];
 }
-var injectIncludeSafari = [].concat(injectInclude, ['ui/notification.js', 'browser_inject.js'], injectIncludeLast);
 var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(injectInclude, ['api.js'], injectIncludeLast);
-if (!argv.p) {
-	injectIncludeSafari = injectIncludeSafari.concat(['lib/sinon.js', 'test/testSetup.js'])
-}
 
 var backgroundInclude = [
 	'node_modules.js',
@@ -247,22 +243,11 @@ function processFile() {
 					.replace("/*INJECT SCRIPTS*/", 
 						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t')));
 				break;
-			case 'global.html':
-				file.contents = Buffer.from(replaceScriptsHTML(
-					file.contents.toString(), "<!--SCRIPTS-->", backgroundInclude));
-				break;
 			case 'preferences.html':
 			case 'progressWindow.html':
 			case 'modalPrompt.html':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/g, argv.p ? '' : '$1'));
-				break;
-			case 'Info.plist':
-				file.contents = Buffer.from(file.contents.toString()
-					.replace("<!--SCRIPTS-->",
-						injectIncludeSafari.map((s) => `<string>${s}</string>`).join('\n\t\t\t\t'))
-					.replace(/(<key>(?:CFBundleShortVersionString|CFBundleVersion)<\/key>\s*)<string>[^<]*<\/string>/g,
-						 '$1<string>' + argv.connectorVersion + '</string>'));
 				break;
 			case 'node_modules.js':
 				await new Promise((resolve) => {
@@ -293,18 +278,14 @@ function processFile() {
 			});
 		}
 		if (type === 'common' || type === 'safari') {
-			if (file.path.includes('test/data') && file.path.includes('.html')) {
-				file.contents = Buffer.from(replaceScriptsHTML(
-					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeSafari.map(s => `../../${s}`)));
-			}
 			f = file.clone({contents: false});
-			f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/' + parts.slice(i+1).join('/');
+			f.path = parts.slice(0, i-1).join('/') + '/build/safari/' + parts.slice(i+1).join('/');
 			console.log(`-> ${f.path.slice(f.cwd.length)}`);
 			this.push(f);
 		}
 		if (type === 'zotero-google-docs-integration') {
 			f = file.clone({contents: false});
-			f.path = parts.slice(0, i-1).join('/') + '/build/safari.safariextension/zotero-google-docs-integration/'
+			f.path = parts.slice(0, i-1).join('/') + '/build/safari/zotero-google-docs-integration/'
 				+ parts.slice(i+3).join('/');
 			console.log(`-> ${f.path.slice(f.cwd.length)}`);
 			this.push(f);
@@ -349,8 +330,6 @@ gulp.task('process-custom-scripts', function() {
 		'./src/browserExt/background.js',
 		'./src/browserExt/manifest.json',
 		'./src/browserExt/confirm.html',
-		'./src/safari/global.html',
-		'./src/safari/Info.plist',
 		'./src/common/node_modules.js',
 		'./src/common/preferences/preferences.html',
 		'./src/common/progressWindow/progressWindow.html',

@@ -36,7 +36,7 @@ Zotero.Connector = new function() {
 	 * Checks if Zotero is online and passes current status to callback
 	 * @param {Function} callback
 	 */
-	this.checkIsOnline = Zotero.Promise.method(function() {
+	this.checkIsOnline = async function() {
 		// Only check once in bookmarklet
 		if(Zotero.isBookmarklet && this.isOnline !== null) {
 			return this.isOnline;
@@ -48,7 +48,7 @@ Zotero.Connector = new function() {
 			}
 			throw e;
 		});
-	});
+	};
 
 	this.reportActiveURL = function(url) {
 		if (!this.isOnline || !this.shouldReportActiveURL) return;
@@ -84,7 +84,7 @@ Zotero.Connector = new function() {
 	 * @param {Object} data - RPC data to POST. If null or undefined, a GET request is sent.
 	 * @param {Function} callback - Function to be called when requests complete.
 	 */
-	this.callMethod = Zotero.Promise.method(function(options, data, tab) {
+	this.callMethod = async function(options, data, tab) {
 		// Don't bother trying if not online in bookmarklet
 		if (Zotero.isBookmarklet && this.isOnline === false) {
 			throw new Zotero.Connector.CommunicationError("Zotero Offline", 0);
@@ -115,7 +115,8 @@ Zotero.Connector = new function() {
 				}
 				var val = null;
 				if(req.responseText) {
-					if(req.getResponseHeader("Content-Type").includes("application/json")) {
+					let contentType = req.getResponseHeader("Content-Type") || ""
+					if (contentType.includes("application/json")) {
 						val = JSON.parse(req.responseText);
 					} else {
 						val = req.responseText;
@@ -158,7 +159,7 @@ Zotero.Connector = new function() {
 			deferred.reject(e);
 		});
 		return deferred.promise;
-	}),
+	},
 	
 	/**
 	 * Adds detailed cookies to the data before sending "saveItems" request to
@@ -251,18 +252,22 @@ Zotero.Connector_Debug = new function() {
 	/**
 	 * Submit data to the server
 	 */
-	this.submitReport = function() {
-		return Zotero.Debug.get().then(function(body){
-			return Zotero.HTTP.request("POST", ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1", {body});
-		}).then(function(xmlhttp) {
-			if (!xmlhttp.responseXML) {
-				throw new Error('Invalid response from server');
-			}
-			var reported = xmlhttp.responseXML.getElementsByTagName('reported');
-			if (reported.length != 1) {
-				throw new Error('The server returned an error. Please try again.');
-			}
-			return reported[0].getAttribute('reportID');
-		});
+	this.submitReport = async function() {
+		let body = await Zotero.Debug.get();
+		let xmlhttp = await Zotero.HTTP.request("POST", ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1", {body});
+
+		let responseXML;
+		try {
+			let parser = new DOMParser();
+			responseXML = parser.parseFromString(xmlhttp.responseText, "text/xml");
+		}
+		catch (e) {
+			throw new Error('Invalid response from server');
+		}
+		var reported = responseXML.getElementsByTagName('reported');
+		if (reported.length != 1) {
+			throw new Error('The server returned an error. Please try again.');
+		}
+		return reported[0].getAttribute('reportID');
 	};
 }

@@ -44,7 +44,7 @@
 	(function () {
 		document.getElementById('zotero-preferences').onclick = function() {
 			var Zotero_Connector_Browser = safari.extension.globalPage.contentWindow.Zotero.Connector_Browser;
-			Zotero_Connector_Browser.openTab(safari.extension.baseURI + "preferences/preferences.html");
+			Zotero_Connector_Browser.openTab(`${safari.extension.baseURI}safari/` + "preferences/preferences.html");
 			safari.self.hide();
 		};
 		function saveAsWebpage(snapshot=true) {

@@ -44,7 +44,7 @@ if (isTopWindow) {
 	var initialized = false;
 	var frameSrc;
 	if (Zotero.isSafari) {
-		frameSrc = safari.extension.baseURI.toLowerCase() + 'modalPrompt/modalPrompt.html';
+		frameSrc = `${safari.extension.baseURI}safari/` + 'modalPrompt/modalPrompt.html';
 	}
 	else {
 		frameSrc = browser.extension.getURL('modalPrompt/modalPrompt.html');
@@ -55,6 +55,8 @@ if (isTopWindow) {
 		Zotero.Messaging.addMessageListener('modalPrompt.init', function () {
 			initialized = true;
 			deferred.resolve();
+			// Prevent the flash of white screen
+			iframe.style.display = "block"
 		});
 
 		iframe = document.createElement('iframe');
@@ -68,6 +70,7 @@ if (isTopWindow) {
 			width: '100%',
 			height: '100%',
 			border: "none",
+			display: "none",
 			zIndex: 2147483647
 		};
 		for (let i in style) iframe.style[i] = style[i];

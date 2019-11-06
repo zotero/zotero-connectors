@@ -45,9 +45,28 @@ Zotero.Messaging = new function() {
 	 * as the last argument to Zotero.xxx.yyy.
 	 */
 	this.init = function() {
-		for(var ns in MESSAGES) {
-			if(!Zotero[ns]) Zotero[ns] = {};
-			for(var meth in MESSAGES[ns]) {
+		Zotero.Messaging.addMessageListener('globalAvailable', async function() {
+			// If we receive globalAvailable it means the global page was killed
+			// and is back online. We need to refresh the tab data before
+			// we can issue any other commands to it
+			const messageId = Math.floor(Math.random() * 1e12);
+			let onTabDataPromise = generateResponsePromise(messageId, true);
+			safari.extension.dispatchMessage('message', {
+				message: 'Connector_Browser.onTabData',
+				messageId,
+				args: [{
+					url: document.location.href,
+					title: document.title,
+					translators: Zotero.Inject.translators,
+					contentType: document.contentType,
+					instanceID: 0
+				}]
+			});
+		});
+		
+		for (let ns in MESSAGES) {
+			if( !Zotero[ns]) Zotero[ns] = {};
+			for (let meth in MESSAGES[ns]) {
 				Zotero[ns][meth] = new function() {
 					var messageName = ns+MESSAGE_SEPARATOR+meth;
 					var messageConfig = MESSAGES[ns][meth];
@@ -61,6 +80,7 @@ Zotero.Messaging = new function() {
 							if(typeof callback !== "function") {
 								// Zotero.debug("Message `"+messageName+"` has no callback arg. It should use the returned promise");
 								callbackArg = null;
+								callback = null;
 							}
 						}
 						
@@ -69,49 +89,22 @@ Zotero.Messaging = new function() {
 						for(var i=0; i<arguments.length; i++) {
 							newArgs[i] = (i === callbackArg ? null : arguments[i]);
 						}
-					
-						return new Zotero.Promise(function(resolve, reject) {
-							// set up a request ID and save the callback
-							if (messageConfig) {
-								var requestID = Math.floor(Math.random() * 1e12);
-								_callbacks[requestID] = function (response) {
-									if (response && response[0] == 'error') {
-										response[1] = JSON.parse(response[1]);
-										let e = new Error(response[1].message);
-										for (let key in response[1]) e[key] = response[1][key];
-										return reject(e);
-									}
-									try {
-										if (messageConfig.inject && messageConfig.inject.postReceive) {
-											response = messageConfig.inject.postReceive(response);
-										}
-										if (callbackArg !== null) callback(response);
-										resolve(response);
-									} catch (e) {
-										Zotero.logError(e);
-										reject(e);
-									}
-								}
-							} else {
-								resolve();
-							}
 
-							// send message
-							safari.self.tab.dispatchMessage(messageName, [requestID, newArgs]);
-						});
-
+						let requestID = Math.floor(Math.random() * 1e12);
+						let responsePromise = generateResponsePromise(requestID, messageConfig, callback);
+						sendMessage(messageName, requestID, newArgs);
+						return responsePromise;
 					};
 				};
 			}
 		}
-		
+
 		// in Safari, our listener must also handle responses
-		safari.self.addEventListener("message", async function(event) {
+		async function receiveMessage(message, payload, messageId) {
 			try {
 				// see if there is a message listener
-				if (event.name == 'sendMessage' && event.message[0] in _messageListeners) {
-					Zotero.debug(event.message[0] + " message received in injected page " + window.location.href);
-					let [message, messageId, payload] = event.message;
+				if (message in _messageListeners) {
+					// Zotero.debug(message + " message received in injected page " + window.location.href);
 					try {
 						var result = await _messageListeners[message](payload);
 					} catch (err) {
@@ -123,25 +116,80 @@ Zotero.Messaging = new function() {
 						}, err));
 						result = ['error', err];
 					}
-					safari.self.tab.dispatchMessage('response', [messageId, result]);
+					sendMessage('response', messageId, result);
 					return;
 				}
 				
 				// next determine original function name
-				var messageParts = event.name.split(MESSAGE_SEPARATOR);
+				var messageParts = message.split(MESSAGE_SEPARATOR);
 				// if no function matching, message must have been for another instance in this tab
-				if(messageParts.length !== 3 || messageParts[2] !== "Response") return;
+				if(messageParts[messageParts.length-1] !== "Response") return;
 				
-				var callback = _callbacks[event.message[0]];
+				var callback = _callbacks[messageId];
 				// if no function matching, message must have been for another instance in this tab
 				if (!callback) return;
-				delete _callbacks[event.message[0]];
+				delete _callbacks[messageId];
 
 				// run callback
-				callback(event.message[1]);
+				callback(payload);
 			} catch(e) {
 				Zotero.logError(e);
 			}
+		}
+		
+		async function sendMessage(message, messageId, args) {
+			// The Safari App Extension likes to kill the background page,
+			// so we have to keep pinging it to see if it's still there
+			const requestID = Math.floor(Math.random() * 1e12);
+			let pingPromise = generateResponsePromise(requestID, true);
+			safari.extension.dispatchMessage('message', {
+				message: 'ping',
+				messageId: requestID,
+				args: []
+			});
+			// If we do not receive a response in 1 second then the
+			// background page is too unresponsive for some reason and we need to act
+			let response = await Zotero.Promise.race([pingPromise, Zotero.Promise.delay(1000)]);
+			if (!response) {
+				return sendMessage(message, messageId, args);
+			}
+			
+			safari.extension.dispatchMessage('message', {
+				message: message,
+				messageId,
+				args
+			});
+		}
+		
+		async function generateResponsePromise(requestID, messageConfig, callback) {
+			return new Zotero.Promise(function(resolve, reject) {
+				if (messageConfig) {
+					_callbacks[requestID] = function (response) {
+						if (response && response[0] == 'error') {
+							response[1] = JSON.parse(response[1]);
+							let e = new Error(response[1].message);
+							for (let key in response[1]) e[key] = response[1][key];
+							return reject(e);
+						}
+						try {
+							if (messageConfig.inject && messageConfig.inject.postReceive) {
+								response = messageConfig.inject.postReceive(response);
+							}
+							if (typeof callback == 'function') callback(response);
+							resolve(response);
+						} catch (e) {
+							Zotero.logError(e);
+							reject(e);
+						}
+					}
+				} else {
+					resolve();
+				}
+			});
+		}
+		
+		safari.self.addEventListener("message", function(event) {
+			receiveMessage(event.name, event.message.args[0], event.message.args[1]);
 		}, false);
 	}
 }

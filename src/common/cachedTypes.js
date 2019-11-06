@@ -85,7 +85,11 @@ Zotero.Connector_Types = new function() {
 				} else if(Zotero.isBrowserExt) {
 					return browser.extension.getURL("images/"+icon);
 				} else if(Zotero.isSafari) {
-					return safari.extension.baseURI+"images/"+icon;
+					if (typeof safari == "undefined") {
+						return "images/"+icon;
+					} else {
+						return `${safari.extension.baseURI}safari/`+"images/"+icon;
+					}
 				}
 			};
 		}

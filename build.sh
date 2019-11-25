@@ -306,25 +306,29 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 fi
 
 if [[ $BUILD_SAFARI == 1 ]]; then
+	#
 	# Make alpha images
+	#
+	# ImageMagick 7 changes how channels work, so the same command doesn't work properly. Until we
+	# figure out an equivalent command for ImageMagick 7, continue using version 6 from homebrew.
+	IMAGEMAGICK_CONVERT=/usr/local/opt/imagemagick@6/bin/convert
 	rm -rf "$BUILD_DIR/safari/images"
 	mkdir "$BUILD_DIR/safari/images"
 	mkdir "$BUILD_DIR/safari/images/toolbar"
 	set +e
-	convert -version > /dev/null 2>&1
+	$IMAGEMAGICK_CONVERT -version | grep "ImageMagick 6" > /dev/null 2>&1
 	RETVAL=$?
 	set -e
 	if [ $RETVAL == 0 ]; then
-		cp $ICONS "$BUILD_DIR/safari/images"
-		cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari/images"
+		cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari/images"
 		for f in $ICONS
 		do
-			convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
+			$IMAGEMAGICK_CONVERT $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
 					Opacity -contrast-stretch 50 "$BUILD_DIR/safari/images/toolbar/"`basename $f`
 		done
 	else
 		echo
-		echo "ImageMagick not installed; not creating monochrome Safari icons"
+		echo "ImageMagick 6 not installed; not creating monochrome Safari icons"
 		cp $ICONS "$BUILD_DIR/safari/images"
 		cp $ICONS "$BUILD_DIR/safari/images/toolbar"
 		cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari/images"

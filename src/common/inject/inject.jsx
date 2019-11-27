@@ -69,7 +69,7 @@ Zotero.Inject = new function() {
 		this.sessionDetails = {};
 		
 		_noteImgSrc = Zotero.isSafari
-			? safari.extension.baseURI+"images/treeitem-note.png"
+			? `${safari.extension.baseURI}safari/`+"images/treeitem-note.png"
 			: browser.extension.getURL('images/treeitem-note.png');
 		
 		// wrap this in try/catch so that errors will reach logError
@@ -86,12 +86,12 @@ Zotero.Inject = new function() {
 			if (!_translate) {
 				_translate = this.initTranslation(document);
 				_translate.setHandler("pageModified", function() {
-					Zotero.Connector_Browser.onPageLoad();
+					Zotero.Connector_Browser.onPageLoad(document.location.href);
 					Zotero.Messaging.sendMessage("pageModified", null);
 				});
 				document.addEventListener("ZoteroItemUpdated", function() {
 					Zotero.debug("Inject: ZoteroItemUpdated event received");
-					Zotero.Connector_Browser.onPageLoad();
+					Zotero.Connector_Browser.onPageLoad(document.location.href);
 					Zotero.Messaging.sendMessage("pageModified", null);
 				}, false);
 			} else {
@@ -137,7 +137,11 @@ Zotero.Inject = new function() {
 						}
 					}
 					
-					var returnItems = await Zotero.Connector_Browser.onSelect(items);
+					if (Zotero.isBrowserExt) {
+						var returnItems = await Zotero.Connector_Browser.onSelect(items);
+					} else {
+						returnItems = await Zotero.Inject.onSafariSelect(items);
+					}
 					
 					// If items were selected, reopen the save popup
 					if (returnItems && !Zotero.Utilities.isEmpty(returnItems)) {
@@ -587,15 +591,20 @@ try {
 	isHiddenIFrame = !isTopWindow && window.frameElement && window.frameElement.style.display === "none";
 } catch(e) {}
 
+const isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
+const isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.extension.getURL('test'));
 // don't try to scrape on hidden frames
-let isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
-let isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.extension.getURL('test'))
-	|| Zotero.isSafari && window.location.href.startsWith(safari.extension.baseURI + 'test');
 if(!isHiddenIFrame) {
 	var doInject = function () {
 		Zotero.initInject();
+
+		if (Zotero.isSafari && isTopWindow) {
+			Zotero.Connector_Browser.onPageLoad(document.location.href);
+		}
 		
-		if (!isWeb && !isTestPage) return;
+		// Do not run on non-web pages (file://), test pages, safari extension pages (i.e. safari prefs)
+		// or non-top Safari pages
+		if (!isWeb && !isTestPage || Zotero.isSafari && !isTopWindow) return;
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {
 			if(data.shift() !== instanceID) return;
@@ -618,8 +627,6 @@ if(!isHiddenIFrame) {
 			return Zotero.Inject.firstUsePrompt();
 		});
 
-		if (Zotero.isSafari && isTopWindow) Zotero.Connector_Browser.onPageLoad();
-
 		if(document.readyState !== "complete") {
 			window.addEventListener("load", function(e) {
 				if(e.target !== document) return;
@@ -641,3 +648,4 @@ if(!isHiddenIFrame) {
 		doInject();
 	}
 }
+

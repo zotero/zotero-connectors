@@ -74,9 +74,11 @@ var Zotero_Preferences = {
 			checkbox.checked = await Zotero.Prefs.getAsync(checkbox.dataset.pref);
 		}
 
-		Zotero.Prefs.loadNamespace('proxies').then(function() {
-			Zotero_Preferences.Proxies.init();
-		});
+		if (Zotero.isBrowserExt) {
+			Zotero.Prefs.loadNamespace('proxies').then(function() {
+				Zotero_Preferences.Proxies.init();
+			});
+		}
 
 		Zotero.Prefs.loadNamespace('shortcuts').then(function() {
 			let spans = document.querySelectorAll('.shortcut-input[data-pref]');
@@ -86,6 +88,14 @@ var Zotero_Preferences = {
 		});
 
 		Zotero.initDeferred.resolve();
+		Zotero.isInject = true;
+		
+		if (Zotero.isSafari) {
+			// BrowserExt handles these in the background page
+			window.addEventListener('focus', function() {
+				Zotero.Connector_Browser.onTabFocus();
+			}, true);
+		}
 		Zotero_Preferences.refreshData();
 		window.setInterval(() => Zotero_Preferences.refreshData(), 1000);
 	},
@@ -196,7 +206,7 @@ Zotero_Preferences.General = {
 	 */
 	openTranslatorTester: function() {
 		if(Zotero.isSafari) {
-			window.open(safari.extension.baseURI+"tools/testTranslators/testTranslators.html", "translatorTester");
+			window.open(`${safari.extension.baseURI}safari/`+"tools/testTranslators/testTranslators.html", "translatorTester");
 		} else if(Zotero.isBrowserExt) {
 			window.open(browser.extension.getURL("tools/testTranslators/testTranslators.html"), "translatorTester");
 		}
@@ -205,6 +215,7 @@ Zotero_Preferences.General = {
 
 Zotero_Preferences.Proxies = {
 	init: function() {
+		document.getElementById('pane-proxies').style.display = null;
 		this.proxiesComponent = React.createElement(Zotero_Preferences.Components.ProxySettings, null);
 		ReactDOM.render(this.proxiesComponent, document.getElementById('content-proxies'));
 	}
@@ -240,7 +251,7 @@ Zotero_Preferences.Advanced = {
 		var testRunnerButton = document.getElementById("advanced-button-open-test-runner");
 		if (testRunnerButton) testRunnerButton.onclick = function() {
 			if (Zotero.isSafari) {
-				Zotero.Connector_Browser.openTab(safari.extension.baseURI + "test/test.html");
+				Zotero.Connector_Browser.openTab(`${safari.extension.baseURI}safari/` + "test/test.html");
 			} else {
 				Zotero.Connector_Browser.openTab(browser.extension.getURL(`test/test.html`));
 			}

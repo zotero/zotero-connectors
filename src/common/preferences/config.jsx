@@ -145,6 +145,7 @@ Zotero_Preferences_Config.Row = class Row extends React.Component {
 			if (typeof value != 'string') {
 				value = JSON.stringify(value);
 			}
+			if (value == this.state.value) return;
 			this.setState({value});
 		}.bind(this));
 	}

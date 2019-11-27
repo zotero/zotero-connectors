@@ -24,36 +24,28 @@
 */
 
 /**
- * Safari uses localStorage
+ * Stored via Swift UserDefaults
  */
 Zotero.Prefs = Object.assign(Zotero.Prefs, {
-	init: Zotero.Promise.method(function() {
-		let prefs = {};
-		for (let key in localStorage) {
-			prefs[key] = localStorage[key];
-		}
-		for (let k of Object.keys(prefs)) {
-			if (k.substr(0, 'pref-'.length) == 'pref-') {
-				prefs[k.substr('pref-'.length)] = JSON.parse(prefs[k]);
-			}
-			delete prefs[k];
-		}
+	init: async function() {
+		let prefsJSON = await Zotero.Messaging.sendMessage('Swift.getPrefs');
+		let prefs = JSON.parse(prefsJSON);
 		this.syncStorage = Object.assign({}, prefs);
-		if ('translatorMetadata' in localStorage) {
-			this.set('translatorMetadata', localStorage['translatorMetadata']);
-			delete localStorage['translatorMetadata'];
-		}
-	}),
+	},
 
-	set: Zotero.Promise.method(function(pref, value) {
+	set: async function(pref, value) {
 		Zotero.debug("Setting "+pref+" to "+JSON.stringify(value).substr(0, 100));
 		this.syncStorage[pref] = value;
-		localStorage["pref-"+pref] = JSON.stringify(value);
-	}),
+		await Zotero.Messaging.sendMessage('Swift.setPrefs', JSON.stringify(this.syncStorage));
+	},
 
-	clear: Zotero.Promise.method(function(pref) {
-		if (Array.isArray(pref)) return pref.forEach((p) => this.clear(p));
-		delete this.syncStorage[pref];
-		delete localStorage[`pref-${pref}`];
-	})
+	clear: async function(pref) {
+		if (!Array.isArray(pref)) {
+			pref = [pref]
+		}
+		pref.forEach((p) => {
+			delete this.syncStorage[p];
+		});
+		await Zotero.Messaging.sendMessage('Swift.setPrefs', JSON.stringify(this.syncStorage));
+	}
 });

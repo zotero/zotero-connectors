@@ -28,7 +28,7 @@
 				<div class="pane-image"><img src="../images/prefs-general.png" alt=""/></div>
 				<a href="#general" class="pane-label">General</a>
 			</div>
-			<div id="pane-proxies" class="pane">
+			<div id="pane-proxies" class="pane" style="display: none">
 				<div class="pane-image"><img src="../images/prefs-proxies.png" alt=""/></div>
 				<a href="#proxies" class="pane-label">Proxies</a>
 			</div>
@@ -132,7 +132,7 @@
 					<p>
 						<input type="button" id="advanced-button-config-editor" value="Config Editor"/>
 						<!--BEGIN DEBUG-->
-						<input type="button" id="advanced-button-open-test-runner" value="Open Integration Test Runner"/>
+						<input type="button" style="hidden: true" id="advanced-button-open-test-runner" value="Open Integration Test Runner"/>
 						<!--END DEBUG-->
 					</p>
 				</div>
@@ -143,6 +143,10 @@
 		<script type="text/javascript" src="../lib/react-dom.js"></script>
 		<script type="text/javascript" src="../zotero_config.js"></script>
 		<script type="text/javascript" src="../zotero.js"></script>
+		<script type="text/javascript" src="../errors_webkit.js"></script>
+		<script type="text/javascript" src="../http.js"></script>
+		<script type="text/javascript" src="../inject/http.js"></script>
+		<script type="text/javascript" src="../connector.js"></script>
 		<script type="text/javascript" src="../utilities.js"></script>
 		<script type="text/javascript" src="../promise.js"></script>
 		<script type="text/javascript" src="../messages.js"></script>

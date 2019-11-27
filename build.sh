@@ -182,12 +182,12 @@ rm -f "$LOG"
 rm -rf "$BUILD_DIR/browserExt" \
 	"$BUILD_DIR/chrome" \
 	"$BUILD_DIR/firefox" \
-	"$BUILD_DIR/safari.safariextension" \
+	"$BUILD_DIR/safari" \
 	"$BUILD_DIR/bookmarklet"
 
 # Make directories if they don't exist
 for dir in "$DISTDIR" \
-	"$BUILD_DIR/safari.safariextension" \
+	"$BUILD_DIR/safari" \
 	"$BUILD_DIR/browserExt" \
 	"$BUILD_DIR/bookmarklet"; do
 	if [ ! -d "$dir" ]; then
@@ -201,7 +201,7 @@ echo -n "Building connectors..."
 function copyResources {
 	browser="$1"
 	if [ "$browser" == "safari" ]; then
-		browser_builddir="$BUILD_DIR/safari.safariextension"
+		browser_builddir="$BUILD_DIR/safari"
 	else
 		browser_builddir="$BUILD_DIR/$browser"
 	fi
@@ -306,31 +306,35 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 fi
 
 if [[ $BUILD_SAFARI == 1 ]]; then
+	#
 	# Make alpha images
-	rm -rf "$BUILD_DIR/safari.safariextension/images"
-	mkdir "$BUILD_DIR/safari.safariextension/images"
-	mkdir "$BUILD_DIR/safari.safariextension/images/toolbar"
+	#
+	# ImageMagick 7 changes how channels work, so the same command doesn't work properly. Until we
+	# figure out an equivalent command for ImageMagick 7, continue using version 6 from homebrew.
+	IMAGEMAGICK_CONVERT=/usr/local/opt/imagemagick@6/bin/convert
+	rm -rf "$BUILD_DIR/safari/images"
+	mkdir "$BUILD_DIR/safari/images"
+	mkdir "$BUILD_DIR/safari/images/toolbar"
 	set +e
-	convert -version > /dev/null 2>&1
+	$IMAGEMAGICK_CONVERT -version | grep "ImageMagick 6" > /dev/null 2>&1
 	RETVAL=$?
 	set -e
 	if [ $RETVAL == 0 ]; then
-		cp $ICONS "$BUILD_DIR/safari.safariextension/images"
-		cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari.safariextension/images"
+		cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari/images"
 		for f in $ICONS
 		do
-			convert $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
-					Opacity -contrast-stretch 50 "$BUILD_DIR/safari.safariextension/images/toolbar/"`basename $f`
+			$IMAGEMAGICK_CONVERT $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
+					Opacity -contrast-stretch 50 "$BUILD_DIR/safari/images/toolbar/"`basename $f`
 		done
 	else
 		echo
-		echo "ImageMagick not installed; not creating monochrome Safari icons"
-		cp $ICONS "$BUILD_DIR/safari.safariextension/images"
-		cp $ICONS "$BUILD_DIR/safari.safariextension/images/toolbar"
-		cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari.safariextension/images"
+		echo "ImageMagick 6 not installed; not creating monochrome Safari icons"
+		cp $ICONS "$BUILD_DIR/safari/images"
+		cp $ICONS "$BUILD_DIR/safari/images/toolbar"
+		cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari/images"
 	fi
 	cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
-		"$BUILD_DIR/safari.safariextension"
+		"$BUILD_DIR/safari"
 	
 	copyResources 'safari'
 fi
@@ -393,47 +397,6 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 fi
 
 echo "done"
-
-if [[ $BUILD_SAFARI == 1 ]]; then
-	# Build Safari extension
-	if [ -e "$SAFARI_PRIVATE_KEY" -a -e "$XAR_EXECUTABLE" ]; then
-		echo -n "Building Safari extension..."
-		rm -f "$SAFARI_EXT"
-		
-		# Make a temporary directory
-		TMP_BUILD_DIR="/tmp/zotero-connector-safari-build"
-		rm -rf "$TMP_BUILD_DIR"
-		mkdir "$TMP_BUILD_DIR"
-		
-		# Get size of signature
-		SIGSIZE=`: | openssl dgst -sign "$SAFARI_PRIVATE_KEY" -binary | wc -c`
-		
-		# Make XAR
-		pushd "$BUILD_DIR" > /dev/null
-		if "$XAR_EXECUTABLE" -cf "$SAFARI_EXT" --distribution "`basename \"$BUILD_DIR/safari.safariextension\"`" &&
-			popd > /dev/null &&
-			# Make signature data
-			"$XAR_EXECUTABLE" --sign -f "$SAFARI_EXT" \
-				--data-to-sign "$TMP_BUILD_DIR/safari_sha1.dat" \
-				--sig-size $SIGSIZE \
-				--cert-loc="$SAFARI_EXT_CERTIFICATE" \
-				--cert-loc="$SAFARI_AUX_CERTIFICATE1" \
-				--cert-loc="$SAFARI_AUX_CERTIFICATE2" >> "$LOG" 2>&1 &&
-			# Sign signature data
-			(echo "3021300906052B0E03021A05000414" | xxd -r -p; cat "$TMP_BUILD_DIR/safari_sha1.dat") \
-				| openssl rsautl -sign -inkey "$SAFARI_PRIVATE_KEY" > "$TMP_BUILD_DIR/signature.dat" &&
-			# Inject signature
-			"$XAR_EXECUTABLE" --inject-sig "$TMP_BUILD_DIR/signature.dat" -f "$SAFARI_EXT" >> "$LOG" 2>&1
-		then
-			echo "succeeded"
-		else
-			echo "failed"
-		fi
-		rm -rf "$TMP_BUILD_DIR"
-	else
-		echo "No Safari certificate found; not building Safari extension"
-	fi
-fi
 
 if [ $BUILD_BOOKMARKLET == 1 ]; then
 	echo -n "Building bookmarklet..."

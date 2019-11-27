@@ -32,10 +32,7 @@ OR
 
 ### Safari
 
-1. In Preferences > Advanced check 'Show Develop menu in menu bar'
-1. In menu bar Develop > Show Extension Builder
-1. Press the '+' in the bottom left, choose 'Add Extension'
-1. Select the `build/safari.safariextension` directory
+See https://github.com/zotero/safari-app-extension 
 
 ## Automatic rebuilding/reloading
 
@@ -104,8 +101,7 @@ and [Firefox Extension docs](https://developer.mozilla.org/en-US/Add-ons/WebExte
 
 ##### Safari Extension Framework
 
-The functionality exposed on Safari is provided by the Safari extensions framework. See 
-[Safari Extension docs](https://developer.apple.com/safari/extensions/) for more information.
+For Safari specifics see https://github.com/zotero/safari-app-extension
 
 ##### Zotero Translator Framework
 
@@ -198,15 +194,6 @@ This will be reconciled in the future to only use gulp.
 1. `gulp process-custom-files` [initiated by](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/build.sh#L281-L286) 
    `build.sh` performs [post-processing](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/gulpfile.js#L157-L241)
     on copied files
-
-## Bookmarklet
-
-The development of the bookmarklet has been abandoned since early 2015. This is partially due to previous developers
-departing the Zotero project, partially because a limit to what's possible within a bookmarklet has been hit
-and partially because the support for bookmarklets is being largely discontinued on platforms where it would be relevant:
-Edge and Chrome for Android do not support bookmarklets.
-
-However, an interest to continue supporting the bookmarklet still exists for IE and iOS devices.
 
 ## Contact
 

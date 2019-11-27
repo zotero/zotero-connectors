@@ -54,6 +54,7 @@ Zotero.Proxies = new function() {
 	 * @returns Promise{boolean} proxy enabled/disabled status
 	 */
 	this.init = function() {
+		if (Zotero.isSafari) return;
 		this.transparent = false;
 		this.proxies = [];
 		this.hosts = {};

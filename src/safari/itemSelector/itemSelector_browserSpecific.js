@@ -29,8 +29,12 @@
 function sendMessage() {
 	if(responseSent) return;
 	responseSent = true;
-	safari.self.tab.dispatchMessage("selectDone", [null, [tabID, items]]);
+	// send message
+	const requestID = Math.floor(Math.random() * 1e12);
+	safari.extension.dispatchMessage('message', {
+		message: "Messaging.sendMessage",
+		messageId: requestID,
+		args: ['selectDone', items]
+	});
 	window.close();
 }
-
-window.addEventListener("load", function() { window.resizeTo(500, 370) }, false);

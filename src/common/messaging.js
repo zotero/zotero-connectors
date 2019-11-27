@@ -28,8 +28,7 @@
  * See messages.js for an overview of the message handling process.
  */
 Zotero.Messaging = new function() {
-	var _safariTabs = [],
-		_messageListeners = {
+	var _messageListeners = {
 			"structuredCloneTest":function() {}
 		},
 		_nextTabIndex = 1;
@@ -123,46 +122,8 @@ Zotero.Messaging = new function() {
 				throw e;
 			}
 			return response;
-		} else if(Zotero.isSafari) {
-			try {
-				var deferred = Zotero.Promise.defer();
-				// Use current tab if not provided
-				tab = tab || safari.application.activeBrowserWindow.activeTab;
-				var messageId = Date.now();
-				var resolved = false;
-				// This is like a tiny microcosm of (hopefully properly) self-garbage-collecting response handling
-				function respond(event) {
-					if (event.message[0] === messageId) {
-						resolved = true;
-						let payload = event.message[1];
-						if (payload && payload[0] == 'error') {
-							var errJSON = JSON.parse(payload[1]);
-							let e = new Error(errJSON.message);
-							for (let key in errJSON) e[key] = errJSON[key];
-							deferred.reject(e);
-						}
-						deferred.resolve(payload);
-					} else if (event.name === 'Connector_Browser.onPageLoad') {
-						// URL changed, so we resolve all of these
-						deferred.resolve();
-					}
-				}
-
-				safari.application.addEventListener('message', respond, false);
-
-				tab.page.dispatchMessage('sendMessage', [messageName, messageId, args]);
-				var timeout = setTimeout(function() {
-					if (!resolved) {
-						deferred.reject(new Error(`Message ${messageName} response timed out`))
-					}
-				}, 120000);
-				response = await deferred.promise;
-			} finally {
-				safari.application.removeEventListener('message', respond, false);
-				clearTimeout(timeout);
-			}
-			return response;
-		}
+		} //else if(Zotero.isSafari) { }
+		// Safari handled in safari/messaging_global.js
 	}
 	
 	/**
@@ -211,44 +172,8 @@ Zotero.Messaging = new function() {
 				});
 			});
 		} else if(Zotero.isSafari) {
-			safari.application.addEventListener("message", function(event) {
-				// Handled by individual sendMessage handlers
-				if (event.name == 'response') return;
-				var tab = event.target;
-				_ensureSafariTabID(tab);
-				function dispatchResponse(response) {
-					tab.page.dispatchMessage(event.name+MESSAGE_SEPARATOR+"Response",
-						[event.message[0], response], tab);
-				}
-				Zotero.Messaging.receiveMessage(event.name, event.message[1], tab)
-				.then(dispatchResponse, function(err) {
-					// Zotero.logError(err);
-					err = JSON.stringify(Object.assign({
-						name: err.name,
-						message: err.message,
-						stack: err.stack
-					}, err));
-					return dispatchResponse(['error', err]);
-				});
-			}, false);
+			// Safari handled in safari/messaging_global.js
+			Zotero.Messaging.initialized = true;
 		}
-	}
-	
-	/**
-	 * Gets the ID of a given tab in Safari
-	 * Inspired by port.js from adblockforchrome by Michael Gundlach
-	 */
-	function _ensureSafariTabID(tab) {
-		// if tab already has an ID, don't set a new one
-		if(tab.id) return;
-		
-		// set tab ID
-		tab.id = _nextTabIndex++;
-		
-		// remove old tabs that no longer exist from _safariTabs
-		_safariTabs = _safariTabs.filter(function(t) { return t.browserWindow != null; });
-		
-		// add tab to _safariTabs so that it doesn't get garbage collected and we can keep ID
-		_safariTabs.push(tab);
 	}
 }

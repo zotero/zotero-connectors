@@ -95,7 +95,7 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Called when a tab is removed or the URL has changed
 	 */
-	this.onPageLoad = function(tab) {
+	this.onPageLoad = function(url, tab) {
 		if(tab) _clearInfoForTab(tab.id);
 	}
 	
@@ -194,11 +194,11 @@ Zotero.Connector_Browser = new function() {
 			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
 		});
 	};
-	
+		
 	this.isIncognito = function(tab) {
 		return tab.incognito;
 	}
-
+	
 	/**
 	 * Checks whether translation scripts are already injected into a frame and if not - injects
 	 * @param tab {Object}

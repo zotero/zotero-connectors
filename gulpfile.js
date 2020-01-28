@@ -30,7 +30,7 @@ const exec = require('child_process').exec;
 const through = require('through2');
 const gulp = require('gulp');
 const plumber = require('gulp-plumber');
-const babel = require('babel-core');
+const babel = require('@babel/core');
 const browserify = require('browserify');
 const argv = require('yargs')
 	.boolean('p')
@@ -192,7 +192,10 @@ function processFile() {
 					babel.transform(
 						file.contents,
 						{
-							plugins: ['transform-react-jsx', 'transform-class-properties']
+							plugins: [
+								'@babel/plugin-transform-react-jsx',
+								'@babel/plugin-proposal-class-properties'
+							]
 						}
 					).code
 				);

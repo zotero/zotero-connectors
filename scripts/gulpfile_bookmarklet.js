@@ -31,7 +31,7 @@ const through = require('through2');
 const gulp = require('gulp');
 const plumber = require('gulp-plumber');
 const concat = require('gulp-concat');
-const babel = require('babel-core');
+const babel = require('@babel/core');
 const browserify = require('browserify');
 
 const xpcomDir = './src/zotero/chrome/content/zotero/xpcom';
@@ -157,7 +157,11 @@ function processFile(argv) { return through.obj(async function(file, enc, cb) {
 	
 	var plugins = [];
 	if (ext == 'jsx') {
-		plugins = [...plugins, 'transform-react-jsx', 'transform-class-properties'];
+		plugins = [
+			...plugins,
+			'@babel/plugin-transform-react-jsx',
+			'@babel/plugin-proposal-class-properties'
+		];
 		try {
 			file.contents = new Buffer.from(babel.transform(file.contents, { plugins }).code);
 		} catch (e) {

@@ -89,7 +89,11 @@ Zotero.Inject.onSafariSelect = async function(items) {
 	return returnItems
 }
 
-
+// BrowserExt handles these in the background page
+window.addEventListener('focus', function() {
+	Zotero.Connector.reportActiveURL(document.location.href);
+	Zotero.Connector_Browser.onTabFocus();
+}, true);
 
 var isTopWindow = false;
 if(window.top) {
@@ -97,15 +101,10 @@ if(window.top) {
 		isTopWindow = window.top == window;
 	} catch(e) {}
 }
+
 if (isTopWindow) {
 	setInterval(() => safari.extension.dispatchMessage("ping", {}), 1000);
-
-	// BrowserExt handles these in the background page
-	window.addEventListener('focus', function() {
-		Zotero.Connector.reportActiveURL(document.location.href);
-		Zotero.Connector_Browser.onTabFocus();
-	}, true);
-
+	
 	window.addEventListener('popstate', function() {
 		if (document.hasFocus()) {
 			Zotero.Connector.reportActiveURL(document.location.href);

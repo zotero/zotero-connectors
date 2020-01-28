@@ -95,6 +95,7 @@ var Zotero_Preferences = {
 			window.addEventListener('focus', function() {
 				Zotero.Connector_Browser.onTabFocus();
 			}, true);
+			Zotero.Connector_Browser.onTabFocus();
 		}
 		Zotero_Preferences.refreshData();
 		window.setInterval(() => Zotero_Preferences.refreshData(), 1000);

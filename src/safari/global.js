@@ -254,7 +254,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	async function _updateButtonStatus(tab) {
 		var translators = tab.translators;
-		var isPDF = tab.contentType == 'application/pdf';
+		var isPDF = tab.contentType == 'application/pdf' || tab.isPDFFrame;
 		let image, tooltip;
 		if (_isDisabledForURL(tab.url)) {
 			[image, tooltip] = await _showZoteroStatus(tab);

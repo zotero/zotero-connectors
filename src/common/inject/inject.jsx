@@ -604,7 +604,7 @@ if(!isHiddenIFrame) {
 		
 		// Do not run on non-web pages (file://), test pages, safari extension pages (i.e. safari prefs)
 		// or non-top Safari pages
-		if (!isWeb && !isTestPage || Zotero.isSafari && !isTopWindow) return;
+		if (!isWeb && !isTestPage) return;
 		// add listener for translate message from extension
 		Zotero.Messaging.addMessageListener("translate", function(data) {
 			if(data.shift() !== instanceID) return;

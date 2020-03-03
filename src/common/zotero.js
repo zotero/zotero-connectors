@@ -28,6 +28,7 @@ var Zotero = window.Zotero = new function() {
 	this.isConnector = true;
 	this.isFx = false;
 	
+	this.initialized = false;
 	this.initDeferred = {};
 	this.initDeferred.promise = new Promise(function(resolve, reject) {
 		this.initDeferred.resolve = resolve;
@@ -207,6 +208,7 @@ var Zotero = window.Zotero = new function() {
 			Zotero.Proxies.init();
 		}
 		Zotero.initDeferred.resolve();
+		Zotero.initialized = true;
 
 		await Zotero.migrate();
 	};
@@ -230,6 +232,7 @@ var Zotero = window.Zotero = new function() {
 		
 		Zotero.Debug.init();
 		Zotero.initDeferred.resolve();
+		Zotero.initialized = true;
 	};
 	
 	

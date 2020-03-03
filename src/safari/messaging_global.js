@@ -53,11 +53,12 @@ Zotero.Messaging.receiveSwiftMessage = async function(messageName, id, data=[], 
 	sendMessage(messageName+MESSAGE_SEPARATOR+"Response", id, result, tabId);
 };
 
-Zotero.Messaging.sendMessage = async function(messageName, args=[], tab) {
+Zotero.Messaging.sendMessage = async function(messageName, args=[], tab, messageId, deferred) {
 	try {
-		let tabId = tab ? tab.id : tab;
-		var deferred = Zotero.Promise.defer();
-		var messageId = Math.floor(Math.random()*1e12);
+		messageId = messageId || Math.floor(Math.random()*1e12);
+		deferred = deferred || Zotero.Promise.defer();
+		const tabId = tab ? tab.id : tab;
+		const messageTimeout = Zotero.initialized ? MESSAGE_TIMEOUT : 2000;
 		var resolved = false;
 		
 		function respond(payload) {
@@ -79,14 +80,20 @@ Zotero.Messaging.sendMessage = async function(messageName, args=[], tab) {
 		// (at the time of writing this is 5min)
 		var timeout = setTimeout(function() {
 			if (!resolved) {
-				deferred.reject(new Error(`Message ${messageName} response timed out`))
+				if (Zotero.initialized) {
+					deferred.reject(new Error(`Message ${messageName} response timed out`));
+					delete Zotero.Messaging._responseListeners[messageId];
+				} else {
+					// If Zotero is not initialized we need to keep trying until the extension actually boots up
+					console.log('Swift initialization message did not receive a response. Retrying');
+					Zotero.Messaging.sendMessage(messageName, args, tab, messageId, deferred);
+				}
 			}
-			delete Zotero.Messaging._responseListeners[messageId];
-		}, MESSAGE_TIMEOUT);
+		}, messageTimeout);
 		var response = await deferred.promise;
 	}
 	finally {
 		clearTimeout(timeout);
 	}
-	return response;	
-};
+	return response;
+}

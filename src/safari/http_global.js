@@ -25,9 +25,10 @@
 
 Zotero.HTTP.request = async function(method, url, options={}) {
 	let args = {
-		method, url
+		method,
+		// Swift's URL class does not deal well with non-standard URL symbols
+		url: encodeURI(url)
 	};
-	options.url = url;
 	options.method = method;
 	
 	let logBody = '';

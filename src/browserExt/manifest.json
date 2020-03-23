@@ -17,14 +17,13 @@
 	"optional_permissions": ["management"],
 	"background": {
 		"scripts": [
-			/*BACKGROUND SCRIPTS*/
 			"background.js"
 		]
 	},
 	"content_scripts": [{
 			"matches": ["http://*/*", "https://*/*"],
 			"run_at": "document_start",
-			"js": [/*INJECT SCRIPTS*/]
+			"js": []
 		},{
 			"matches": ["https://docs.google.com/document/*"],
 			"run_at": "document_start",

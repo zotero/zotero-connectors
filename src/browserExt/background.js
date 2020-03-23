@@ -96,7 +96,7 @@ Zotero.Connector_Browser = new function() {
 	 * Called when a tab is removed or the URL has changed
 	 */
 	this.onPageLoad = function(url, tab) {
-		if(tab) _clearInfoForTab(tab.id);
+		if(tab) _updateInfoForTab(tab.id, url);
 	}
 	
 	/**
@@ -527,23 +527,17 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _updateInfoForTab(tabId, url) {
-		if (!(tabId in _tabInfo)) {
-			_tabInfo[tabId] = {
-				url: url,
-				injections: {}
-			}
-		}
-		if (_tabInfo[tabId].url != url) {
+		if ((tabId in _tabInfo) && _tabInfo[tabId].url != url) {
 			Zotero.debug(`Connector_Browser: URL changed from ${_tabInfo[tabId].url} to ${url}`);
 			if (_tabInfo[tabId].injections) {
 				for (let frameId in _tabInfo[tabId].injections) {
 					_tabInfo[tabId].injections[frameId].reject(new Error(`URL changed for tab ${url}`));
 				}
 			}
-			_tabInfo[tabId] = {
-				url: url,
-				injections: {}
-			};
+		}
+		_tabInfo[tabId] = {
+			url: url,
+			injections: {}
 		}
 	}
 	

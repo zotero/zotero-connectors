@@ -17,7 +17,7 @@
 	"optional_permissions": ["management"],
 	"background": {
 		"scripts": [
-			/*BACKGROUND SCRIPTS*/,
+			/*BACKGROUND SCRIPTS*/
 			"background.js"
 		]
 	},

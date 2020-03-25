@@ -38,6 +38,10 @@ DONE
 }
 
 GULP=$CWD/node_modules/gulp/bin/gulp.js
+if [ "$IS_CYGWIN" == 1 ]; then
+	# Change Gulp path to relative for CYGWIN environment
+	GULP=./node_modules/gulp/bin/gulp.js
+fi
 
 BUILD_BROWSER_EXT=0
 BUILD_SAFARI=0

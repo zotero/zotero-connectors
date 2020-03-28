@@ -26,9 +26,18 @@
 		<div id="label">Select which items you'd like to add to your library:</div>
 		<div id="item-selector"></div>
 		<div id="buttons">
+			<div id="filter">
+				<label for="reverseSelect" style="word-wrap:break-word">
+					<input type="checkbox" id="reverseSelect">Reverse Select
+				</label>
+				<label for="regExp" style="word-wrap:break-word">
+					<input type="checkbox" id="regExp">RegExp
+				</label>
+				<input type="text" id="pattern" placeholder="Pattern">
+			</div>
 			<div id="select-deselect">
-				<input type="submit" id="select" value="Select All"/>
-				<input type="submit" id="deselect" value="Deselect All"/>
+				<input type="submit" id="select" value="Select Items"/>
+				<input type="submit" id="deselect" value="Deselect Items"/>
 			</div>
 			<div id="cancel-ok">
 				<input type="submit" value="Cancel" id="cancel"/>

@@ -44,6 +44,7 @@ function load() {
 	
 	// add checkboxes to selector
 	for(var i in items) {
+		console.log(i)
 		var title, checked = false;
 		if(items[i] && typeof(items[i]) == "object" && items[i].title !== undefined) {
 			title = items[i].title;
@@ -120,6 +121,29 @@ function setAllCheckStates(state) {
 }
 
 /**
+ * Sets the checked attribute of all checkboxes to a given value
+ */
+function doSetSelectedCheckStates(pattern, reverseSelect, isRegexp, state) {
+	for(var i in items) {
+		var matched = null;
+		if (isRegexp) {
+			matched = items[i].match(new RegExp(pattern))
+		} else {
+			matched = items[i].match(pattern)
+		}
+		if (matched != null ^ reverseSelect == true) {
+			checkboxes[i].checked = state;
+		}
+	}
+}
+function setSelectedCheckStates(state) {
+	var pattern = document.getElementById('pattern').value;
+	var reverseSelect = document.getElementById('reverseSelect').checked;
+	var regExp = document.getElementById('regExp').checked;
+	doSetSelectedCheckStates(pattern, reverseSelect, regExp, state);
+}
+
+/**
  * Makes a closure for attaching event listeners to text
  */
 function makeClickHandler(checkbox) {
@@ -127,8 +151,22 @@ function makeClickHandler(checkbox) {
 }
 
 // "Inline JavaScript will not be executed." Thanks, Google, for this mess.
-document.getElementById("select").onclick = function() { setAllCheckStates(true) };
-document.getElementById("deselect").onclick = function() { setAllCheckStates(false) };
+document.getElementById("select").onclick = function() { 
+	var pattern = document.getElementById('pattern').value;
+	if (pattern == "") {
+		setAllCheckStates(true);
+	} else {
+		setSelectedCheckStates(true);
+	}
+};
+document.getElementById("deselect").onclick = function() {
+	var pattern = document.getElementById('pattern').value;
+	if (pattern == "") {
+		setAllCheckStates(false);
+	} else {
+		setSelectedCheckStates(false);
+	}
+};
 document.getElementById("ok").onclick = ok;
 document.getElementById("cancel").onclick = cancel;
 load();

@@ -26,6 +26,7 @@
 var tabID;
 var items;
 var checkboxes = {};
+var item_divs = {};
 var responseSent = false;
 
 /**
@@ -76,6 +77,7 @@ async function load() {
 		}
 		item.appendChild(span);
 		
+		item_divs[i] = item;
 		itemSelector.appendChild(item);
 	}
 	
@@ -122,7 +124,22 @@ function cancel() {
  */
 function setAllCheckStates(state) {
 	for(var i in checkboxes) {
-		checkboxes[i].checked = state;
+		if (item_divs[i].style.display != "none") {
+			checkboxes[i].checked = state;
+		}
+	}
+}
+/**
+ * Hidden items that do not match `pattern`
+ */
+function setFilter(pattern) {
+	for(var i in item_divs) {
+		var matched = null;
+		if (pattern == "" || items[i].match(pattern) != null) {
+			item_divs[i].style.display = "";
+		} else {
+			item_divs[i].style.display = "none";
+		}
 	}
 }
 
@@ -134,6 +151,10 @@ function makeClickHandler(checkbox) {
 }
 
 // "Inline JavaScript will not be executed." Thanks, Google, for this mess.
+document.getElementById("pattern").onkeyup = function() {
+	var pattern = document.getElementById('pattern').value;
+	setFilter(pattern);
+}
 document.getElementById("select").onclick = function() { setAllCheckStates(true) };
 document.getElementById("deselect").onclick = function() { setAllCheckStates(false) };
 document.getElementById("ok").onclick = ok;

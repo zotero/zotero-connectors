@@ -44,7 +44,6 @@ function load() {
 	
 	// add checkboxes to selector
 	for(var i in items) {
-		console.log(i)
 		var title, checked = false;
 		if(items[i] && typeof(items[i]) == "object" && items[i].title !== undefined) {
 			title = items[i].title;

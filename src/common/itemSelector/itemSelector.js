@@ -114,33 +114,13 @@ function cancel() {
 /**
  * Sets the checked attribute of all checkboxes to a given value
  */
-function setAllCheckStates(state) {
+function setAllCheckStates(pattern, state) {
 	for(var i in checkboxes) {
-		checkboxes[i].checked = state;
-	}
-}
-
-/**
- * Sets the checked attribute of all checkboxes to a given value
- */
-function doSetSelectedCheckStates(pattern, reverseSelect, isRegexp, state) {
-	for(var i in items) {
 		var matched = null;
-		if (isRegexp) {
-			matched = items[i].match(new RegExp(pattern))
-		} else {
-			matched = items[i].match(pattern)
-		}
-		if (matched != null ^ reverseSelect == true) {
+		if (pattern == "" || items[i].match(pattern) != null) {
 			checkboxes[i].checked = state;
 		}
 	}
-}
-function setSelectedCheckStates(state) {
-	var pattern = document.getElementById('pattern').value;
-	var reverseSelect = document.getElementById('reverseSelect').checked;
-	var regExp = document.getElementById('regExp').checked;
-	doSetSelectedCheckStates(pattern, reverseSelect, regExp, state);
 }
 
 /**
@@ -153,19 +133,11 @@ function makeClickHandler(checkbox) {
 // "Inline JavaScript will not be executed." Thanks, Google, for this mess.
 document.getElementById("select").onclick = function() { 
 	var pattern = document.getElementById('pattern').value;
-	if (pattern == "") {
-		setAllCheckStates(true);
-	} else {
-		setSelectedCheckStates(true);
-	}
+	setAllCheckStates(pattern, true);
 };
 document.getElementById("deselect").onclick = function() {
 	var pattern = document.getElementById('pattern').value;
-	if (pattern == "") {
-		setAllCheckStates(false);
-	} else {
-		setSelectedCheckStates(false);
-	}
+	setAllCheckStates(pattern, false);
 };
 document.getElementById("ok").onclick = ok;
 document.getElementById("cancel").onclick = cancel;

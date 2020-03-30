@@ -54,7 +54,9 @@ button:active {
 	height: 22px;
 	width: 100%;
 	font-size: 12px;
-	flex-grow: 1
+	flex-grow: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .ProgressWindow-targetIcon {

@@ -173,8 +173,11 @@ function replaceScriptsHTML(string, match, scripts) {
 function processFile() {
 	return through.obj(async function(file, enc, cb) {
 		console.log(file.path.slice(file.cwd.length));
-		var offset = file.cwd.split('/').length;
-		var parts = file.path.split('/');
+		// Under CYGWIN environment, the paths are converted to Windows style with "\".
+		// Additional ".replace(/\\/g, '/')" step leaves Linux-style paths as is,
+		// while "\" in Windows-style paths are replaced with "/" for further processing.
+		var offset = file.cwd.replace(/\\/g, '/').split('/').length;
+		var parts = file.path.replace(/\\/g, '/').split('/');
 		var basename = parts[parts.length-1];
 		var ext = basename.split('.')[1];
 		for (var i = offset; i < parts.length; i++) {

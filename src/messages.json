@@ -87,6 +87,6 @@
 		"message": "$1 is updating your document."
 	},
 	"integration_googleDocs_docxAlert": {
-		"message": "Citing in Microsoft Word docx files is not available. Choose File -> Save as Google Docs to enable citing with $1.<br/><br/>If you want to transfer a Word document with $1 citations to Google Docs see <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Moving Documents Between Word Processors</a>."
+		"message": "$1 integration is not available when editing Microsoft Word .docx files directly in Google Docs. Choose File → Save as Google Docs to enable this functionality.<br/><br/>If you want to transfer a Word document with $1 citations to Google Docs, see <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Moving Documents Between Word Processors</a>."
 	}
 }

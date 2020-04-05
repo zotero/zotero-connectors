@@ -87,7 +87,7 @@ Zotero.Translators = new function() {
 			Zotero.logError(new Error(`Only ${Object.keys(_translators).length} translators present in cache. Resetting`));
 			Zotero.Prefs.clear("connector.repo.lastCheck.repoTime");
 			Zotero.Prefs.clear("connector.repo.lastCheck.localTime");
-			return Zotero.Repo.init();
+			return Zotero.Repo.update(true);
 		}
 		
 		// Sort by priority

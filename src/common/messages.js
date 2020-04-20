@@ -63,7 +63,7 @@
  *
  * See other messaging scripts for more details.
  */
-const MESSAGE_SEPARATOR = ".";
+var MESSAGE_SEPARATOR = ".";
 var MESSAGES = {
 	Translators: {
 		get: {

@@ -591,8 +591,8 @@ try {
 	isHiddenIFrame = !isTopWindow && window.frameElement && window.frameElement.style.display === "none";
 } catch(e) {}
 
-const isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
-const isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.extension.getURL('test'));
+var isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
+var isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.extension.getURL('test'));
 // don't try to scrape on hidden frames
 if(!isHiddenIFrame) {
 	var doInject = function () {

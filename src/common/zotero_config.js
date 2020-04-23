@@ -23,7 +23,7 @@
     ***** END LICENSE BLOCK *****
 */
 
-const ZOTERO_CONFIG = {
+var ZOTERO_CONFIG = {
 	CLIENT_NAME: 'Zotero',
 	DOMAIN_NAME: 'zotero.org',
 	REPOSITORY_URL: 'https://repo.zotero.org/repo/',

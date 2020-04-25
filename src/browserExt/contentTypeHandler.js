@@ -67,14 +67,26 @@ Zotero.ContentTypeHandler = {
 			return;
 		}
 		
+		// Offer to install CSL by Content-Type
 		let contentType = details.responseHeadersObject['content-type'].split(';')[0];
 		if (Zotero.ContentTypeHandler.cslContentTypes.has(contentType)) {
 			return Zotero.ContentTypeHandler.handleStyle(details);
-		} else if (Zotero.Prefs.get('interceptKnownFileTypes') && 
-				Zotero.ContentTypeHandler.importContentTypes.has(contentType)) {
+		}
+		// Offer to install CSL if URL path ends with .csl and host is allowed
+		if (details.url.match(/https:\/\/[^/]+\/[^?]+\.csl(\?|$)/)) {
+			let host = details.url.match(/https:\/\/([^/]+)\//)[1];
+			let hosts = Zotero.Prefs.get('allowedCSLExtensionHosts');
+			if (Array.isArray(hosts) && hosts.includes(host)) {
+				return Zotero.ContentTypeHandler.handleStyle(details);
+			}
+		}
+		if (Zotero.Prefs.get('interceptKnownFileTypes')
+				&& Zotero.ContentTypeHandler.importContentTypes.has(contentType)) {
 			return Zotero.ContentTypeHandler.handleImportContent(details);
-		} else if (contentType == 'application/pdf') {
+		}
+		if (contentType == 'application/pdf') {
 			setTimeout(() => Zotero.Connector_Browser.onPDFFrame(details.url, details.frameId, details.tabId));
+			return;
 		}
 	},
 	

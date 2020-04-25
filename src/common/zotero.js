@@ -361,6 +361,7 @@ Zotero.Prefs = new function() {
 		"connector.url": 'http://127.0.0.1:23119/',
 		"capitalizeTitles": false,
 		"interceptKnownFileTypes": true,
+		"allowedCSLExtensionHosts": ["raw.githubusercontent.com"],
 		"allowedInterceptHosts": [],
 		"firstUse": true,
 		"firstSaveToServer": true,

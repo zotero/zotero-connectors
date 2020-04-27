@@ -45,8 +45,8 @@ Zotero.Repo = new function() {
 			if (promise) return promise;
 			// update from standalone, but only cascade to repo if we are overdue
 			// TODO: make update/cascade to repo explicit
-			promise = _updateFromStandalone(_nextCheck <= Date.now());
-			return promise.catch(() => 0).then(() => promise = null);
+			promise = _updateFromStandalone(_nextCheck <= Date.now()).catch(() => 0).then(() => promise = null);
+			return promise;
 		}
 	};
 	

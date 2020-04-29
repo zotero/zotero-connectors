@@ -196,6 +196,9 @@ var MESSAGES = {
 			background: {minArgs: 2}
 		},
 		update: false
+	},
+	WebRequestIntercept: {
+		replaceUserAgent: true,
 	}
 };
 

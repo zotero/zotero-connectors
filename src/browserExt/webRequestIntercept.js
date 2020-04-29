@@ -41,7 +41,7 @@ Zotero.WebRequestIntercept = {
 	reqIDToReqMeta: {},
 
 	init: function() {
-		let types = ["main_frame", "sub_frame"];
+		const types = ["main_frame", "sub_frame", 'xmlhttprequest'];
 		browser.webRequest.onBeforeSendHeaders.addListener(Zotero.WebRequestIntercept.handleRequest('beforeSendHeaders'), {urls: ['<all_urls>'], types}, ['blocking', 'requestHeaders']);
 		browser.webRequest.onErrorOccurred.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
 		browser.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
@@ -97,11 +97,15 @@ Zotero.WebRequestIntercept = {
 				details.responseHeadersObject = Zotero.WebRequestIntercept.processHeaders(details.responseHeaders);
 			}
 
+			var returnValue = null;
 			for (let listener of Zotero.WebRequestIntercept.listeners[requestType]) {
 				let retVal = listener(details, meta);
-				if (retVal != undefined) {
-					return retVal;
+				if (typeof retVal == 'object') {
+					returnValue = Object.assign(returnValue || {}, retVal);
 				}
+			}
+			if (returnValue !== null) {
+				return returnValue;
 			}
 		}
 	},
@@ -127,6 +131,18 @@ Zotero.WebRequestIntercept = {
 		if (idx != -1) {
 			Zotero.WebRequestIntercept.listeners[requestType].splice(idx, 1);
 		}
+	},
+	
+	replaceUserAgent: function(url, userAgent) {
+		function userAgentReplacer(details) {
+			if (details.url === url) {
+				Zotero.debug(`Replacing User-Agent for ${url} to ${userAgent}`);
+				Zotero.WebRequestIntercept.removeListener('beforeSendHeaders', userAgentReplacer);
+				return {requestHeaders: [{name: 'User-Agent', value: userAgent}]};
+			}
+		}
+		Zotero.WebRequestIntercept.addListener('beforeSendHeaders', userAgentReplacer);
+		browser.webRequest.handlerBehaviorChanged();
 	}
 }
 

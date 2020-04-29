@@ -124,6 +124,7 @@ Zotero.HTTP = new function() {
 		}
 		
 		let logBody = '';
+		options.headers = options.headers || {};
 		if (['GET', 'HEAD'].includes(method)) {
 			if (options.body != null) {
 				throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
@@ -146,6 +147,10 @@ Zotero.HTTP = new function() {
 			// Don't display password or session id in console
 			logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
 			logBody = logBody.replace(/password=[^&]+/, 'password=********');
+		}
+		if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
+			Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
+			delete options.headers['User-Agent'];
 		}
 		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
 		

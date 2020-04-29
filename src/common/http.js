@@ -61,7 +61,7 @@ Zotero.HTTP = new function() {
 	 *     request succeeds, or rejected if the browser is offline or a non-2XX status response
 	 *     code is received (or a code not in options.successCodes if provided).
 	 */
-	this.request = function(method, url, options = {}) {
+	this.request = async function(method, url, options = {}) {
 		// Default options
 		options = Object.assign({
 			body: null,
@@ -149,7 +149,7 @@ Zotero.HTTP = new function() {
 			logBody = logBody.replace(/password=[^&]+/, 'password=********');
 		}
 		if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
-			Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
+			await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
 			delete options.headers['User-Agent'];
 		}
 		Zotero.debug(`HTTP ${method} ${url}${logBody}`);

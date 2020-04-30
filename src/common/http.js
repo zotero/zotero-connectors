@@ -84,7 +84,7 @@ Zotero.HTTP = new function() {
 			// include Referer. Chrome's XHR in content scripts includes Referer by default.
 			//
 			// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#XHR_and_Fetch
-			if (Zotero.HTTP.isSameOrigin(url)) {
+			if (Zotero.HTTP.isSameOrigin(url) && !(Zotero.isSafari && options.headers['User-Agent'])) {
 				if (typeof content != 'undefined' && content.XMLHttpRequest) {
 					Zotero.debug("Using content XHR");
 					useContentXHR = true;
@@ -101,6 +101,9 @@ Zotero.HTTP = new function() {
 					let coOptions = Object.assign({}, options);
 					if (isDocRequest) {
 						coOptions.responseType = 'text';
+					}
+					if (Zotero.isSafari && options.headers['User-Agent']) {
+						coOptions.headers['Cookie'] = document.cookie;
 					}
 					return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
 						if (!isDocRequest) return xmlhttp;
@@ -124,7 +127,6 @@ Zotero.HTTP = new function() {
 		}
 		
 		let logBody = '';
-		options.headers = options.headers || {};
 		if (['GET', 'HEAD'].includes(method)) {
 			if (options.body != null) {
 				throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)

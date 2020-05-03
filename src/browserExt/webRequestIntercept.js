@@ -41,7 +41,7 @@ Zotero.WebRequestIntercept = {
 	reqIDToReqMeta: {},
 
 	init: function() {
-		const types = ["main_frame", "sub_frame", 'xmlhttprequest'];
+		const types = ["main_frame", "sub_frame"];
 		browser.webRequest.onBeforeSendHeaders.addListener(Zotero.WebRequestIntercept.handleRequest('beforeSendHeaders'), {urls: ['<all_urls>'], types}, ['blocking', 'requestHeaders']);
 		browser.webRequest.onErrorOccurred.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
 		browser.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});

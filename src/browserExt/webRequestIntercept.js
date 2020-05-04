@@ -133,10 +133,6 @@ Zotero.WebRequestIntercept = {
 		}
 	},
 	
-	handleReplaceUserAgentRequest(details) {
-		
-	},
-	
 	replaceUserAgent: function(url, userAgent) {
 		function userAgentReplacer(details) {
 			if (details.url === url) {

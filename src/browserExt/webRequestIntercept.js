@@ -133,16 +133,19 @@ Zotero.WebRequestIntercept = {
 		}
 	},
 	
+	handleReplaceUserAgentRequest(details) {
+		
+	},
+	
 	replaceUserAgent: function(url, userAgent) {
 		function userAgentReplacer(details) {
 			if (details.url === url) {
 				Zotero.debug(`Replacing User-Agent for ${url} to ${userAgent}`);
-				Zotero.WebRequestIntercept.removeListener('beforeSendHeaders', userAgentReplacer);
+				browser.webRequest.onBeforeSendHeaders.removeListener(userAgentReplacer);
 				return {requestHeaders: [{name: 'User-Agent', value: userAgent}]};
 			}
 		}
-		Zotero.WebRequestIntercept.addListener('beforeSendHeaders', userAgentReplacer);
-		browser.webRequest.handlerBehaviorChanged();
+		browser.webRequest.onBeforeSendHeaders.addListener(userAgentReplacer, {urls: ['<all_urls>'], types: ['xmlhttprequest']}, ['blocking', 'requestHeaders']);
 	}
 }
 

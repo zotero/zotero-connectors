@@ -28,16 +28,19 @@
  * https://developer.chrome.com/extensions/storage#property-local
  */
 Zotero.Prefs = Object.assign(Zotero.Prefs, {
-	init: Zotero.Promise.method(function() {
-		return this.migrate().then(function() {
-			return browser.storage.local.get(null);
-		}.bind(this)).then(function(prefs) {
-			this.syncStorage = prefs;
-		}.bind(this));
-	}),
-	
-	migrate: Zotero.Promise.method(function() {
-		return new Zotero.Promise(function(resolve, reject) {
+	init: async function() {
+		await this.migrate();
+		try {
+			this.syncStorage = await browser.storage.local.get(null);
+		}
+		catch (e) {
+			Zotero.debug("Prefs initialization failed");
+			Zotero.logError(e);
+		}
+	},
+
+	migrate: async function() {
+		try {
 			if (!localStorage.length) resolve();
 			let prefs = Object.assign({}, localStorage);
 			for (let k of Object.keys(prefs)) {
@@ -45,27 +48,28 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 					prefs[k.substr('pref-'.length)] = JSON.parse(prefs[k]);
 				}
 				delete prefs[k];
-			}	
+			}
 			// If translator metadata migration fails then we need the fetching from repo to
 			// fetch the full list
 			delete prefs["connector.repo.lastCheck.repoTime"];
 			delete prefs["connector.repo.lastCheck.localTime"];
-			browser.storage.local.set(prefs).then(resolve, reject);
-		}).then(function() {
+			await browser.storage.local.set(prefs);
+
 			if ('translatorMetadata' in localStorage) {
-				return browser.storage.local.set(
+				await browser.storage.local.set(
 					{translatorMetadata: JSON.parse(localStorage['translatorMetadata'])});
 			}
-		}).then(() => localStorage.clear())
-		.catch(function(e) {
+			localStorage.clear()
+		}
+		catch (e) {
 			Zotero.debug('Attempting to migrate prefs threw an error');
 			// Let's not, since this will log on every start for firefox people with
 			// dom.storage.enabled: false
 			// Zotero.logError(e);
 			Zotero.debug(e.message);
-		});
-	}),
-	
+		}
+	},
+
 	set: function(pref, value) {
 		Zotero.debug("Setting "+pref+" to "+JSON.stringify(value).substr(0, 100));
 		let prefs = {};

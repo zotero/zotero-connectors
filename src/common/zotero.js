@@ -255,7 +255,6 @@ var Zotero = window.Zotero = new function() {
 			'reportTranslationFailure', 'capitalizeTitles']);
 		await Zotero.Prefs.loadNamespace('debug');
 		
-		Zotero.Debug.init();
 		Zotero.initDeferred.resolve();
 		Zotero.initialized = true;
 	};
@@ -287,11 +286,11 @@ var Zotero = window.Zotero = new function() {
 		if (Zotero.isBackground && Zotero.isChrome) {
 			let granted = await browser.permissions.contains({permissions: ['management']});
 			if (granted) {
-				info.extensions = {};
+				info.extensions = "";
 				const extensions = await browser.management.getAll();
 				for (const extension of extensions) {
 					if (!extension.enabled || extension.name == Zotero.appName) continue;
-					info.extensions[extension.name] = {version: extension.version, type: extension.type};
+					info.extensions += `${extension.name} (${extension.version}, ${extension.type}), `;
 				}
 			}
 		}	

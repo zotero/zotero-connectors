@@ -278,8 +278,13 @@ Zotero.Connector_Browser = new function() {
 
 		const SSEAvailable = Zotero.Connector.SSE.available && Zotero.Connector.isOnline;
 		if (SSEAvailable) {
-			finalItems.push(['attachSnapshot', "Attach Snapshot of Current Page"],
-				['attachLink', "Attach Link of Current Page"], )
+			const singleItemSelected = Zotero.Connector.selected.items.length == 1;
+			const item = singleItemSelected && Zotero.Connector.selected.items[0];
+			const itemIsAttachment = ['attachment', 'note'].includes(item.type);
+			if (singleItemSelected && !itemIsAttachment) {
+				finalItems.push(['attachSnapshot', "Attach Snapshot of Current Page"],
+					['attachLink', "Attach Link of Current Page"], )
+			}
 		}
 
 		if (translators && translators.length) {

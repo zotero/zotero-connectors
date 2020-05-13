@@ -159,8 +159,8 @@ BOOKMARKLET_IFRAME_INCLUDE=("$SRCDIR/common/connector.js" \
 	"$SRCDIR/bookmarklet/iframe_base.js")
 
 BOOKMARKLET_COMMON_INCLUDE=("$SRCDIR/bookmarklet/zotero_config.js" \
-	"$EXTENSION_XPCOM_DIR/debug.js" \
-	"$SRCDIR/common/errors_webkit.js" \
+	"$EXTENSION_XPCOM_DIR/reports.js" \
+	"$SRCDIR/common/reports.js" \
 	"$SRCDIR/common/http.js" \
 	"$EXTENSION_XPCOM_DIR/xregexp/xregexp.js" \
 	"$EXTENSION_XPCOM_DIR/xregexp/addons/build.js" \
@@ -221,7 +221,7 @@ function copyResources {
 	cp -r "$EXTENSION_XPCOM_DIR/utilities.js" \
 		"$EXTENSION_XPCOM_DIR/utilities_translate.js" \
 		"$EXTENSION_XPCOM_DIR/date.js" \
-		"$EXTENSION_XPCOM_DIR/debug.js" \
+		"$EXTENSION_XPCOM_DIR/reports.js" \
 		"$EXTENSION_XPCOM_DIR/openurl.js" \
 		"$EXTENSION_XPCOM_DIR/rdf" \
 		"$SRCDIR/zotero/resource/schema/connectorTypeSchemaData.js" \

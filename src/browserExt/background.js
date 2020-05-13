@@ -106,8 +106,7 @@ Zotero.Connector_Browser = new function() {
 	this.onStateChange = function(version) {
 		if (version) {
 			Zotero.Prefs.set('firstSaveToServer', true);
-			// TODO: Enable once 5.0 is out, so that ContentTypeHandlers show an upgradeClient message instead
-			parseInt(version[0]) >= 5 && Zotero.ContentTypeHandler.enable();
+			Zotero.ContentTypeHandler.enable();
 		} else {
 			Zotero.ContentTypeHandler.disable();
 		}

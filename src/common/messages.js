@@ -144,7 +144,12 @@ var MESSAGES = {
 	Errors: {
 		log: false,
 		getErrors: true,
-		submitToZotero: true
+		submitToZotero: {
+			response: true,
+			background: {
+				minArgs: 1
+			}
+		}
 	},
 	Messaging: {
 		sendMessage: {

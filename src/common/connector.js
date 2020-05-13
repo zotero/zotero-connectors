@@ -117,19 +117,18 @@ Zotero.Connector = {
 		} else if (Zotero.Connector.SSE.available) {
 			return this.selected;
 		} else {
-			return this.callMethod('getSelectedCollection', {}).then(function(response) {
-				let selected = {
-					library: {
-						id: response.libraryID,
-						name: response.libraryName,
-						editable: response.libraryEditable,
-					}
-				};
-				selected.collection = { id: response.id, name: response.name };
-				selected.id = response.id || response.libraryID;
-				selected.name = response.name;
-				return selected;
-			});
+			const response = await this.callMethod('getSelectedCollection', {});
+			let selected = {
+				library: {
+					id: response.libraryID,
+					name: response.libraryName,
+					editable: response.libraryEditable,
+				}
+			};
+			selected.collection = { id: response.id, name: response.name };
+			selected.id = response.id || response.libraryID;
+			selected.name = response.name;
+			return selected;
 		}
 	},
 	
@@ -303,7 +302,8 @@ Zotero.Connector.SSE = {
 	available: false,
 
 	init: function() {
-		this._evtSrc = new EventSource(ZOTERO_CONFIG.CONNECTOR_SERVER_URL + 'connector/sse');
+		const url = Zotero.Prefs.get('connector.url') + "connector/sse";
+		this._evtSrc = new EventSource(url);
 		this._evtSrc.onerror = this._onError.bind(this);
 		this._evtSrc.onmessage = this._onMessage.bind(this);
 		this._evtSrc.onopen = this._onOpen.bind(this);

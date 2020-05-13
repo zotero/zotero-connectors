@@ -467,6 +467,85 @@ Zotero.Inject = new function() {
 			}
 		}
 	};
+
+	this.saveAsAttachment = async function (args) {
+		var [title, link, item] = args;
+		var sessionID = Zotero.Utilities.randomString();
+
+		var data = {
+			title: title || document.title,
+			url: document.location.toString(),
+			cookie: document.cookie,
+			html: document.documentElement.innerHTML,
+			link,
+			sessionID
+		};
+
+		if (document.contentType == 'application/pdf') {
+			data.pdf = true;
+		}
+		if (link) {
+			var image = 'attachment-link';
+		} else if (data.pdf) {
+			var image = "attachment-pdf";
+		} else {
+			var image = "webpage";
+		}
+		
+		const headline = Zotero.i18n.getString(`progressWindow_attaching_${link ? 'link' : 'snapshot'}`);
+
+		Zotero.Messaging.sendMessage("progressWindow.show", [sessionID, headline, true]);
+		Zotero.Messaging.sendMessage(
+			"progressWindow.itemProgress",
+			{
+				sessionID,
+				id: item.itemID,
+				iconSrc: Zotero.ItemTypes.getImageSrc(item.type),
+				title: item.title,
+				progress: 100
+			}
+		);	
+		Zotero.Messaging.sendMessage(
+			"progressWindow.itemProgress",
+			{
+				sessionID,
+				id: data.title,
+				iconSrc: Zotero.ItemTypes.getImageSrc(image),
+				parentItem: item.itemID,
+				title: data.title
+			}
+		);
+		try {
+			const result = await Zotero.Connector.callMethodWithCookies("attachSnapshot", data);
+			Zotero.Messaging.sendMessage(
+				"progressWindow.itemProgress",
+				{
+					sessionID,
+					id: data.title,
+					iconSrc: Zotero.ItemTypes.getImageSrc(image),
+					parentItem: item.itemID,
+					title: data.title,
+					progress: 100
+				}
+			);
+			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+			return result;
+		}
+		catch (e) {
+			// Client unavailable
+			if (e.status === 0) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
+			} else if (e.value && e.value.libraryEditable === false) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'collectionNotEditable']);
+			} else if (e.value && e.value.itemsSelected != 1) {
+				// This should really never occur since the option is disabled when multiple items are selected
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'cannotAttach']);
+			} else {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
+			}
+			throw e;
+		}
+	};
 	
 	this.saveAsWebpage = async function (args) {
 		var title = args[0] || document.title, options = args[1] || {};
@@ -591,58 +670,6 @@ Zotero.Inject = new function() {
 			fn();
 		});
 	}
-	
-	this.saveAsAttachment = function (args) {
-		var [title, link, item] = args;
-		var progress;
-		
-		var data = {
-			title,
-			url: document.location.toString(),
-			cookie: document.cookie,
-			html: document.documentElement.innerHTML,
-			link
-		};
-
-		if (document.contentType == 'application/pdf') {
-			data.pdf = true;
-		}
-		if (link) {
-			var image = 'attachment-link';
-		} else if (data.pdf) {
-			var image = "attachment-pdf";
-		} else {
-			var image = "webpage";
-		}
-		
-		progress = new Zotero.ProgressWindow.ItemProgress(
-			Zotero.ItemTypes.getImageSrc(image), title || document.title
-		);
-		Zotero.ProgressWindow.changeHeadline(`Attaching a ${link ? 'link' : 'snapshot'} to `, `treeitem-${item.type}.png`, item.title);
-		return Zotero.Connector.callMethodWithCookies("attachSnapshot", data)
-		.then(function(result) {
-			if (progress) {
-				progress.setProgress(100);
-				Zotero.ProgressWindow.startCloseTimer(2500);
-			}
-			return result;
-		}.bind(this), function(e) {
-			var err;
-			// Client unavailable
-			if (e.status === 0) {
-				err = new Zotero.ProgressWindow.ErrorMessage("clientRequired");
-			} else if (e.value && e.value.libraryEditable === false) {
-				err = new Zotero.ProgressWindow.ErrorMessage("collectionNotEditable");
-			} else if (e.value && e.value.itemsSelected != 1) {
-				// This should really never occur since the option is disabled when multiple items are selected
-				err = new Zotero.ProgressWindow.ErrorMessage("cannotAttach");
-			} else {
-				err = new Zotero.ProgressWindow.ErrorMessage("unexpectedError");
-			}
-			Zotero.ProgressWindow.startCloseTimer(8000);	
-			if (err) throw err;
-		}.bind(this));
-	};
 };
 
 // check whether this is a hidden browser window being used for scraping

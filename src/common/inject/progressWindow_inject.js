@@ -120,7 +120,8 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	 */
 	async function updateFromClient(prefix) {
 		try {
-			var response = await Zotero.Connector.getSelectedCollection();
+			var selected = await Zotero.Connector.getSelectedCollection();
+			var targets = await Zotero.Connector.callMethod('getSaveTargets', {});
 		}
 		catch (e) {
 			// TODO: Shouldn't this be coupled to the actual save process?
@@ -131,15 +132,14 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		// If we're reshowing the current session's popup, override the selected location with the
 		// last successful tarGet, since the selected collection in the client might have changed
 		if (lastSuccessfulTarget) {
-			response.collection.id = lastSuccessfulTarget.id;
-			response.collection.name = lastSuccessfulTarget.name;
-			response.library.editable = true;
+			selected.collection.id = lastSuccessfulTarget.id;
+			selected.collection.name = lastSuccessfulTarget.name;
+			selected.library.editable = true;
 		}
 		
 		// Disable target selector for read-only library (which normally shouldn't happen,
 		// because the client switches automatically to My Library)
-		if (response.library.editable === false) {
-			response.targets = undefined;
+		if (selected.library.editable === false) {
 			addError("collectionNotEditable");
 			startCloseTimer(8000);
 			return;
@@ -147,15 +147,15 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		
 		var id;
 		// Legacy response for libraries
-		if (!response.collection.id) {
-			id = "L" + response.libraryID;
+		if (!selected.id) {
+			id = "L" + selected.library.id;
 		}
 		// Legacy response for collections
-		else if (typeof response.id != 'string') {
-			id = "C" + response.id;
+		else if (typeof selected.id != 'string') {
+			id = "C" + selected.id;
 		}
 		else {
-			id = response.id;
+			id = selected.id;
 		}
 		
 		if (!prefix) {
@@ -163,23 +163,23 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		}
 		var target = {
 			id,
-			name: response.name
+			name: selected.name
 		};
 		
-		if (response.libraryEditable) {
+		if (selected.libraryEditable) {
 			lastSuccessfulTarget = target;
 		}
 		
 		// TEMP: Make sure libraries have levels (added to client in 5.0.46)
-		if (response.targets) {
-			for (let row of response.targets) {
+		if (targets) {
+			for (let row of targets) {
 				if (!row.level) {
 					row.level = 0;
 				}
 			}
 		}
 		
-		changeHeadline(prefix, target, response.targets);
+		changeHeadline(prefix, target, targets);
 	}
 	
 	async function addError() {

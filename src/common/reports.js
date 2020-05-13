@@ -31,7 +31,7 @@ if (typeof Zotero.Debug != 'undefined') {
 	var setStore = Zotero.Debug.setStore;
 	Zotero.Debug.setStore = function(val, fetchFromClient) {
 		if (typeof fetchFromClient != 'boolean') fetchFromClient = false;
-		setStore.apply(this, arguments);
+		setStore.call(this, val);
 		if (fetchFromClient) {
 			Zotero.Connector.callMethod('reports', {debug: {store: val}});
 		}
@@ -40,7 +40,7 @@ if (typeof Zotero.Debug != 'undefined') {
 	var clear = Zotero.Debug.clear;
 	Zotero.Debug.clear = function(fetchFromClient) {
 		if (typeof fetchFromClient != 'boolean') fetchFromClient = false;
-		clear.apply(this, arguments);
+		clear.call(this);
 		if (fetchFromClient) {
 			Zotero.Connector.callMethod('reports', {debug: {clear: true}});
 		}
@@ -89,7 +89,9 @@ Zotero.Errors = new function() {
 	
 	this.generateReport = async function() {
 		let sysInfo = await Zotero.getSystemInfo();
-		return sysInfo + "\n\n" + (await this.getErrors()).join('\n\n') + "\n\n"
+		let errors = await this.getErrors();
+		errors = errors.length ? "\n\n" + errors.join('\n\n') + "\n\n" : "";
+		return sysInfo + errors;
 	}
 	
 	/**
@@ -119,10 +121,10 @@ Zotero.Errors = new function() {
 
 		let date = (new Date()).toUTCString();
 		let type = debug ? "Debug" : "Report";
-		let body = `----------------------------- Connector ${type}: ${date} --------------------------------\n\n`;
+		let body = `============================= Connector ${type}: ${date} ================================\n`;
 		body += connectorBody;
 		if (zoteroBody) {
-			body += `\n\n----------------------------- Zotero ${type} --------------------------------\n\n`;
+			body += `\n\n============================= Zotero ${type} ================================\n`;
 			body += zoteroBody;
 		}
 		let headers = { 'Content-Type': 'text/plain' };

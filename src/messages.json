@@ -30,6 +30,12 @@
 	"progressWindow_savingTo": {
 		"message": "Saving to"
 	},
+	"progressWindow_attaching_link": {
+		"message": "Attaching a link"
+	},
+	"progressWindow_attaching_snapshot": {
+		"message": "Attaching a snapshot"
+	},
 	"progressWindow_tagPlaceholder": {
 		"message": "Tags (separated by commas)"
 	},

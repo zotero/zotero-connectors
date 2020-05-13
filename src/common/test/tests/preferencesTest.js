@@ -91,6 +91,7 @@ describe('Preferences', function() {
 		it('submits an error report to Zotero.org', Promise.coroutine(function* () {
 			var reportId = '1234567890';
 			yield background(function(reportId) {
+				sinon.stub(Zotero.Connector, 'callMethod').resolves(new Zotero.Connector.CommunicationError('stub'));
 				sinon.stub(Zotero.HTTP, 'request').resolves(
 					{responseText: `<?xml version="1.0" encoding="UTF-8"?><xml><reported reportID="${reportId}"/></xml>`}
 				);
@@ -109,7 +110,10 @@ describe('Preferences', function() {
 				
 				assert.include(message, reportId);
 			} finally {
-				yield background(() => Zotero.HTTP.request.restore());
+				yield background(() => {
+					Zotero.HTTP.request.restore();
+					Zotero.Connector.callMethod.restore();
+				});
 			}
 		}));
 		

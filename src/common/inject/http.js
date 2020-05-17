@@ -33,6 +33,11 @@ if(!Zotero.HTTP) Zotero.HTTP = {};
  * Determines whether the page to be loaded has the same origin as the current page
  */
 Zotero.HTTP.isSameOrigin = function(url) {
+	// Hack to deal with cross-origin redirect on Nature until we swit
+	if (url.includes('www.nature.com/') || url.includes('www-nature-com.')) {
+		return false;
+	}
+	
 	const hostPortRe = /^([^:\/]+:)\/\/([^\/]+)/i;
 	var m = hostPortRe.exec(url);
 	if(!m) {

@@ -85,7 +85,9 @@ Zotero.ContentTypeHandler = {
 			return Zotero.ContentTypeHandler.handleImportContent(details);
 		}
 		if (contentType == 'application/pdf') {
-			setTimeout(() => Zotero.Connector_Browser.onPDFFrame(details.url, details.frameId, details.tabId));
+			if (details.frameId != 0) {
+				setTimeout(() => Zotero.Connector_Browser.onPDFFrame(details.url, details.frameId, details.tabId));
+			}
 			return;
 		}
 	},

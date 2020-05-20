@@ -47,9 +47,15 @@ if (Zotero.isFirefox) {
 		}, 100);
 	});
 	
-	Zotero.Utilities.saveFirefoxPDF = async function(tab) {
+	Zotero.Utilities.saveFirefoxPDF = async function (tab, frameId) {
+		let url = tab.url;
+		// Get URL from iframe
+		if (frameId) {
+			({ url } = await browser.webNavigation.getFrame({ tabId: tab.id, frameId }));
+		}
+		
 		var data = {
-			url: tab.url,
+			url,
 			pdf: true
 		};
 		try {

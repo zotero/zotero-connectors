@@ -829,24 +829,11 @@ Zotero.Connector_Browser = new function() {
 			}
 		}
 	}
-
-	browser.browserAction.onClicked.addListener(logListenerErrors(_browserAction));
 	
-	browser.tabs.onRemoved.addListener(logListenerErrors(_clearInfoForTab));
-	
-	browser.tabs.onActivated.addListener(logListenerErrors(async function(details) {
-		var tab = await browser.tabs.get(details.tabId);
-		// Ignore item selector
-		if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
-		Zotero.debug("Connector_Browser: onActivated for " + tab.url);
-		Zotero.Connector_Browser.onTabActivated(tab);
-		Zotero.Connector.reportActiveURL(tab.url);
-	}));
-	
-	browser.webNavigation.onCommitted.addListener(logListenerErrors(async function(details) {
+	async function onNavigation(details, historyChange=false) {
 		// Ignore developer tools, item selector
 		if (details.tabId < 0 || _isDisabledForURL(details.url, true)
-				|| details.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
+			|| details.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
 
 		if (details.frameId == 0) {
 			_updateInfoForTab(details.tabId, details.url);
@@ -864,7 +851,26 @@ Zotero.Connector_Browser = new function() {
 		// executes in the next event loop such that the rejections can be processed
 		await Zotero.Promise.delay(1);
 		await Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
+		if (historyChange) {
+			Zotero.Messaging.sendMessage('historyChanged');
+		}
+	}
+
+	browser.browserAction.onClicked.addListener(logListenerErrors(_browserAction));
+	
+	browser.tabs.onRemoved.addListener(logListenerErrors(_clearInfoForTab));
+	
+	browser.tabs.onActivated.addListener(logListenerErrors(async function(details) {
+		var tab = await browser.tabs.get(details.tabId);
+		// Ignore item selector
+		if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
+		Zotero.debug("Connector_Browser: onActivated for " + tab.url);
+		Zotero.Connector_Browser.onTabActivated(tab);
+		Zotero.Connector.reportActiveURL(tab.url);
 	}));
+	
+	browser.webNavigation.onCommitted.addListener(logListenerErrors(onNavigation));
+	browser.webNavigation.onHistoryStateUpdated.addListener(details => logListenerErrors(onNavigation(details, true)));
 }
 
 Zotero.initGlobal();

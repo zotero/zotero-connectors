@@ -454,7 +454,14 @@ Zotero.Inject = new function() {
 				} else {
 					// Clear session details on failure, so another save click tries again
 					this.sessionDetails = {};
+					// We delay opening the progressWindow for multiple items so we don't have to flash it
+					// for the select dialog. But it comes back to bite us in the butt if a translation
+					// error occurs immediately since the below command will execute before the progressWindow show,
+					// and then the delayed progressWindow.show will pop up another empty progress window.
+					// Cannot have that!
+					await Zotero.Promise.delay(500);
 					Zotero.Messaging.sendMessage("progressWindow.done", [false]);
+					return;
 				}
 			}
 		}
@@ -595,8 +602,8 @@ const isWeb = window.location.protocol === "http:" || window.location.protocol =
 const isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.extension.getURL('test'));
 // don't try to scrape on hidden frames
 if(!isHiddenIFrame) {
-	var doInject = function () {
-		Zotero.initInject();
+	var doInject = async function () {
+		await Zotero.initInject();
 
 		if (Zotero.isSafari && isTopWindow) {
 			Zotero.Connector_Browser.onPageLoad(document.location.href);
@@ -623,6 +630,10 @@ if(!isHiddenIFrame) {
 		Zotero.Messaging.addMessageListener("pageModified", function() {
 			Zotero.Inject.init(true);
 		});
+		Zotero.Messaging.addMessageListener('historyChanged', function() {
+			Zotero.Inject.init(true);
+		});
+		
 		Zotero.Messaging.addMessageListener("firstUse", function () {
 			return Zotero.Inject.firstUsePrompt();
 		});

@@ -20,6 +20,9 @@
 	"general_pleaseWait": {
 		"message": "Please wait…"
 	},
+	"general_copyToClipboard": {
+		"message": "Copy to Clipboard"
+	},
 	
 	"progressWindow_savingTo": {
 		"message": "Saving to"
@@ -64,6 +67,19 @@
 	},
 	"error_connection_enableSavingToOnlineLibrary": {
 		"message": "Enable Saving to Online Library"
+	},
+	
+	"reports_report_submitted": {
+		"message": "Your error report has been submitted.\n\nReport ID: $1\n\nPlease post a message to the Zotero Forums (forums.zotero.org) with this Report ID, a description of the problem, and any steps necessary to reproduce it.\n\nError reports are not reviewed unless referred to in the forums."
+	},
+	
+	"reports_debug_output_submitted": {
+		"message": "Your debug output has been submitted.\n\n The Debug ID is $1."
+	},
+
+	"reports_submission_failed": {
+		"message": "An error occurred submitting your report.\n\n$1\n\nPlease check your internet connection. If the problem persists, please post a message to the Zotero Forums (forums.zotero.org).",
+		"description": "$1 will be the error message received from the Zotero servers"
 	},
 	
 	"integration_error_clientUpgrade": {

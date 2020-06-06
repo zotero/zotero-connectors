@@ -92,18 +92,18 @@ describe('Preferences', function() {
 			var reportId = '1234567890';
 			yield background(function(reportId) {
 				sinon.stub(Zotero.HTTP, 'request').resolves(
-					{responseXML: {getElementsByTagName: () => [{getAttribute: () => reportId}]}}
+					{responseText: `<?xml version="1.0" encoding="UTF-8"?><xml><reported reportID="${reportId}"/></xml>`}
 				);
 			}, reportId);
 
 			try {
 				var message = yield tab.run(function() {
 					var deferred = Zotero.Promise.defer();
-					sinon.stub(window, 'alert').callsFake(deferred.resolve);
+					sinon.stub(Zotero.ModalPrompt, 'confirm').callsFake(deferred.resolve);
 					document.getElementById('advanced-button-report-errors').click();
-					return deferred.promise.then(function(message) {
-						window.alert.restore();
-						return message;
+					return deferred.promise.then(function(config) {
+						Zotero.ModalPrompt.confirm.restore();
+						return config.message;
 					});
 				});
 				
@@ -118,7 +118,7 @@ describe('Preferences', function() {
 			var testDebugLine = 'testDebugLine';
 			yield background(function(debugId) {
 				sinon.stub(Zotero.HTTP, 'request').resolves(
-					{responseXML: {getElementsByTagName: () => [{getAttribute: () => debugId}]}}
+					{responseText: `<?xml version="1.0" encoding="UTF-8"?><xml><reported reportID="${debugId}"/></xml>`}
 				);
 			}, debugId);
 
@@ -130,13 +130,13 @@ describe('Preferences', function() {
 				}, testDebugLine);
 				var message = yield tab.run(function() {
 					var deferred = Zotero.Promise.defer();
-					sinon.stub(window, 'alert').callsFake(deferred.resolve);
+					sinon.stub(Zotero.ModalPrompt, 'confirm').callsFake(deferred.resolve);
 					document.getElementById('advanced-checkbox-enable-logging').click();
 					document.getElementById('advanced-button-submit-output').click();
-					return deferred.promise.then(function(message) {
-						window.alert.restore();
+					return deferred.promise.then(function(config) {
+						Zotero.ModalPrompt.confirm.restore();
 						document.getElementById('advanced-button-clear-output').click();
-						return message;
+						return config.message;
 					}).catch(e => ['error', e]);
 				});
 				

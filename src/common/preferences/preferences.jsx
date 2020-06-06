@@ -42,6 +42,7 @@ var Zotero_Preferences = {
 	init: async function() {
 		Zotero.isPreferences = true;
 		Zotero.Messaging.init();
+		await Zotero.i18n.init();
 		
 		var panesDiv = document.getElementById("panes");
 		var id;
@@ -315,14 +316,23 @@ Zotero_Preferences.Advanced = {
 			}
 		}
 		
-		return Zotero.Connector_Debug.submitReport().then(function(reportID) {
-			alert("Your debug output has been submitted.\n\n"
-				+ `The Debug ID is D${reportID}.`);
-		}, function(e) {
-			alert(`An error occurred submitting your debug output.\n\n${e.message}\n\n`+
-				'Please check your internet connection. If the problem persists, '+
-				'please post a message to the Zotero Forums (forums.zotero.org).');
-		}).then(() => toggleDisabled(submitOutputButton, false));
+		try {
+			let reportID = await Zotero.Connector_Debug.submitReport();
+			let result = await Zotero.ModalPrompt.confirm({
+				message: Zotero.getString('reports_debug_output_submitted', 'D' + reportID).replace(/\n/g, '<br/>'),
+				button1Text: "OK",
+				button2Text: Zotero.getString("general_copyToClipboard"),
+			});
+			if (result.button == 2) {
+				navigator.clipboard.writeText('D' + reportID);
+			}
+		}
+		catch (e) {
+			alert(Zotero.getString("reports_submission_failed", e.message));
+		}
+		finally {
+			toggleDisabled(submitOutputButton, false);
+		}
 	},
 
 	/**
@@ -343,14 +353,16 @@ Zotero_Preferences.Advanced = {
 		
 		try {
 			var reportID = await Zotero.Errors.sendErrorReport();
-			alert(`Your error report has been submitted.\n\nReport ID: ${reportID}\n\n`+
-				'Please post a message to the Zotero Forums (forums.zotero.org) with this Report '+
-				'ID, a description of the problem, and any steps necessary to reproduce it.\n\n'+
-				'Error reports are not reviewed unless referred to in the forums.');
+			let result = await Zotero.ModalPrompt.confirm({
+				message: Zotero.getString('reports_report_submitted', reportID).replace(/\n/g, '<br/>'),
+				button1Text: "OK",
+				button2Text: Zotero.getString("general_copyToClipboard"),
+			});
+			if (result.button == 2) {
+				navigator.clipboard.writeText(reportID);
+			}
 		} catch(e) {
-			alert(`An error occurred submitting your error report.\n\n${e.message}\n\n`+
-				'Please check your internet connection. If the problem persists, '+
-				'please post a message to the Zotero Forums (forums.zotero.org).');
+			alert(Zotero.getString("reports_submission_failed", e.message));
 		} finally {
 			toggleDisabled(reportErrorsButton, false);
 		}

@@ -543,7 +543,10 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _isDisabledForURL(url, excludeTests=false) {
-		return url.includes('chrome://') || url.includes('about:') || (url.includes('-extension://') && (!excludeTests || !url.includes('/test/data/')));
+		return url.startsWith('chrome://') ||
+			url.startsWith('about:') ||
+			url.startsWith('chrome-') ||
+			(url.includes('-extension://') && (!excludeTests || !url.includes('/test/data/')));
 	}
 	
 	function _showZoteroStatus(tabID) {

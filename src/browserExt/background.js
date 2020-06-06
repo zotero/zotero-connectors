@@ -369,6 +369,7 @@ Zotero.Connector_Browser = new function() {
 				browser.windows.onRemoved.removeListener(onClose);
 			});
 		}
+		return win;
 	};
 	
 	this.bringToFront = async function(drawAttention=false, tab) {

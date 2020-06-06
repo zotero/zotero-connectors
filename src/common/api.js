@@ -45,14 +45,16 @@ Zotero.API = new function() {
 	/**
 	 * Performs OAuth authorization
 	 */
-	this.authorize = function() {
-		// TODO: switch to authorization request window
+	this.authorize = async function() {
 		if (this._deferred) {
+			if (this._authWindow) {
+				Zotero.Connector_Browser.bringToFront(false, this._authWindow.tabs[0]);
+			}
 			return this._deferred.promise;
 		}
 		this._deferred = Zotero.Promise.defer();
 		this._deferred.promise
-			.then((r) => {this._deferred = null; return r}, (e) => {this._deferred = null; throw e});
+			.then((r) => {this._deferred = null}, (e) => {this._deferred = null});
 		
 		var oauthSimple = new OAuthSimple(config.OAUTH.ZOTERO.CLIENT_KEY,
 			config.OAUTH.ZOTERO.CLIENT_SECRET);
@@ -63,7 +65,8 @@ Zotero.API = new function() {
 			body: '',
 			headers: {"Authorization": oauthSimple.getHeaderString()}
 		};
-		Zotero.HTTP.request("POST", config.OAUTH.ZOTERO.REQUEST_URL, options).then(function(xmlhttp) {
+		try {
+			let xmlhttp = await Zotero.HTTP.request("POST", config.OAUTH.ZOTERO.REQUEST_URL, options)
 			// parse output and store token_secret
 			var data = _decodeFormData(xmlhttp.responseText);
 			_tokenSecret = data.oauth_token_secret;
@@ -85,13 +88,13 @@ Zotero.API = new function() {
 				url += "Edge";
 			}
 			
-			Zotero.Connector_Browser.openWindow(url, {width: 900, height: 600, type: 'normal',
+			this._authWindow = await Zotero.Connector_Browser.openWindow(url, {width: 900, height: 600, type: 'normal',
 				onClose: Zotero.API.onAuthorizationCancel.bind(Zotero.API)});
-				
-		}.bind(this), function(e) {
+		}		
+		catch (e) {
 			Zotero.logError(`OAuth request failed with ${e.status}; response was ${e.responseText}`);
-			return this._deferred.reject(new Error("An invalid response was received from the Zotero server"));
-		}.bind(this));
+			this._deferred.reject(new Error("An invalid response was received from the Zotero server"));
+		}
 		return this._deferred.promise;
 	};
 	

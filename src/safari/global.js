@@ -182,7 +182,7 @@ Zotero.Connector_Browser = new function() {
 		Zotero.Messaging.sendMessage('Swift.openTab', [url]);
 	};
 	
-	this.bringToFront = function() {
+	this.bringToFront = async function() {
 		// Unlikely to do anything
 		Zotero.Messaging.sendMessage('Swift.activate');
 	};

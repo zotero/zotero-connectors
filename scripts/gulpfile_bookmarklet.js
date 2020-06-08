@@ -33,6 +33,7 @@ const plumber = require('gulp-plumber');
 const concat = require('gulp-concat');
 const babel = require('@babel/core');
 const browserify = require('browserify');
+const replaceBrowser = require('./replace_browser');
 
 const xpcomDir = './src/zotero/chrome/content/zotero/xpcom';
 
@@ -124,6 +125,7 @@ function processFile(argv) { return through.obj(async function(file, enc, cb) {
 		if (!argv.p) {
 			contents = contents.replace('"debug.log": false', '"debug.log": true');
 		}
+		contents = replaceBrowser(contents, { bookmarklet: true });
 		file.contents = Buffer.from(contents);
 		break;
 	case 'zotero_config.js':

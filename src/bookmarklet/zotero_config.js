@@ -37,5 +37,3 @@ window.ZOTERO_CONFIG = {
 	AUTH_COMPLETE_URL: 'https://www.zotero.org/bookmarklet/auth_complete.html',
 	S3_URL: 'https://zoterofilestorage.s3.amazonaws.com/'
 };
-Zotero.isBookmarklet = true;
-Zotero.isBrowserExt = false;

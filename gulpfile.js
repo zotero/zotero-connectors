@@ -26,6 +26,7 @@
 'use strict';
 
 const { watchBookmarklet, processBookmarkletScripts } = require('./scripts/gulpfile_bookmarklet');
+const replaceBrowser = require('./scripts/replace_browser');
 const exec = require('child_process').exec;
 const through = require('through2');
 const gulp = require('gulp');
@@ -275,6 +276,13 @@ function processFile() {
 			}
 			['chrome', 'firefox'].forEach((browser) => {
 				f = file.clone({contents: false});
+				if (basename == 'zotero.js') {
+					console.log(`REPLACING FOR ${browser}`);
+					let contents = f.contents.toString()
+						.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
+					contents = replaceBrowser(contents, { browserExt: true, firefox: browser == 'firefox' });
+					f.contents = Buffer.from(contents);
+				}
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);
@@ -283,6 +291,12 @@ function processFile() {
 		if (type === 'common' || type === 'safari') {
 			f = file.clone({contents: false});
 			f.path = parts.slice(0, i-1).join('/') + '/build/safari/' + parts.slice(i+1).join('/');
+			if (basename == 'zotero.js') {
+				let contents = f.contents.toString()
+					.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
+				contents = replaceBrowser(contents, { safari: true });
+				f.contents = Buffer.from(contents);
+			}
 			console.log(`-> ${f.path.slice(f.cwd.length)}`);
 			this.push(f);
 		}

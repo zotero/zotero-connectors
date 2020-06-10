@@ -858,7 +858,7 @@ Zotero.Connector_Browser = new function() {
 		// executes in the next event loop such that the rejections can be processed
 		await Zotero.Promise.delay(1);
 		await Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
-		if (historyChange) {
+		if (historyChange && details.frameId === 0) {
 			Zotero.Messaging.sendMessage('historyChanged');
 		}
 	}

@@ -210,4 +210,14 @@ Zotero.Utilities.Internal.filterStack = function (stack) {
 	return stack;
 }
 
+Zotero.Utilities.Internal.semverCompare = function(a, b) {
+	a = a.split('.').map(version => parseInt(version));
+	b = b.split('.').map(version => parseInt(version));
+	for (let i = 0; i < a.length && i < b.length; i++) {
+		if (a[i] < b[i]) return -1;
+		else if (a[i] > b[i]) return 1;
+	}
+	return a.length - b.length; // E.g. 5.0.0 < 5.0.0.1
+}
+
 })();

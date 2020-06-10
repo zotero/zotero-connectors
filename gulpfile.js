@@ -126,7 +126,7 @@ var backgroundInclude = [
 	'zotero/connectorTypeSchemaData.js',
 	'zotero/utilities.js',
 	'utilities.js',
-	'zotero-google-docs-integration/api.js',
+	'google-docs-plugin-manager.js',
 	'messages.js',
 	'messaging.js'
 ];
@@ -231,7 +231,11 @@ function processFile() {
 			case 'zotero.js':
 				if (!argv.p) {
 					file.contents = Buffer.from(file.contents.toString()
-						.replace('"debug.log": false', '"debug.log": true'));
+						.replace('"debug.log": false', '"debug.log": true')
+						// TODO: Replace with remote code repo URL once it is set up
+						.replace('"integration.googleDocs.codeRepositoryURL": ""',
+							'"integration.googleDocs.codeRepositoryURL": "http://127.0.0.1:8090/"')
+					);
 				}
 				break;
 			case 'manifest.json':

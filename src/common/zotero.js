@@ -227,6 +227,9 @@ var Zotero = window.Zotero = new function() {
 			Zotero.Repo.init();
 			Zotero.Proxies.init();
 		}
+		if (Zotero.isBrowserExt) {
+			await Zotero.GoogleDocsPluginManager.init();
+		}
 		Zotero.initDeferred.resolve();
 		Zotero.initialized = true;
 
@@ -397,6 +400,9 @@ Zotero.Prefs = new function() {
 		"proxies.clientChecked": false,
 		
 		"integration.googleDocs.enabled": true,
+		// TODO: Add a remote repo URL (with trailing slash) once it is set up
+		"integration.googleDocs.codeRepositoryURL": "",
+		"integration.googleDocs.repoCheckInterval": 24 * 60 * 60 * 1000, // 24hrs
 		
 		"shortcuts.cite": {ctrlKey: true, altKey: true, key: 'c'}
 	};

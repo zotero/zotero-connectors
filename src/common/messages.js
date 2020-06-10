@@ -179,6 +179,9 @@ var MESSAGES = {
 			background: {minArgs: 4}
 		}
 	},
+	GoogleDocsPluginManager: {
+		injectUI: true
+	},
 	Prefs: {
 		set: false,
 		getAll: true,

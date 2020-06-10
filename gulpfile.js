@@ -277,7 +277,6 @@ function processFile() {
 			['chrome', 'firefox'].forEach((browser) => {
 				f = file.clone({contents: false});
 				if (basename == 'zotero.js') {
-					console.log(`REPLACING FOR ${browser}`);
 					let contents = f.contents.toString()
 						.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
 					contents = replaceBrowser(contents, { browserExt: true, firefox: browser == 'firefox' });

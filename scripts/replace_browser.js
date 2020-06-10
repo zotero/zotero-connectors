@@ -35,7 +35,6 @@ module.exports = function(filetext, config) {
 		let value = config[browserOption];
 		browserOption = browserOption[0].toUpperCase() + browserOption.slice(1);
 		let regexp = new RegExp(`/\\* this\\.is${browserOption} = SET IN BUILD SCRIPT \\*/`);
-		console.log(regexp);
 		filetext = filetext.replace(regexp,
 			`this.is${browserOption} = ${value}`)
 	}

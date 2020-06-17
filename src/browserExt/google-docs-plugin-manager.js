@@ -51,6 +51,14 @@ Zotero.GoogleDocsPluginManager = {
 			if (details.frameId !== 0 || !details.url.startsWith("https://docs.google.com/document/")) return;
 			Zotero.debug("Injecting Google Docs content scripts into " + details.url);
 			for (let path of this.contentScriptPaths) {
+				if (Zotero.version === '4.999.0') {
+					await browser.tabs.executeScript(details.tabId, {
+						file: "zotero-google-docs-integration/" + path,
+						frameId: 0,
+						runAt: 'document_start'
+					});
+					continue;
+				}
 				try {
 					await browser.tabs.executeScript(details.tabId, {
 						code: this.scriptContents[path],
@@ -140,10 +148,14 @@ Zotero.GoogleDocsPluginManager = {
 	injectUI: async function(tab) {
 		Zotero.debug("Injecting Google Docs UI scripts");
 		for (let path of this.uiScriptPaths) {
-			if (!this.scriptContents[path]) {
-				xhr = await Zotero.HTTP.request('GET', browser.runtime.getURL(path));
-				this.scriptContents[path] = xhr.responseText;
-			}
+			if (Zotero.version === '4.999.0') {
+				await browser.tabs.executeScript(tab.id, {
+					file: "zotero-google-docs-integration/" + path,
+					frameId: 0,
+					runAt: 'document_start'
+				});
+				continue;
+			}	
 			await browser.tabs.executeScript(tab.id, {
 				code: this.scriptContents[path],
 				frameId: 0,

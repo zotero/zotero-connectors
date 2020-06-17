@@ -5,6 +5,9 @@
 	"general_more": {
 		"message": "More…"
 	},
+	"general_moreInfo": {
+		"message": "More Info…"
+	},
 	"general_done": {
 		"message": "Done"
 	},
@@ -104,5 +107,12 @@
 	},
 	"integration_googleDocs_docxAlert": {
 		"message": "$1 integration is not available when editing Microsoft Word .docx files directly in Google Docs. Choose File → Save as Google Docs to enable this functionality.<br/><br/>If you want to transfer a Word document with $1 citations to Google Docs, see <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Moving Documents Between Word Processors</a>."
+	},
+
+	"integration_googleDocs_orphanedCitationAlert": {
+		"message": "The citation you are trying to edit has become unlinked from $1."
+	},
+	"integration_googleDocs_orphanedCitationDisclaimer": {
+		"message": "These citations have become <a target=\"_blank\" href=\"https://www.zotero.org/support/kb/google_docs_citations_unlinked\">unlinked from $1</a>. $1 won't be able to update them unless they are relinked."
 	}
 }

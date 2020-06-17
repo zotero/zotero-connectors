@@ -103,7 +103,7 @@ var Zotero = window.Zotero = new function() {
 		this.browser = "i";
 		this.clientName = window.navigator.appName;
 	}
-	this.appName = `Zotero Connector for ${this.clientName}`;
+	this.appName = `${ZOTERO_CONFIG.CLIENT_NAME} Connector for ${this.clientName}`;
 	
 	if (!this.isBookmarklet) {
 		if (this.isBrowserExt) {

@@ -242,7 +242,8 @@ Zotero.Inject = new function() {
 	this.loadReactComponents = async function(components=[]) {
 		if (Zotero.isSafari) return;
 		var toLoad = [];
-		if (typeof ReactDOM === "undefined") {
+		if (typeof ReactDOM === "undefined" || typeof React === "undefined"
+				|| !React.useState) {
 			toLoad = [
 				'lib/react.js',
 				'lib/react-dom.js',

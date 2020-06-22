@@ -448,13 +448,6 @@ Zotero.Connector_Browser = new function() {
 		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) return _showFirstUseUI(tab);
 		if (!tab.active) return;
 		browser.contextMenus.removeAll();
-		browser.browserAction.setBadgeText({ text: 'Z'} );
-		if (!Zotero.isFirefox) {
-			browser.browserAction.setBadgeBackgroundColor({ color: '#cc2936' });
-		} else {
-			browser.browserAction.setBadgeBackgroundColor({ color: '#fff' });
-			browser.browserAction.setBadgeTextColor({ color: '#cc2936' });
-		}
 
 		if (_isDisabledForURL(tab.url, true)) {
 			_showZoteroStatus();

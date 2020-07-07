@@ -28,6 +28,7 @@ var Zotero = window.Zotero = new function() {
 	this.isConnector = true;
 	this.isFx = false; // Old flag for 4.0 connector, probably not used anymore
 	/* this.isBookmarklet = SET IN BUILD SCRIPT */;
+	/* this.allowRepoTranslatorTester = SET IN BUILD SCRIPT */;
 	
 	this.initialized = false;
 	this.initDeferred = {};

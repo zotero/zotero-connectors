@@ -226,17 +226,24 @@ function processFile() {
 						process.env.ZOTERO_GOOGLE_DOCS_OAUTH_CLIENT_KEY
 					);
 				}
+				if (process.env.ZOTERO_REPOSITORY_URL) {
+					contents = contents.replace(/REPOSITORY_URL: [^,]*/,
+						`REPOSITORY_URL: "${process.env.ZOTERO_REPOSITORY_URL}"`);
+				}
 				file.contents = Buffer.from(contents);
 				break;
 			case 'zotero.js':
+				var contents = file.contents.toString();
 				if (!argv.p) {
-					file.contents = Buffer.from(file.contents.toString()
+					contents = contents
 						.replace('"debug.log": false', '"debug.log": true')
 						// TODO: Replace with remote code repo URL once it is set up
 						.replace('"integration.googleDocs.codeRepositoryURL": ""',
-							'"integration.googleDocs.codeRepositoryURL": "http://127.0.0.1:8090/"')
-					);
+							'"integration.googleDocs.codeRepositoryURL": "http://127.0.0.1:8090/"');
 				}
+				contents = contents.replace(/\/\* this\.allowRepoTranslatorTester = SET IN BUILD SCRIPT \*\//,
+					`this.allowRepoTranslatorTester = ${!!process.env.ZOTERO_REPOSITORY_URL}`);
+				file.contents = Buffer.from(contents);
 				break;
 			case 'manifest.json':
 				file.contents = Buffer.from(file.contents.toString()

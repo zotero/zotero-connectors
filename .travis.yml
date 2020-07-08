@@ -3,6 +3,8 @@ sudo: false
 language: node_js
 node_js:
     - "node"
+services:
+    - xvfb
 cache:
     directories:
         - "node_modules"
@@ -18,9 +20,5 @@ matrix:
           env: TEST_FX="1"
 notifications:
     email: false
-install:
-before_script:
-    - export DISPLAY=:99.0
-    - sh -e /etc/init.d/xvfb start
 script:
     - ./test/run_tests

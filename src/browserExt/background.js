@@ -66,7 +66,7 @@ Zotero.Connector_Browser = new function() {
 	 * @param tabId
 	 */
 	this.onPDFFrame = function(frameURL, frameId, tabId) {
-		if (_tabInfo[tabId] && _tabInfo[tabId].translators) {
+		if (_tabInfo[tabId] && _tabInfo[tabId].translators && _tabInfo[tabId].translators.length) {
 			return;
 		}
 		browser.tabs.get(tabId).then(function(tab) {
@@ -445,6 +445,10 @@ Zotero.Connector_Browser = new function() {
 	 * Update status and tooltip of Zotero button
 	 */
 	this._updateExtensionUI = function (tab) {
+		if (!tab) {
+			return chrome.tabs.query( { lastFocusedWindow: true, active: true },
+				(tabs) => tabs.length && this._updateExtensionUI(tabs[0]));
+		}	
 		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) return _showFirstUseUI(tab);
 		if (!tab.active) return;
 		browser.contextMenus.removeAll();
@@ -545,8 +549,7 @@ Zotero.Connector_Browser = new function() {
 	function _isDisabledForURL(url, excludeTests=false) {
 		return url.startsWith('chrome://') ||
 			url.startsWith('about:') ||
-			url.startsWith('chrome-') ||
-			(url.includes('-extension://') && (!excludeTests || !url.includes('/test/data/')));
+			(url.startsWith('chrome-') && (!excludeTests || !url.includes('/test/data/')));
 	}
 	
 	function _showZoteroStatus(tabID) {

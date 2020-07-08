@@ -47,7 +47,17 @@ describe('Connector_Browser', function() {
 				});
 				await Zotero.Promise.delay(30);
 				await tab.init(getExtensionURL('test/data/framePDF.html'));
+				
+				// The frame is not initialized unless the tab is activated momentarily.
+				await background(async function(tabId) {
+					var prevActiveTab = await browser.tabs.query({active: true, currentWindow: true});
+					await browser.tabs.update(tabId, {active: true});
+					await Zotero.Promise.delay(100);
+					await browser.tabs.update(prevActiveTab[0].id, {active: true});
+				}, tab.tabId);
+				
 				await bgPromise;
+
 				let tabId = await background(async function(tabId) {
 					if (Zotero.isBrowserExt) {
 						return Zotero.Connector_Browser._showPDFIcon.args[0][0].id;

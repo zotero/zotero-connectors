@@ -164,13 +164,16 @@ describe("Translation", function() {
 							stub.restore(); stub2.restore();	
 						}
 					}, tab.tabId);
+					var translatorNames = await tab.run(() => {
+						return Zotero.Inject.translators.map(translator => translator.label);
+					})
 					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
 					var message = await tab.runInFrame(frameURL, async function() {
 						// TODO: A more robust way to wait for the text to show up.
 						await Zotero.Promise.delay(100);
 						return document.querySelector('.ProgressWindow-error').textContent;
 					});
-					assert.include(message, 'An error occurred while saving this item.');
+					assert.include(message, Zotero.i18n.getString('progressWindow_error_fallback').substr(0, 20));
 				});
 			});
 			

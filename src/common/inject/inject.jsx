@@ -125,8 +125,8 @@ Zotero.Inject = new function() {
 				// back to the callback due to backwards compat code in translate.js
 				(async function() {
 					try {
-						let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
-						if (response.libraryEditable === false) {
+						let response = await Zotero.Connector.getSelectedCollection();
+						if (response.library.editable === false) {
 							return callback([]);
 						}
 					} catch (e) {
@@ -467,6 +467,85 @@ Zotero.Inject = new function() {
 			}
 		}
 	};
+
+	this.saveAsAttachment = async function (args) {
+		var [title, link, item] = args;
+		var sessionID = Zotero.Utilities.randomString();
+
+		var data = {
+			title: title || document.title,
+			url: document.location.toString(),
+			cookie: document.cookie,
+			html: document.documentElement.innerHTML,
+			link,
+			sessionID
+		};
+
+		if (document.contentType == 'application/pdf') {
+			data.pdf = true;
+		}
+		if (link) {
+			var image = 'attachment-link';
+		} else if (data.pdf) {
+			var image = "attachment-pdf";
+		} else {
+			var image = "webpage";
+		}
+		
+		const headline = Zotero.i18n.getString(`progressWindow_attaching_${link ? 'link' : 'snapshot'}`);
+
+		Zotero.Messaging.sendMessage("progressWindow.show", [sessionID, headline, true]);
+		Zotero.Messaging.sendMessage(
+			"progressWindow.itemProgress",
+			{
+				sessionID,
+				id: item.itemID,
+				iconSrc: Zotero.ItemTypes.getImageSrc(item.type),
+				title: item.title,
+				progress: 100
+			}
+		);	
+		Zotero.Messaging.sendMessage(
+			"progressWindow.itemProgress",
+			{
+				sessionID,
+				id: data.title,
+				iconSrc: Zotero.ItemTypes.getImageSrc(image),
+				parentItem: item.itemID,
+				title: data.title
+			}
+		);
+		try {
+			const result = await Zotero.Connector.callMethodWithCookies("attachSnapshot", data);
+			Zotero.Messaging.sendMessage(
+				"progressWindow.itemProgress",
+				{
+					sessionID,
+					id: data.title,
+					iconSrc: Zotero.ItemTypes.getImageSrc(image),
+					parentItem: item.itemID,
+					title: data.title,
+					progress: 100
+				}
+			);
+			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+			return result;
+		}
+		catch (e) {
+			// Client unavailable
+			if (e.status === 0) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
+			} else if (e.value && e.value.libraryEditable === false) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'collectionNotEditable']);
+			} else if (e.value && e.value.itemsSelected != 1) {
+				// This should really never occur since the option is disabled when multiple items are selected
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'cannotAttach']);
+			} else {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
+			}
+			throw e;
+		}
+	};
 	
 	this.saveAsWebpage = async function (args) {
 		var title = args[0] || document.title, options = args[1] || {};
@@ -627,6 +706,7 @@ if(!isHiddenIFrame) {
 				Zotero.Inject.saveAsWebpage(data);
 			}
 		});
+		Zotero.Messaging.addMessageListener("saveAsAttachment", Zotero.Inject.saveAsAttachment);
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {
 			Zotero.Inject.init(true);

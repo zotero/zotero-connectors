@@ -91,6 +91,7 @@ describe('Preferences', function() {
 		it('submits an error report to Zotero.org', Promise.coroutine(function* () {
 			var reportId = '1234567890';
 			yield background(function(reportId) {
+				sinon.stub(Zotero.Connector, 'callMethod').resolves(new Zotero.Connector.CommunicationError('stub'));
 				sinon.stub(Zotero.HTTP, 'request').resolves(
 					{responseText: `<?xml version="1.0" encoding="UTF-8"?><xml><reported reportID="${reportId}"/></xml>`}
 				);
@@ -109,26 +110,30 @@ describe('Preferences', function() {
 				
 				assert.include(message, reportId);
 			} finally {
-				yield background(() => Zotero.HTTP.request.restore());
+				yield background(() => {
+					Zotero.HTTP.request.restore();
+					Zotero.Connector.callMethod.restore();
+				});
 			}
 		}));
 		
-		it('submits a debug log to Zotero.org', Promise.coroutine(function * () {
+		it('submits a debug log to Zotero.org', async function () {
 			var debugId = '1234567890';
 			var testDebugLine = 'testDebugLine';
-			yield background(function(debugId) {
+			await background(function(debugId) {
 				sinon.stub(Zotero.HTTP, 'request').resolves(
 					{responseText: `<?xml version="1.0" encoding="UTF-8"?><xml><reported reportID="${debugId}"/></xml>`}
 				);
+				sinon.stub(Zotero.Connector, 'callMethod').resolves(new Zotero.Connector.CommunicationError('stub'));
 			}, debugId);
 
 			try {
-				yield tab.run(function(testDebugLine) {
+				await tab.run(function(testDebugLine) {
 					document.getElementById('advanced-checkbox-enable-logging').click();
 					Zotero.debug(testDebugLine);
 					return Zotero_Preferences.refreshData();
 				}, testDebugLine);
-				var message = yield tab.run(function() {
+				var message = await tab.run(function() {
 					var deferred = Zotero.Promise.defer();
 					sinon.stub(Zotero.ModalPrompt, 'confirm').callsFake(deferred.resolve);
 					document.getElementById('advanced-checkbox-enable-logging').click();
@@ -141,13 +146,16 @@ describe('Preferences', function() {
 				});
 				
 				assert.include(message, `D${debugId}`);
-				var debugLogBody = yield background(function() {
+				var debugLogBody = await background(function() {
 					return Zotero.HTTP.request.lastCall.args[2].body;
 				});
 				assert.include(debugLogBody, testDebugLine);
 			} finally {
-				yield background(() => Zotero.HTTP.request.restore());
-			}		
-		}));
+				await background(function() {
+					Zotero.HTTP.request.restore();
+					Zotero.Connector.callMethod.restore();
+				});
+			}	
+		});
 	});
 });

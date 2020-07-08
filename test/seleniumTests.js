@@ -85,20 +85,21 @@ if ('TEST_CHROME' in process.env) {
 	(async function() {
 		try {
 			require('chromedriver');
-			let caps = selenium.Capabilities.chrome();
-			
-			let options = {'args': [`load-extension=${chromeExtensionDir}`]};
+			let chrome = require('selenium-webdriver/chrome');
+			let options = new chrome.Options();
+			options.addArguments(`load-extension=${chromeExtensionDir}`);
 			if ('BROWSER_EXECUTABLE' in process.env) {
-				options['binary'] = process.env['BROWSER_EXECUTABLE']
+				options.setChromeBinaryPath(process.env['BROWSER_EXECUTABLE']);
 			}
 
-			caps.set('chromeOptions', options);
 			let driver = new selenium.Builder()
-				.withCapabilities(caps)
+				.forBrowser('chrome')
+				.setChromeOptions(options)
 				.build();
 			
 			// No API to retrieve extension ID. Hacks, sigh.
 			await driver.get("chrome://system/");
+			await driver.wait(until.elementLocated({id: 'extensions-value-btn'}), 60*1000);
 			let extBtn = await driver.findElement({css: '#extensions-value-btn'});
 			await extBtn.click();
 			let contentElem = await driver.findElement({css: '#content'});
@@ -125,7 +126,6 @@ if ('TEST_FX' in process.env) {
 		try {
 			require('geckodriver');
 
-			
 			const firefox = require('selenium-webdriver/firefox');
 			var options = new firefox.Options();
 			if ('BROWSER_EXECUTABLE' in process.env) {
@@ -144,9 +144,13 @@ if ('TEST_FX' in process.env) {
 			`);
 			await driver.setContext(firefox.Context.CONTENT);
 
-			await driver.installAddon('/tmp/zoteroConnector.xpi');
-			await driver.get('about:debugging');
-			let elem = await driver.findElement({css: '.internal-uuid span'});
+			let uuid = await driver.installAddon('/tmp/zoteroConnector.xpi');
+			// Doing some crazy xpath matching since extId cannot be retrieved by API
+			// Sigh. This is bound to break eventually
+			let extIdXPath = `//dd[text()="${uuid}"]/../following-sibling::div/dd`;
+			await driver.get('about:debugging#/runtime/this-firefox');
+			await driver.wait(until.elementLocated({xpath: extIdXPath}), 60*1000);
+			let elem = await driver.findElement({xpath: extIdXPath});
 			let extId = await elem.getText();
 			let testUrl = `moz-extension://${extId}/test/test.html#console`;
 			await new Promise((resolve) => setTimeout(() => resolve(driver.get(testUrl)), 500));

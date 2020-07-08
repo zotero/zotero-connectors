@@ -37,7 +37,14 @@ Zotero.Repo = new function() {
 	 */
 	this.init = new function() {
 		var promise;
+		var listenerId;
 		return function() {
+			if (!listenerId) {
+				listenerId = Zotero.Connector.addEventListener('translators', {notify: function() {
+					Zotero.Repo.update();
+				}});
+			}
+		
 			// get time of next check
 			_nextCheck = Zotero.Prefs.get("connector.repo.lastCheck.localTime")
 				+ZOTERO_CONFIG.REPOSITORY_CHECK_INTERVAL*1000;

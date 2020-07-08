@@ -24,53 +24,118 @@
 */
 
 // TODO: refactor this class
-Zotero.Connector = new function() {
-	const CONNECTOR_API_VERSION = 2;
+Zotero.Connector = {
+	_CONNECTOR_API_VERSION: 2,
 	
-	var _ieStandaloneIframeTarget, _ieConnectorCallbacks;
-	this.isOnline = (Zotero.isSafari || Zotero.isFirefox) ? false : null;
-	this.shouldReportActiveURL = true;
-	this.clientVersion = '';
+	// As of Chrome 38 (and corresponding Opera version 24?) pages loaded over
+	// https (i.e. the zotero bookmarklet iframe) can not send requests over
+	// http, so pinging Standalone at http://127.0.0.1 fails.
+	// Disable for all browsers, except IE, which may be used frequently with ZSA
+	isOnline: Zotero.isBookmarklet && !Zotero.isIE ? false : null,
+	_shouldReportActiveURL: true,
+	selected: {collection: null, library: null, item: null},
+	clientVersion: '',
+
+	init: function() {
+		this.addEventListener('init', {notify: function(data) {
+			this.selected = data.selected;
+			Zotero.Connector_Browser._updateExtensionUI();
+		}.bind(this)});
+		this.addEventListener('select', {notify: function(data) {
+			Object.assign(this.selected, data);
+			Zotero.Connector_Browser._updateExtensionUI();
+		}.bind(this)});
+		this.addEventListener('reports', {notify: async function(data) {
+			if ('errors' in data && 'get' in data.errors) {
+				let sysInfo = await Zotero.getSystemInfo();
+				let errors = await Zotero.Errors.getErrors();
+				Zotero.Connector.callMethod('reports', {report: `${sysInfo}\n\n${errors.join('\n\n')}`});
+			}
+			else if ('debug' in data) {
+				if ('get' in data.debug) {
+					let debug = await Zotero.Debug.get();
+					Zotero.Connector.callMethod('reports', {report: debug});
+				}
+				else if ('store' in data.debug) {
+					Zotero.Debug.setStore(data.debug.store)
+				}
+				else if ('clear' in data.debug) {
+					Zotero.Debug.clear();
+				}
+			}
+		}});
+		
+		Zotero.Connector.SSE.init();
+	},
 	
 	/**
 	 * Checks if Zotero is online and passes current status to callback
 	 * @param {Function} callback
 	 */
-	this.checkIsOnline = async function() {
+	checkIsOnline: async function() {
 		// Only check once in bookmarklet
-		if(Zotero.isBookmarklet && this.isOnline !== null) {
+		if (Zotero.isBookmarklet && this.isOnline !== null) {
+			return this.isOnline;
+		}
+		
+		// If SSE is available then we can return current status too
+		if (Zotero.Connector.SSE.available) {
 			return this.isOnline;
 		}
 
-		return this.ping({}).catch(function(e) {
-			if (e.status == 0) {
+		try {
+			return await Zotero.Connector.ping("ping", {});
+		}
+		catch (e) {
+			if (e.status === 0) {
 				return false;
 			}
-			throw e;
-		});
-	};
+			throw e
+		}
+	},
 
-	this.reportActiveURL = function(url) {
-		if (!this.isOnline || !this.shouldReportActiveURL) return;
+	reportActiveURL: function (url) {
+		if (!this.isOnline || !this._shouldReportActiveURL) return;
 		
 		let payload = { activeURL: url };
 		this.ping(payload);
-	}
+	},
 	
-	this.ping = function(payload={}) {
+	ping: function (payload={}) {
 		return Zotero.Connector.callMethod("ping", payload).then(function(response) {
 			if (response && 'prefs' in response) {
-				Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
+				Zotero.Connector._shouldReportActiveURL = !!response.prefs.reportActiveURL;
 				Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
 			}
 			return response || {};
 		});
-	}
+	},
 	
-	this.getClientVersion = async function() {
+	getSelectedCollection: async function() {
+		if (!Zotero.Connector.isOnline) {
+			throw new this.CommunicationError('Zotero is Offline');
+		} else if (Zotero.Connector.SSE.available) {
+			return this.selected;
+		} else {
+			const response = await this.callMethod('getSelectedCollection', {});
+			let selected = {
+				library: {
+					id: response.libraryID,
+					name: response.libraryName,
+					editable: response.libraryEditable,
+				}
+			};
+			selected.collection = { id: response.id, name: response.name };
+			selected.id = response.id || response.libraryID;
+			selected.name = response.name;
+			return selected;
+		}
+	},
+	
+	getClientVersion: async function() {
 		let isOnline = await this.checkIsOnline();
 		return isOnline && this.clientVersion;
-	}
+	},
 	
 	/**
 	 * Sends the XHR to execute an RPC call.
@@ -84,7 +149,9 @@ Zotero.Connector = new function() {
 	 * @param {Object} data - RPC data to POST. If null or undefined, a GET request is sent.
 	 * @param {Function} callback - Function to be called when requests complete.
 	 */
-	this.callMethod = async function(options, data, tab) {
+	callMethod: async function(options, data, tab) {
+		// TODO: make this default behaviour once people switch to SSE enabled Zotero
+		// and prompt if Zotero.isOnline but SSE unavailable - i.e. fairly old version of Zotero is running
 		// Don't bother trying if not online in bookmarklet
 		if (Zotero.isBookmarklet && this.isOnline === false) {
 			throw new Zotero.Connector.CommunicationError("Zotero Offline", 0);
@@ -96,7 +163,7 @@ Zotero.Connector = new function() {
 		var headers = Object.assign({
 				"Content-Type":"application/json",
 				"X-Zotero-Version":Zotero.version,
-				"X-Zotero-Connector-API-Version":CONNECTOR_API_VERSION
+				"X-Zotero-Connector-API-Version":Zotero.Connector._CONNECTOR_API_VERSION
 			}, options.headers || {});
 		var timeout = "timeout" in options ? options.timeout : 15000;
 		var queryString = options.queryString ? ("?" + options.queryString) : "";
@@ -170,7 +237,7 @@ Zotero.Connector = new function() {
 	 * @param {String|Object} options. See documentation above
 	 * @param	{Object} data RPC data. See documentation above.
 	 */
-	this.callMethodWithCookies = function(options, data, tab) {
+	callMethodWithCookies: function(options, data, tab) {
 		if (Zotero.isBrowserExt && !Zotero.isBookmarklet) {
 			let cookieParams = {
 				url: tab.url
@@ -229,47 +296,71 @@ Zotero.Connector.CommunicationError = function (message, status=0, value='') {
 }
 Zotero.Connector.CommunicationError.prototype = new Error;
 
-Zotero.Connector_Debug = new function() {
-	/**
-	 * Call a callback depending upon whether debug output is being stored
-	 */
-	this.storing = function() {
-		return Zotero.Debug.storing;
-	}
-	
-	/**
-	 * Call a callback with the lines themselves
-	 */
-	this.get = function() {
-		return Zotero.Debug.get();
-	};
-		
-	/**
-	 * Call a callback with the number of lines of output
-	 */
-	this.count = function() {
-		return Zotero.Debug.count();
-	}
-	
-	/**
-	 * Submit data to the server
-	 */
-	this.submitReport = async function() {
-		let body = await Zotero.Debug.get();
-		let xmlhttp = await Zotero.HTTP.request("POST", ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1", {body});
 
-		let responseXML;
-		try {
-			let parser = new DOMParser();
-			responseXML = parser.parseFromString(xmlhttp.responseText, "text/xml");
+Zotero.Connector.SSE = {
+	_listeners: {},
+	available: false,
+
+	init: function() {
+		const url = Zotero.Prefs.get('connector.url') + "connector/sse";
+		this._evtSrc = new EventSource(url);
+		this._evtSrc.onerror = this._onError.bind(this);
+		this._evtSrc.onmessage = this._onMessage.bind(this);
+		this._evtSrc.onopen = this._onOpen.bind(this);
+	},
+	
+	_onError: function(e) {
+		this._evtSrc.close();
+		delete this._evtSrc;
+		
+		if (Zotero.Connector.isOnline) {
+			Zotero.Connector.isOnline = false;
+			Zotero.Connector_Browser.onStateChange(false);
+			Zotero.debug('Zotero client went offline');
 		}
-		catch (e) {
-			throw new Error('Invalid response from server');
+
+		if (e.target.readyState != 1) {
+			// Attempt to reconnect every 10 secs
+			return setTimeout(this.init.bind(this), 10000);
 		}
-		var reported = responseXML.getElementsByTagName('reported');
-		if (reported.length != 1) {
-			throw new Error('The server returned an error. Please try again.');
+		// Immediately attempt to reconnect in case of a simple HTTP timeout
+		this.init();
+	},
+	
+	_onMessage: function(e) {
+		var data = JSON.parse(e.data);
+		Zotero.debug(`SSE event '${data.event}':${JSON.stringify(data.data).substr(0, 100)}`);
+		if (data.event in this._listeners) {
+			this._listeners[data.event].forEach((l) => l.notify(data.data));
 		}
-		return reported[0].getAttribute('reportID');
-	};
-}
+	},
+	
+	_onOpen: function() {
+		this.available = true;
+		Zotero.Connector.ping();
+		Zotero.debug('Zotero client is online');
+	},
+
+	/**
+	 * @param {String} event
+	 * @param {Object} listener - {notify: function(data){} }
+	 * @returns listener
+	 * @private
+	 */
+	_addEventListener: function(event, listener) {
+		if (event in this._listeners) {
+			this._listeners[event].push(listener);
+		} else {
+			this._listeners[event] = [listener];
+		}
+		return listener;
+	},
+	
+	_removeEventListener: function(event, fn) {
+		if (event in this._listeners) {
+			this._listeners[event] = this._listeners[event].filter((l) => l !== listener);
+		}
+	}
+};
+Zotero.Connector.addEventListener = Zotero.Connector.SSE._addEventListener.bind(Zotero.Connector.SSE);
+Zotero.Connector.removeEventListener = Zotero.Connector.SSE._removeEventListener.bind(Zotero.Connector.SSE);

@@ -46,23 +46,69 @@ describe('Connector', function() {
 		}));
 		
 		it('responds with false when Zotero is offline', Promise.coroutine(function*() {
-			let status = yield background(function() {
+			let status = yield background(async function() {
 				Zotero.HTTP.request.resolves({status: 0});
-				return Zotero.Connector.checkIsOnline();
+				let sseStatus = Zotero.Connector.SSE.available;
+				Zotero.Connector.SSE.available = false;
+				let status = await Zotero.Connector.checkIsOnline();
+				Zotero.Connector.SSE.available = sseStatus;
+				return status
 			});
 			assert.isNotOk(status);
 		}));
 		
 		it('throws when Zotero responds with a non-200 status', Promise.coroutine(function* () {
 			try {
-				yield background(function() {
+				yield background(async function() {
 					Zotero.HTTP.request.resolves({status: 500, getResponseHeader: () => '', responseText: 'Error'});
-					return Zotero.Connector.checkIsOnline();
+					let sseStatus = Zotero.Connector.SSE.available;
+					Zotero.Connector.SSE.available = false;
+					let status = await Zotero.Connector.checkIsOnline();
+					Zotero.Connector.SSE.available = sseStatus;
+					return status
 				});
 			} catch (e) {
 				return
 			}
 			throw new Error('Expected error not thrown');
+		}));
+	});
+		
+	describe('#getSelectedCollection()', function() {
+		it('throws if Zotero is offline', Promise.coroutine(function* () {
+			try {
+				yield background(function() {
+					Zotero.Connector.isOnline = false;
+					return Zotero.Connector.getSelectedCollection()
+				});
+			} catch (e) {
+				assert.equal(e.status, 0);
+				return;
+			}
+			throw new Error('Error not thrown');
+		}));
+	
+		it('gets an SSE result if SSE available', Promise.coroutine(function*() {
+			let s = yield background(function() {
+				Zotero.Connector.isOnline = true;
+				Zotero.Connector.SSE.available = true;
+				Zotero.Connector.selected = {collection: 'selected'};
+				return Zotero.Connector.getSelectedCollection()
+			});
+			assert.deepEqual(s, {collection: 'selected'});
+		}));
+		it('calls Zotero if SSE unavailable', Promise.coroutine(function*() {
+			let call = yield background(function() {
+				Zotero.Connector.isOnline = true;
+				Zotero.Connector.SSE.available = false;
+				sinon.stub(Zotero.Connector, 'callMethod').resolves({name: 'selected'});
+				return Zotero.Connector.getSelectedCollection().then(function() {
+					let call = Zotero.Connector.callMethod.lastCall;
+					Zotero.Connector.callMethod.restore();
+					return call;
+				});
+			});
+			assert.equal(call.args[0], 'getSelectedCollection');	
 		}));
 	});
 });

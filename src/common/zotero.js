@@ -227,6 +227,7 @@ var Zotero = window.Zotero = new function() {
 			await Zotero.i18n.init();
 			Zotero.Repo.init();
 			Zotero.Proxies.init();
+			Zotero.Connector.init();
 		}
 		if (Zotero.isBrowserExt) {
 			await Zotero.GoogleDocsPluginManager.init();
@@ -254,7 +255,6 @@ var Zotero = window.Zotero = new function() {
 			'reportTranslationFailure', 'capitalizeTitles']);
 		await Zotero.Prefs.loadNamespace('debug');
 		
-		Zotero.Debug.init();
 		Zotero.initDeferred.resolve();
 		Zotero.initialized = true;
 	};
@@ -283,24 +283,19 @@ var Zotero = window.Zotero = new function() {
 		
 		info.appName = Zotero.appName;
 		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());
-		
-		var str = '';
-		for (var key in info) {
-			str += key + ' => ' + info[key] + ', ';
-		}
 		if (Zotero.isBackground && Zotero.isChrome) {
 			let granted = await browser.permissions.contains({permissions: ['management']});
 			if (granted) {
-				str += 'extensions => ';
-				let extensions = await browser.management.getAll();
-				for (let extension of extensions) {
+				info.extensions = "";
+				const extensions = await browser.management.getAll();
+				for (const extension of extensions) {
 					if (!extension.enabled || extension.name == Zotero.appName) continue;
-					str += `${extension.name} (${extension.version}, ${extension.type}), `;
+					info.extensions += `${extension.name} (${extension.version}, ${extension.type}), `;
 				}
 			}
-		}
-		str = str.substr(0, str.length - 2);
-		return str;
+		}	
+		
+		return JSON.stringify(info, null, '  ');
 	};
 	
 	/**
@@ -398,6 +393,7 @@ Zotero.Prefs = new function() {
 		"proxies.disableByDomain": false,
 		"proxies.disableByDomainString": '.edu',
 		"proxies.proxies": [],
+		"proxies.dateModified": 0,
 		"proxies.clientChecked": false,
 		
 		"integration.googleDocs.enabled": true,

@@ -61,10 +61,10 @@ Zotero.Connector_Browser = new function() {
 			tab.isPDFFrame = false;
 			tab.translators = null;
 		}
-		_updateButtonStatus(tab);
+		Zotero.Connector_Browser._updateExtensionUI(tab);
 	};
 	
-	this.onTabFocus = _updateButtonStatus;
+	this.onTabFocus = Zotero.Connector_Browser._updateExtensionUI;
 	
 	/**
 	 * If there's a frame with a PDF mimeType this gets invoked
@@ -77,7 +77,7 @@ Zotero.Connector_Browser = new function() {
 		}
 		tab.isPDFFrame = true;
 		tab.instanceID = instanceID;
-		_updateButtonStatus(tab);
+		Zotero.Connector_Browser._updateExtensionUI(tab);
 	}
 	
 	
@@ -87,7 +87,7 @@ Zotero.Connector_Browser = new function() {
 	this.onTranslators = function(translators, instanceID, contentType, tab) {
 		tab.contentType = contentType;
 		if (!translators.length) {
-			return _updateButtonStatus(tab);
+			return Zotero.Connector_Browser._updateExtensionUI(tab);
 		}
 		
 		let existingTranslators = tab.translators;
@@ -106,7 +106,7 @@ Zotero.Connector_Browser = new function() {
 		tab.instanceID = instanceID;
 		tab.isPDFFrame = false;
 
-		_updateButtonStatus(tab);
+		Zotero.Connector_Browser._updateExtensionUI(tab);
 	}
 	
 	/**
@@ -137,7 +137,7 @@ Zotero.Connector_Browser = new function() {
 	// Received after global page init and restart
 	this.onTabData = function(data, tab) {
 		Object.assign(tab, data);
-		_updateButtonStatus(tab);
+		Zotero.Connector_Browser._updateExtensionUI(tab);
 	};
 
 	this.saveWithTranslator = function(tab, translatorID, options) {
@@ -239,8 +239,15 @@ Zotero.Connector_Browser = new function() {
 					snapshot: translatorID == "withSnapshot"
 				});
 				break;
+			case "attachSnapshot":
+				Zotero.Connector_Browser.saveAsAttachment(tab, false);
+				break;
+			case "attachLink":
+				Zotero.Connector_Browser.saveAsAttachment(tab, true);
+				break;
 			default:
 				Zotero.Connector_Browser.saveWithTranslator(tab, translatorID, {fallbackOnFailure: false});
+				break;
 		}
 	};
 
@@ -253,7 +260,7 @@ Zotero.Connector_Browser = new function() {
 	 * 
 	 * Called on changing tabs, translator update or when Zotero goes online/offline
 	 */
-	async function _updateButtonStatus(tab) {
+	this._updateExtensionUI = async function(tab) {
 		var translators = tab.translators;
 		var isPDF = tab.contentType == 'application/pdf' || tab.isPDFFrame;
 		let image, tooltip;
@@ -264,16 +271,28 @@ Zotero.Connector_Browser = new function() {
 		}
 		
 		let contextItemList = [];
-		const finalItems = [
+		let finalItems = [
 			["withSnapshot", "Save to Zotero (Web Page with Snapshot)"],
 			["withoutSnapshot", "Save to Zotero (Web Page without Snapshot)"]
 		];
+
+		const SSEAvailable = Zotero.Connector.SSE.available && Zotero.Connector.isOnline;
+		if (SSEAvailable) {
+			const singleItemSelected = Zotero.Connector.selected.items.length == 1;
+			const item = singleItemSelected && Zotero.Connector.selected.items[0];
+			const itemIsAttachment = ['attachment', 'note'].includes(item.type);
+			if (singleItemSelected && !itemIsAttachment) {
+				finalItems.push(['attachSnapshot', "Attach Snapshot of Current Page"],
+					['attachLink', "Attach Link of Current Page"], )
+			}
+		}
 
 		if (translators && translators.length) {
 			for (let translator of translators) {
 				contextItemList.push([translator.translatorID, _getTranslatorLabel(translator)])
 			}
 			[image, tooltip] = _showTranslatorIcon(translators[0], tab);
+			contextItemList = contextItemList.slice(0, 9 - finalItems.length);
 		} else if (isPDF) {
 			contextItemList.push(["pdf", "Save to Zotero (PDF)"]);
 			[image, tooltip] = _showPDFIcon(tab);

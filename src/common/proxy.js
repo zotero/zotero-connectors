@@ -75,6 +75,18 @@ Zotero.Proxies = new function() {
 		
 		if (this.transparent) {
 			Zotero.Proxies.loadFromClient();
+			let id = Zotero.Connector.addEventListener('init', {notify: function(data) {
+				if (data.proxies && data.proxies.dateModified > Zotero.Prefs.get("proxies.dateModified")) {
+					Zotero.debug(`Loading proxy data from the client. ` + 
+						`Client ${data.proxies.dateModified}, local ${Zotero.Proxies.dateModified}`);
+					Zotero.Prefs.set('proxies.proxies', data.proxies.proxies);
+					Zotero.Prefs.set('proxies.dateModified', Date.now());
+					// Will get added again by #init()
+					Zotero.Connector.removeEventListener(id);
+					Zotero.Proxies.init();
+					return;
+				}
+			}});
 		}
 	};
 	
@@ -131,6 +143,7 @@ Zotero.Proxies = new function() {
 		}
 	};
 	
+	// TODO: Remove once SSE is fully out for Z5
 	this.loadFromClient = function() {
 		if (Zotero.Prefs.get('proxies.clientChecked')) return;
 		return Zotero.Connector.callMethod('proxies', null).then(function(result) {
@@ -500,7 +513,9 @@ Zotero.Proxies = new function() {
 		});
 	};
 	
-	this.storeProxies = function() {
+	this.storeProxies = async function(skipClient=false) {
+		// Currently disabled due to required schema changes in Zotero-client
+		return 0;
 		let proxies = Zotero.Proxies.proxies.map(function(p) {
 			return {
 				id: p.id,
@@ -512,6 +527,17 @@ Zotero.Proxies = new function() {
 		});
 		
 		Zotero.Prefs.set('proxies.proxies', proxies);
+		if (!skipClient) {
+			return Zotero.Connector.callMethod('storeProxies', proxies)
+			// If it fails - it fails.
+			.catch(() => false).then(function() {
+				// Make sure this timestamp is higher than the date stored in the client, so that we don't
+				// unneccessarily keep on reinitializing connector proxy list on connector/client restart
+				Zotero.Prefs.set('proxies.dateModified', Date.now());
+			});
+		} else {
+			Zotero.Prefs.set('proxies.dateModified', Date.now());
+		}
 	};
 
 	/**

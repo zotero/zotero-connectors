@@ -115,7 +115,11 @@ var MESSAGES = {
 				minArgs: 4
 			}
 		},
-		setStore: false
+		setStore: false,
+		isStoring: true,
+		get: true,
+		count: true,
+		submitToZotero: true
 	},
 	Connector: {
 		checkIsOnline: true,
@@ -123,6 +127,7 @@ var MESSAGES = {
 		callMethodWithCookies: true,
 		getClientVersion: true,
 		reportActiveURL: false,
+		getSelectedCollection: true,
 	},
 	Connector_Browser: {
 		onSelect: true,
@@ -136,16 +141,15 @@ var MESSAGES = {
 		openPreferences: false,
 		bringToFront: true
 	},
-	Connector_Debug: {
-		storing: true,
-		get: true,
-		count: true,
-		submitReport: true
-	},
 	Errors: {
 		log: false,
 		getErrors: true,
-		sendErrorReport: true
+		submitToZotero: {
+			response: true,
+			background: {
+				minArgs: 1
+			}
+		}
 	},
 	Messaging: {
 		sendMessage: {

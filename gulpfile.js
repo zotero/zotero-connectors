@@ -33,6 +33,7 @@ const gulp = require('gulp');
 const plumber = require('gulp-plumber');
 const babel = require('@babel/core');
 const browserify = require('browserify');
+const schemaJSON = require('./src/zotero/resource/schema/global/schema.json');
 const argv = require('yargs')
 	.boolean('p')
 	.alias('p', 'production')
@@ -52,6 +53,7 @@ var injectInclude = [
 	'http.js',
 	'proxy.js',
 	'cachedTypes.js',
+	'schema.js',
 	'zotero/date.js',
 	'zotero/debug.js',
 	'zotero/openurl.js',
@@ -258,6 +260,55 @@ function processFile() {
 					.replace("/*INJECT SCRIPTS*/", 
 						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t')));
 				break;
+			case 'schema.js': {
+				let Zotero = { Schema: {} };
+				let data = schemaJSON;
+				
+				//
+				// Keep in sync with the client's schema.js
+				//
+				Zotero.Schema.CSL_TYPE_MAPPINGS = {};
+				Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE = {};
+				for (let cslType in data.csl.types) {
+					for (let zoteroType of data.csl.types[cslType]) {
+						Zotero.Schema.CSL_TYPE_MAPPINGS[zoteroType] = cslType;
+					}
+					Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE[cslType] = [...data.csl.types[cslType]];
+				}
+				Zotero.Schema.CSL_TEXT_MAPPINGS = data.csl.fields.text;
+				Zotero.Schema.CSL_DATE_MAPPINGS = data.csl.fields.date;
+				Zotero.Schema.CSL_NAME_MAPPINGS = data.csl.names;
+				Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE = {};
+				for (let cslField in data.csl.fields.text) {
+					for (let zoteroField of data.csl.fields.text[cslField]) {
+						Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE[zoteroField] = cslField;
+					}
+				}
+				for (let cslField in data.csl.fields.date) {
+					let zoteroField = data.csl.fields.date[cslField];
+					Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE[zoteroField] = cslField;
+				}
+				
+				file.contents = Buffer.from(file.contents.toString()
+					.replace(
+						"/*CSL_MAPPINGS*/",
+						"CSL_TYPE_MAPPINGS: "
+							+ JSON.stringify(Zotero.Schema.CSL_TYPE_MAPPINGS)
+						+ ", CSL_TYPE_MAPPINGS_REVERSE: "
+							+ JSON.stringify(Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE)
+						+ ", CSL_TEXT_MAPPINGS: "
+							+ JSON.stringify(Zotero.Schema.CSL_TEXT_MAPPINGS)
+						+ ", CSL_TYPE_MAPPINGS_REVERSE: "
+							+ JSON.stringify(Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE)
+						+ ", CSL_DATE_MAPPINGS: "
+							+ JSON.stringify(Zotero.Schema.CSL_DATE_MAPPINGS)
+						+ ", CSL_NAME_MAPPINGS: "
+							+ JSON.stringify(Zotero.Schema.CSL_NAME_MAPPINGS)
+						+ ", CSL_FIELD_MAPPINGS_REVERSE: "
+							+ JSON.stringify(Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE)
+					));
+				break;
+			}
 			case 'preferences.html':
 			case 'progressWindow.html':
 			case 'modalPrompt.html':
@@ -361,6 +412,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/preferences/preferences.html',
 		'./src/common/progressWindow/progressWindow.html',
 		'./src/common/modalPrompt/modalPrompt.html',
+		'./src/common/schema.js',
 		'./src/common/zotero.js',
 		'./src/common/zotero_config.js',
 		'./src/common/test/**/*',

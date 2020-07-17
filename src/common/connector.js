@@ -151,6 +151,20 @@ Zotero.Connector = new function() {
 		if (headers["Content-Type"] == 'application/json') {
 			data = JSON.stringify(data);
 		}
+		else if (headers["Content-Type"] == 'multipart/form-data') {
+			let formData = new FormData();
+			for (const entry in data) {
+				// For SingleFile binary arrays, convert them to blobs
+				if (entry.startsWith('binary-')) {
+					const int8array = new Uint8Array(Object.values(data[entry]));
+					formData.append(entry, new Blob([int8array]));
+				}
+				else {
+					formData.append(entry, data[entry]);
+				}
+			}
+			data = formData;
+		}
 		options = {body: data, headers, successCodes: false, timeout};
 		let httpMethod = data == null || data == undefined ? "GET" : "POST";
 		Zotero.HTTP.request(httpMethod, uri, options)

@@ -284,6 +284,12 @@ function copyResources {
 	
 	# Remove .jsx files - we'll deal with those in gulp
 	find "$browser_builddir" -type f -name "*.jsx" -delete
+
+	# Copy SingleFileZ submodule code
+	mkdir -p "$browser_builddir/lib/SingleFileZ/extension/lib"
+	cp -r "$SRCDIR/zotero/resource/SingleFileZ/extension/lib/single-file" \
+		"$browser_builddir/lib/SingleFileZ/extension/lib/single-file"
+	cp -r "$SRCDIR/zotero/resource/SingleFileZ/lib" "$browser_builddir/lib/SingleFileZ/lib"
 	
 	if [ ! -z $DEBUG ]; then
 		cp "$SRCDIR/zotero/chrome/content/zotero/tools/testTranslators"/*.js \

@@ -132,7 +132,16 @@ Zotero.HTTP = new function() {
 				throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
 			}
 		} else if(options.body) {
-			options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
+			if (options.headers["Content-Type"] !== 'multipart/form-data') {
+				options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
+
+				logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
+						options.body.length > options.logBodyLength ? '...' : '';
+				// TODO: make sure below does its job in every API call instance
+				// Don't display password or session id in console
+				logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
+				logBody = logBody.replace(/password=[^&]+/, 'password=********');
+			}
 			
 			if (!options.headers) options.headers = {};
 			if (!options.headers["Content-Type"]) {
@@ -142,13 +151,6 @@ Zotero.HTTP = new function() {
 				// Allow XHR to set Content-Type with boundary for multipart/form-data
 				delete options.headers["Content-Type"];
 			}
-					
-			logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
-					options.body.length > options.logBodyLength ? '...' : '';
-			// TODO: make sure below does its job in every API call instance
-			// Don't display password or session id in console
-			logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
-			logBody = logBody.replace(/password=[^&]+/, 'password=********');
 		}
 		if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
 			await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);

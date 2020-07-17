@@ -98,13 +98,32 @@ Zotero.Translate.ItemSaver.prototype = {
 		var payload = {
 			items,
 			sessionID: this._sessionID,
-			uri: this._baseURI
+			uri: this._baseURI,
+			singleFile: true
 		};
 		if (Zotero.isSafari) {
 			// This is the best in terms of cookies we can do in Safari
 			payload.cookie = document.cookie;
 		}
 		payload.proxy = this._proxy && this._proxy.toJSON();
+		
+		// Add page data for snapshot
+		let singleFile = false;
+		for (let item of items) {
+			for (let attachment of item.attachments) {
+				if (attachment.mimeType !== 'text/html'
+					|| attachment.snapshot === false) {
+					continue;
+				}
+				if (!this._urlMatchesLocation(attachment.url)) {
+					continue;
+				}
+
+				attachment.singleFile = true;
+				singleFile = true;
+			}
+		}
+		
 		try {
 			var data = await Zotero.Connector.callMethodWithCookies("saveItems", payload)
 		}
@@ -131,9 +150,84 @@ Zotero.Translate.ItemSaver.prototype = {
 			}
 		}
 		this._pollForProgress(data.items, attachmentCallback);
+
+		// If we have a snapshot and the client supports SingleFile snapshots
+		if (singleFile && data && data.singleFile) {
+			// Do not wait for async function so we continue to update UI
+			this._executeSingleFile(payload);
+		}
+
 		return data.items;
 	},
+
+	_executeSingleFile: async function(payload) {
+		try {
+			let { form, pageData } = await Zotero.SingleFile.retrievePageData();
+			payload.pageData = pageData;
+
+			// Form contains all the binary bits, we add the payload as a part
+			// so we can submit the whole multipart structure
+			form.payload = JSON.stringify(payload);
+			payload = form;
+		}
+		catch (e) {
+			// We swallow this error and fall back to saving the
+			// page in the client
+			payload = {
+				payload: JSON.stringify(payload)
+			};
+		}
+
+		await Zotero.Connector.callMethodWithCookies({
+				method: "saveSingleFile",
+				headers: {"Content-Type": "multipart/form-data"}
+			},
+			payload
+		);
+	},
 	
+	/**
+	 * Return true if the attachment URL fuzzy matches the window location
+	 *
+	 * @param {String} attachmentURL
+	 * @return {Boolean}
+	 */
+	_urlMatchesLocation: function(attachmentURL) {
+		// Complete match
+		if (attachmentURL === location.href) {
+			return true;
+		}
+		// Translators control the attachment URL and historically that URL was passed to
+		// the client to save a snapshot. Here we are trying to detect if the attachment URL
+		// has query params that are a subset of the current URL. So for example:
+		// 
+		// Attachment URL: /records?id=1234 would match the following:
+		// 
+		// Current URL: /records?id=1234#abstract
+		// Current URL: /records?id=1234&utm_source=search
+		// Current URL: /records?utm_source=search&id=1234
+		//
+		// But not match:
+		//
+		// Current URL: /records
+		// Current URL: /records?utm_source=search
+		// Current URL: /records?id=5678
+		const url = new URL (attachmentURL);
+		if (url.protocol + url.host + url.pathname === location.protocol + location.host
+				+ location.pathname) {
+			const locationURL = new URL(location.href);
+			for (const [param, value] of url.searchParams) {
+				if (locationURL.searchParams.get(param) !== value) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		return false;
+	},
+
 	_processItems: function(items) {
 		var saveOptions = !Zotero.isBookmarklet && Zotero.Inject.sessionDetails.saveOptions;
 		if (saveOptions && saveOptions.note && items.length == 1) {

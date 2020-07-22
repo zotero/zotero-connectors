@@ -110,12 +110,15 @@
 	},
 	
 	"integration_googleDocs_orphanedCitations_buttonTooltip": {
-		"message": "Open unlinked citation list."
+		"message": "Show unlinked $1 citations"
 	},
 	"integration_googleDocs_orphanedCitations_alert": {
 		"message": "The citation you are trying to edit has become unlinked from $1."
 	},
+	"integration_googleDocs_orphanedCitations_alertButton": {
+		"message": "Relink Citation"
+	},
 	"integration_googleDocs_orphanedCitations_disclaimer": {
-		"message": "These citations have become <a target=\"_blank\" href=\"https://www.zotero.org/support/kb/google_docs_citations_unlinked\">unlinked from $1</a>. $1 won’t be able to update them unless they are relinked."
+		"message": "These citations have become <a target=\"_blank\" href=\"https://www.zotero.org/support/kb/google_docs_citations_unlinked\">unlinked from $1</a>. You will need to relink them before they will update or appear in your bibliography."
 	}
 }

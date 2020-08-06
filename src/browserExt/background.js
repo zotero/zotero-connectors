@@ -837,7 +837,12 @@ Zotero.Connector_Browser = new function() {
 		// Ignore developer tools, item selector
 		if (details.tabId < 0 || _isDisabledForURL(details.url, true)
 			|| details.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
-
+		
+		// Don't process again if URL hasn't changed
+		if (_tabInfo[details.tabId] && _tabInfo[details.tabId].url == details.url) {
+			return;
+		}
+		
 		if (details.frameId == 0) {
 			_updateInfoForTab(details.tabId, details.url);
 			// Getting the tab is uber slow in Firefox. Since _updateInfoForTab() resets the

@@ -242,6 +242,8 @@ function copyResources {
 	# Copy google docs integration code
 	cp -r "$SRCDIR/zotero-google-docs-integration/src/connector" \
 		 "$browser_builddir/zotero-google-docs-integration"
+	cp -r "$SRCDIR/zotero-google-docs-integration/package.json" \
+		 "$browser_builddir/zotero-google-docs-integration"
 		 
 	# Copy locales
 	mkdir -p "$browser_builddir/_locales/en"

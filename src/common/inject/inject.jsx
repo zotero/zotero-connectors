@@ -640,9 +640,9 @@ if(!isHiddenIFrame) {
 		});
 
 		if(document.readyState !== "complete") {
-			window.addEventListener("load", function(e) {
+			window.addEventListener("pageshow", function(e) {
 				if(e.target !== document) return;
-				Zotero.Inject.init();
+				Zotero.Inject.init(true);
 			}, false);
 		} else {	
 			Zotero.Inject.init();

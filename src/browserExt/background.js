@@ -840,7 +840,7 @@ Zotero.Connector_Browser = new function() {
 		
 		// Don't process again if URL hasn't changed
 		if (_tabInfo[details.tabId] && _tabInfo[details.tabId].url == details.url) {
-			return;
+			return Zotero.Connector_Browser._updateExtensionUI(tab);
 		}
 		
 		if (details.frameId == 0) {

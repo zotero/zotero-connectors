@@ -43,6 +43,8 @@ var Zotero_Preferences = {
 		Zotero.isPreferences = true;
 		Zotero.Messaging.init();
 		await Zotero.i18n.init();
+
+		await Zotero.Prefs.loadNamespace(['interceptKnownFileTypes', 'allowedInterceptHosts']);
 		
 		var panesDiv = document.getElementById("panes");
 		var id;

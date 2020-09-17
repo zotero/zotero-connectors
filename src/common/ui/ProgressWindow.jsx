@@ -36,9 +36,6 @@ else if (typeof browser != 'undefined') {
 else if (typeof chrome != 'undefined') {
 	Zotero.UI.style.imageBase = chrome.extension.getURL("images/");
 }
-else {
-	Zotero.UI.style.imageBase = `${safari.extension.baseURI}safari/` + "images/";
-}
 
 function getTargetType(id) {
 	return id.startsWith('L') ? 'library': 'collection';

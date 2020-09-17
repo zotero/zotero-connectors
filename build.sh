@@ -30,7 +30,7 @@ function usage {
 	cat >&2 <<DONE
 Usage: $0 [-p PLATFORMS] [-v VERSION] [-d]
 Options
- -p PLATFORMS        platform(s) (b=browserExt, s=safari, k=bookmarklet; defaults to all)
+ -p PLATFORMS        platform(s) (b=browserExt, k=bookmarklet; defaults to all)
  -v VERSION          use version VERSION
  -d                  build for debugging (enable translator tester, don't minify)
 DONE
@@ -40,7 +40,6 @@ DONE
 GULP=$CWD/node_modules/gulp/bin/gulp.js
 
 BUILD_BROWSER_EXT=0
-BUILD_SAFARI=0
 BUILD_BOOKMARKLET=0
 while getopts "hp:v:d" opt; do
 	case $opt in
@@ -52,7 +51,6 @@ while getopts "hp:v:d" opt; do
 			do
 				case ${OPTARG:i:1} in
 					b) BUILD_BROWSER_EXT=1;;
-					s) BUILD_SAFARI=1;;
 					k) BUILD_BOOKMARKLET=1;;
 					*)
 						echo "$0: Invalid platform option ${OPTARG:i:1}"
@@ -80,12 +78,9 @@ fi
 
 if [[ ! -z "$TEST_CHROME" ]] || [[ ! -z "$TEST_FX" ]]; then
 	BUILD_BROWSER_EXT=1
-elif [[ ! -z $TEST_SAFARI ]]; then
-	BUILD_SAFARI=1
 # Default to all builds if none specified
-elif [[ $BUILD_BROWSER_EXT -eq 0 ]] && [[ $BUILD_SAFARI -eq 0 ]] && [[ $BUILD_BOOKMARKLET -eq 0 ]]; then
+elif [[ $BUILD_BROWSER_EXT -eq 0 ]] && [[ $BUILD_BOOKMARKLET -eq 0 ]]; then
 	BUILD_BROWSER_EXT=1
-	BUILD_SAFARI=1
 	BUILD_BOOKMARKLET=1
 fi
 
@@ -150,7 +145,6 @@ rm -rf "$BUILD_DIR/browserExt" \
 
 # Make directories if they don't exist
 for dir in "$DISTDIR" \
-	"$BUILD_DIR/safari" \
 	"$BUILD_DIR/browserExt" \
 	"$BUILD_DIR/bookmarklet"; do
 	if [ ! -d "$dir" ]; then
@@ -315,10 +309,11 @@ fi
 # Make separate Chrome and Firefox directories
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/chrome/
+	rsync -a "$BUILD_DIR"/browserExt/ "$BUILD_DIR"/safari/
 	mv $BUILD_DIR/browserExt $BUILD_DIR/firefox
 fi
 
-if [[ $BUILD_BROWSER_EXT == 1 ]] || [[ $BUILD_SAFARI == 1 ]]; then
+if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	"$GULP" -v >/dev/null 2>&1 || { echo >&2 "gulp not found -- aborting"; exit 1; }
 
 	# Update scripts
@@ -366,7 +361,9 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	cat manifest.json | jq '. |= del(.optional_permissions)' > manifest.json-tmp
 	mv manifest.json-tmp manifest.json
 	popd > /dev/null
-
+	
+	# Safari modifications
+	#
 fi
 
 echo "done"

@@ -45,7 +45,7 @@ Zotero.Messaging = new function() {
 	 * @param {String} messageName The name of the message received
 	 * @param {Array} args Arguments for to be passed to the function corresponding to this message
 	 * @param {TabObject} tab 
-	 * @param {Number} frameId not available in safari
+	 * @param {Number} frameId
 	 */
 	this.receiveMessage = async function(messageName, args, tab, frameId) {
 		//Zotero.debug("Messaging: Received message: "+messageName);
@@ -122,8 +122,7 @@ Zotero.Messaging = new function() {
 				throw e;
 			}
 			return response;
-		} //else if(Zotero.isSafari) { }
-		// Safari handled in safari/messaging_global.js
+		}
 	}
 	
 	/**
@@ -177,9 +176,6 @@ Zotero.Messaging = new function() {
 					return ['error', err];
 				});
 			});
-		} else if(Zotero.isSafari) {
-			// Safari handled in safari/messaging_global.js
-			Zotero.Messaging.initialized = true;
 		}
 	}
 }

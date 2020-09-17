@@ -73,9 +73,7 @@ Zotero.Inject = new function() {
 		// (monitorDOMChanges/ZoteroItemUpdated)
 		this.sessionDetails = {};
 		
-		_noteImgSrc = Zotero.isSafari
-			? `${safari.extension.baseURI}safari/`+"images/treeitem-note.png"
-			: browser.extension.getURL('images/treeitem-note.png');
+		_noteImgSrc = browser.extension.getURL('images/treeitem-note.png');
 		
 		// wrap this in try/catch so that errors will reach logError
 		try {
@@ -103,11 +101,6 @@ Zotero.Inject = new function() {
 				_translate.setDocument(document);
 			}
 			return _translate.getTranslators(true).then(function(translators) {
-				if (!translators.length && Zotero.isSafari) {
-					if (!isTopWindow && document.contentType == 'application/pdf') {
-						return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
-					}
-				}
 				this.translators = translators;
 				
 				translators = translators.map(function(translator) {return translator.serialize(TRANSLATOR_PASSING_PROPERTIES)});
@@ -245,7 +238,6 @@ Zotero.Inject = new function() {
 	 * @return {Promise} resolves when components are injected
 	 */
 	this.loadReactComponents = async function(components=[]) {
-		if (Zotero.isSafari) return;
 		var toLoad = [];
 		if (typeof ReactDOM === "undefined" || typeof React === "undefined"
 				|| !React.useState) {
@@ -685,10 +677,6 @@ if(!isHiddenIFrame) {
 	var doInject = async function () {
 		await Zotero.initInject();
 
-		if (Zotero.isSafari && isTopWindow) {
-			Zotero.Connector_Browser.onPageLoad(document.location.href);
-		}
-		
 		// Do not run on non-web pages (file://), test pages, safari extension pages (i.e. safari prefs)
 		// or non-top Safari pages
 		if (!isWeb && !isTestPage) return;
@@ -699,12 +687,7 @@ if(!isHiddenIFrame) {
 		});
 		// add a listener to save as webpage when translators unavailable
 		Zotero.Messaging.addMessageListener("saveAsWebpage", function(data) {
-			if (Zotero.isSafari) {
-				if (data[0] !== instanceID) return;
-				Zotero.Inject.saveAsWebpage(data[1])
-			} else {
-				Zotero.Inject.saveAsWebpage(data);
-			}
+			Zotero.Inject.saveAsWebpage(data);
 		});
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", function() {

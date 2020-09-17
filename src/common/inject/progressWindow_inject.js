@@ -66,9 +66,6 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	if (Zotero.isBookmarklet) {
 		frameSrc = ZOTERO_CONFIG.BOOKMARKLET_URL + 'progressWindow/progressWindow.html';
 	}
-	else if (Zotero.isSafari) {
-		frameSrc = `${safari.extension.baseURI}safari/` + 'progressWindow/progressWindow.html';
-	}
 	else {
 		frameSrc = browser.extension.getURL('progressWindow/progressWindow.html');
 	}

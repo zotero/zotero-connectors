@@ -37,45 +37,38 @@ var Zotero = window.Zotero = new function() {
 		this.initDeferred.reject = reject;
 	}.bind(this));
 	
-	// Safari  global page detection
-	if (typeof globalThis != "undefined" && typeof browser == "undefined") {
-		this.isSafari = true;
-		this.isMac = true;
-	}
-	else {
-		// Browser check adopted from:
-		// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
-		// Internet Explorer 6-11
-		this.isIE = /*@cc_on!@*/false || !!document.documentMode;;
-		if (this.isBookmarklet) {
-			// Firefox 1.0+
-			this.isFirefox = typeof InstallTrigger !== 'undefined';
-			// Edge 20+
-			this.isEdge = !this.isIE && !!window.StyleMedia;
-			// Chrome and Chromium
-			this.isChrome = window.navigator.userAgent.indexOf("Chrome") !== -1 || window.navigator.userAgent.indexOf("Chromium") !== -1;
-			// At least Safari 10+
-			this.isSafari = window.navigator.userAgent.includes("Safari") && !this.isChrome;
-			this.isBrowserExt = this.isFirefox || this.isEdge || this.isChrome;
+	// Browser check adopted from:
+	// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+	// Internet Explorer 6-11
+	this.isIE = /*@cc_on!@*/false || !!document.documentMode;;
+	if (this.isBookmarklet) {
+		// Firefox 1.0+
+		this.isFirefox = typeof InstallTrigger !== 'undefined';
+		// Edge 20+
+		this.isEdge = !this.isIE && !!window.StyleMedia;
+		// Chrome and Chromium
+		this.isChrome = window.navigator.userAgent.indexOf("Chrome") !== -1 || window.navigator.userAgent.indexOf("Chromium") !== -1;
+		// At least Safari 10+
+		this.isSafari = window.navigator.userAgent.includes("Safari") && !this.isChrome;
+		this.isBrowserExt = this.isFirefox || this.isEdge || this.isChrome || this.isSafari;
 
-			this.isMac = (window.navigator.platform.substr(0, 3) == "Mac");
-			this.isWin = (window.navigator.platform.substr(0, 3) == "Win");
-			this.isLinux = (window.navigator.platform.substr(0, 5) == "Linux");	
-		} else {
-			/* this.isFirefox = SET IN BUILD SCRIPT */;
-			/* this.isSafari = SET IN BUILD SCRIPT */;
-			/* this.isBrowserExt = SET IN BUILD SCRIPT */;
-			
-			this.isChrome = this.isEdge = false;
-			if (this.isBrowserExt && !this.isFirefox) {
-				if (window.navigator.userAgent.includes("Edg/")) {
-					this.isEdge = true;
-				} else {
-					// If browser ext is not fx or edge then treat it as Chrome
-					// since it's probably installed with compatible browsers such as Opera from the
-					// Chrome extension store
-					this.isChrome = true;
-				}
+		this.isMac = (window.navigator.platform.substr(0, 3) == "Mac");
+		this.isWin = (window.navigator.platform.substr(0, 3) == "Win");
+		this.isLinux = (window.navigator.platform.substr(0, 5) == "Linux");
+	} else {
+		/* this.isFirefox = SET IN BUILD SCRIPT */;
+		/* this.isSafari = SET IN BUILD SCRIPT */;
+		/* this.isBrowserExt = SET IN BUILD SCRIPT */;
+		
+		this.isChrome = this.isEdge = false;
+		if (this.isBrowserExt && !this.isFirefox && !this.isSafari) {
+			if (window.navigator.userAgent.includes("Edg/")) {
+				this.isEdge = true;
+			} else {
+				// If browserExt is not Firefox, Safari, or Edge then treat it as Chrome,
+				// since it's probably installed with compatible browsers such as Opera from the
+				// Chrome extension store
+				this.isChrome = true;
 			}
 		}
 
@@ -196,9 +189,8 @@ var Zotero = window.Zotero = new function() {
 						this.platform = 'unix';
 				}
 			}.bind(this));
-		} else if (Zotero.isSafari) {
-			this.platform = 'mac';
-		} else {
+		}
+		else {
 			// IE and the likes? Who knows
 			this.platform = 'win';
 		}
@@ -212,10 +204,6 @@ var Zotero = window.Zotero = new function() {
 		}
 
 		Zotero.Messaging.init();
-		if (Zotero.isSafari) {
-			this.version = await Zotero.Connector_Browser.getExtensionVersion();
-			window.safari = {extension: {baseURI: await Zotero.Messaging.sendMessage('Swift.getBaseURI')}};
-		}
 		Zotero.Connector_Types.init();
 		await Zotero.Prefs.init();
 		
@@ -243,9 +231,6 @@ var Zotero = window.Zotero = new function() {
 	this.initInject = async function() {
 		Zotero.isInject = true;
 		Zotero.Messaging.init();
-		if (Zotero.isSafari) {
-			await Zotero.i18n.init();
-		}
 		if (!Zotero.isBookmarklet) {
 			Zotero.ConnectorIntegration.init();
 		}
@@ -264,22 +249,13 @@ var Zotero = window.Zotero = new function() {
 	 * Get versions, platform, etc.
 	 */
 	this.getSystemInfo = async function() {
-		var info;
-		if (Zotero.isSafari && Zotero.isBackground) {
-			info = {
-				connector: "true",
-				version: this.version,
-				platform: "Safari App Extension",
-			};
-		} else {
-			info = {
-				connector: "true",
-				version: this.version,
-				platform: navigator.platform,
-				locale: navigator.language,
-				userAgent: navigator.userAgent
-			};
-		}
+		var info = {
+			connector: "true",
+			version: this.version,
+			platform: navigator.platform,
+			locale: navigator.language,
+			userAgent: navigator.userAgent
+		};
 		
 		info.appName = Zotero.appName;
 		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());

@@ -42,25 +42,6 @@
  *     and returns some result, which is used as the RESPONSE below
  *  10. Injected script call Zotero.NAMESPACE.METHOD(...ARGS) resolves with RESPONSE
  *
- * In Safari, the following takes place:
- *  1. Injected script calls Zotero.NAMESPACE.METHOD(ARGS, CALLBACK)
- *  2. Injected script generates a REQUESTID from the current time, and adds CALLBACK to
- *     _safariCallbacks indexed by REQUESTID
- *  3. Injected script sends message with name NAMESPACE+MESSAGE_SEPARATOR+METHOD and message
- *     [TABID, REQUESTID, [ARGS]]
- *  4. Global script receives message
- *  5. Global script executes Zotero.NAMESPACE.METHOD(ARGS, NEWCALLBACK, TABID)
- *  6. Zotero.NAMESPACE.METHOD returns a value or promise RESPONSE
- *  7. If MESSAGES[NAMESPACE][METHOD] has a preSend function, the RESPONSE is processed
- *  	with the preSend function before sending the response off to injected page
- *  8. Global script sends a message with name
- *     NAMESPACE+MESSAGE_SEPARATOR+METHOD+MESSAGE_SEPARATOR+"Response" and message
- *     [REQUESTID, RESPONSE]
- *  9. Injected script receives message
- *  10. If MESSAGES[NAMESPACE][METHOD] has a postReceive function, this gets passed RESPONSE
- *     and returns some result, which is used as the RESPONSE below
- *  11. Injected script call Zotero.NAMESPACE.METHOD(...ARGS) resolves with RESPONSE
- *
  * See other messaging scripts for more details.
  */
 const MESSAGE_SEPARATOR = ".";

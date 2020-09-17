@@ -899,7 +899,9 @@ Zotero.Connector_Browser = new function() {
 	}));
 	
 	browser.webNavigation.onCommitted.addListener(logListenerErrors(onNavigation));
-	browser.webNavigation.onHistoryStateUpdated.addListener(details => logListenerErrors(onNavigation(details, true)));
+	if (browser.webNavigation.onHistoryStateUpdated) {
+		browser.webNavigation.onHistoryStateUpdated.addListener(details => logListenerErrors(onNavigation(details, true)));
+	}
 }
 
 Zotero.initGlobal();

@@ -54,7 +54,6 @@ Zotero.Proxies = new function() {
 	 * @returns Promise{boolean} proxy enabled/disabled status
 	 */
 	this.init = function() {
-		if (Zotero.isSafari) return;
 		this.transparent = false;
 		this.proxies = [];
 		this.hosts = {};
@@ -98,8 +97,6 @@ Zotero.Proxies = new function() {
 	this.enable = function() {
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onWebRequest);
-		} else {
-			safari.application.addEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
 	};
 	
@@ -107,8 +104,6 @@ Zotero.Proxies = new function() {
 	this.disable = function() {
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onWebRequest);
-		} else {
-			safari.application.removeEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
 	};
 	
@@ -160,28 +155,6 @@ Zotero.Proxies = new function() {
 			return result;
 		}, () => 0);
 	}
-
-	this.onBeforeNavigateSafari = function(e) {
-		// Safari calls onBeforeNavigate from default tab while typing the url
-		// so if you type a proxied url you immediatelly get redirected without pressing enter.
-		// Not cool.
-		if (!e.target.url) return;
-		let details = {url: e.url || '', originUrl: e.target.url, type: 'main_frame',
-			requestHeadersObject: {}, tabId: e.target};
-
-		Zotero.Proxies.updateDisabledByDomain();
-		if (Zotero.Proxies.disabledByDomain) return;
-		let redirect = Zotero.Proxies._maybeRedirect(details);
-		if (redirect) {
-			e.target.url = redirect.redirectUrl;
-		}
-	};
-	
-	this.onPageLoadSafari = function(tab) {
-		let details = {url: tab.url, type: 'main_frame', tabId: tab, statusCode: 200};
-	
-		Zotero.Proxies._maybeAddHost(details);
-	};
 
 	/**
 	 * Observe method to capture and redirect page loads if they're going through an existing proxy.

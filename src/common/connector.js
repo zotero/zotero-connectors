@@ -28,7 +28,7 @@ Zotero.Connector = new function() {
 	const CONNECTOR_API_VERSION = 2;
 	
 	var _ieStandaloneIframeTarget, _ieConnectorCallbacks;
-	this.isOnline = (Zotero.isSafari || Zotero.isFirefox) ? false : null;
+	this.isOnline = (Zotero.isFirefox) ? false : null;
 	this.shouldReportActiveURL = true;
 	this.clientVersion = '';
 	

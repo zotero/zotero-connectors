@@ -93,13 +93,6 @@ var Zotero_Preferences = {
 		Zotero.initDeferred.resolve();
 		Zotero.isInject = true;
 		
-		if (Zotero.isSafari) {
-			// BrowserExt handles these in the background page
-			window.addEventListener('focus', function() {
-				Zotero.Connector_Browser.onTabFocus();
-			}, true);
-			Zotero.Connector_Browser.onTabFocus();
-		}
 		Zotero_Preferences.refreshData();
 		window.setInterval(() => Zotero_Preferences.refreshData(), 1000);
 	},
@@ -209,9 +202,7 @@ Zotero_Preferences.General = {
 	 * Opens the translator tester in a new window.
 	 */
 	openTranslatorTester: function() {
-		if(Zotero.isSafari) {
-			window.open(`${safari.extension.baseURI}safari/`+"tools/testTranslators/testTranslators.html", "translatorTester");
-		} else if(Zotero.isBrowserExt) {
+		if (Zotero.isBrowserExt) {
 			window.open(browser.extension.getURL("tools/testTranslators/testTranslators.html"), "translatorTester");
 		}
 	}
@@ -254,11 +245,7 @@ Zotero_Preferences.Advanced = {
 		if (openTranslatorTesterButton) openTranslatorTesterButton.onclick = Zotero_Preferences.General.openTranslatorTester;
 		var testRunnerButton = document.getElementById("advanced-button-open-test-runner");
 		if (testRunnerButton) testRunnerButton.onclick = function() {
-			if (Zotero.isSafari) {
-				Zotero.Connector_Browser.openTab(`${safari.extension.baseURI}safari/` + "test/test.html");
-			} else {
-				Zotero.Connector_Browser.openTab(browser.extension.getURL(`test/test.html`));
-			}
+			Zotero.Connector_Browser.openTab(browser.extension.getURL(`test/test.html`));
 		};
 		document.getElementById("advanced-button-config-editor").onclick = function() {
 			if (confirm("Changing these advanced settings can be harmful to the stability, security, and performance of the browser and the Zotero Connector. \nYou should only proceed if you are sure of what you are doing.")) {

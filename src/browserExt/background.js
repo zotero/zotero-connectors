@@ -509,7 +509,7 @@ Zotero.Connector_Browser = new function() {
 			_showProxyContextMenuItems(tab.url);
 		}
 		
-		if (Zotero.isFirefox) {
+		if (!Zotero.isChrome) {
 			_showPreferencesContextMenuItem();
 		}
 	}

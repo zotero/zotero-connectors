@@ -73,24 +73,10 @@ Zotero.Messaging = new function() {
 						}
 						
 						// send message
-						return browser.runtime.sendMessage([messageName, newArgs]).then(async function(response) {
-							if (response && response[0] == 'error') {
-								response[1] = JSON.parse(response[1]);
-								let e = new Error(response[1].message);
-								for (let key in response[1]) e[key] = response[1][key];
-								throw e;
-							}
-							try {
-								if (messageConfig.inject && messageConfig.inject.postReceive) {
-									response = await messageConfig.inject.postReceive(response);
-								}
-								if (callbackArg !== null) callback(response);
-								return response;
-							} catch(e) {
-								Zotero.logError(e);
-								throw e;
-							}
-						}, function(e) {
+						try {
+							var response = await browser.runtime.sendMessage([messageName, newArgs]);
+						}
+						catch (e) {
 							// Unclear what to do with these. Chrome doesn't have error instance defined
 							// and these could be simply messages saying that no response was received for
 							// calls that didn't expect a resposne either.
@@ -100,7 +86,23 @@ Zotero.Messaging = new function() {
 								Zotero.logError(e);
 								throw e;
 							}
-						});
+						}
+						if (response && response[0] == 'error') {
+							response[1] = JSON.parse(response[1]);
+							let e = new Error(response[1].message);
+							for (let key in response[1]) e[key] = response[1][key];
+							throw e;
+						}
+						try {
+							if (messageConfig.inject && messageConfig.inject.postReceive) {
+								response = await messageConfig.inject.postReceive(response);
+							}
+							if (callbackArg !== null) callback(response);
+							return response;
+						} catch(e) {
+							Zotero.logError(e);
+							throw e;
+						}
 					};
 				};
 			}

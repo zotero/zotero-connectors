@@ -157,7 +157,9 @@ Zotero.Messaging = new function() {
 			} else {
 				window.attachEvent("onmessage", function() { listener(event) });
 			}
-		} else if(Zotero.isBrowserExt) {
+		} else if (Zotero.isFirefox) {
+			// MDN claims this will be the final API
+			// https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage
 			browser.runtime.onMessage.addListener(function(request, sender) {
 				// All Zotero messages are arrays so we ignore everything else
 				// SingleFile will pass an object in the message so this ignores those.
@@ -175,6 +177,25 @@ Zotero.Messaging = new function() {
 					}, err));
 					return ['error', err];
 				});
+			});
+		} else if (Zotero.isBrowserExt) {
+			// Safari (and technically Chrome although we have a polyfill) does not work
+			// with Promise responses for onMessage handler. Boo!
+			chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+				let response = Zotero.Messaging.receiveMessage(request[0], request[1], sender.tab, sender.frameId);
+				if (response && response.then) {
+					response.then(sendResponse, function(err) {
+						// Zotero.logError(err);
+						err = JSON.stringify(Object.assign({
+							name: err.name,
+							message: err.message,
+							stack: err.stack
+						}, err));
+						sendResponse(['error', err]);
+					});
+					return true;
+				}
+				return false;
 			});
 		}
 	}

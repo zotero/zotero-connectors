@@ -258,10 +258,10 @@ Zotero.Connector_Browser = new function() {
 			// Send a ready message to confirm successful injection
 			let readyMsg = `ready${Date.now()}`;
 			yield browser.tabs.executeScript(tab.id, {
-				code: `browser.runtime.onMessage.addListener(function awaitReady(request) {
+				code: `chrome.runtime.onMessage.addListener(function awaitReady(request, sender, sendResponse) {
 					if (request == '${readyMsg}') {
 						browser.runtime.onMessage.removeListener(awaitReady);
-						return Promise.resolve(true);
+						sendResponse(true);
 					}
 				})`,
 				frameId,
@@ -442,7 +442,7 @@ Zotero.Connector_Browser = new function() {
 		// Tab url changed or tab got removed, hence the undefined response
 		// Wait half a sec to not run a busy-waiting loop
 		await Zotero.Promise.delay(500)
-		var tab = await browser.tabs.get(tab.id)
+		tab = await browser.tabs.get(tab.id);
 		if (!tab) return;
 		// If it still exists try again
 		return this.notify(text, buttons, seenTimeout, tab);

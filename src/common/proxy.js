@@ -163,7 +163,7 @@ Zotero.Proxies = new function() {
 	 */
 	this.onWebRequest = function (details, meta) {
 		if (meta.proxyRedirected || Zotero.Proxies._ignoreURLs.has(details.url) || details.statusCode >= 400
-			|| details.frameId != 0) {
+			|| (!Zotero.isSafari && details.frameId != 0)) {
 			return;
 		}
 
@@ -353,7 +353,8 @@ Zotero.Proxies = new function() {
 		}
 
 		// Otherwise, redirect.
-		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
+		// NOTE: Safari does not support details.type property
+		if (Zotero.Proxies.showRedirectNotification && (Zotero.isSafari || details.type === 'main_frame')) {
 			for (var proxy of Zotero.Proxies.proxies) {
 				if (proxy.regexp) {
 					if (proxy.regexp.exec(details.url)) break;

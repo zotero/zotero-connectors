@@ -180,7 +180,12 @@ Zotero.Proxies = new function() {
 		if (redirect) {
 			meta.proxyRedirected = true;
 		}
-		return redirect;
+		if (!Zotero.isSafari) {
+			return redirect;
+		}
+		else {
+			browser.tabs.update(details.tabId, { url: redirect.redirectUrl });
+		}
 	};
 	
 	this._maybeAddHost = function(details) {

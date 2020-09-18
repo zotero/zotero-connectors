@@ -716,8 +716,8 @@ Zotero.Connector_Browser = new function() {
 			browser.contextMenus.create({
 				id: `zotero-context-menu-proxy-reload-${i++}`,
 				title: `Reload via ${name}`,
-				onclick: function () {
-					browser.tabs.update({ url: proxied });
+				onclick: function (info, tab) {
+					browser.tabs.update(tab.id, { url: proxied });
 				},
 				parentId: parentID,
 				contexts: ['page', 'browser_action']

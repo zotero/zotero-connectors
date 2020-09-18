@@ -50,11 +50,16 @@ Zotero.ContentTypeHandler = {
 	ignoreURL: new Set(),
 
 	enable: function() {
-		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.observe);
+		// Blocking request (and thus download cancel/intercept) unavailable in Safari
+		if (!Zotero.isSafari) {
+			Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.observe);
+		}
 	},
 	
 	disable: function() {
-		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.observe);
+		if (!Zotero.isSafari) {
+			Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.observe);
+		}
 	},
 
 	observe: function(details) {

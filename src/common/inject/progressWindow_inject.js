@@ -254,6 +254,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		var iframe = document.createElement('iframe');
 		iframe.id = frameID;
 		iframe.src = frameSrc;
+		iframe.setAttribute('data-single-file-hidden-frame', '');
 		var style = {
 			position: 'fixed',
 			top: '15px',

@@ -83,7 +83,8 @@ var injectInclude = [
 	'messaging_inject.js',
 	'inject/progressWindow_inject.js',
 	'inject/modalPrompt_inject.js',
-	'i18n.js'
+	'i18n.js',
+	'singlefile.js'
 ];
 var injectIncludeLast;
 if (argv.p) {
@@ -130,7 +131,14 @@ var backgroundInclude = [
 	'utilities.js',
 	'google-docs-plugin-manager.js',
 	'messages.js',
-	'messaging.js'
+	'messaging.js',
+	'lib/SingleFileZ/lib/single-file/index.js',
+	'lib/SingleFileZ/extension/lib/single-file/index.js',
+	'lib/SingleFileZ/extension/lib/single-file/browser-polyfill/chrome-browser-polyfill.js',
+	'lib/SingleFileZ/extension/lib/single-file/core/bg/scripts.js',
+	'lib/SingleFileZ/extension/lib/single-file/fetch/bg/fetch.js',
+	'lib/SingleFileZ/extension/lib/single-file/frame-tree/bg/frame-tree.js',
+	'lib/SingleFileZ/extension/lib/single-file/lazy/bg/lazy-timeout.js'
 ];
 
 
@@ -187,6 +195,9 @@ function processFile() {
 			}
 		}
 		var type = parts[i];
+
+		// Used to identify files by pathname from src to try and prevent conflicts
+		var sourcefile = parts.slice(i).join('/');
 		
 		// Transform react
 		if (ext == 'jsx') {
@@ -327,6 +338,60 @@ function processFile() {
 				});
 				break;
 		}
+
+		// sourcefile is relative to the src/ directory
+		switch (sourcefile) {
+			case 'zotero/resource/SingleFileZ/extension/lib/single-file/core/bg/scripts.js':
+				// Change base path and add in the content scripts SingleFile recommends injecting
+				// via manifest.json
+				file.contents = Buffer.from(file.contents.toString()
+					.replace('const basePath = "../../../";', 'const basePath = "lib/SingleFileZ/";')
+				);
+
+				// Override the type so we include this file in firefox and chrome builds
+				type = 'browserExt';
+				// Switch from resource to lib sub-directory
+				parts[i+1] = 'lib';
+				break;
+			case 'zotero/resource/SingleFileZ/lib/single-file/processors/hooks/content/content-hooks-frames.js':
+				// Change the path to include our particular directory structure
+				file.contents = Buffer.from(file.contents.toString()
+					.replace('/lib/single-file/processors/hooks/content/content-hooks-frames-web.js',
+					'/lib/SingleFileZ/lib/single-file/processors/hooks/content/content-hooks-frames-web.js')
+				);
+
+				// Override the type so we include this file in firefox and chrome builds
+				type = 'browserExt';
+				// Switch from resource to lib sub-directory
+				parts[i+1] = 'lib';
+				break;
+			case 'zotero/resource/SingleFileZ/lib/single-file/processors/hooks/content/content-hooks.js':
+				// Change the path to include our particular directory structure
+				file.contents = Buffer.from(file.contents.toString()
+					.replace('/lib/single-file/processors/hooks/content/content-hooks-web.js',
+						'/lib/SingleFileZ/lib/single-file/processors/hooks/content/content-hooks-web.js')
+				);
+
+				// Override the type so we include this file in firefox and chrome builds
+				type = 'browserExt';
+				// Switch from resource to lib sub-directory
+				parts[i+1] = 'lib';
+				break;
+			case 'zotero/resource/SingleFileZ/lib/single-file/index.js':
+				// Change the object references to work correctly
+				file.contents = Buffer.from(file.contents.toString()
+					.replace('this.frameTree.content.frames.getAsync',
+						'this.processors.frameTree.content.frames.getAsync')
+					.replace('this.lazy.content.loader.process',
+						'this.processors.lazy.content.loader.process')
+				);
+
+				// Override the type so we include this file in firefox and chrome builds
+				type = 'browserExt';
+				// Switch from resource to lib sub-directory
+				parts[i+1] = 'lib';
+				break;
+		}
 		
 		let f;
 		
@@ -389,7 +454,7 @@ gulp.task('watch', function () {
 			.pipe(processFile())
 			.pipe(gulp.dest((data) => data.base));
 	});
-});
+});  
 
 gulp.task('watch-chrome', function () {
 	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**',
@@ -417,7 +482,12 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/zotero_config.js',
 		'./src/common/test/**/*',
 		'./src/**/*.jsx',
-		'./src/zotero-google-docs-integration/src/connector/**'
+		'./src/zotero-google-docs-integration/src/connector/**',
+		'./src/zotero/resource/SingleFileZ/extension/lib/single-file/core/bg/scripts.js',
+		'./src/zotero/resource/SingleFileZ/lib/single-file/processors/hooks/content/content-hooks.js',
+		'./src/zotero/resource/SingleFileZ/lib/single-file/processors/hooks/content/content-hooks-frames.js',
+		'./src/zotero/resource/SingleFileZ/lib/single-file/index.js',
+		'./src/zotero/resource/SingleFileZ/extension/lib/single-file/index.js'
 	];
 	if (!argv.p) {
 		sources.push('./src/common/test/**/*.js');	

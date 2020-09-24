@@ -328,6 +328,13 @@ Zotero.Connector_Browser = new function() {
 			clearTimeout(timeout);
 		}
 	};
+
+	this.injectSingleFile = async function(tab, frameId) {
+		Zotero.debug("SingleFile: injecting SingleFile into page");
+		await singlefile.extension.injectScript(tab.id, {});
+		// Also insert the config object
+		await this.injectScripts('singlefile.js', tab, frameId);
+	};
 	
 	this.openWindow = async function(url, options={}, tab=null) {
 		if (!tab) {

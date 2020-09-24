@@ -129,6 +129,7 @@ var MESSAGES = {
 		onPageLoad: false,
 		onTranslators: false,
 		injectScripts: true,
+		injectSingleFile: true,
 		isIncognito: true,
 		newerVersionRequiredPrompt: true,
 		openTab: false,

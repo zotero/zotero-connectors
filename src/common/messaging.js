@@ -160,6 +160,12 @@ Zotero.Messaging = new function() {
 			}
 		} else if(Zotero.isBrowserExt) {
 			browser.runtime.onMessage.addListener(function(request, sender) {
+				// All Zotero messages are arrays so we ignore everything else
+				// SingleFile will pass an object in the message so this ignores those.
+				if (!Array.isArray(request)) {
+					return;
+				}
+
 				return Zotero.Messaging.receiveMessage(request[0], request[1], sender.tab, sender.frameId)
 				.catch(function(err) {
 					// Zotero.logError(err);

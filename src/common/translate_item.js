@@ -115,7 +115,7 @@ Zotero.Translate.ItemSaver.prototype = {
 					|| attachment.snapshot === false) {
 					continue;
 				}
-				if (!this._urlMatchesLocation(attachment.url)) {
+				if (attachment.url && !this._urlMatchesLocation(attachment.url)) {
 					continue;
 				}
 

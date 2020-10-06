@@ -86,9 +86,9 @@ Zotero.Messaging = new function() {
 		if (typeof promise != "object" || typeof promise.then !== "function") promise = Zotero.Promise.resolve(promise);
 		var shouldRespond = messageConfig && messageConfig.response !== false;
 		if (shouldRespond) {
-			return promise.then(function(response) {
+			return promise.then(async function(response) {
 				if (messageConfig.background && messageConfig.background.preSend) {
-					response = messageConfig.background.preSend(response);
+					response = await messageConfig.background.preSend(response);
 				}
 				return response;
 			});

@@ -259,15 +259,8 @@ Zotero.API = new function() {
 	 */
 	this.uploadAttachment = function(attachment, callbackOrTab) {
 		var _dispatchAttachmentCallback = function(id, status, error) {
-			if(Zotero.isBrowserExt && !Zotero.isBookmarklet) {
-				// In Chrome, we don't use messaging for Zotero.API.uploadAttachment, 
-				// since we can't pass ArrayBuffers to the background page
-				callbackOrTab(status, error);
-			} else {
-				Zotero.Messaging.sendMessage("attachmentCallback",
-					(error ? [id, status, error.toString()] : [id, status]), callbackOrTab);
-			}
-			if(error) throw error;
+			Zotero.Messaging.sendMessage("attachmentCallback",
+				(error ? [id, status, error.toString()] : [id, status]), callbackOrTab);
 		};
 		
 		const REQUIRED_PROPERTIES = ["id", "data", "filename", "key", "md5", "mimeType"];

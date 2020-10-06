@@ -68,36 +68,36 @@ var MESSAGES = {
 	Translators: {
 		get: {
 			background: {
-				preSend: function(translators) {
+				preSend: async function(translators) {
 					return Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES);
 				}
 			},
 			inject: {
-				postReceive: function(translator) {
+				postReceive: async function(translator) {
 					return new Zotero.Translator(translator);
 				}
 			}
 		},
 		getAllForType: {
 			background: {
-				preSend: function(translators) {
+				preSend: async function(translators) {
 					return Zotero.Translators.serialize(translators, TRANSLATOR_PASSING_PROPERTIES);
 				},
 			},
 			inject: {
-				postReceive: function(translators) {
+				postReceive: async function(translators) {
 					return translators.map(function(translator) {return new Zotero.Translator(translator)});
 				}
 			}
 		},
 		getWebTranslatorsForLocation: {
 			background: {
-				preSend: function(data) {
+				preSend: async function(data) {
 					return [Zotero.Translators.serialize(data[0], TRANSLATOR_PASSING_PROPERTIES), data[1]];
 				}
 			},
 			inject: {
-				postReceive: function(data) {
+				postReceive: async function(data) {
 					// Deserialize to class objects
 					data[0] = data[0].map((translator) => new Zotero.Translator(translator));
 					data[1] = data[1].map((proxy) => proxy && new Zotero.Proxy(proxy));
@@ -172,7 +172,21 @@ var MESSAGES = {
 		onAuthorizationComplete: false,
 		clearCredentials: false,
 		getUserInfo: true,
-		run: true
+		run: true,
+		uploadAttachment: {
+			inject: {
+				preSend: async function(args) {
+					args[0].data = packArrayBuffer(args[0].data);
+					return args;
+				}
+			},
+			background: {
+				postReceive: async function(args) {
+					args[0].data = await unpackArrayBuffer(args[0].data);
+					return args;
+				}
+			}
+		}
 	},
 	GoogleDocs_API: {
 		onAuthComplete: false,
@@ -210,40 +224,55 @@ MESSAGES.COHTTP = {
 	request: {
 		background: {
 			// avoid trying to post responseXML
-			preSend: function(xhr) {
-				return {responseText: xhr.responseText,
+			preSend: async function(xhr) {
+				let result = {
+					response: xhr.response,
 					status: xhr.status,
 					statusText: xhr.statusText,
-					responseHeaders: xhr.getAllResponseHeaders()};
+					responseHeaders: xhr.getAllResponseHeaders()
+				};
+				if (result.response instanceof ArrayBuffer) {
+					result.response = packArrayBuffer(xhr.response);
+				}
+				return result;
 			},
 		},
 		inject: {
-			postReceive: function(xhr) {
+			postReceive: async function(xhr) {
 				xhr.getAllResponseHeaders = () => xhr.responseHeaders;
 				xhr.getResponseHeader = function(name) {
-					let match = xhr.responseHeaders.match(new RegExp(`^${name}: (.*)$`, 'm'));
+					let match = xhr.responseHeaders.match(new RegExp(`^${name}: (.*)$`, 'mi'));
 					return match ? match[1] : null;
 				};
+				if (xhr.response.startsWith('blob:')) {
+					xhr.response = await unpackArrayBuffer(xhr.response);
+				} else {
+					xhr.responseText = xhr.response;
+				}
 				return xhr;
 			}
 		}
 	}
 };
 
-if(Zotero.isSafari) {
-	MESSAGES.API.createItem = true;
-	MESSAGES.API.uploadAttachment = false;
-	MESSAGES.i18n = {
-		getStrings: true
-	};
-	MESSAGES.Connector_Browser = Object.assign(MESSAGES.Connector_Browser, {
-		onPDFFrame: false,
-		onPerformCommand: false,
-		onTabFocus: false,
-		onTabData: true,
-		getExtensionVersion: true
+// Chrome does not support passing arrayBuffers via the message
+// passing protocol, so we convert it to a blob url and then unconvert it
+// on the receiving end.
+// There's been an open bug on the chrome bugtracker to fix this since
+// 2013: https://bugs.chromium.org/p/chromium/issues/detail?id=248548
+function packArrayBuffer(arrayBuffer) {
+	if (Zotero.isFirefox) return arrayBuffer;
+	return URL.createObjectURL(new Blob([arrayBuffer]));
+}
+
+async function unpackArrayBuffer(blobURL) {
+	if (Zotero.isFirefox) return blobURL;
+	let blob = await (await fetch(blobURL)).blob();
+	return new Promise((resolve) => {
+		var fileReader = new FileReader();
+		fileReader.onload = function(event) {
+			resolve(event.target.result);
+		};
+		fileReader.readAsArrayBuffer(blob);
 	});
-	MESSAGES.Debug.get = true;
-	delete MESSAGES.Errors.sendErrorReport;
-	delete MESSAGES.Connector_Debug.submitReport;
 }

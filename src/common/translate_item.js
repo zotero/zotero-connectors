@@ -459,29 +459,15 @@ Zotero.Translate.ItemSaver.prototype = {
 			} else if (Zotero.isBookmarklet && window.isSecureContext && attachment.url.indexOf('https') != 0) {
 				deferredAttachmentData.reject(new Error('Cannot load a HTTP attachment in a HTTPS page'));
 			} else {
-				let xhr = new XMLHttpRequest();
-				xhr.open((attachment.snapshot === false ? "HEAD" : "GET"), attachment.url, true);
-				xhr.responseType = (isSnapshot ? "document" : "arraybuffer");
-				xhr.onreadystatechange = function() {
-					if (xhr.readyState == 2) {
-						try {
-							deferredHeadersProcessed.resolve(this._processAttachmentHeaders(attachment, xhr, baseName));
-						} catch(e) {
-							deferredHeadersProcessed.reject(e);
-							xhr.abort();
-						}
-					}
-				}.bind(this);
-				xhr.onprogress = function(event) {
-					if(event.total && attachmentCallback) {
-						attachmentCallback(attachment, event.loaded/event.total*50);
-					}
-				};
-				xhr.onerror = e => deferredAttachmentData.reject(e.error);
-				xhr.onabort = () => deferredAttachmentData.reject(new Error('Attachment download aborted'));
-				xhr.onload = () => deferredAttachmentData.resolve(xhr.response);
-				xhr.send();
-			
+				let method = (attachment.snapshot === false ? "HEAD" : "GET");
+				let options = { responseType: (isSnapshot ? "document" : "arraybuffer"), timeout: 60000 };
+				Zotero.HTTP.request(method, attachment.url, options).then((xhr) => {
+					deferredHeadersProcessed.resolve(this._processAttachmentHeaders(attachment, xhr, baseName));
+					deferredAttachmentData.resolve(xhr.response);
+				}, (e) => {
+					deferredHeadersProcessed.reject(e);
+					deferredAttachmentData.reject(e);
+				});
 				if (attachmentCallback) attachmentCallback(attachment, 0);
 			}
 			
@@ -703,22 +689,10 @@ Zotero.Translate.ItemSaver.prototype = {
 		}
 		attachment.md5 = hash;
 		
-		if(Zotero.isBrowserExt && !Zotero.isBookmarklet) {
-			// N.B.
-			// In Chrome, we don't use messaging for Zotero.API.uploadAttachment, since
-			// we can't pass ArrayBuffers to the background page
-			// TODO: Technically we could switch to doing this from the background page
-			// by using https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL
-			// but it's kinda complicated because you have to manually free resources or risk memory leaks
-			// let's not fix what's not broken
-			Zotero.API.uploadAttachment(attachment, attachmentCallback.bind(this, attachment));
-		} else {
-			// In Safari and the connectors, we can pass ArrayBuffers
-			Zotero.Translate.ItemSaver._attachmentCallbacks[attachment.id] = function(status, error) {
-				attachmentCallback(attachment, status, error);
-			};
-			Zotero.API.uploadAttachment(attachment);
-		}
+		Zotero.Translate.ItemSaver._attachmentCallbacks[attachment.id] = function(status, error) {
+			attachmentCallback(attachment, status, error);
+		};
+		Zotero.API.uploadAttachment(attachment);
 	},
 	
 	/**

@@ -50,7 +50,7 @@ Zotero.Messaging = new function() {
 				Zotero[ns][meth] = new function() {
 					var messageName = ns+MESSAGE_SEPARATOR+meth;
 					var messageConfig = MESSAGES[ns][meth];
-					return function() {
+					return async function() {
 						// see if last argument is a callback
 						var callback, callbackArg = null;
 						if(messageConfig) {
@@ -68,9 +68,12 @@ Zotero.Messaging = new function() {
 						for(var i=0; i<arguments.length; i++) {
 							newArgs[i] = i === callbackArg ? undefined : arguments[i];
 						}
+						if (messageConfig.inject && messageConfig.inject.preSend) {
+							newArgs = await messageConfig.inject.preSend(newArgs);
+						}
 						
 						// send message
-						return browser.runtime.sendMessage([messageName, newArgs]).then(function(response) {
+						return browser.runtime.sendMessage([messageName, newArgs]).then(async function(response) {
 							if (response && response[0] == 'error') {
 								response[1] = JSON.parse(response[1]);
 								let e = new Error(response[1].message);
@@ -79,7 +82,7 @@ Zotero.Messaging = new function() {
 							}
 							try {
 								if (messageConfig.inject && messageConfig.inject.postReceive) {
-									response = messageConfig.inject.postReceive(response);
+									response = await messageConfig.inject.postReceive(response);
 								}
 								if (callbackArg !== null) callback(response);
 								return response;

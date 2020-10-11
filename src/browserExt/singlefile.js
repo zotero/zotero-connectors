@@ -23,70 +23,8 @@
     ***** END LICENSE BLOCK *****
 */
 
-Zotero.SingleFile = new function () {
-	// These are defaults from SingleFileZ
-	// Located in: zotero/resources/SingleFileZ/extension/core/bg/config.js
-	this.CONFIG = {
-		removeHiddenElements: true,
-		removeUnusedStyles: true,
-		removeUnusedFonts: true,
-		removeFrames: true,
-		removeImports: true,
-		removeScripts: true,
-		compressHTML: true,
-		compressCSS: false,
-		loadDeferredImages: true,
-		loadDeferredImagesMaxIdleTime: 1500,
-		loadDeferredImagesBlockCookies: false,
-		loadDeferredImagesBlockStorage: false,
-		loadDeferredImagesKeepZoomLevel: false,
-		filenameTemplate: "{page-title} ({date-iso} {time-locale}).html",
-		infobarTemplate: "",
-		includeInfobar: false,
-		confirmInfobarContent: false,
-		autoClose: false,
-		confirmFilename: false,
-		filenameConflictAction: "uniquify",
-		filenameMaxLength: 192,
-		filenameReplacedCharacters: ["~", "+", "\\\\", "?", "%", "*", ":", "|", "\"", "<", ">", "\x00-\x1f", "\x7F"],
-		filenameReplacementCharacter: "_",
-		contextMenuEnabled: true,
-		tabMenuEnabled: true,
-		browserActionMenuEnabled: true,
-		shadowEnabled: true,
-		logsEnabled: true,
-		progressBarEnabled: true,
-		maxResourceSizeEnabled: false,
-		maxResourceSize: 10,
-		removeAudioSrc: true,
-		removeVideoSrc: true,
-		displayInfobar: true,
-		displayStats: false,
-		backgroundSave: true,
-		autoSaveDelay: 1,
-		autoSaveLoad: false,
-		autoSaveUnload: false,
-		autoSaveLoadOrUnload: true,
-		autoSaveRepeat: false,
-		autoSaveRepeatDelay: 10,
-		removeAlternativeFonts: true,
-		removeAlternativeMedias: true,
-		removeAlternativeImages: true,
-		saveRawPage: false,
-		saveToGDrive: false,
-		forceWebAuthFlow: false,
-		extractAuthCode: true,
-		insertTextBody: true,
-		resolveFragmentIdentifierURLs: false,
-		userScriptEnabled: false,
-		saveCreatedBookmarks: false,
-		ignoredBookmarkFolders: [],
-		replaceBookmarkURL: true,
-		saveFavicon: true,
-		includeBOM: false
-	};
-
-	this.retrievePageData = async function() {
+Zotero.SingleFile = {
+	retrievePageData: async function() {
 		try {
 			// Call to background script to inject SingleFile
 			await Zotero.Connector_Browser.injectSingleFile();
@@ -135,5 +73,5 @@ Zotero.SingleFile = new function () {
 			Zotero.debug(e.stack, 2);
 			throw e;
 		}
-	};
+	}
 };

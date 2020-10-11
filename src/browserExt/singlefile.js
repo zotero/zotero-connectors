@@ -29,6 +29,9 @@ Zotero.SingleFile = {
 			// Call to background script to inject SingleFile
 			await Zotero.Connector_Browser.injectSingleFile();
 
+			// Set up the user script before running SingleFile
+			Zotero.SingleFile.runUserScripts();
+
 			Zotero.debug("SingleFile: Retrieving page data");
 			let pageData = await singlefile.extension.getPageData(Zotero.SingleFile.CONFIG);
 			Zotero.debug("SingleFile: Done retrieving page data");

@@ -387,6 +387,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		var target = this.state.targets.find(row => row.id == id);
 		this.setState({target});
 		this.target = target;
+		this.handleUserInteraction();
 		this.sendUpdate();
 	}
 	
@@ -431,10 +432,17 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (event.key == 'Escape') {
 			this.handleDone();
 		}
-		// Consider arrow-key navigation of the drop-down equivalent to clicking in the popup
-		else {
-			this.sendMessage('mouseenter');
-			this.handleUserInteraction();
+		// Consider directional navigation of the drop-down equivalent to clicking in the popup
+		else if (event.target.localName == 'select') {
+			switch (event.key) {
+				case 'ArrowUp':
+				case 'ArrowDown':
+				case 'Home':
+				case 'End':
+					this.sendMessage('mouseenter');
+					this.handleUserInteraction();
+					break;
+			}
 		}
 	}
 	

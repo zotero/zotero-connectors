@@ -59,6 +59,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	var isReadOnly = false;
 	var syncDelayIntervalID;
 	var insideIframe = false;
+	var blurred = false;
 	var frameSrc;
 	var frameIsHidden = false;
 	if (Zotero.isBookmarklet) {
@@ -220,6 +221,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	
 	function handleMouseEnter() {
 		insideIframe = true;
+		blurred = false;
 		stopCloseTimer();
 		
 		// See scroll listener in initFrame()
@@ -302,6 +304,10 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		
 		// Update the client or API with changes
 		var handleUpdated = async function (data) {
+			// If we're making changes, don't close the popup and keep delaying syncs
+			stopCloseTimer();
+			blurred = false;
+			
 			// If the session isn't yet registered or a session update is in progress,
 			// store the data to run after, overwriting any already-queued data
 			if (!createdSessions.has(currentSessionID) || updatingSession) {
@@ -359,9 +365,11 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		addMessageListener('progressWindowIframe.mouseenter', handleMouseEnter);
 		addMessageListener('progressWindowIframe.mouseleave', handleMouseLeave);
 
-		// Hide iframe if it loses focus and the user recently clicked on the main page
-		// (i.e., they didn't just switch to another window)
 		addMessageListener('progressWindowIframe.blurred', async function() {
+			blurred = true;
+			
+			// Hide iframe if it loses focus and the user recently clicked on the main page
+			// (i.e., they didn't just switch to another window)
 			await Zotero.Promise.delay(150);
 			if (lastClick > new Date() - 500) {
 				hideFrame();
@@ -405,7 +413,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		syncDelayIntervalID = setInterval(() => {
 			// Don't prevent syncing when read-only or when tab isn't visible.
 			// See note in ProgressWindow.jsx::handleVisibilityChange() for latter.
-			if (isReadOnly || document.hidden) return;
+			if (isReadOnly || document.hidden || blurred) return;
 			
 			Zotero.Connector.callMethod("delaySync", {});
 		}, 7500);

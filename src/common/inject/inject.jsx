@@ -555,33 +555,50 @@ Zotero.Inject = new function() {
 
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", progressItem);
 
-				let snapshotFailed = false;
-				let payload = data;
 				try {
-					let { pageData, form } = await Zotero.SingleFile.retrievePageData();
-					payload.pageData = pageData;
-					form.payload = JSON.stringify(payload);
-					payload = form;
+					data.snapshotContent = await Zotero.SingleFile.retrievePageData();
 				}
 				catch (e) {
 					// Swallow error, will fallback to save in client
-					payload = {
-						payload: JSON.stringify(payload)
-					};
-
-					snapshotFailed = true;
 					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: false } });
 				}
 
-				result = await Zotero.Connector.callMethodWithCookies({
-						method: "saveSingleFile",
-						headers: {"Content-Type": "multipart/form-data"}
-					},
-					payload
-				);
+				try {
+					result = await Zotero.Connector.callMethodWithCookies({
+							method: "saveSingleFile",
+							headers: {"Content-Type": "application/json"}
+						},
+						data
+					);
 
-				if (!snapshotFailed) {
 					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+				}
+				catch (e) {
+					if (e.status === 400 && e.value === 'Endpoint does not support content-type\n') {
+						let snapshotContent = data.snapshotContent;
+						delete data.snapshotContent;
+
+						data.pageData = {
+							content: snapshotContent,
+							resources: {}
+						};
+
+						// This means a Zotero client that expects SingleFileZ. We can just feed
+						// it a payload it is expecting with no resources.
+						result = await Zotero.Connector.callMethodWithCookies({
+								method: "saveSingleFile",
+								headers: {"Content-Type": "multipart/form-data"}
+							},
+							{
+								payload: JSON.stringify(data)
+							}
+						);
+
+						Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+					}
+					else {
+						throw e;
+					}
 				}
 			}
 

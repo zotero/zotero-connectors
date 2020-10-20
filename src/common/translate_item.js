@@ -162,28 +162,46 @@ Zotero.Translate.ItemSaver.prototype = {
 
 	_executeSingleFile: async function(payload) {
 		try {
-			let { form, pageData } = await Zotero.SingleFile.retrievePageData();
-			payload.pageData = pageData;
-
-			// Form contains all the binary bits, we add the payload as a part
-			// so we can submit the whole multipart structure
-			form.payload = JSON.stringify(payload);
-			payload = form;
+			payload.snapshotContent = await Zotero.SingleFile.retrievePageData();
 		}
 		catch (e) {
 			// We swallow this error and fall back to saving the
 			// page in the client
-			payload = {
-				payload: JSON.stringify(payload)
-			};
 		}
 
-		await Zotero.Connector.callMethodWithCookies({
-				method: "saveSingleFile",
-				headers: {"Content-Type": "multipart/form-data"}
-			},
-			payload
-		);
+		try {
+			await Zotero.Connector.callMethodWithCookies({
+					method: "saveSingleFile",
+					headers: {"Content-Type": "application/json"}
+				},
+				payload
+			);
+		}
+		catch (e) {
+			if (e.status === 400 && e.value === 'Endpoint does not support content-type\n') {
+				let snapshotContent = payload.snapshotContent;
+				delete payload.snapshotContent;
+
+				payload.pageData = {
+					content: snapshotContent,
+					resources: {}
+				};
+
+				// This means a Zotero client that expects SingleFileZ. We can just feed
+				// it a payload it is expecting with no resources.
+				await Zotero.Connector.callMethodWithCookies({
+						method: "saveSingleFile",
+						headers: {"Content-Type": "multipart/form-data"}
+					},
+					{
+						payload: JSON.stringify(payload)
+					}
+				);
+			}
+			else {
+				throw e;
+			}
+		}
 	},
 	
 	/**

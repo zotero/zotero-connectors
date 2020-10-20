@@ -556,7 +556,7 @@ Zotero.Connector_Browser = new function() {
 	function _isDisabledForURL(url, excludeTests=false) {
 		return url.startsWith('chrome://') ||
 			url.startsWith('about:') ||
-			(url.startsWith('chrome-') && (!excludeTests || !url.includes('/test/data/')));
+			(url.startsWith(browser.runtime.getURL('')) && (!excludeTests || !url.includes('/test/data/')));
 	}
 	
 	function _showZoteroStatus(tabID) {

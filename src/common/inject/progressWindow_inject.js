@@ -59,6 +59,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	var isReadOnly = false;
 	var syncDelayIntervalID;
 	var insideIframe = false;
+	var insideTags = false;
 	var blurred = false;
 	var frameSrc;
 	var frameIsHidden = false;
@@ -237,8 +238,9 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	}
 	
 	function startCloseTimer(delay) {
-		// Don't start the timer if the mouse is over the popup
+		// Don't start the timer if the mouse is over the popup or the tags box has focus
 		if (insideIframe) return;
+		if (insideTags) return;
 		
 		if (!delay) delay = 5000;
 		stopCloseTimer();
@@ -364,7 +366,10 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		// Keep track of when the mouse is over the popup, for various purposes
 		addMessageListener('progressWindowIframe.mouseenter', handleMouseEnter);
 		addMessageListener('progressWindowIframe.mouseleave', handleMouseLeave);
-
+		
+		addMessageListener('progressWindowIframe.tagsfocus', () => insideTags = true);
+		addMessageListener('progressWindowIframe.tagsblur', () => insideTags = false);
+		
 		addMessageListener('progressWindowIframe.blurred', async function() {
 			blurred = true;
 			

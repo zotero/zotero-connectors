@@ -92,6 +92,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.handleKeyPress = this.handleKeyPress.bind(this);
 		this.onTagsChange = this.onTagsChange.bind(this);
 		this.onTagsKeyPress = this.onTagsKeyPress.bind(this);
+		this.onTagsFocus = this.onTagsFocus.bind(this);
 		this.onTagsBlur = this.onTagsBlur.bind(this);
 		this.handleDone = this.handleDone.bind(this);
 	}
@@ -472,8 +473,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		}
 	}
 	
+	onTagsFocus() {
+		this.sendMessage('tagsfocus');
+	}
+	
 	onTagsBlur() {
-		this.sendUpdate();
+		this.sendMessage('tagsblur');
 	}
 	
 	handleDone() {
@@ -563,6 +568,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						placeholder={this.text.tagsPlaceholder}
 						onChange={this.onTagsChange}
 						onKeyPress={this.onTagsKeyPress}
+						onFocus={this.onTagsFocus}
 						onBlur={this.onTagsBlur} />
 					<button className="ProgressWindow-button" onClick={this.handleDone}>{this.text.done}</button>
 				</div>

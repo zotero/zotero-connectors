@@ -133,43 +133,6 @@ if [[ ! -z $DEBUG ]]; then
 		"$NODE_MODULES_DIR/sinon/pkg/sinon.js")
 fi
 
-# Scripts to be included in bookmarklet
-BOOKMARKLET_INJECT_INCLUDE=("$SRCDIR/common/cachedTypes.js" \
-	"$EXTENSION_XPCOM_DIR/date.js" \
-	"$SRCDIR/common/inject/http.js" \
-	"$EXTENSION_XPCOM_DIR/openurl.js" \
-	"$EXTENSION_XPCOM_DIR/rdf/init.js" \
-	"$EXTENSION_XPCOM_DIR/rdf/uri.js" \
-	"$EXTENSION_XPCOM_DIR/rdf/term.js" \
-	"$EXTENSION_XPCOM_DIR/rdf/identity.js" \
-	"$EXTENSION_XPCOM_DIR/rdf/match.js" \
-	"$EXTENSION_XPCOM_DIR/rdf/rdfparser.js" \
-	"$EXTENSION_XPCOM_DIR/translation/translate.js" \
-	"$SRCDIR/common/translate_item.js" \
-	"$SRCDIR/common/inject/translate_inject.js" \
-	"$SRCDIR/zotero/resource/schema/connectorTypeSchemaData.js" \
-	"$EXTENSION_XPCOM_DIR/utilities_translate.js" \
-	"$SRCDIR/bookmarklet/messaging_inject.js" \
-	"$SRCDIR/bookmarklet/inject_base.js")
-
-BOOKMARKLET_IFRAME_INCLUDE=("$SRCDIR/common/connector.js" \
-	"$EXTENSION_XPCOM_DIR/translation/tlds.js" \
-	"$SRCDIR/bookmarklet/translator.js" \
-	"$SRCDIR/common/messaging.js" \
-	"$SRCDIR/bookmarklet/iframe_base.js")
-
-BOOKMARKLET_COMMON_INCLUDE=("$SRCDIR/bookmarklet/zotero_config.js" \
-	"$EXTENSION_XPCOM_DIR/debug.js" \
-	"$SRCDIR/common/errors_webkit.js" \
-	"$SRCDIR/common/http.js" \
-	"$EXTENSION_XPCOM_DIR/xregexp/xregexp.js" \
-	"$EXTENSION_XPCOM_DIR/xregexp/addons/build.js" \
-	"$EXTENSION_XPCOM_DIR/xregexp/addons/matchrecursive.js" \
-	"$EXTENSION_XPCOM_DIR/xregexp/addons/unicode/unicode-base.js" \
-	"$EXTENSION_XPCOM_DIR/xregexp/addons/unicode/unicode-categories.js" \
-	"$EXTENSION_XPCOM_DIR/xregexp/addons/unicode/unicode-zotero.js" \
-	"$EXTENSION_XPCOM_DIR/utilities.js" \
-	"$SRCDIR/bookmarklet/messages.js")
 
 BOOKMARKLET_AUXILIARY_JS=( \
 	"$SRCDIR/bookmarklet/loader.js" \
@@ -410,18 +373,6 @@ echo "done"
 
 if [ $BUILD_BOOKMARKLET == 1 ]; then
 	echo -n "Building bookmarklet..."
-	
-	# Make bookmarklet
-	
-	# Copy/minify auxiliary JS
-	if [ ! -z $DEBUG ]; then
-		cp "${BOOKMARKLET_AUXILIARY_JS[@]}" "$BUILD_DIR/bookmarklet"
-	else	
-		for scpt in "${BOOKMARKLET_AUXILIARY_JS[@]}"
-		do
-			"$CWD/node_modules/babel-cli/bin/babel.js" "$scpt" --out-file "$BUILD_DIR/bookmarklet/`basename \"$scpt\"`" --presets minify --no-comments -q >> "$LOG" 2>&1
-		done
-	fi	
 	
 	# Copy HTML to dist directory
 	cp -R "$SRCDIR/bookmarklet/debug_mode.html" \

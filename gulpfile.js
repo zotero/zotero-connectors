@@ -482,7 +482,7 @@ gulp.task('process-custom-scripts', function() {
 		.pipe(gulp.dest((data) => data.base));
 });
 
-gulp.task('watch-bookmarklet', watchBookmarklet(argv))
+gulp.task('watch-bookmarklet', watchBookmarklet(argv));
 
 gulp.task('process-bookmarklet-scripts', processBookmarkletScripts(argv));
 

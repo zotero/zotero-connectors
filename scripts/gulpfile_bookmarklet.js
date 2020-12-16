@@ -29,10 +29,10 @@ const fs = require('fs').promises;
 const { basename, join, extname } = require('path');
 const through = require('through2');
 const gulp = require('gulp');
+const mergeStream = require('merge-stream');
 const plumber = require('gulp-plumber');
 const concat = require('gulp-concat');
 const babel = require('@babel/core');
-const browserify = require('browserify');
 const replaceBrowser = require('./replace_browser');
 
 const xpcomDir = './src/zotero/chrome/content/zotero/xpcom';
@@ -181,7 +181,7 @@ function postProcess(argv) { return through.obj(function(file, enc, cb) {
 		let presets = [];
 		// presets = [...presets, 'env'];
 		if (argv.p) {
-			presets = [...presets, 'minify'];
+			presets = [...presets, ['minify', {builtIns: false}]];
 		}
 		try {
 			let fileStr = file.contents;
@@ -195,13 +195,13 @@ function postProcess(argv) { return through.obj(function(file, enc, cb) {
 		}
 		// browserify(file).bundle((err, buf) => {file.contents = buf; this.push(file.clone({contents: false})); cb()});
 	}
-	this.push(file.clone({contents: false}));
+	this.push(file.clone({contents: false})); cb();
 })}
 
 function logFinalOutput() {
-	return through.obj(function(file) {
+	return through.obj(function(file, enc, cb) {
 		console.log(`-> ${basename(file.path)}`);
-		this.push(file);
+		this.push(file); cb();
 	})
 }
 
@@ -232,14 +232,16 @@ function watchBookmarklet(argv) {return function() {
 }}
 
 function processBookmarkletScripts(argv) {return function() {
+	let streams = [];
 	for (let key in sources) {
-		gulp.src(sources[key]).pipe(plumber())
+		streams.push(gulp.src(sources[key]).pipe(plumber())
 			.pipe(processFile(argv))
 			.pipe(concat(key))
 			.pipe(postProcess(argv))
 			.pipe(logFinalOutput())
-			.pipe(gulp.dest('./build/bookmarklet/'));
+			.pipe(gulp.dest('./build/bookmarklet/')));
 	}
+	return mergeStream(...streams);
 }}
 
 module.exports = {

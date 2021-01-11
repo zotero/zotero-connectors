@@ -25,7 +25,7 @@
 
 Zotero.GoogleDocsPluginManager = {
 	backgroundScriptPaths: [ 'api.js' ],
-	contentScriptPaths: [ "kixAddZoteroMenu.js", "client.js" ],
+	contentScriptPaths: [ "kixAddZoteroMenu.js", "client.js", 'document.js' ],
 	uiScriptPaths: [ "ui.js" ],
 	
 	scriptContents: {},

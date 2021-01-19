@@ -285,8 +285,7 @@ if [[ $BUILD_SAFARI == 1 ]]; then
 		cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari/images"
 		for f in $ICONS
 		do
-			$IMAGEMAGICK_CONVERT $f -background white -flatten -negate -alpha Background -alpha Copy -channel \
-					Opacity -contrast-stretch 50 "$BUILD_DIR/safari/images/toolbar/"`basename $f`
+			$IMAGEMAGICK_CONVERT $f -grayscale Rec709Luminance "$BUILD_DIR/safari/images/toolbar/"`basename $f`
 		done
 	else
 		echo

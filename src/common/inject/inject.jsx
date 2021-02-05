@@ -543,7 +543,7 @@ Zotero.Inject = new function() {
 			);
 
 			// Once snapshot item is created, if requested, run SingleFile
-			if (result && result.saveSingleFile) {
+			if (!data.pdf && result && result.saveSingleFile) {
 				let progressItem = {
 					sessionID,
 					id: 2,

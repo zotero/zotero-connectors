@@ -479,6 +479,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	
 	onTagsBlur() {
 		this.sendMessage('tagsblur');
+		this.sendUpdate();
 	}
 	
 	handleDone() {

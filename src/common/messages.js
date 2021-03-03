@@ -123,6 +123,7 @@ var MESSAGES = {
 		callMethodWithCookies: true,
 		getClientVersion: true,
 		reportActiveURL: false,
+		getPref: true
 	},
 	Connector_Browser: {
 		onSelect: true,

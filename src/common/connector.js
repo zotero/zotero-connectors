@@ -57,11 +57,17 @@ Zotero.Connector = new function() {
 		this.ping(payload);
 	}
 	
+	// For use in injected pages
+	this.getPref = function(pref) {
+		return Zotero.Connector[pref];
+	}
+	
 	this.ping = function(payload={}) {
 		return Zotero.Connector.callMethod("ping", payload).then(function(response) {
 			if (response && 'prefs' in response) {
 				Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
 				Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
+				Zotero.Connector.googleDocsAddNoteEnabled = !!response.prefs.googleDocsAddNoteEnabled;
 			}
 			return response || {};
 		});

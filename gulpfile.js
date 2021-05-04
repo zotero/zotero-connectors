@@ -143,7 +143,8 @@ var backgroundInclude = [
 
 
 if (!argv.p) {
-	backgroundInclude.push('tools/testTranslators/translatorTester_messages.js',
+	backgroundInclude.push('zotero-google-docs-integration/api.js',
+		'tools/testTranslators/translatorTester_messages.js',
 		'tools/testTranslators/translatorTester.js',
 		'tools/testTranslators/translatorTester_global.js',
 		'test/messages.js',

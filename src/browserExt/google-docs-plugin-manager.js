@@ -133,6 +133,7 @@ Zotero.GoogleDocsPluginManager = {
 	},
 	
 	loadBackgroundScripts: async function() {
+		if (Zotero.version === '4.999.0') return;
 		Zotero.debug(`Loading Google Docs background scripts: ${JSON.stringify(this.backgroundScriptPaths)}`);
 		for (let path of this.backgroundScriptPaths) {
 			try {

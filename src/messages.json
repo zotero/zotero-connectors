@@ -37,8 +37,8 @@
 		"message": "An error occurred while saving this item. See $1 for more information."
 	},
 	"progressWindow_error_siteAccessLimitsError": {
-		"message": "An error occurred while saving this item. $1 may limit the number of items you can save at once. See $2 and $3 for more information.",
-		"description": "The first placeholder is the failing translator label (e.g., Google Scholar), the other two are Troubleshooting Translator Issues and Site Access Limits links"
+		"message": "An error occurred while saving this item. $1 may limit the number of items you can save at once. See $2 for more information.",
+		"description": "The placeholders are for the failing translator label (e.g., Google Scholar) and the Site Access Limits link"
 	},
 	"progressWindow_error_troubleshootingTranslatorIssues": {
 		"message": "Troubleshooting Translator Issues"

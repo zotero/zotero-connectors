@@ -50,6 +50,11 @@ if (isTopWindow) {
 Zotero.Inject = new function() {
 	var _translate;
 	var _noteImgSrc;
+	// Used to display a different message for failing translations on pages
+	// with site-access limits
+	const siteAccessLimitsTranslators = new Set([
+		"57a00950-f0d1-4b41-b6ba-44ff0fc30289" // GoogleScholar
+	]);
 	this.sessionDetails = {};
 	this.translators = [];
 		
@@ -452,7 +457,8 @@ Zotero.Inject = new function() {
 						Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, "Save as Webpage"]);
 						return await this._saveAsWebpage({sessionID, snapshot: true});
 					}
-				} else {
+				}
+				else {
 					// Clear session details on failure, so another save click tries again
 					this.sessionDetails = {};
 					// We delay opening the progressWindow for multiple items so we don't have to flash it
@@ -461,7 +467,14 @@ Zotero.Inject = new function() {
 					// and then the delayed progressWindow.show will pop up another empty progress window.
 					// Cannot have that!
 					await Zotero.Promise.delay(500);
-					Zotero.Messaging.sendMessage("progressWindow.done", [false]);
+					const isAccessLimitingTranslator = siteAccessLimitsTranslators.has(translator.translatorID);
+					const isSiteAccessHTTPError = typeof e == 'string' && e.match(/status code ([0-9]{3})/)[1] == '403';
+					if (isAccessLimitingTranslator && isSiteAccessHTTPError) {
+						Zotero.Messaging.sendMessage("progressWindow.done", [false, 'siteAccessLimits', translator.label]);
+					}
+					else {
+						Zotero.Messaging.sendMessage("progressWindow.done", [false]);
+					}
 					return;
 				}
 			}

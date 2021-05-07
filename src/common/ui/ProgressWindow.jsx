@@ -710,6 +710,19 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			};
 			contents = <span dangerouslySetInnerHTML={html}/>;
 		}
+		else if (err === "siteAccessLimits") {
+			const translator = `<b>${args[0]}</b>`;
+			const siteAccessURL = "https://www.zotero.org/support/kb/site_access_limits";
+			const siteAccessTitle = Zotero.getString('progressWindow_error_siteAccessLimits');
+			const generalURL = "https://www.zotero.org/support/troubleshooting_translator_issues";
+			const generalTitle = Zotero.getString('progressWindow_error_troubleshootingTranslatorIssues');
+			let generalLink = `<a href="${generalURL}" title="${generalTitle}">${generalTitle}</a>`;
+			let siteAccessLink = `<a href="${siteAccessURL}" title="${siteAccessTitle}">${siteAccessTitle}</a>`;
+			let html = {
+				__html: Zotero.getString("progressWindow_error_siteAccessLimitsError", [translator, siteAccessLink, generalLink])
+			};
+			contents = <span dangerouslySetInnerHTML={html}/>;
+		}
 		else if (err === "unexpectedError") {
 			let url = "https://www.zotero.org/support/getting_help";
 			contents = <span>

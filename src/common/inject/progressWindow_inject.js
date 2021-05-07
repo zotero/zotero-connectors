@@ -507,7 +507,10 @@ if (isTopWindow || Zotero.isBookmarklet) {
 			startCloseTimer(3000);
 		}
 		else {
-			addError(returnValue[1] || "translationError");
+			if (returnValue.length < 2) {
+				returnValue.push('translationError');
+			}
+			addError(returnValue[1], ...returnValue.slice(2));
 			startCloseTimer(8000);
 		}
 	});

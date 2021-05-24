@@ -631,6 +631,7 @@ Zotero.Proxies = new function() {
 		 */
 		const hostBlacklist = [
 			/edu$/,
+			/doi\.org$/,
 			/google\.com$/,
 			/wikipedia\.org$/,
 			/^[^.]*$/,

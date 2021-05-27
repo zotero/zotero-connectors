@@ -876,7 +876,21 @@ Zotero.Connector_Browser = new function() {
 	browser.tabs.onRemoved.addListener(logListenerErrors(_clearInfoForTab));
 	
 	browser.tabs.onActivated.addListener(logListenerErrors(async function(details) {
-		var tab = await browser.tabs.get(details.tabId);
+		// Chrome 91 has started throwing
+		// "Tabs cannot be edited right now (user may be dragging a tab)."
+		// when attempting to retrieve the tab on event here when user is clicking on a tab
+		// Follow https://bugs.chromium.org/p/chromium/issues/detail?id=1213925
+		// for progress.
+		let attemptsLeft = 10;
+		while (!tab && attemptsLeft > 0) {
+			try {
+					var tab = await browser.tabs.get(details.tabId);
+			}
+			catch (e) {
+				attemptsLeft--;
+				await Zotero.Promise.delay(100 * (10 - attemptsLeft));
+			}
+		}
 		// Ignore item selector
 		if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
 		Zotero.debug("Connector_Browser: onActivated for " + tab.url);

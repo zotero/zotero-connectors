@@ -37,8 +37,8 @@ Zotero.HTTP = new function() {
 	};
 	this.StatusError.prototype = Object.create(Error.prototype);
 
-	this.TimeoutError = function(ms) {
-		this.message = `HTTP request has timed out after ${ms}ms`;
+	this.TimeoutError = function(url, ms) {
+		this.message = `HTTP request to ${url} has timed out after ${ms}ms`;
 	};
 	this.TimeoutError.prototype = Object.create(Error.prototype);
 	
@@ -297,7 +297,7 @@ Zotero.HTTP = new function() {
 			}
 		};
 		xmlhttp.ontimeout = function() {
-			var e = new Zotero.HTTP.TimeoutError(xmlhttp.timeout);
+			var e = new Zotero.HTTP.TimeoutError(url, xmlhttp.timeout);
 			Zotero.logError(e);
 			deferred.reject(e);
 		};

@@ -468,7 +468,9 @@ Zotero.Inject = new function() {
 					// Cannot have that!
 					await Zotero.Promise.delay(500);
 					const isAccessLimitingTranslator = siteAccessLimitsTranslators.has(translator.translatorID);
-					const statusCode = typeof e == 'string' && e.match(/status code ([0-9]{3})/)[1];
+					try {
+						var statusCode = typeof e == 'string' && e.match(/status code ([0-9]{3})/)[1];
+					} catch (e) {}
 					const isHTTPErrorForbidden = statusCode == '403';
 					const isHTTPErrorTooManyRequests = statusCode == '429';
 					if ((isAccessLimitingTranslator && isHTTPErrorForbidden) || isHTTPErrorTooManyRequests) {

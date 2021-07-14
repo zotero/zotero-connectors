@@ -65,6 +65,20 @@
 		"message": "Upgrade $1"
 	},
 	
+	"firstRun_title": {
+		"message": "You’ve installed the $1 Connector!"
+	},
+	"firstRun_text1": {
+		"message": "The $1 Connector enables you to <a href=\"$2\">save items to $1</a> from your browser in a single click."
+	},
+	"firstRun_text2": {
+		"message": "If you haven’t yet, <a href=\"$2\">download</a> the standalone $1 application for the best experience."
+	},
+	"firstRun_acceptButton": {
+		"message": "Got it",
+		"description": "The Accept button for the first-run dialog"
+	},
+	
 	"error_connection_isAppRunning": {
 		"message": "Is $1 Running?"
 	},

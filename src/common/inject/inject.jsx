@@ -304,14 +304,27 @@ Zotero.Inject = new function() {
 	};
 
 	this.firstUsePrompt = function () {
+		var clientName = ZOTERO_CONFIG.CLIENT_NAME;
 		return this.confirm({
-			title: "You’ve installed the Zotero Connector!",
-			button1Text: "Got it",
+			title: Zotero.getString('firstRun_title', clientName),
+			button1Text: Zotero.getString('firstRun_acceptButton'),
 			button2Text: "",
-			message: `
-				The Zotero Connector enables you to save references to Zotero from your web browser in a single click.<br><br>
-				<strong>Looking for your Zotero data?</strong> We’ve made some <a href="https://www.zotero.org/blog/a-unified-zotero-experience/">important changes</a> to how Zotero works in Firefox. If you were previously using Zotero for Firefox, you’ll need to <a href="https://www.zotero.org/download/">download</a> the standalone Zotero application to access your local Zotero data going forward.
-			`
+			message: Zotero.getString(
+					'firstRun_text1',
+					[
+						clientName,
+						"https://www.zotero.org/support/adding_items_to_zotero"
+					]
+				)
+				+ '<br><br>'
+				+ Zotero.getString(
+					'firstRun_text2',
+					[
+						clientName,
+						// TODO: Make download URL configurable (instead of just base URL + "download")
+						ZOTERO_CONFIG.WWW_BASE_URL + "download/"
+					]
+				)
 		});
 	};
 	

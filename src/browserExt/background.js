@@ -456,7 +456,7 @@ Zotero.Connector_Browser = new function() {
 			return chrome.tabs.query( { lastFocusedWindow: true, active: true },
 				(tabs) => tabs.length && this._updateExtensionUI(tabs[0]));
 		}	
-		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) return _showFirstUseUI(tab);
+		if (Zotero.Prefs.get('firstUse')) return _showFirstUseUI(tab);
 		if (!tab.active) return;
 		browser.contextMenus.removeAll();
 
@@ -742,7 +742,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _browserAction(tab) {
-		if (Zotero.Prefs.get('firstUse') && Zotero.isFirefox) {
+		if (Zotero.Prefs.get('firstUse')) {
 			Zotero.Messaging.sendMessage("firstUse", null, tab)
 			.then(function () {
 				Zotero.Prefs.set('firstUse', false);

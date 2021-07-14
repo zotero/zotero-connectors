@@ -176,6 +176,10 @@ var Zotero = window.Zotero = new function() {
 			}
 			Zotero.Proxies.storeProxies();
 		}
+		// Skip first-use dialog for existing users when enabled for non-Firefox browsers
+		if (major == 5 && minor == 0 && patch < 87 && !this.isFirefox) {
+			Zotero.Prefs.set('firstUse', false);
+		}
 	};
 	
 	/**

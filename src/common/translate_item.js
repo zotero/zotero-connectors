@@ -394,7 +394,7 @@ Zotero.Translate.ItemSaver.prototype = {
 				item.url = this._proxy.toProper(item.url);
 			}
 			itemIndices[i] = newItems.length;
-			newItems = newItems.concat(Zotero.Utilities.itemToAPIJSON(item));
+			newItems = newItems.concat(Zotero.Utilities.Item.itemToAPIJSON(item));
 			if (typedArraysSupported) {
 				for (let attachment of item.attachments) {
 					attachment.id = Zotero.Utilities.randomString();

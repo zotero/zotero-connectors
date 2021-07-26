@@ -7,3 +7,9 @@
 	path = src/zotero-google-docs-integration
 	url = git://github.com/zotero/zotero-google-docs-integration.git
 	branch = master
+[submodule "src/translate"]
+	path = src/translate
+	url = https://github.com/zotero/translate.git
+[submodule "src/utilities"]
+	path = src/utilities
+	url = https://github.com/zotero/utilities.git

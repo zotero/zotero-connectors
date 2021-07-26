@@ -254,6 +254,7 @@ var Zotero = window.Zotero = new function() {
 			Zotero.ConnectorIntegration.init();
 		}
 		Zotero.Connector_Types.init();
+		Zotero.Schema.init();
 		Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
 			'reportTranslationFailure', 'capitalizeTitles']);
 		await Zotero.Prefs.loadNamespace('debug');

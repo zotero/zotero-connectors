@@ -49,36 +49,33 @@ var injectInclude = [
 	'node_modules.js',
 	'zotero_config.js',
 	'zotero.js',
-	'promise.js',
+	'translate/promise.js',
 	'http.js',
 	'proxy.js',
-	'cachedTypes.js',
-	'schema.js',
-	'zotero/date.js',
-	'zotero/debug.js',
-	'zotero/openurl.js',
-	"zotero/xregexp/xregexp.js",
-	"zotero/xregexp/addons/build.js",
-	"zotero/xregexp/addons/matchrecursive.js",
-	"zotero/xregexp/addons/unicode/unicode-base.js",
-	"zotero/xregexp/addons/unicode/unicode-categories.js",
-	"zotero/xregexp/addons/unicode/unicode-zotero.js",
-	'zotero/rdf/init.js',
-	'zotero/rdf/uri.js',
-	'zotero/rdf/term.js',
-	'zotero/rdf/identity.js',
-	'zotero/rdf/match.js',
-	'zotero/rdf/rdfparser.js',
-	'zotero/translation/translate.js',
-	'zotero/translation/translator.js',
-	'translate_item.js',
-	'zotero/connectorTypeSchemaData.js',
-	'zotero/utilities.js',
-	'zotero/utilities_translate.js',
+	'utilities/date.js',
+	'utilities/openurl.js',
+	'utilities/xregexp-all.js',
+	'utilities/xregexp-unicode-zotero.js',
+	'utilities/utilities.js',
+	'utilities/utilities_item.js',
 	'utilities.js',
+	'translate/debug.js',
+	'utilities/schema.js',
+	'translate/rdf/init.js',
+	'translate/rdf/uri.js',
+	'translate/rdf/term.js',
+	'translate/rdf/identity.js',
+	'translate/rdf/rdfparser.js',
+	'translate/translation/translate.js',
+	'translate/translator.js',
+	'translate/resource/zoteroTypeSchemaData.js',
+	'translate/utilities_translate.js',
+	'translate_item.js',
 	'inject/http.js',
 	'inject/translate_inject.js',
 	'integration/connectorIntegration.js',
+	'cachedTypes.js',
+	'schema.js',
 	'messages.js',
 	'messaging_inject.js',
 	'inject/progressWindow_inject.js',
@@ -104,31 +101,27 @@ var backgroundInclude = [
 	'zotero_config.js',
 	'zotero.js',
 	'i18n.js',
-	'promise.js',
+	'translate/promise.js',
 	'prefs.js',
 	'api.js',
 	'http.js',
 	'oauthsimple.js',
 	'proxy.js',
 	'connector.js',
-	'cachedTypes.js',
-	'zotero/date.js',
-	'zotero/debug.js',
-	'errors_webkit.js',
-	"zotero/xregexp/xregexp.js",
-	"zotero/xregexp/addons/build.js",
-	"zotero/xregexp/addons/matchrecursive.js",
-	"zotero/xregexp/addons/unicode/unicode-base.js",
-	"zotero/xregexp/addons/unicode/unicode-categories.js",
-	"zotero/xregexp/addons/unicode/unicode-zotero.js",
-	'zotero/openurl.js',
 	'repo.js',
-	'zotero/translation/tlds.js',
-	'zotero/translation/translator.js',
-	'translators.js',
-	'zotero/connectorTypeSchemaData.js',
-	'zotero/utilities.js',
+	'utilities/date.js',
+	'utilities/openurl.js',
+	'utilities/xregexp-all.js',
+	'utilities/utilities.js',
+	'utilities/utilities_item.js',
 	'utilities.js',
+	'translate/debug.js',
+	'translate/tlds.js',
+	'translate/translator.js',
+	'translate/resource/zoteroTypeSchemaData.js',
+	'translators.js',
+	'cachedTypes.js',
+	'errors_webkit.js',
 	'google-docs-plugin-manager.js',
 	'messages.js',
 	'messaging.js',
@@ -273,51 +266,9 @@ function processFile() {
 						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t')));
 				break;
 			case 'schema.js': {
-				let Zotero = { Schema: {} };
-				let data = schemaJSON;
-				
-				//
-				// Keep in sync with the client's schema.js
-				//
-				Zotero.Schema.CSL_TYPE_MAPPINGS = {};
-				Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE = {};
-				for (let cslType in data.csl.types) {
-					for (let zoteroType of data.csl.types[cslType]) {
-						Zotero.Schema.CSL_TYPE_MAPPINGS[zoteroType] = cslType;
-					}
-					Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE[cslType] = [...data.csl.types[cslType]];
-				}
-				Zotero.Schema.CSL_TEXT_MAPPINGS = data.csl.fields.text;
-				Zotero.Schema.CSL_DATE_MAPPINGS = data.csl.fields.date;
-				Zotero.Schema.CSL_NAME_MAPPINGS = data.csl.names;
-				Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE = {};
-				for (let cslField in data.csl.fields.text) {
-					for (let zoteroField of data.csl.fields.text[cslField]) {
-						Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE[zoteroField] = cslField;
-					}
-				}
-				for (let cslField in data.csl.fields.date) {
-					let zoteroField = data.csl.fields.date[cslField];
-					Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE[zoteroField] = cslField;
-				}
-				
 				file.contents = Buffer.from(file.contents.toString()
-					.replace(
-						"/*CSL_MAPPINGS*/",
-						"CSL_TYPE_MAPPINGS: "
-							+ JSON.stringify(Zotero.Schema.CSL_TYPE_MAPPINGS)
-						+ ", CSL_TYPE_MAPPINGS_REVERSE: "
-							+ JSON.stringify(Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE)
-						+ ", CSL_TEXT_MAPPINGS: "
-							+ JSON.stringify(Zotero.Schema.CSL_TEXT_MAPPINGS)
-						+ ", CSL_TYPE_MAPPINGS_REVERSE: "
-							+ JSON.stringify(Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE)
-						+ ", CSL_DATE_MAPPINGS: "
-							+ JSON.stringify(Zotero.Schema.CSL_DATE_MAPPINGS)
-						+ ", CSL_NAME_MAPPINGS: "
-							+ JSON.stringify(Zotero.Schema.CSL_NAME_MAPPINGS)
-						+ ", CSL_FIELD_MAPPINGS_REVERSE: "
-							+ JSON.stringify(Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE)
+					.replace("/*ZOTERO_SCHEMA*/",
+						JSON.stringify(schemaJSON)
 					));
 				break;
 			}

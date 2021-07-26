@@ -108,7 +108,8 @@ DISTDIR="$CWD/dist"
 NODE_MODULES_DIR="$CWD/node_modules"
 LOG="$CWD/build.log"
 
-EXTENSION_XPCOM_DIR="$SRCDIR/zotero/chrome/content/zotero/xpcom"
+EXTENSION_TRANSLATE_DIR="$SRCDIR/translate"
+EXTENSION_UTILITIES_DIR="$SRCDIR/utilities"
 EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 
 SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
@@ -179,22 +180,9 @@ function copyResources {
 	# Set version
 	perl -pi -e 's/^(\s*this.version\s*=\s*)"[^"]*"/$1"'"$VERSION"'"/' "$browser_builddir/zotero.js"
 	
-	# Copy extension pieces
-	mkdir "$browser_builddir/zotero"
-	cp -r "$EXTENSION_XPCOM_DIR/utilities.js" \
-		"$EXTENSION_XPCOM_DIR/utilities_translate.js" \
-		"$EXTENSION_XPCOM_DIR/date.js" \
-		"$EXTENSION_XPCOM_DIR/debug.js" \
-		"$EXTENSION_XPCOM_DIR/openurl.js" \
-		"$EXTENSION_XPCOM_DIR/rdf" \
-		"$SRCDIR/zotero/resource/schema/connectorTypeSchemaData.js" \
-		"$EXTENSION_XPCOM_DIR/xregexp" \
-		"$browser_builddir/zotero"
-	mkdir "$browser_builddir/zotero/translation"
-	cp "$EXTENSION_XPCOM_DIR/translation/translate.js" \
-		"$EXTENSION_XPCOM_DIR/translation/translator.js" \
-		"$EXTENSION_XPCOM_DIR/translation/tlds.js" \
-		"$browser_builddir/zotero/translation"
+	# Copy translation pieces
+	cp -r "$EXTENSION_TRANSLATE_DIR/src" "$browser_builddir/translate"
+	cp -rL "$EXTENSION_UTILITIES_DIR" "$browser_builddir/utilities"
 	
 	# Make sure an empty browser-polyfill.js exists in Safari, since it's included in iframe
 	# HTML pages

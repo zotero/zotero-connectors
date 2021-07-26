@@ -1,5 +1,6 @@
-Zotero.Schema = {
-	// CSL type/field mappings used by Utilities.itemFromCSLJSON()
-	// Added during build by gulpfile.js
-	/*CSL_MAPPINGS*/
+var data = /*ZOTERO_SCHEMA*/;
+var init = Zotero.Schema.init;
+
+Zotero.Schema.init = function() {
+	init(data);
 };

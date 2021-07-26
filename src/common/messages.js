@@ -104,7 +104,8 @@ var MESSAGES = {
 					return [data[0], data[1]];
 				}
 			}
-		}
+		},
+		getCodeForTranslator: true
 	},
 	Debug: {
 		bgInit: false,

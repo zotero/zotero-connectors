@@ -24,9 +24,7 @@
 */
 
 // Enumeration of types of translators
-window.TRANSLATOR_TYPES = {"import":1, "export":2, "web":4, "search":8};
-
-window.TRANSLATOR_CACHING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["browserSupport", "targetAll"]);
+var TRANSLATOR_TYPES = Zotero.Translator.TRANSLATOR_TYPES;
 
 /**
  * Singleton to handle loading and caching of translators
@@ -43,7 +41,7 @@ Zotero.Translators = new function() {
 	 * @param {Zotero.Translate[]} [translators] List of translators. If not specified, it will be
 	 *                                           retrieved from storage.
 	 */
-	this.init = function(translators) {
+	this.init = async function(translators) {
 		if(!translators) {
 			translators = [];
 			if((Zotero.isBrowserExt || Zotero.isSafari) && Zotero.Prefs.get("translatorMetadata")) {
@@ -108,31 +106,42 @@ Zotero.Translators = new function() {
 	 * Gets the translator that corresponds to a given ID, without attempting to retrieve code
 	 * @param {String} id The ID of the translator
 	 */
-	this.getWithoutCode = function(id) {
-		if(!_initialized) Zotero.Translators.init();
+	this.getWithoutCode = async function(id) {
+		if(!_initialized) await Zotero.Translators.init();
 		return _translators[id] ? _translators[id] : false;
 	}
-	
+
+	/**
+	 * Load code for a translator
+	 */
+	this.getCodeForTranslator = async function (translator) {
+		if (!_initialized) await Zotero.Translators.init();
+		if (translator.code) return translator.code;
+
+		let code = await Zotero.Repo.getTranslatorCode(translator.translatorID);
+		translator.code = code;
+		return code;
+	}
+
 	/**
 	 * Gets the translator that corresponds to a given ID
 	 *
 	 * @param {String} id The ID of the translator
 	 */
-	this.get = Zotero.Promise.method(function (id) {
-		if(!_initialized) Zotero.Translators.init();
+	this.get = async function (id) {
+		if (!_initialized) await Zotero.Translators.init();
 		var translator = _translators[id];
-		if(!translator) {
+		if (!translator) {
 			return false;
 		}
 		
 		// only need to get code if it is of some use
 		if(translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER
 				&& !translator.hasOwnProperty("code")) {
-			return translator.getCode().then(() => translator);
-		} else {
-			return translator;
+			await Zotero.Translators.getCodeForTranslator(translator);
 		}
-	});
+		return translator;
+	};
 	
 	/**
 	 * Gets all translators for a specific type of translation
@@ -141,14 +150,13 @@ Zotero.Translators = new function() {
 	 *                              unsupported translators, and code originally retrieved from the
 	 *                              repo is re-retrieved from Zotero Standalone.
 	 */
-	this.getAllForType = Zotero.Promise.method(function (type, debugMode) {
-		if(!_initialized) Zotero.Translators.init()
+	this.getAllForType = async function (type, debugMode) {
+		if(!_initialized) await Zotero.Translators.init();
 		var translators = _cache[type].slice(0);
 		var codeGetter = new Zotero.Translators.CodeGetter(translators, debugMode);
-		return codeGetter.getAll().then(function() {
-			return translators;
-		});;
-	});
+		await codeGetter.getAll();
+		return translators;
+	};
 	
 	/**
 	 * Gets web translators for a specific location
@@ -175,7 +183,7 @@ Zotero.Translators = new function() {
 			}
 		}
 		var isFrame = URI !== rootURI;
-		if(!_initialized) Zotero.Translators.init();
+		if(!_initialized) await Zotero.Translators.init();
 		var allTranslators = _cache["web"];
 		var potentialTranslators = [];
 		var proxies = [];
@@ -252,13 +260,13 @@ Zotero.Translators = new function() {
 	 * @param {Boolean} reset Whether to clear all existing translators and overwrite them with
 	 *                        the specified translators.
 	 */
-	this.update = function(newMetadata, reset) {
-		if (!_initialized) Zotero.Translators.init();
+	this.update = async function(newMetadata, reset=false) {
+		if (!_initialized) await Zotero.Translators.init();
 		if (!newMetadata.length) return;
 		var serializedTranslators = [];
 		
 		if (reset) {
-			serializedTranslators = newMetadata.map((t) => new Zotero.Translator(t));
+			serializedTranslators = this.serialize(newMetadata, Zotero.Translator.TRANSLATOR_CACHING_PROPERTIES);
 		}
 		else {
 			var hasChanged = false;
@@ -308,10 +316,7 @@ Zotero.Translators = new function() {
 			
 			// Serialize translators
 			for(var i in _translators) {
-				var serializedTranslator = this.serialize(_translators[i], TRANSLATOR_CACHING_PROPERTIES);
-				
-				// don't save run mode
-				delete serializedTranslator.runMode;
+				var serializedTranslator = this.serialize(_translators[i], Zotero.Translator.TRANSLATOR_CACHING_PROPERTIES);
 				
 				serializedTranslators.push(serializedTranslator);
 			}
@@ -324,7 +329,7 @@ Zotero.Translators = new function() {
 		}
 		
 		// Reinitialize
-		Zotero.Translators.init(serializedTranslators);
+		await Zotero.Translators.init(serializedTranslators);
 	}
 }
 
@@ -332,28 +337,24 @@ Zotero.Translators = new function() {
  * A class to get the code for a set of translators at once
  *
  * @param {Zotero.Translator[]} translators Translators for which to retrieve code
- * @param {Boolean} [debugMode] If true, include code for unsupported translators
  */
-Zotero.Translators.CodeGetter = function(translators, debugMode) {
+Zotero.Translators.CodeGetter = function(translators) {
 	this._translators = translators;
-	this._debugMode = debugMode;
-	this._concurrency = 1;
+	this._concurrency = 2;
 };
 
-Zotero.Translators.CodeGetter.prototype.getCodeFor = Zotero.Promise.method(function(i) {
+Zotero.Translators.CodeGetter.prototype.getCodeFor = async function(i) {
 	let translator = this._translators[i];
-	// retrieve code if no code and translator is supported locally
-	if (translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER
-			// or if in debug mode and the code we have came from the repo (which doesn't
-			// include test cases)
-			|| (this._debugMode && Zotero.Repo && translator.codeSource === Zotero.Repo.SOURCE_REPO)) {
-		// get code
-		return translator.getCode().catch((e) => Zotero.debug(`Failed to retrieve code for ${translator.translatorID}`));
+	try {
+		translator.code = await Zotero.Translators.getCodeForTranslator(translator);
+	} catch (e) {
+		Zotero.debug(`Failed to retrieve code for ${translator.translatorID}`)
 	}
-});
+	return translator.code;
+};
 
-Zotero.Translators.CodeGetter.prototype.getAll = function () {
-	var codes = [];
+Zotero.Translators.CodeGetter.prototype.getAll = async function () {
+	let codes = [];
 	// Chain promises with some level of concurrency. If unchained, fires 
 	// off hundreds of xhttprequests on connectors and crashes the extension
 	for (let i = 0; i < this._translators.length; i++) {

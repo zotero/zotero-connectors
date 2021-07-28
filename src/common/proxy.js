@@ -376,11 +376,8 @@ Zotero.Proxies = new function() {
 
 		// Otherwise, redirect.
 		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
-			for (var proxy of Zotero.Proxies.proxies) {
-				if (proxy.regexp) {
-					if (proxy.regexp.exec(details.url)) break;
-				}
-			}
+			let uri = url.parse(details.url);
+			let proxy = Zotero.Proxies.hosts[uri.host];
 			_showNotification(
 				'Zotero Proxy Redirection',
 				`Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxy.toDisplayName()}.`,
@@ -389,8 +386,6 @@ Zotero.Proxies = new function() {
 			).then(function(response) {
 				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
 				if (response == 2) {
-					let uri = url.parse(details.url);
-					let proxy = Zotero.Proxies.hosts[uri.host]
 					proxy.hosts = proxy.hosts.filter((h) => h != uri.host);
 					Zotero.Proxies.save(proxy);
 					// Don't redirect for hosts associated with frames

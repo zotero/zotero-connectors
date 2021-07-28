@@ -364,10 +364,13 @@ Zotero.Proxies = new function() {
 			}
 		}
 
+		// parse the original request's URL so that we can extract host, etc.
+		let uri = url.parse(details.url);
+
 		// make sure that the top two domains (e.g. gmu.edu in foo.bar.gmu.edu) of the
 		// channel and the site to which we're redirecting don't match, to prevent loops.
 		const top2DomainsRe = /[^\.]+\.[^\.]+$/;
-		let top21 = top2DomainsRe.exec(url.parse(details.url).hostname);
+		let top21 = top2DomainsRe.exec(uri.hostname);
 		let top22 = top2DomainsRe.exec(proxiedURI.hostname);
 		if (!top21 || !top22 || top21[0] == top22[0]) {
 			Zotero.debug("Proxies: skipping redirect; redirect URI and URI have same top 2 domains");
@@ -376,21 +379,15 @@ Zotero.Proxies = new function() {
 
 		// Otherwise, redirect.
 		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
-			for (var proxy of Zotero.Proxies.proxies) {
-				if (proxy.regexp) {
-					if (proxy.regexp.exec(details.url)) break;
-				}
-			}
+			let proxy = Zotero.Proxies.hosts[uri.host];
 			_showNotification(
 				'Zotero Proxy Redirection',
-				`Zotero automatically redirected your request to ${url.parse(details.url).host} through the proxy at ${proxy.toDisplayName()}.`,
+				`Zotero automatically redirected your request to ${uri.host} through the proxy at ${proxy.toDisplayName()}.`,
 				['✕', 'Proxy Settings', "Don’t Proxy This Site"],
 				details.tabId
 			).then(function(response) {
 				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
 				if (response == 2) {
-					let uri = url.parse(details.url);
-					let proxy = Zotero.Proxies.hosts[uri.host]
 					proxy.hosts = proxy.hosts.filter((h) => h != uri.host);
 					Zotero.Proxies.save(proxy);
 					// Don't redirect for hosts associated with frames

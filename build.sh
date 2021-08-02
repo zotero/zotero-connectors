@@ -182,7 +182,7 @@ function copyResources {
 	
 	# Copy translation pieces
 	cp -r "$EXTENSION_TRANSLATE_DIR/src" "$browser_builddir/translate"
-	cp -rL "$EXTENSION_UTILITIES_DIR" "$browser_builddir/utilities"
+	cp -r "$EXTENSION_UTILITIES_DIR" "$browser_builddir/utilities"
 	
 	# Make sure an empty browser-polyfill.js exists in Safari, since it's included in iframe
 	# HTML pages

@@ -99,7 +99,10 @@ describe('Preferences', function() {
 			try {
 				var message = yield tab.run(function() {
 					var deferred = Zotero.Promise.defer();
-					sinon.stub(Zotero.ModalPrompt, 'confirm').callsFake(deferred.resolve);
+					sinon.stub(Zotero.ModalPrompt, 'confirm').callsFake((config) => {
+						deferred.resolve(config);
+						return {button: 0};
+					});
 					document.getElementById('advanced-button-report-errors').click();
 					return deferred.promise.then(function(config) {
 						Zotero.ModalPrompt.confirm.restore();
@@ -130,7 +133,10 @@ describe('Preferences', function() {
 				}, testDebugLine);
 				var message = yield tab.run(function() {
 					var deferred = Zotero.Promise.defer();
-					sinon.stub(Zotero.ModalPrompt, 'confirm').callsFake(deferred.resolve);
+					sinon.stub(Zotero.ModalPrompt, 'confirm').callsFake((config) => {
+						deferred.resolve(config);
+						return {button: 0};
+					});
 					document.getElementById('advanced-checkbox-enable-logging').click();
 					document.getElementById('advanced-button-submit-output').click();
 					return deferred.promise.then(function(config) {

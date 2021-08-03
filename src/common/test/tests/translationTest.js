@@ -95,7 +95,8 @@ describe("Translation", function() {
 					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
 					var message = await tab.runInFrame(frameURL, async function() {
 						// TODO: A more robust way to wait for the text to show up.
-						await Zotero.Promise.delay(100);
+						let timeout = Zotero.isFirefox ? 1000 : 100;
+						await Zotero.Promise.delay(timeout);
 						return document.querySelector('.ProgressWindow-progressBox').textContent;
 					});
 					assert.include(message, items[0].title);
@@ -123,7 +124,8 @@ describe("Translation", function() {
 					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
 					var message = await tab.runInFrame(frameURL, async function() {
 						// TODO: A more robust way to wait for the text to show up.
-						await Zotero.Promise.delay(100);
+						let timeout = Zotero.isFirefox ? 1000 : 100;
+						await Zotero.Promise.delay(timeout);
 						return document.querySelector('.ProgressWindow-progressBox').textContent;
 					});
 					assert.include(message, items[0].title);
@@ -140,7 +142,8 @@ describe("Translation", function() {
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
 						var message = await tab.runInFrame(frameURL, async function() {
 							// TODO: A more robust way to wait for the text to show up.
-							await Zotero.Promise.delay(100);
+							let timeout = Zotero.isFirefox ? 1000 : 100;
+							await Zotero.Promise.delay(timeout);
 							return document.querySelector('.ProgressWindow-progressBox').textContent;
 						});
 						assert.include(message, "Scarcity or Abundance? Preserving the Past in a Digital Era");
@@ -170,7 +173,8 @@ describe("Translation", function() {
 					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
 					var message = await tab.runInFrame(frameURL, async function() {
 						// TODO: A more robust way to wait for the text to show up.
-						await Zotero.Promise.delay(100);
+						let timeout = Zotero.isFirefox ? 1000 : 100;
+						await Zotero.Promise.delay(timeout);
 						return document.querySelector('.ProgressWindow-error').textContent;
 					});
 					assert.include(message, Zotero.i18n.getString('progressWindow_error_fallback').substr(0, 20));
@@ -217,7 +221,8 @@ describe("Translation", function() {
 							var frameURL = getExtensionURL('modalPrompt/modalPrompt.html');
 							var message = await tab.runInFrame(frameURL, async function() {
 								// TODO: A more robust way to wait for the text to show up.
-								await Zotero.Promise.delay(100);
+								let timeout = Zotero.isFirefox ? 1000 : 100;
+								await Zotero.Promise.delay(timeout);
 								return document.getElementById('zotero-modal-prompt').textContent;
 							});
 							assert.include(message, 'The Zotero Connector was unable to communicate with the Zotero desktop application.');
@@ -268,7 +273,8 @@ describe("Translation", function() {
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
 						var message = await tab.runInFrame(frameURL, async function() {
 							// TODO: A more robust way to wait for the text to show up.
-							await Zotero.Promise.delay(100);
+							let timeout = Zotero.isFirefox ? 1000 : 100;
+							await Zotero.Promise.delay(timeout);
 							return document.querySelector('.ProgressWindow-box').textContent;
 						});
 

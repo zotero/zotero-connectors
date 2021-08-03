@@ -105,7 +105,20 @@ var MESSAGES = {
 				}
 			}
 		},
-		getCodeForTranslator: true
+		getCodeForTranslator: {
+			inject: {
+				preSend: async function(args) {
+					const translator = args[0];
+					return [{ translatorID: translator.translatorID }];
+				}
+			},
+			background: {
+				postReceive: async function(args) {
+					let translatorInfo = args[0]
+					return [await Zotero.Translators.getWithoutCode(translatorInfo.translatorID)];
+				}
+			}
+		}
 	},
 	Debug: {
 		bgInit: false,

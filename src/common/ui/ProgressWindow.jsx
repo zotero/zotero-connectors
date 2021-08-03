@@ -31,7 +31,7 @@ if (Zotero.isBookmarklet) {
 	Zotero.UI.style.imageBase = ZOTERO_CONFIG.BOOKMARKLET_URL + "images/";
 }
 else if (typeof browser != 'undefined') {
-	Zotero.UI.style.imageBase = browser.extension.getURL("images/");
+	Zotero.UI.style.imageBase = browser.runtime.getURL("images/");
 }
 else if (typeof chrome != 'undefined') {
 	Zotero.UI.style.imageBase = chrome.extension.getURL("images/");

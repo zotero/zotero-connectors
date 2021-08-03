@@ -75,7 +75,7 @@ Zotero.Inject = new function() {
 		
 		_noteImgSrc = Zotero.isSafari
 			? `${safari.extension.baseURI}safari/`+"images/treeitem-note.png"
-			: browser.extension.getURL('images/treeitem-note.png');
+			: browser.runtime.getURL('images/treeitem-note.png');
 		
 		// wrap this in try/catch so that errors will reach logError
 		try {
@@ -694,7 +694,7 @@ try {
 } catch(e) {}
 
 const isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
-const isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.extension.getURL('test'));
+const isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.runtime.getURL('test'));
 // don't try to scrape on hidden frames
 if(!isHiddenIFrame) {
 	var doInject = async function () {

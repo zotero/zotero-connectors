@@ -158,7 +158,7 @@ Zotero.ContentTypeHandler = {
 				checkboxText
 			}
 		}
-		let confirmURL = browser.extension.getURL(`confirm.html`);
+		let confirmURL = browser.runtime.getURL(`confirm.html`);
 		let response = await Zotero.Messaging.sendMessage('confirm', props, tab);
 		// If captured URL was pasted on about:blank or other browser pages the response is immediate
 		// with undefined and means we cannot inject and display the UI, so we have to do some additional work
@@ -221,7 +221,7 @@ Zotero.ContentTypeHandler = {
 						'progressWindow.itemProgress',
 						{
 							id: null,
-							iconSrc: browser.extension.getURL('images/csl-style.png'),
+							iconSrc: browser.runtime.getURL('images/csl-style.png'),
 							title: result.name,
 							progress: 100
 						},

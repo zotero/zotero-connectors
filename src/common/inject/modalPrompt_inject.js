@@ -47,7 +47,7 @@ if (isTopWindow) {
 		frameSrc = `${safari.extension.baseURI}safari/` + 'modalPrompt/modalPrompt.html';
 	}
 	else {
-		frameSrc = browser.extension.getURL('modalPrompt/modalPrompt.html');
+		frameSrc = browser.runtime.getURL('modalPrompt/modalPrompt.html');
 	}
 
 	async function init() {

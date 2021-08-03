@@ -81,7 +81,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onSelect = async function(items, tab) {
 		await Zotero.Connector_Browser.openWindow(
-			browser.extension.getURL("itemSelector/itemSelector.html")
+			browser.runtime.getURL("itemSelector/itemSelector.html")
 				+ "#" + encodeURIComponent(JSON.stringify([tab.id, items]))
 				// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
 				.replace(/%3A/g, 'ZOTEROCOLON'),
@@ -404,11 +404,11 @@ Zotero.Connector_Browser = new function() {
 	};
 	
 	this.openPreferences = function(paneID, tab) {
-		this.openTab(browser.extension.getURL(`preferences/preferences.html#${paneID}`), tab);
+		this.openTab(browser.runtime.getURL(`preferences/preferences.html#${paneID}`), tab);
 	};
 	
 	this.openConfigEditor = function(tab) {
-		this.openTab(browser.extension.getURL(`preferences/config.html`), tab);
+		this.openTab(browser.runtime.getURL(`preferences/config.html`), tab);
 	};
 
 	/**
@@ -617,7 +617,7 @@ Zotero.Connector_Browser = new function() {
 	this._showPDFIcon = function(tab) {
 		browser.browserAction.setIcon({
 			tabId: tab.id,
-			path: browser.extension.getURL('images/pdf.png')
+			path: browser.runtime.getURL('images/pdf.png')
 		});
 		browser.browserAction.setTitle({
 			tabId: tab.id,
@@ -735,7 +735,7 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-preferences",
 			title: "Preferences",
 			onclick: function () {
-				browser.tabs.create({url: browser.extension.getURL('preferences/preferences.html')});
+				browser.tabs.create({url: browser.runtime.getURL('preferences/preferences.html')});
 			},
 			contexts: ['all']
 		});
@@ -843,7 +843,7 @@ Zotero.Connector_Browser = new function() {
 	async function onNavigation(details, historyChange=false) {
 		// Ignore developer tools, item selector
 		if (details.tabId < 0 || _isDisabledForURL(details.url, true)
-			|| details.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
+			|| details.url.indexOf(browser.runtime.getURL("itemSelector/itemSelector.html")) === 0) return;
 		
 		// Don't process again if URL hasn't changed
 		if (_tabInfo[details.tabId] && _tabInfo[details.tabId].url == details.url) {
@@ -892,7 +892,7 @@ Zotero.Connector_Browser = new function() {
 			}
 		}
 		// Ignore item selector
-		if (tab.url.indexOf(browser.extension.getURL("itemSelector/itemSelector.html")) === 0) return;
+		if (tab.url.indexOf(browser.runtime.getURL("itemSelector/itemSelector.html")) === 0) return;
 		Zotero.debug("Connector_Browser: onActivated for " + tab.url);
 		Zotero.Connector_Browser.onTabActivated(tab);
 		Zotero.Connector.reportActiveURL(tab.url);

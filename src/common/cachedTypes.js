@@ -84,7 +84,7 @@ Zotero.Connector_Types = new function() {
 				if(Zotero.isBookmarklet) {
 					return ZOTERO_CONFIG.BOOKMARKLET_URL+"images/"+icon;
 				} else if(Zotero.isBrowserExt) {
-					return browser.extension.getURL("images/"+icon);
+					return browser.runtime.getURL("images/"+icon);
 				} else if(Zotero.isSafari) {
 					if (typeof safari == "undefined") {
 						return "images/"+icon;

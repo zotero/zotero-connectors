@@ -147,7 +147,7 @@ if (typeof mocha != 'undefined') {
 		return Zotero.Background.run.apply(null, arguments);
 	});
 	function getExtensionURL(url) {
-		return browser.extension.getURL(url);
+		return browser.runtime.getURL(url);
 	}
 	
 	var Tab = function() {};

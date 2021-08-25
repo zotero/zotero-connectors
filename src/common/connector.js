@@ -43,10 +43,11 @@ Zotero.Connector = new function() {
 		}
 
 		return this.ping({}).catch(function(e) {
-			if (e.status == 0) {
-				return false;
+			if (e.status != 0) {
+				Zotero.debug("Checking if Zotero is online returned a non-zero HTTP status.");
+				Zotero.logError(e);
 			}
-			throw e;
+			return false;
 		});
 	};
 

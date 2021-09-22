@@ -30,10 +30,22 @@
 
 if (Zotero.isFirefox) {
 	Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
-		if (!details.responseHeadersObject['content-type']
-				|| !details.responseHeadersObject['content-type'].includes("application/pdf")
-				// Proxy login is a POST method that gets redirected to the final destination via a 302
-				|| (details.method != "GET" && details.statusCode < 300 && details.statusCode >= 400)) return;
+		// Proxy login is a POST method that gets redirected to the final destination via a 302
+		if (details.method != "GET" && details.statusCode < 300 && details.statusCode >= 400) return;
+		
+		const contentType = details.responseHeadersObject['content-type'];
+		if (!contentType) return;
+		if (
+			!contentType.includes("application/pdf") &&
+			!contentType.includes("application/octet-stream")
+		) return;
+		
+		// While Firefox will show the PDF viewer for application/octet-stream, it must pass some
+		// additional checks: the URL must end in .pdf and the PDF must be a top-level document.
+		// https://searchfox.org/mozilla-central/rev/50c3cf7a3c931409b54efa009795b69c19383541/toolkit/components/pdfjs/content/PdfStreamConverter.jsm#1100-1121
+		if (contentType.includes("application/octet-stream")) {
+			if (!details.url.includes(".pdf") || !details.type === "main_frame") return;
+		}
 		
 		// Somehow browser.webNavigation.onCommitted runs later than headersReceived
 		setTimeout(async function() {

@@ -277,12 +277,12 @@ MESSAGES.COHTTP = {
 // There's been an open bug on the chrome bugtracker to fix this since
 // 2013: https://bugs.chromium.org/p/chromium/issues/detail?id=248548
 function packArrayBuffer(arrayBuffer) {
-	if (Zotero.isFirefox) return arrayBuffer;
+	if (!Zotero.isChrome) return arrayBuffer;
 	return URL.createObjectURL(new Blob([arrayBuffer]));
 }
 
 async function unpackArrayBuffer(blobURL) {
-	if (Zotero.isFirefox) return blobURL;
+	if (!Zotero.isChrome) return blobURL;
 	let blob = await (await fetch(blobURL)).blob();
 	return new Promise((resolve) => {
 		var fileReader = new FileReader();

@@ -25,7 +25,7 @@
 
 var Zotero = window.Zotero = new function() {
 	this.version = "5.0";
-	this.locale = navigator.languages[0];
+	this.locale = typeof navigator != "undefined" ? navigator.languages[0] : 'en';
 	this.isConnector = true;
 	this.isFx = false; // Old flag for 4.0 connector, probably not used anymore
 	/* this.isBookmarklet = SET IN BUILD SCRIPT */;
@@ -182,6 +182,17 @@ var Zotero = window.Zotero = new function() {
 			Zotero.Prefs.set('firstUse', false);
 		}
 	};
+	
+	this._initDateFormatsJSON = async function() {
+		let dateFormatsJSON;
+		if (Zotero.isSafari) {
+			dateFormatsJSON = await Zotero.Messaging.sendMessage('Swift.getDateFormatsJSON');
+		}
+		else {
+			let xhr = await Zotero.HTTP.request('GET', Zotero.getExtensionURL('utilities/resource/dateFormats.json'), { responseType: 'json' });
+			dateFormatsJSON = xhr.response;
+		}
+		Zotero.Date.init(dateFormatsJSON);	}
 	
 	/**
 	 * Initializes Zotero services for the global page in Chrome or Safari

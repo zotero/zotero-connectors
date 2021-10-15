@@ -271,6 +271,24 @@ MESSAGES.COHTTP = {
 	}
 };
 
+if(Zotero.isSafari) {
+	MESSAGES.API.createItem = true;
+	MESSAGES.API.uploadAttachment = false;
+	MESSAGES.i18n = {
+		getStrings: true
+	};
+	MESSAGES.Connector_Browser = Object.assign(MESSAGES.Connector_Browser, {
+		onPDFFrame: false,
+		onPerformCommand: false,
+		onTabFocus: false,
+		onTabData: true,
+		getExtensionVersion: true
+	});
+	MESSAGES.Debug.get = true;
+	delete MESSAGES.Errors.sendErrorReport;
+	delete MESSAGES.Connector_Debug.submitReport;
+}
+
 // Chrome does not support passing arrayBuffers via the message
 // passing protocol, so we convert it to a blob url and then unconvert it
 // on the receiving end.

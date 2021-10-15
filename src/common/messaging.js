@@ -75,7 +75,7 @@ Zotero.Messaging = new function() {
 			}
 		}
 
-		if (messageConfig.background && messageConfig.background.postReceive) {
+		if (messageConfig && messageConfig.background && messageConfig.background.postReceive) {
 			args = await messageConfig.background.postReceive(args, tab, frameId);
 		} else {
 			args.push(tab);

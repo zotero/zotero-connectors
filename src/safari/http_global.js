@@ -32,6 +32,17 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 		// is no good way to check whether an URL is already encoded
 		url: url.includes('%') ? url : encodeURI(url)
 	};
+	// Default options
+	options = Object.assign({
+		body: null,
+		headers: {},
+		debug: false,
+		logBodyLength: 1024,
+		timeout: 15000,
+		responseType: '',
+		responseCharset: null,
+		successCodes: null
+	}, options);
 	options.method = method;
 	
 	let logBody = '';
@@ -39,7 +50,7 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 		if (!(typeof options.body == 'undefined' || options.body == null)) {
 			throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
 		}
-	} else if(options.body) {
+	} else if (options.body) {
 		options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
 		
 		if (!options.headers) options.headers = {};

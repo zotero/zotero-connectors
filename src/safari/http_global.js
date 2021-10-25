@@ -24,14 +24,7 @@
 */
 
 Zotero.HTTP.request = async function(method, url, options={}) {
-	let args = {
-		method,
-		// Swift's URL class does not deal well with non-standard URL symbols
-		// Also this is a bit of a flaky solution here, but sometimes translators
-		// provide already URL encoded URLs, other times they do not, and there
-		// is no good way to check whether an URL is already encoded
-		url: url.includes('%') ? url : encodeURI(url)
-	};
+	let args = { method, url };
 	// Default options
 	options = Object.assign({
 		body: null,
@@ -91,6 +84,7 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 	Object.keys(headers).forEach(key => headers[key.toLowerCase()] = headers[key]);
 	return {
 		status, responseText,
+		response: responseText,
 		responseHeaders: headerString,
 		getAllResponseHeaders: () => headerString,
 		getResponseHeader: name => headers[name.toLowerCase()]

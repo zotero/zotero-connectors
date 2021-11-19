@@ -125,13 +125,7 @@ var backgroundInclude = [
 	'google-docs-plugin-manager.js',
 	'messages.js',
 	'messaging.js',
-	'lib/SingleFile/lib/single-file/index.js',
-	'lib/SingleFile/extension/lib/single-file/index.js',
-	'lib/SingleFile/extension/lib/single-file/browser-polyfill/chrome-browser-polyfill.js',
-	'lib/SingleFile/extension/lib/single-file/core/bg/scripts.js',
-	'lib/SingleFile/extension/lib/single-file/fetch/bg/fetch.js',
-	'lib/SingleFile/extension/lib/single-file/frame-tree/bg/frame-tree.js',
-	'lib/SingleFile/extension/lib/single-file/lazy/bg/lazy-timeout.js'
+	'lib/SingleFile/dist/extension-core.js',
 ];
 
 
@@ -293,35 +287,11 @@ function processFile() {
 
 		// sourcefile is relative to the src/ directory
 		switch (sourcefile) {
-			case 'zotero/resource/SingleFile/extension/lib/single-file/core/bg/scripts.js':
-				// Change base path and add in the content scripts SingleFile recommends injecting
-				// via manifest.json
+		case 'zotero/resource/SingleFile/dist/extension-core.js':
+				// Change single file inject base path
+				// See injectSingleFile() in background.js
 				file.contents = Buffer.from(file.contents.toString()
-					.replace('const basePath = "../../../";', 'const basePath = "lib/SingleFile/";')
-				);
-
-				// Override the type so we include this file in firefox and chrome builds
-				type = 'browserExt';
-				// Switch from resource to lib sub-directory
-				parts[i+1] = 'lib';
-				break;
-			case 'zotero/resource/SingleFile/lib/single-file/processors/hooks/content/content-hooks-frames.js':
-				// Change the path to include our particular directory structure
-				file.contents = Buffer.from(file.contents.toString()
-					.replace('/lib/single-file/processors/hooks/content/content-hooks-frames-web.js',
-					'/lib/SingleFile/lib/single-file/processors/hooks/content/content-hooks-frames-web.js')
-				);
-
-				// Override the type so we include this file in firefox and chrome builds
-				type = 'browserExt';
-				// Switch from resource to lib sub-directory
-				parts[i+1] = 'lib';
-				break;
-			case 'zotero/resource/SingleFile/lib/single-file/processors/hooks/content/content-hooks.js':
-				// Change the path to include our particular directory structure
-				file.contents = Buffer.from(file.contents.toString()
-					.replace('/lib/single-file/processors/hooks/content/content-hooks-web.js',
-						'/lib/SingleFile/lib/single-file/processors/hooks/content/content-hooks-web.js')
+					.replace('../../../', 'lib/SingleFile/')
 				);
 
 				// Override the type so we include this file in firefox and chrome builds
@@ -421,9 +391,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/test/**/*',
 		'./src/**/*.jsx',
 		'./src/zotero-google-docs-integration/src/connector/**',
-		'./src/zotero/resource/SingleFile/extension/lib/single-file/core/bg/scripts.js',
-		'./src/zotero/resource/SingleFile/lib/single-file/processors/hooks/content/content-hooks.js',
-		'./src/zotero/resource/SingleFile/lib/single-file/processors/hooks/content/content-hooks-frames.js'
+		'./src/zotero/resource/SingleFile/dist/extension-core.js',
 	];
 	if (!argv.p) {
 		sources.push('./src/common/test/**/*.js');	

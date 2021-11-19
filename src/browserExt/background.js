@@ -331,7 +331,7 @@ Zotero.Connector_Browser = new function() {
 
 	this.injectSingleFile = async function(tab, frameId) {
 		Zotero.debug("SingleFile: injecting SingleFile into page");
-		await singlefile.extension.injectScript(tab.id, {});
+		await extension.injectScript(tab.id, {});
 		// Also insert the config object
 		await this.injectScripts('singlefile-config.js', tab, frameId);
 	};

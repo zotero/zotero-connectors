@@ -239,10 +239,13 @@ function copyResources {
 	find "$browser_builddir" -type f -name "*.jsx" -delete
 
 	# Copy SingleFile submodule code
-	mkdir -p "$browser_builddir/lib/SingleFile/extension/lib"
-	cp -r "$SRCDIR/zotero/resource/SingleFile/extension/lib/single-file" \
-		"$browser_builddir/lib/SingleFile/extension/lib/single-file"
-	cp -r "$SRCDIR/zotero/resource/SingleFile/lib" "$browser_builddir/lib/SingleFile/lib"
+	mkdir -p "$browser_builddir/lib/SingleFile/dist"
+	cp -r "$SRCDIR/zotero/resource/SingleFile/dist/extension-core.js" \
+	  "$SRCDIR/zotero/resource/SingleFile/dist/single-file.js" \
+	  "$SRCDIR/zotero/resource/SingleFile/dist/single-file-frames.js" \
+	  "$SRCDIR/zotero/resource/SingleFile/dist/chrome-browser-polyfill.js" \
+	  "$SRCDIR/zotero/resource/SingleFile/dist/web/hooks" \
+		"$browser_builddir/lib/SingleFile/dist"
 	# Copy SingleFile config object from client code
 	cp "$SRCDIR/zotero/chrome/content/zotero/xpcom/singlefile.js" "$browser_builddir/singlefile-config.js"
 	

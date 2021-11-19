@@ -30,7 +30,7 @@ Zotero.SingleFile = {
 			await Zotero.Connector_Browser.injectSingleFile();
 
 			Zotero.debug("SingleFile: Retrieving page data");
-			let pageData = await singlefile.extension.getPageData(Zotero.SingleFile.CONFIG);
+			let pageData = await singlefile.getPageData(Zotero.SingleFile.CONFIG);
 			Zotero.debug("SingleFile: Done retrieving page data");
 
 			return pageData.content;

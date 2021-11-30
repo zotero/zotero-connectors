@@ -126,7 +126,9 @@ var backgroundInclude = [
 	'google-docs-plugin-manager.js',
 	'messages.js',
 	'messaging.js',
+	'singlefile-config.js',
 	'lib/SingleFile/dist/extension-core.js',
+	'lib/SingleFile/dist/single-file-background.js',
 ];
 
 
@@ -288,11 +290,24 @@ function processFile() {
 
 		// sourcefile is relative to the src/ directory
 		switch (sourcefile) {
-		case 'zotero/resource/SingleFile/dist/extension-core.js':
+			case 'zotero/resource/SingleFile/dist/extension-core.js':
 				// Change single file inject base path
 				// See injectSingleFile() in background.js
 				file.contents = Buffer.from(file.contents.toString()
 					.replace('../../../', 'lib/SingleFile/')
+				);
+
+				// Override the type so we include this file in firefox and chrome builds
+				type = 'browserExt';
+				// Switch from resource to lib sub-directory
+				parts[i+1] = 'lib';
+				break;
+			case 'zotero/resource/SingleFile/dist/single-file.js':
+			case 'zotero/resource/SingleFile/dist/single-file-frames.js':
+			// Change single file inject base path
+				// See injectSingleFile() in background.js
+				file.contents = Buffer.from(file.contents.toString()
+					.replaceAll('dist/web/', 'lib/SingleFile/dist/')
 				);
 
 				// Override the type so we include this file in firefox and chrome builds
@@ -389,10 +404,12 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/schema.js',
 		'./src/common/zotero.js',
 		'./src/common/zotero_config.js',
+		'./src/zotero/resource/SingleFile/dist/extension-core.js',
+		'./src/zotero/resource/SingleFile/dist/single-file.js',
+		'./src/zotero/resource/SingleFile/dist/single-file-frames.js',
 		'./src/common/test/**/*',
 		'./src/**/*.jsx',
 		'./src/zotero-google-docs-integration/src/connector/**',
-		'./src/zotero/resource/SingleFile/dist/extension-core.js',
 	];
 	if (!argv.p) {
 		sources.push('./src/common/test/**/*.js');	

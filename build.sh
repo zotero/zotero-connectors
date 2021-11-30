@@ -241,6 +241,7 @@ function copyResources {
 	# Copy SingleFile submodule code
 	mkdir -p "$browser_builddir/lib/SingleFile/dist"
 	cp -r "$SRCDIR/zotero/resource/SingleFile/dist/extension-core.js" \
+	  "$SRCDIR/zotero/resource/SingleFile/dist/single-file-background.js" \
 	  "$SRCDIR/zotero/resource/SingleFile/dist/single-file.js" \
 	  "$SRCDIR/zotero/resource/SingleFile/dist/single-file-frames.js" \
 	  "$SRCDIR/zotero/resource/SingleFile/dist/chrome-browser-polyfill.js" \

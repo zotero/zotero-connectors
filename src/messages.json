@@ -8,8 +8,17 @@
 	"general_moreInfo": {
 		"message": "More Info…"
 	},
+	"general_needHelp": {
+		"message": "Need help?"
+	},
 	"general_done": {
 		"message": "Done"
+	},
+	"general_yes": {
+		"message": "Yes"
+	},
+	"general_no": {
+		"message": "No"
 	},
 	"general_tryAgain": {
 		"message": "Try Again"
@@ -128,6 +137,15 @@
 	},
 	"integration_googleDocs_docxAlert": {
 		"message": "$1 integration is not available when editing Microsoft Word .docx files directly in Google Docs. Choose File → Save as Google Docs to enable this functionality.<br/><br/>If you want to transfer a Word document with $1 citations to Google Docs, see <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Moving Documents Between Word Processors</a>."
+	},
+	"integration_googleDocs_documentLocked": {
+		"message": "The document citations are being edited by another $1 user. Please try again later."
+	},
+	"integration_googleDocs_documentLocked_moreInfo": {
+		"message": "$1 locks your document to prevent multiple users from editing citations at the same time. Concurrent citation editing in the document may lead to citation or document corruption. 'Certain unforeseeable circumstances, such as network failures, may lead to your document becoming permanently locked. If you believe this has happened, you can override the lock.<br/><br/>Would you like to override the document lock?"
+	},
+	"integration_googleDocs_documentPermissionError": {
+		"message": "The Google account you authenticated $1 Connector with does not have the permissions to edit this document. Please try again and choose the account with editing access."
 	},
 	
 	"integration_googleDocs_orphanedCitations_buttonTooltip": {

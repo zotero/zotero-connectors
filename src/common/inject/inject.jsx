@@ -49,7 +49,6 @@ if (isTopWindow) {
  */
 Zotero.Inject = new function() {
 	var _translate;
-	var _noteImgSrc;
 	// Used to display a different message for failing translations on pages
 	// with site-access limits
 	const siteAccessLimitsTranslators = new Set([
@@ -73,9 +72,6 @@ Zotero.Inject = new function() {
 		// (monitorDOMChanges/ZoteroItemUpdated)
 		this.sessionDetails = {};
 		
-		_noteImgSrc = Zotero.isSafari
-			? `${safari.extension.baseURI}safari/`+"images/treeitem-note.png"
-			: browser.runtime.getURL('images/treeitem-note.png');
 		
 		// wrap this in try/catch so that errors will reach logError
 		try {
@@ -200,7 +196,7 @@ Zotero.Inject = new function() {
 							{
 								sessionID,
 								id: null,
-								iconSrc: _noteImgSrc,
+								iconSrc: Zotero.getExtensionURL("images/treeitem-note.png"),
 								title: Zotero.Utilities.cleanTags(note.note),
 								parentItem: item.id,
 								progress: 100

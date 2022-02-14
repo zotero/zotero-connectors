@@ -379,17 +379,15 @@ var Zotero = window.Zotero = new function() {
 	};
 	
 	this.getExtensionURL = function(path) {
-		let url;
 		if (Zotero.isBookmarklet) {
-			url = ZOTERO_CONFIG.BOOKMARKLET_URL + path;
+			return ZOTERO_CONFIG.BOOKMARKLET_URL + path;
 		}
 		else if (Zotero.isSafari) {
-			url = `${safari.extension.baseURI}safari/` + path;
+			return `${safari.extension.baseURI}safari/` + path;
 		}
 		else {
-			url = browser.runtime.getURL(path);
+			return browser.runtime.getURL(path);
 		}
-		return url;
 	}
 }
 

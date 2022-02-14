@@ -209,11 +209,7 @@ Zotero_Preferences.General = {
 	 * Opens the translator tester in a new window.
 	 */
 	openTranslatorTester: function() {
-		if(Zotero.isSafari) {
-			window.open(`${safari.extension.baseURI}safari/`+"tools/testTranslators/testTranslators.html", "translatorTester");
-		} else if(Zotero.isBrowserExt) {
-			window.open(browser.runtime.getURL("tools/testTranslators/testTranslators.html"), "translatorTester");
-		}
+		window.open(Zotero.getExtensionURL("tools/testTranslators/testTranslators.html"), "translatorTester");
 	}
 };
 
@@ -254,11 +250,7 @@ Zotero_Preferences.Advanced = {
 		if (openTranslatorTesterButton) openTranslatorTesterButton.onclick = Zotero_Preferences.General.openTranslatorTester;
 		var testRunnerButton = document.getElementById("advanced-button-open-test-runner");
 		if (testRunnerButton) testRunnerButton.onclick = function() {
-			if (Zotero.isSafari) {
-				Zotero.Connector_Browser.openTab(`${safari.extension.baseURI}safari/` + "test/test.html");
-			} else {
-				Zotero.Connector_Browser.openTab(browser.runtime.getURL(`test/test.html`));
-			}
+			Zotero.Connector_Browser.openTab(Zotero.getExtensionURL(`test/test.html`));
 		};
 		document.getElementById("advanced-button-config-editor").onclick = function() {
 			let msg = "Changing these advanced settings can be harmful to the stability, security, "

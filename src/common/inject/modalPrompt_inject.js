@@ -43,12 +43,7 @@ if (isTopWindow) {
 	var iframe;
 	var initialized = false;
 	var frameSrc;
-	if (Zotero.isSafari) {
-		frameSrc = `${safari.extension.baseURI}safari/` + 'modalPrompt/modalPrompt.html';
-	}
-	else {
-		frameSrc = browser.runtime.getURL('modalPrompt/modalPrompt.html');
-	}
+	frameSrc = Zotero.getExtensionURL('modalPrompt/modalPrompt.html');
 
 	async function init() {
 		var deferred = Zotero.Promise.defer();

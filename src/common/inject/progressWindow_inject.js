@@ -70,7 +70,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 		frameSrc = `${safari.extension.baseURI}safari/` + 'progressWindow/progressWindow.html';
 	}
 	else {
-		frameSrc = browser.runtime.getURL('progressWindow/progressWindow.html');
+		frameSrc = Zotero.getExtensionURL('progressWindow/progressWindow.html');
 	}
 	var scrollX;
 	var scrollY;
@@ -497,8 +497,7 @@ if (isTopWindow || Zotero.isBookmarklet) {
 	
 	Zotero.Messaging.addMessageListener("progressWindow.done", (returnValue) => {
 		closeOnLeave = true;
-		if (Zotero.isBrowserExt
-				&& document.location.href.startsWith(browser.runtime.getURL('confirm.html'))) {
+		if (document.location.href.startsWith(Zotero.getExtensionURL('confirm.html'))) {
 			setTimeout(function() {
 				window.close();
 			}, 1000);

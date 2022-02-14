@@ -268,6 +268,8 @@ if (isTopWindow || Zotero.isBookmarklet) {
 			maxWidth: '95%',
 			height: '120px',
 			border: "none",
+			padding: "none",
+			margin: "initial",
 			zIndex: 2147483647,
 			display: 'none'
 		};

@@ -484,7 +484,7 @@ Zotero.Connector_Browser = new function() {
 			browser.contextMenus.create({
 				id: saveMenuID,
 				title: `${Zotero.getString('general_saveTo', 'Zotero')}`,
-				contexts: ['all']
+				contexts: ['browser_action', 'page', 'selection']
 			});
 		}
 		

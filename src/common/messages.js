@@ -211,9 +211,6 @@ var MESSAGES = {
 		getDocument: true,
 		batchUpdateDocument: true
 	},
-	GoogleDocsPluginManager: {
-		injectUI: true
-	},
 	Prefs: {
 		set: false,
 		getAll: true,

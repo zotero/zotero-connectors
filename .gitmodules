@@ -1,11 +1,11 @@
 [submodule "src/zotero"]
 	path = src/zotero
-	url = git://github.com/zotero/zotero.git
+	url = https://github.com/zotero/zotero.git
 	branch = master
 
 [submodule "src/zotero-google-docs-integration"]
 	path = src/zotero-google-docs-integration
-	url = git://github.com/zotero/zotero-google-docs-integration.git
+	url = https://github.com/zotero/zotero-google-docs-integration.git
 	branch = master
 [submodule "src/translate"]
 	path = src/translate

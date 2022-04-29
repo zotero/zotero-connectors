@@ -181,7 +181,9 @@ Zotero.Connector = new function() {
 			Zotero.logError(e);
 			deferred.reject(e);
 		});
-		return deferred.promise;
+		let result = await deferred.promise;
+		this._handleIntegrationTabClosed(method, tab);
+		return result;
 	},
 	
 	/**
@@ -239,6 +241,45 @@ Zotero.Connector = new function() {
 		}
 		
 		return this.callMethod(options, data, tab);
+	}
+
+	/**
+	 * If running an integration method check if the tab is still available to receive
+	 * a response from Zotero and if not - respond with an error message so that
+	 * the integration operation can be discarded in Zotero
+	 */
+	this._handleIntegrationTabClosed = async function(method, tab) {
+		if (tab && Zotero.isBrowserExt) {
+			if (method.startsWith('document/')) {
+				try {
+					let retrievedTab = await browser.tabs.get(tab.id);
+					if (retrievedTab.discarded) throw new Error('Integration tab is discarded');
+				} catch (e) {
+					Zotero.logError(e);
+					let response = await Zotero.Connector.callMethod({method: 'document/respond', timeout: false},
+						JSON.stringify({
+							error: 'Tab Not Available Error',
+							message: e.message,
+							stack: e.stack
+						})
+					);
+					let method = response.command.split('.')[1];
+					while (method != 'complete') {
+						let response;
+						if (method == 'displayAlert') {
+							// Need to return an error for displayAlert so that it can be displayed in the client.
+							response = await Zotero.Connector.callMethod({method: 'document/respond', timeout: false},
+								JSON.stringify({error: 'Error'})
+							);
+						}
+						else {
+							response = await Zotero.Connector.callMethod({method: 'document/respond', timeout: false}, "");
+						}
+						method = response.command.split('.')[1];
+					}
+				}
+			}
+		}
 	}
 }
 

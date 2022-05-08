@@ -243,7 +243,8 @@ MESSAGES.COHTTP = {
 					response: xhr.response,
 					status: xhr.status,
 					statusText: xhr.statusText,
-					responseHeaders: xhr.getAllResponseHeaders()
+					responseHeaders: xhr.getAllResponseHeaders(),
+					responseURL: xhr.responseURL
 				};
 				if (result.response instanceof ArrayBuffer) {
 					result.response = packArrayBuffer(xhr.response);

@@ -604,8 +604,16 @@ Zotero.Proxies = new function() {
 						var properHost = parts.slice(0, j+1).join(".");
 						// protocol + properHost + /path
 						var properURL = m[1]+properHost+URL.substr(m[0].length);
+						// Accommodating URLS like https://kns-cnki-net-443.webvpn.fafu.edu.cn:880/
+						// where the TLD part j==3, but j+1 is not the start of the proxy host
+						// See https://forums.zotero.org/discussion/comment/407995/#Comment_407995
+						let skippedParts = '';
+						while (parts[j+1].match(/^[0-9]*$/)) {
+							skippedParts += '-' + parts[j+1];
+							j++;
+						}
 						var proxyHost = parts.slice(j+1).join('.');
-						urlToProxy[properURL] = {scheme: '%h.' + proxyHost + '/%p', dotsToHyphens};
+						urlToProxy[properURL] = {scheme: `%h${skippedParts}.${proxyHost}/%p`, dotsToHyphens};
 					}
 				}
 			}

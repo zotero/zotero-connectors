@@ -99,6 +99,8 @@ body {
 label {
 	white-space: nowrap;
 	margin-right: 5px;
+	display: flex;
+	align-items: center;	
 }
 
 input {

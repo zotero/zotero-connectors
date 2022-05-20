@@ -30,7 +30,9 @@
 			"run_at": "document_start",
 			"js": [
 				"zotero-google-docs-integration/kixAddZoteroMenu.js",
+				"zotero-google-docs-integration/googleDocs.js",
 				"zotero-google-docs-integration/client.js",
+				"zotero-google-docs-integration/clientAppsScript.js",
 				"zotero-google-docs-integration/document.js"
 			]
 		}

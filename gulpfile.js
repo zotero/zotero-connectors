@@ -240,6 +240,8 @@ function processFile() {
 				if (!argv.p) {
 					contents = contents
 						.replace('"debug.log": false', '"debug.log": true')
+						.replace('"integration.googleDocs.useGoogleDocsAPI": false',
+							'"integration.googleDocs.useGoogleDocsAPI": true');
 				}
 				contents = contents.replace(/\/\* this\.allowRepoTranslatorTester = SET IN BUILD SCRIPT \*\//,
 					`this.allowRepoTranslatorTester = ${!!process.env.ZOTERO_REPOSITORY_URL}`);

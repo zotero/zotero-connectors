@@ -56,8 +56,8 @@
 							<input type="button" value="Clear Credentials" id="general-button-clear-credentials"/>
 						</p>
 						<p>
-							<label><input type="checkbox" data-pref="automaticSnapshots"/>&nbsp;Automatically take snapshots when saving items</label><br/>
-							<label><input type="checkbox" data-pref="downloadAssociatedFiles"/>&nbsp;Automatically download associated PDFs and other files when saving items</label><br/>
+							<label><input type="checkbox" data-pref="automaticSnapshots"/>&nbsp;Automatically take snapshots when saving items</label>
+							<label><input type="checkbox" data-pref="downloadAssociatedFiles"/>&nbsp;Automatically download associated PDFs and other files when saving items</label>
 						</p>
 					</div>
 				</div>
@@ -89,9 +89,9 @@
 				<div class="group-content">
 					<p>Debug output can help Zotero developers diagnose problems. Debug logging may slow down your browser, so you should generally leave it disabled unless a Zotero developer requests debug output.</p>
 					<p>
-						<label><input type="checkbox" id="advanced-checkbox-enable-logging"/>&nbsp;Enable Logging</label><br/>
-						<label><input type="checkbox" id="advanced-checkbox-enable-at-startup"/>&nbsp;Enable at Startup</label><br/>
-						<label><input type="checkbox" id="advanced-checkbox-show-in-console"/>&nbsp;Show in Console</label><br/>
+						<label><input type="checkbox" id="advanced-checkbox-enable-logging"/>&nbsp;Enable Logging</label>
+						<label><input type="checkbox" id="advanced-checkbox-enable-at-startup"/>&nbsp;Enable at Startup</label>
+						<label><input type="checkbox" id="advanced-checkbox-show-in-console"/>&nbsp;Show in Console</label>
 					</p>
 					<p>
 						<span id="advanced-span-lines-logged"></span> lines logged
@@ -107,7 +107,7 @@
 			<div class="group">
 				<div class="group-title">Translators</div>
 				<div class="group-content">
-					<p><label><input type="checkbox" id="advanced-checkbox-report-translator-failure"/> Report broken site translators to zotero.org</label></p>
+					<label><input type="checkbox" id="advanced-checkbox-report-translator-failure"/> Report broken site translators to zotero.org</label>
 					<p>
 						<input type="button" id="advanced-button-update-translators" value="Update Translators"/>
 						<input type="button" id="advanced-button-reset-translators" value="Reset Translators"/>
@@ -121,8 +121,13 @@
 				<div class="group-title">Google Docs Integration</div>
 				<div class="group-content">
 					<div id="google-docs-pref">
-						<div><label><input type="checkbox" data-pref="integration.googleDocs.enabled"/> Enable Google Docs Integration</label></div>
-						<div id="google-docs-shortcut"><label>Add/Edit Citation Shortcut<span class="shortcut-input" data-pref="shortcuts.cite"></span></label></div>
+						<p>
+							<label><input id="advanced-checkbox-google-docs-enabled" type="checkbox" data-pref="integration.googleDocs.enabled"/>Enable Google Docs Integration</label>
+						</p>
+						<div id="advanced-google-docs-subprefs" style="margin-left: 1em">
+							<label><input type="checkbox" data-pref="integration.googleDocs.useGoogleDocsAPI"/>Use the Google Docs API (BETA)</label>
+							<label>Add/Edit Citation Shortcut<span class="shortcut-input" data-pref="shortcuts.cite"></span></label>
+						</div>
 					</div>
 				</div>
 			</div>

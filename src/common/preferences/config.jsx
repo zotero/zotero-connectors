@@ -24,12 +24,12 @@
 */
 
 var Zotero_Preferences_Config = {
-	init: function() {
+	init: async function() {
 		Zotero.Messaging.init();
-		Zotero.Prefs.getAll().then(function(prefs) {
-			this.table = <Zotero_Preferences_Config.Table prefs={prefs}/>;
-			ReactDOM.render(this.table, document.getElementById('table'));
-		}.bind(this));
+		let prefs = await Zotero.Prefs.getAll();
+		this.defaultPrefs = await Zotero.Prefs.getDefault();
+		this.table = <Zotero_Preferences_Config.Table prefs={prefs}/>;
+		ReactDOM.render(this.table, document.getElementById('table'));
 	}
 };
 
@@ -151,10 +151,15 @@ Zotero_Preferences_Config.Row = class Row extends React.Component {
 	}
 	
 	render() {
+		let defaultValue = Zotero_Preferences_Config.defaultPrefs[this.props.name];
+		if (typeof defaultValue !== 'string') {
+			defaultValue = JSON.stringify(defaultValue);
+		}
+		const isNotDefault = this.state.value != defaultValue;
 		return (
 			<tr onDoubleClick={this.edit} data-name={this.props.name} className="config-row">
 				<td>{this.props.name}</td>
-				<td>{this.state.value}</td>
+				<td className={isNotDefault ? 'is-not-default' : ''}>{this.state.value}</td>
 				<td><a href="javascript:void(0);" onClick={this.props.reset}>Reset</a></td>
 			</tr>
 		)

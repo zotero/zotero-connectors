@@ -73,7 +73,7 @@ var Zotero_Preferences = {
 
 		var checkboxes = document.querySelectorAll('[type="checkbox"][data-pref]');
 		for (let checkbox of checkboxes) {
-			checkbox.onchange = Zotero_Preferences.onPrefCheckboxChange;
+			checkbox.addEventListener('change', Zotero_Preferences.onPrefCheckboxChange);
 			checkbox.checked = await Zotero.Prefs.getAsync(checkbox.dataset.pref);
 		}
 
@@ -244,6 +244,14 @@ Zotero_Preferences.Advanced = {
 		document.getElementById("advanced-button-update-translators").onclick = function() { Zotero.Repo.update(false) };
 		document.getElementById("advanced-button-reset-translators").onclick = function() { Zotero.Repo.update(true) };
 		document.getElementById("advanced-button-report-errors").onclick = Zotero_Preferences.Advanced.submitErrors;
+
+		const googleDocsEnabledCheckbox = document.getElementById("advanced-checkbox-google-docs-enabled");
+		function onGoogleDocsEnabledChange() {
+			let inputs = document.querySelectorAll('#advanced-google-docs-subprefs input');
+			inputs.forEach(input => input.disabled = !this.checked);
+		}
+		googleDocsEnabledCheckbox.addEventListener('change', onGoogleDocsEnabledChange);
+		setTimeout(() => onGoogleDocsEnabledChange.call(googleDocsEnabledCheckbox), 20);
 
 
 		var openTranslatorTesterButton = document.getElementById("advanced-button-open-translator-tester");
@@ -473,17 +481,18 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 	render() {
 		let autoRecognise = '';
 		if (Zotero.isBrowserExt) {
-			autoRecognise = <span><label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label><br/></span>;
+			autoRecognise = <label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label>;
 		}
 		return (
 			<div>
-				<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;Enable proxy redirection</label><br/>
+				<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;Enable proxy redirection</label>
 				<div style={{marginLeft: "1em"}}>
-					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;Show a notification when redirecting through a proxy</label><br/>
+					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;Show a notification when redirecting through a proxy</label>
 					{autoRecognise}
-					<br/>
-					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains<span>*</span></label><br/>
-					<input style={{marginTop: "0.5em", marginLeft: "1.5em"}} type="text" onChange={this.handleTextInputChange} disabled={!this.state.transparent || !this.state.disableByDomain} name="disableByDomainString" defaultValue={this.state.disableByDomainString}/>
+					<p>
+						<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains<span>*</span></label>
+						<input style={{marginTop: "0.5em", marginLeft: "1.5em"}} type="text" onChange={this.handleTextInputChange} disabled={!this.state.transparent || !this.state.disableByDomain} name="disableByDomainString" defaultValue={this.state.disableByDomainString}/>
+					</p>
 				</div>
 				<p><span>*</span>Available when Zotero is running</p>
 			</div>
@@ -681,8 +690,8 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponen
 		return (
 			<div className="group" style={{marginTop: "10px"}}>
 				<p style={{display: "flex", alignItems: "center", flexWrap: "wrap"}}>
-					<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={this.handleCheckboxChange} checked={currentProxy.autoAssociate}/>&nbsp;Automatically associate new hosts</label><br/>
-					<label><input type="checkbox" name="dotsToHyphens" onChange={this.handleCheckboxChange} checked={currentProxy.dotsToHyphens}/>&nbsp;Automatically convert between dots and hyphens in proxied hostnames</label><br/>
+					<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={this.handleCheckboxChange} checked={currentProxy.autoAssociate}/>&nbsp;Automatically associate new hosts</label>
+					<label><input type="checkbox" name="dotsToHyphens" onChange={this.handleCheckboxChange} checked={currentProxy.dotsToHyphens}/>&nbsp;Automatically convert between dots and hyphens in proxied hostnames</label>
 				</p>
 				<p style={{display: "flex", alignItems: "center"}}>
 					<label style={{alignSelf: "center", marginRight: "5px"}}>Scheme: </label>
@@ -820,7 +829,7 @@ Zotero_Preferences.Components.MIMETypeHandling = class MIMETypeHandling extends 
 			<div>
 				<p>Available when Zotero is running</p>
 				<p>
-					<label><input type="checkbox" onChange={this.handleCheckboxChange} name="enabled" defaultChecked={this.state.enabled}/>&nbsp;Import BibTeX/RIS/Refer files into Zotero</label><br/>
+					<label><input type="checkbox" onChange={this.handleCheckboxChange} name="enabled" defaultChecked={this.state.enabled}/>&nbsp;Import BibTeX/RIS/Refer files into Zotero</label>
 				</p>
 				<div style={{display: this.state.enabled ? 'flex' : 'none', flexDirection: "column", marginTop: "10px"}}>
 					<label>Enabled Hostnames</label>

@@ -452,6 +452,7 @@ Zotero.Inject = new function() {
 				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return items;
 			} catch (e) {
+				let errorMessage = e.toString();
 				// TEMP: Remove once client switches automatically (added in 5.0.46)
 				if (e.value && e.value.libraryEditable == false) {
 					// Allow another attempt to save again
@@ -459,6 +460,16 @@ Zotero.Inject = new function() {
 					return;
 				}
 				if (translator.itemType != 'multiple') {
+					let url = '';
+					try {
+						url = errorMessage.split('HTTP request to ')[1];
+						url = url.includes(' has timed out') ? url.split(' has timed out')[0] : '';
+					} catch (e) {}
+					const isConnectorTimeout = url && url.startsWith(await Zotero.Prefs.getAsync('connector.url'));
+					if (isConnectorTimeout) {
+						Zotero.Messaging.sendMessage("progressWindow.done", [false]);
+						return;
+					}
 					if (options.fallbackOnFailure && translators.length) {
 						Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', translator.label, translators[0].label]);
 					}
@@ -477,8 +488,9 @@ Zotero.Inject = new function() {
 					// Cannot have that!
 					await Zotero.Promise.delay(500);
 					const isAccessLimitingTranslator = siteAccessLimitsTranslators.has(translator.translatorID);
+					let statusCode = '';
 					try {
-						var statusCode = typeof e == 'string' && e.match(/status code ([0-9]{3})/)[1];
+						statusCode = errorMessage.match(/status code ([0-9]{3})/)[1];
 					} catch (e) {}
 					const isHTTPErrorForbidden = statusCode == '403';
 					const isHTTPErrorTooManyRequests = statusCode == '429';

@@ -238,10 +238,13 @@ function processFile() {
 			case 'zotero.js':
 				var contents = file.contents.toString();
 				if (!argv.p) {
-					contents = contents
-						.replace('"debug.log": false', '"debug.log": true')
-						.replace('"integration.googleDocs.useGoogleDocsAPI": false',
-							'"integration.googleDocs.useGoogleDocsAPI": true');
+					contents = contents.replace('"debug.log": false', '"debug.log": true');
+				}
+				if (!argv.p || process.env.ZOTERO_GOOGLE_DOCS_V2) {
+					contents = contents.replace(
+						'"integration.googleDocs.useGoogleDocsAPI": false',
+							'"integration.googleDocs.useGoogleDocsAPI": true'
+					);
 				}
 				contents = contents.replace(/\/\* this\.allowRepoTranslatorTester = SET IN BUILD SCRIPT \*\//,
 					`this.allowRepoTranslatorTester = ${!!process.env.ZOTERO_REPOSITORY_URL}`);

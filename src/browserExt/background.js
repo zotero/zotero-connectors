@@ -557,9 +557,13 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _isDisabledForURL(url, excludeTests=false) {
-		return url.startsWith('chrome://') ||
-			url.startsWith('about:') ||
-			(url.startsWith(browser.runtime.getURL('')) && (!excludeTests || !url.includes('/test/data/')));
+		const isChromeInternalPage = url.startsWith('chrome://');
+		const isAboutPage = url.startsWith('about:');
+		const isExtensionPage = url.includes('-extension://');
+		const isZoteroExtensionPage = url.startsWith(browser.runtime.getURL(''));
+		const isZoteroTestPage = isZoteroExtensionPage && url.includes('/test/data/');
+		if (excludeTests && isZoteroTestPage) return false;
+		return isChromeInternalPage || isAboutPage || isExtensionPage;
 	}
 	
 	function _showZoteroStatus(tabID) {

@@ -461,10 +461,12 @@ Zotero.Connector_Browser = new function() {
 		}	
 		if (Zotero.Prefs.get('firstUse')) return _showFirstUseUI(tab);
 		if (!tab.active) return;
+		let url = tab.url || tab.pendingUrl;
 		browser.contextMenus.removeAll();
 
-		if (_isDisabledForURL(tab.url, true)) {
-			_showZoteroStatus();
+		let isDisabled = _isDisabledForURL(url, true)
+		if (isDisabled) {
+			_showZoteroStatus(tab.id, isDisabled);
 			return;
 		} else {
 			_enableForTab(tab.id);
@@ -479,7 +481,7 @@ Zotero.Connector_Browser = new function() {
 		var showProxyMenu = !isPDF
 			&& Zotero.Proxies.proxies.length > 0
 			// Don't show proxy menu if already proxied
-			&& !Zotero.Proxies.proxyToProper(tab.url, true);
+			&& !Zotero.Proxies.proxyToProper(url, true);
 		
 		var saveMenuID;
 		if (showSaveMenu) {
@@ -509,7 +511,7 @@ Zotero.Connector_Browser = new function() {
 		
 		// If unproxied, show "Reload via Proxy" options
 		if (showProxyMenu) {
-			_showProxyContextMenuItems(tab.url);
+			_showProxyContextMenuItems(url);
 		}
 		
 		if (Zotero.isFirefox) {
@@ -563,10 +565,16 @@ Zotero.Connector_Browser = new function() {
 		const isZoteroExtensionPage = url.startsWith(browser.runtime.getURL(''));
 		const isZoteroTestPage = isZoteroExtensionPage && url.includes('/test/data/');
 		if (excludeTests && isZoteroTestPage) return false;
+		if (isChromeInternalPage || isAboutPage) {
+			return Zotero.getString('extensionIsDisabled', [ZOTERO_CONFIG.CLIENT_NAME])
+		}
+		else if (isExtensionPage) {
+			return Zotero.getString('extensionIsDisabled_extensionPage', [ZOTERO_CONFIG.CLIENT_NAME])
+		}
 		return isChromeInternalPage || isAboutPage || isExtensionPage;
 	}
 	
-	function _showZoteroStatus(tabID) {
+	function _showZoteroStatus(tabID, message) {
 		Zotero.Connector.checkIsOnline().then(function(isOnline) {
 			var icon, title;
 			if (isOnline) {
@@ -575,6 +583,9 @@ Zotero.Connector_Browser = new function() {
 			} else {
 				icon = "images/zotero-z-16px-offline.png";
 				title = "Zotero is Offline";
+			}
+			if (typeof message === 'string') {
+				title = message;
 			}
 			browser.browserAction.setIcon({
 				tabId:tabID,

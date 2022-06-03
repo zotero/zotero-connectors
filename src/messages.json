@@ -67,6 +67,13 @@
 		"message": "latest version"
 	},
 	
+	"extensionIsDisabled": {
+		"message": "$1 is disabled"
+	},
+	"extensionIsDisabled_extensionPage": {
+		"message": "$1 is disabled on extension pages"
+	},
+	
 	"appConnector": {
 		"message": "$1 Connector"
 	},

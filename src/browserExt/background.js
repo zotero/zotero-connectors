@@ -321,6 +321,9 @@ Zotero.Connector_Browser = new function() {
 					val = iter.next(val.value);
 				}
 			}
+		}
+		catch(e) {
+			Zotero.debug(e.message);
 		} finally {
 			browser.tabs.onRemoved.removeListener(tabRemovedListener);
 			deferred.resolve();

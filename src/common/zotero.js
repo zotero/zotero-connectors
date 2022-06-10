@@ -420,7 +420,7 @@ Zotero.Prefs = new function() {
 		"proxies.clientChecked": false,
 		
 		"integration.googleDocs.enabled": true,
-		"integration.googleDocs.useGoogleDocsAPI": false,
+		"integration.googleDocs.useGoogleDocsAPI": true,
 		
 		"shortcuts.cite": {ctrlKey: true, altKey: true, key: 'c'}
 	};

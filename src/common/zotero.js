@@ -192,7 +192,8 @@ var Zotero = window.Zotero = new function() {
 			let xhr = await Zotero.HTTP.request('GET', Zotero.getExtensionURL('utilities/resource/dateFormats.json'), { responseType: 'json' });
 			dateFormatsJSON = xhr.response;
 		}
-		Zotero.Date.init(dateFormatsJSON);	}
+		Zotero.Date.init(dateFormatsJSON);
+	}
 	
 	/**
 	 * Initializes Zotero services for the global page in Chrome or Safari
@@ -274,13 +275,6 @@ var Zotero = window.Zotero = new function() {
 		Zotero.initDeferred.resolve();
 		Zotero.initialized = true;
 	};
-
-	this._initDateFormatsJSON = async function() {
-		let dateFormatsJSON;
-		let xhr = await Zotero.HTTP.request('GET', Zotero.getExtensionURL('utilities/resource/dateFormats.json'), { responseType: 'json' });
-		dateFormatsJSON = xhr.response;
-		Zotero.Date.init(dateFormatsJSON);
-	}
 
 	/**
 	 * Get versions, platform, etc.

@@ -67,7 +67,7 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 	
 	try {
 		var response = await Zotero.Messaging.sendMessage('HTTP.request', args);
-		var [status, responseText, headers] = response;
+		var [status, responseText, headers, responseURL] = response;
 	} catch (err) {
 		status = 0;
 		headers = {};
@@ -86,6 +86,7 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 		status, responseText,
 		response: responseText,
 		responseHeaders: headerString,
+		responseURL,
 		getAllResponseHeaders: () => headerString,
 		getResponseHeader: name => headers[name.toLowerCase()]
 	};

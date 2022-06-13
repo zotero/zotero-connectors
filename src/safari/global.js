@@ -280,6 +280,7 @@ Zotero.Connector_Browser = new function() {
 		} else {
 			[image, tooltip] = _showWebpageIcon(tab);
 		}
+		image = image.split('@2x').join('');
 		Zotero.Messaging.sendMessage("Swift.updateButton", [image, tooltip, contextItemList.concat(finalItems)], tab)
 	}
 

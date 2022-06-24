@@ -12,7 +12,7 @@
     "browserify": "^16.5.0",
     "chai": "^4.2.0",
     "chalk": "^2.4.1",
-    "chromedriver": "^81.0.0",
+    "chromedriver": "^103.0.0",
     "geckodriver": "^1.19.1",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",

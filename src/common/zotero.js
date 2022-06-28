@@ -233,8 +233,7 @@ var Zotero = window.Zotero = new function() {
 			Zotero.Repo.init();
 			Zotero.Proxies.init();
 		}
-		let xhr = await Zotero.HTTP.request('GET', Zotero.getExtensionURL('utilities/resource/dateFormats.json'), { responseType: 'json' });
-		Zotero.Date.init(xhr.response);
+		await this._initDateFormatsJSON();
 		Zotero.initDeferred.resolve();
 		Zotero.initialized = true;
 
@@ -255,8 +254,7 @@ var Zotero = window.Zotero = new function() {
 		}
 		Zotero.Connector_Types.init();
 		Zotero.Schema.init();
-		let xhr = await Zotero.HTTP.request('GET', Zotero.getExtensionURL('utilities/resource/dateFormats.json'), { responseType: 'json' });
-		Zotero.Date.init(xhr.response);
+		await this._initDateFormatsJSON();
 		Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
 			'reportTranslationFailure', 'capitalizeTitles']);
 		await Zotero.Prefs.loadNamespace('debug');
@@ -265,8 +263,14 @@ var Zotero = window.Zotero = new function() {
 		Zotero.initDeferred.resolve();
 		Zotero.initialized = true;
 	};
-	
-	
+
+	this._initDateFormatsJSON = async function() {
+		let dateFormatsJSON;
+		let xhr = await Zotero.HTTP.request('GET', Zotero.getExtensionURL('utilities/resource/dateFormats.json'), { responseType: 'json' });
+		dateFormatsJSON = xhr.response;
+		Zotero.Date.init(dateFormatsJSON);
+	}
+
 	/**
 	 * Get versions, platform, etc.
 	 */

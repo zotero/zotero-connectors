@@ -72,7 +72,7 @@ var injectInclude = [
 	'translate/utilities_translate.js',
 	'translate_item.js',
 	'inject/http.js',
-	'inject/translate_inject.js',
+	'inject/sandboxManager.js',
 	'integration/connectorIntegration.js',
 	'cachedTypes.js',
 	'schema.js',
@@ -80,6 +80,8 @@ var injectInclude = [
 	'messaging_inject.js',
 	'inject/progressWindow_inject.js',
 	'inject/modalPrompt_inject.js',
+	'zoteroFrame.js',
+	'messagingGeneric.js',
 	'i18n.js',
 	'singlefile.js'
 ];
@@ -94,7 +96,16 @@ if (argv.p) {
 		'tools/testTranslators/translatorTester_inject.js'
 	];
 }
-var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(injectInclude, ['api.js'], injectIncludeLast);
+var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(
+	injectInclude,
+	['api.js'],
+	injectIncludeLast);
+	
+var injectIncludeManifestV3 = ['browser-polyfill.js'].concat(
+	injectInclude,
+	['api.js'],
+	['translateSandbox/translateSandboxFunctionOverrides.js', 'translateSandbox/translateSandboxManager.js'],
+	injectIncludeLast);
 
 var backgroundInclude = [
 	'node_modules.js',
@@ -116,6 +127,7 @@ var backgroundInclude = [
 	'utilities/resource/zoteroTypeSchemaData.js',
 	'utilities/utilities.js',
 	'utilities/utilities_item.js',
+	'utilities/resource/zoteroTypeSchemaData.js',
 	'utilities.js',
 	'translate/debug.js',
 	'translate/tlds.js',
@@ -141,6 +153,11 @@ var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclu
 	'webRequestIntercept.js',
 	'contentTypeHandler.js',
 	'firefoxPDF.js'
+]);
+
+var backgroundIncludeManifestV3 = backgroundIncludeBrowserExt.filter(file => !file.includes('SingleFile')).concat([
+	'lib/SingleFile/single-file-extension-core.js',
+	'lib/SingleFile/single-file-background.js',
 ]);
 
 function reloadChromeExtensionsTab(cb) {
@@ -241,19 +258,6 @@ function processFile() {
 					`this.allowRepoTranslatorTester = ${!!process.env.ZOTERO_REPOSITORY_URL}`);
 				file.contents = Buffer.from(contents);
 				break;
-			case 'manifest.json':
-				file.contents = Buffer.from(file.contents.toString()
-					.replace("/*BACKGROUND SCRIPTS*/",
-						backgroundIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
-					.replace("/*INJECT SCRIPTS*/",
-						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
-					.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"'));
-				break;
-			case 'background.js':
-				file.contents = Buffer.from(file.contents.toString()
-					.replace("/*INJECT SCRIPTS*/", 
-						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t')));
-				break;
 			case 'schema.js': {
 				file.contents = Buffer.from(file.contents.toString()
 					.replace("/*ZOTERO_SCHEMA*/",
@@ -288,18 +292,45 @@ function processFile() {
 				file.contents = Buffer.from(replaceScriptsHTML(
 					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
 			}
-			['chrome', 'firefox'].forEach((browser) => {
+			if (basename == 'manifest-v3.json') {
 				f = file.clone({contents: false});
-				if (basename == 'zotero.js') {
-					let contents = f.contents.toString()
-						.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
-					contents = replaceBrowser(contents, { browserExt: true, firefox: browser == 'firefox' });
-					f.contents = Buffer.from(contents);
-				}
-				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
+				f.path = (parts.slice(0, i-1).join('/') + `/build/manifestv3/` + parts.slice(i+1).join('/'))
+					.replace('manifest-v3.json', 'manifest.json');
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
+				f.contents = Buffer.from(f.contents.toString()
+					.replace("/*INJECT SCRIPTS*/",
+						injectIncludeManifestV3.map((s) => `"${s}"`).join(',\n\t\t\t'))
+					.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"'));
 				this.push(f);
-			});
+			}
+			else {
+				['chrome', 'firefox', 'manifestv3'].forEach((browser) => {
+					f = file.clone({contents: false});
+					if (['manifest.json', "manifest-v3.json", "background.js", "background-worker.js"].includes(basename)) {
+						let backgroundScripts = browser == 'manifestv3' ? backgroundIncludeManifestV3 : backgroundIncludeBrowserExt;
+						let injectScripts = browser == "manifestv3" ? injectIncludeManifestV3 : injectIncludeBrowserExt;
+						f.contents = Buffer.from(f.contents.toString()
+							.replace("/*BACKGROUND SCRIPTS*/",
+								backgroundScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
+							.replace("/*INJECT SCRIPTS*/",
+								injectScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
+							.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"'));
+					}
+					if (basename == 'zotero.js') {
+						let contents = f.contents.toString()
+							.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
+						contents = replaceBrowser(contents, {
+							browserExt: true,
+							firefox: browser == 'firefox',
+							manifestV3: browser == 'manifestv3'
+						});
+						f.contents = Buffer.from(contents);
+					}
+					f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
+					console.log(`-> ${f.path.slice(f.cwd.length)}`);
+					this.push(f);
+				});
+			}
 		}
 		if (type === 'common' || type === 'safari') {
 			f = file.clone({contents: false});
@@ -319,7 +350,7 @@ function processFile() {
 				+ parts.slice(i+3).join('/');
 			console.log(`-> ${f.path.slice(f.cwd.length)}`);
 			this.push(f);
-			['chrome', 'firefox'].forEach((browser) => {
+			['chrome', 'firefox', 'manifestv3'].forEach((browser) => {
 				f = file.clone({contents: false});
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/zotero-google-docs-integration/`
 					+ parts.slice(i+3).join('/');
@@ -358,7 +389,9 @@ gulp.task('watch-chrome', function () {
 gulp.task('process-custom-scripts', function() {
 	let sources = [
 		'./src/browserExt/background.js',
+		'./src/browserExt/background-worker.js',
 		'./src/browserExt/manifest.json',
+		'./src/browserExt/manifest-v3.json',
 		'./src/browserExt/confirm.html',
 		'./src/common/node_modules.js',
 		'./src/common/preferences/preferences.html',

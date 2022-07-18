@@ -42,10 +42,12 @@ Zotero.WebRequestIntercept = {
 
 	init: function() {
 		const types = ["main_frame", "sub_frame"];
-		browser.webRequest.onBeforeSendHeaders.addListener(Zotero.WebRequestIntercept.handleRequest('beforeSendHeaders'), {urls: ['<all_urls>'], types}, ['blocking', 'requestHeaders']);
+		let extraInfoSpec = ["requestHeaders"].concat(!Zotero.isManifestV3 ? ["blocking"] : []);
+		browser.webRequest.onBeforeSendHeaders.addListener(Zotero.WebRequestIntercept.handleRequest('beforeSendHeaders'), {urls: ['<all_urls>'], types}, extraInfoSpec);
 		browser.webRequest.onErrorOccurred.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
 		browser.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
-		browser.webRequest.onHeadersReceived.addListener(Zotero.WebRequestIntercept.handleRequest('headersReceived'), {urls: ['<all_urls>'], types}, ['blocking', 'responseHeaders']);
+		extraInfoSpec = ["responseHeaders"].concat(!Zotero.isManifestV3 ? ["blocking"] : []);
+		browser.webRequest.onHeadersReceived.addListener(Zotero.WebRequestIntercept.handleRequest('headersReceived'), {urls: ['<all_urls>'], types}, extraInfoSpec);
 
 		Zotero.WebRequestIntercept.addListener('beforeSendHeaders', Zotero.WebRequestIntercept.storeRequestHeaders)
 	},
@@ -104,7 +106,7 @@ Zotero.WebRequestIntercept = {
 					returnValue = Object.assign(returnValue || {}, retVal);
 				}
 			}
-			if (returnValue !== null) {
+			if (returnValue !== null && !Zotero.isManifestV3) {
 				return returnValue;
 			}
 		}

@@ -1,0 +1,77 @@
+{
+	"name": "Zotero Connector",
+	"manifest_version": 3,
+	"version": "AUTOFILLED",
+	"description": "Save references to Zotero from your web browser",
+	"default_locale": "en",
+	"action": {
+		"default_icon": {
+			"16": "images/treeitem-webpage-gray.png",
+			"32": "images/treeitem-webpage-gray@2x.png",
+			"48": "images/treeitem-webpage-gray@48px.png"
+		},
+		"default_title": "Save to Zotero"
+	},
+	"host_permissions": ["http://*/*", "https://*/*"],
+	"permissions": ["tabs", "contextMenus", "cookies", "scripting",
+		"webRequest", "declarativeNetRequest", "webNavigation", "storage"],
+	"optional_permissions": ["management"],
+	"background": {
+		"service_worker": "background-worker.js"
+	},
+	"content_scripts": [
+		{
+			"matches": ["http://*/*", "https://*/*"],
+			"run_at": "document_start",
+			"js": [/*INJECT SCRIPTS*/]
+		},
+		{
+			"matches": ["https://docs.google.com/document/*"],
+			"run_at": "document_start",
+			"js": [
+				"zotero-google-docs-integration/kixAddZoteroMenu.js",
+				"zotero-google-docs-integration/googleDocs.js",
+				"zotero-google-docs-integration/client.js",
+				"zotero-google-docs-integration/clientAppsScript.js",
+				"zotero-google-docs-integration/document.js"
+			]
+		}
+	],
+	"sandbox": {
+		"pages": ["translateSandbox/translateSandbox.html"]
+	},
+	"web_accessible_resources": [{
+		"resources": [
+			"images/*",
+			"progressWindow/progressWindow.html",
+			"modalPrompt/modalPrompt.html",
+			"translateSandbox/translateSandbox.html",
+			"test/data/journalArticle-single.html",
+			"lib/SingleFile/lib/single-file/processors/hooks/content/content-hooks-web.js",
+			"lib/SingleFile/lib/single-file/processors/hooks/content/content-hooks-frames-web.js"
+		],
+		"matches": ["http://*/*", "https://*/*"]
+	}],
+	"content_security_policy": {
+		"extension_pages": "script-src 'self'; object-src 'self'"
+	},
+	"homepage_url": "https://www.zotero.org/",
+	"icons": {
+		"16": "Icon-16.png",
+		"48": "Icon-48.png",
+		"96": "Icon-96.png",
+		"128": "Icon-128.png"
+	},
+	"options_ui": {
+		"page": "preferences/preferences.html",
+		"open_in_tab": true
+	},
+	"commands": {
+		"_execute_browser_action": {
+			"suggested_key": {
+				"default": "Ctrl+Shift+S"
+			}
+		}
+	},
+	"minimum_chrome_version": "55"
+}

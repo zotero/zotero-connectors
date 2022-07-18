@@ -246,8 +246,14 @@ Zotero.Translate.ItemSaver.prototype = {
 		return false;
 	},
 
-	_processItems: function(items) {
-		var saveOptions = !Zotero.isBookmarklet && Zotero.Inject.sessionDetails.saveOptions;
+	_processItems: async function(items) {
+		let saveOptions;
+		if (Zotero.isTranslateSandbox) {
+			saveOptions = await Zotero.TranslateSandbox.sendMessage('Inject.getSessionDetails');
+		}
+		else {
+			saveOptions = Zotero.Inject.sessionDetails.saveOptions;
+		}
 		if (saveOptions && saveOptions.note && items.length == 1) {
 			if (items[0].notes) {
 				items[0].notes.push({note: saveOptions.note})

@@ -105,6 +105,7 @@ fi
 
 SRCDIR="$CWD/src"
 DISTDIR="$CWD/dist"
+LIBDIR="$CWD/lib"
 NODE_MODULES_DIR="$CWD/node_modules"
 LOG="$CWD/build.log"
 
@@ -147,6 +148,7 @@ rm -rf "$BUILD_DIR/browserExt" \
 	"$BUILD_DIR/chrome" \
 	"$BUILD_DIR/firefox" \
 	"$BUILD_DIR/safari" \
+	"$BUILD_DIR/manifestv3" \
 	"$BUILD_DIR/bookmarklet"
 
 # Make directories if they don't exist
@@ -301,9 +303,10 @@ if [[ $BUILD_SAFARI == 1 ]]; then
 	copyResources 'safari'
 fi
 
-# Make separate Chrome and Firefox directories
+# Make separate Chrome, Chrome Manifest v3 and Firefox directories
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/chrome/
+	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/manifestv3/
 	mv $BUILD_DIR/browserExt $BUILD_DIR/firefox
 fi
 
@@ -336,6 +339,20 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	cat manifest.json | jq '. |= del(.applications)' > manifest.json-tmp
 	mv manifest.json-tmp manifest.json
 	popd > /dev/null
+	
+	# Chrome Manifest V3 modifications
+	rsync -a $BUILD_DIR/chrome/images/ $BUILD_DIR/manifestv3/images/
+	
+	# Replace SingleFile code for MV3 with SingleFile-Lite
+	rm -rf "$BUILD_DIR/manifestv3/lib/SingleFile"
+	mkdir -p "$BUILD_DIR/manifestv3/lib/SingleFile"
+	cp -r "$LIBDIR/SingleFile-Lite/lib/single-file-extension-core.js" \
+	  "$LIBDIR/SingleFile-Lite/lib/single-file-background.js" \
+	  "$LIBDIR/SingleFile-Lite/lib/single-file.js" \
+	  "$LIBDIR/SingleFile-Lite/lib/single-file-frames.js" \
+	  "$LIBDIR/SingleFile-Lite/lib/chrome-browser-polyfill.js" \
+	  "$LIBDIR/SingleFile-Lite/lib/single-file-hooks-frames.js" \
+		"$BUILD_DIR/manifestv3/lib/SingleFile"
 	
 	# Firefox modifications
 	

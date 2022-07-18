@@ -32,7 +32,11 @@ Zotero.i18n = {
 		var str;
 		if (Zotero.isChrome) {
 			// Chrome doesn't play nice with the browser-polyfill.js API for this function
-			str = chrome.i18n.getMessage(name, substitutions);
+			try {
+				str = chrome.i18n.getMessage(name, substitutions);
+			} catch (e) {
+				str = `{${name}}`;
+			}
 		} else {
 			str = browser.i18n.getMessage(name, substitutions);
 		}

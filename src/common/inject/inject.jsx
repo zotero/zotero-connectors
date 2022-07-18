@@ -60,7 +60,7 @@ Zotero.Inject = new function() {
 	/**
 	 * Initializes the translate machinery and determines whether this page can be translated
 	 */
-	this.init = function(force) {	
+	this.init = async function(force) {	
 		// On OAuth completion, close window and call completion listener
 		if(document.location.href.substr(0, ZOTERO_CONFIG.OAUTH.ZOTERO.CALLBACK_URL.length+1) === ZOTERO_CONFIG.OAUTH.ZOTERO.CALLBACK_URL+"?") {
 			Zotero.API.onAuthorizationComplete(document.location.href.substr(ZOTERO_CONFIG.OAUTH.ZOTERO.CALLBACK_URL.length+1));
@@ -71,7 +71,6 @@ Zotero.Inject = new function() {
 		// Reset session on every init so a new save is triggered after JS-based changes
 		// (monitorDOMChanges/ZoteroItemUpdated)
 		this.sessionDetails = {};
-		
 		
 		// wrap this in try/catch so that errors will reach logError
 		try {
@@ -85,7 +84,7 @@ Zotero.Inject = new function() {
 			if(document.location == "about:blank") return;
 
 			if (!_translate) {
-				_translate = this.initTranslation(document);
+				_translate = await this.initTranslation(document);
 				_translate.setHandler("pageModified", function() {
 					Zotero.Connector_Browser.onPageLoad(document.location.href);
 					Zotero.Messaging.sendMessage("pageModified", null);
@@ -114,8 +113,21 @@ Zotero.Inject = new function() {
 		}
 	};
 	
-	this.initTranslation = function (document, sessionID) {
-		var translate = new Zotero.Translate.Web();
+	this.initTranslation = async function (document, sessionID) {
+		let translate;
+		if (Zotero.isManifestV3) {
+			try {
+				await Zotero.SandboxedTranslateManager.initVirtualTranslate();
+				translate = Zotero.SandboxedTranslateManager.virtualTranslate;
+			} catch (e) {
+				Zotero.logError(new Error(`Inject: Initializing translate failed at ${document.location.href}`));
+				Zotero.logError(e);
+				throw e;
+			}
+		}
+		else {
+			translate = new Zotero.Translate.Web();
+		}
 		translate.setDocument(document);
 		if (sessionID) {
 			translate.setHandler("select", function(obj, items, callback) {
@@ -220,7 +232,7 @@ Zotero.Inject = new function() {
 			});
 		}
 		return translate;
-	}
+	};
 	
 	function determineAttachmentIcon(attachment) {
 		if(attachment.linkMode === "linked_url") {
@@ -439,7 +451,7 @@ Zotero.Inject = new function() {
 			saveOptions: options
 		};
 		
-		var translate = this.initTranslation(document, sessionID);
+		var translate = await this.initTranslation(document, sessionID);
 		var translators = [...this.translators];
 		while (translators[0].translatorID != translatorID) {
 			translators.shift();

@@ -23,14 +23,20 @@
     ***** END LICENSE BLOCK *****
 */
 
-var Zotero = window.Zotero = new function() {
+var global = typeof window == "undefined" ? self : window;
+
+var Zotero = global.Zotero = new function() {
 	this.version = "5.0";
 	this.locale = navigator.languages[0];
 	this.isConnector = true;
-	this.isFx = false; // Old flag for 4.0 connector, probably not used anymore
-	/* this.isBookmarklet = SET IN BUILD SCRIPT */;
-	/* this.allowRepoTranslatorTester = SET IN BUILD SCRIPT */;
+	// Old flag for 4.0 connector, probably not used anymore
+	this.isFx = false;
 	
+	// For autocomplete in IDEs
+	this.allowRepoTranslatorTester = this.isManifestV3 = null;
+	/* this.allowRepoTranslatorTester = SET IN BUILD SCRIPT */;
+	/* this.isManifestV3 = SET IN BUILD SCRIPT */;
+
 	this.initialized = false;
 	this.initDeferred = {};
 	this.initDeferred.promise = new Promise(function(resolve, reject) {
@@ -39,50 +45,33 @@ var Zotero = window.Zotero = new function() {
 	}.bind(this));
 	
 	// Safari  global page detection
-	if (typeof globalThis != "undefined" && typeof browser == "undefined") {
+	if (typeof globalThis != "undefined" && typeof window == "undefined" && typeof browser == "undefined") {
 		this.isSafari = true;
 		this.isMac = true;
 	}
 	else {
 		// Browser check adopted from:
 		// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
-		// Internet Explorer 6-11
-		this.isIE = /*@cc_on!@*/false || !!document.documentMode;;
-		if (this.isBookmarklet) {
-			// Firefox 1.0+
-			this.isFirefox = typeof InstallTrigger !== 'undefined';
-			// Edge 20+
-			this.isEdge = !this.isIE && !!window.StyleMedia;
-			// Chrome and Chromium
-			this.isChrome = window.navigator.userAgent.indexOf("Chrome") !== -1 || window.navigator.userAgent.indexOf("Chromium") !== -1;
-			// At least Safari 10+
-			this.isSafari = window.navigator.userAgent.includes("Safari") && !this.isChrome;
-			this.isBrowserExt = this.isFirefox || this.isEdge || this.isChrome;
+		/* this.isFirefox = SET IN BUILD SCRIPT */;
+		/* this.isSafari = SET IN BUILD SCRIPT */;
+		/* this.isBrowserExt = SET IN BUILD SCRIPT */;
 
-			this.isMac = (window.navigator.platform.substr(0, 3) == "Mac");
-			this.isWin = (window.navigator.platform.substr(0, 3) == "Win");
-			this.isLinux = (window.navigator.platform.substr(0, 5) == "Linux");	
-		} else {
-			/* this.isFirefox = SET IN BUILD SCRIPT */;
-			/* this.isSafari = SET IN BUILD SCRIPT */;
-			/* this.isBrowserExt = SET IN BUILD SCRIPT */;
-			
-			this.isChrome = this.isEdge = false;
-			if (this.isBrowserExt && !this.isFirefox) {
-				if (window.navigator.userAgent.includes("Edg/")) {
-					this.isEdge = true;
-				} else {
-					// If browser ext is not fx or edge then treat it as Chrome
-					// since it's probably installed with compatible browsers such as Opera from the
-					// Chrome extension store
-					this.isChrome = true;
-				}
+		this.isChrome = this.isEdge = false;
+		if (this.isBrowserExt && !this.isFirefox) {
+			if (global.navigator.userAgent.includes("Edg/")) {
+				this.isEdge = true;
+			} else {
+				// If browser ext is not fx or edge then treat it as Chrome
+				// since it's probably installed with compatible browsers such as Opera from the
+				// Chrome extension store
+				this.isChrome = true;
 			}
 		}
+		this.isTranslateSandbox = typeof document != 'undefined' && document.location.href.endsWith('translateSandbox.html');
 
-		this.isMac = (window.navigator.platform.substr(0, 3) == "Mac");
-		this.isWin = (window.navigator.platform.substr(0, 3) == "Win");
-		this.isLinux = (window.navigator.platform.substr(0, 5) == "Linux");
+		this.isMac = (global.navigator.platform.substr(0, 3) == "Mac");
+		this.isWin = (global.navigator.platform.substr(0, 3) == "Win");
+		this.isLinux = (global.navigator.platform.substr(0, 5) == "Linux");
 	}
 
 	if (this.isFirefox) {
@@ -91,9 +80,6 @@ var Zotero = window.Zotero = new function() {
 	} else if (this.isSafari) {
 		this.browser = "s";
 		this.clientName = 'Safari';
-	} else if (this.isIE) {
-		this.browser = "i";
-		this.clientName = 'Internet Explorer'; // ?
 	} else if (this.isEdge) {
 		this.browser = "c";
 		this.clientName = 'Edge';
@@ -103,12 +89,12 @@ var Zotero = window.Zotero = new function() {
 	} else {
 		// Assume this is something with no more capabilities than IE
 		this.browser = "i";
-		this.clientName = window.navigator.appName;
+		this.clientName = global.navigator.appName;
 	}
 	this.appName = `${ZOTERO_CONFIG.CLIENT_NAME} Connector for ${this.clientName}`;
 	
-	if (!this.isBookmarklet) {
-		if (this.isBrowserExt) {
+	if (this.isBrowserExt) {
+		if (!this.isTranslateSandbox) {
 			this.version = browser.runtime.getManifest().version;
 		}
 	}
@@ -187,6 +173,10 @@ var Zotero = window.Zotero = new function() {
 	 * Initializes Zotero services for the global page in Chrome or Safari
 	 */
 	this.initGlobal = async function() {
+		await Zotero.Errors.init();
+		if (Zotero.isManifestV3) {
+			Zotero.logError(new Error(`Initialization started at ${Zotero.Date.dateToSQL(new Date())}`));
+		}
 		Zotero.isBackground = true;
 		
 		if (Zotero.isBrowserExt) {
@@ -227,12 +217,11 @@ var Zotero = window.Zotero = new function() {
 		Zotero.Debug.init();
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.init();
+			await Zotero.Connector_Browser.init();
 		}
-		if (!Zotero.isBookmarklet) {
-			await Zotero.i18n.init();
-			Zotero.Repo.init();
-			Zotero.Proxies.init();
-		}
+		await Zotero.i18n.init();
+		Zotero.Repo.init();
+		Zotero.Proxies.init();
 		await this._initDateFormatsJSON();
 		Zotero.initDeferred.resolve();
 		Zotero.initialized = true;
@@ -249,9 +238,7 @@ var Zotero = window.Zotero = new function() {
 		if (Zotero.isSafari) {
 			await Zotero.i18n.init();
 		}
-		if (!Zotero.isBookmarklet) {
-			Zotero.ConnectorIntegration.init();
-		}
+		Zotero.ConnectorIntegration.init();
 		Zotero.Connector_Types.init();
 		Zotero.Schema.init();
 		await this._initDateFormatsJSON();
@@ -264,12 +251,23 @@ var Zotero = window.Zotero = new function() {
 		Zotero.initialized = true;
 	};
 
+	this.initTranslateSandbox = async function() {
+		this.version = await Zotero.TranslateSandbox.sendMessage('getVersion');
+		await this._initDateFormatsJSON();
+		await Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
+			'reportTranslationFailure', 'capitalizeTitles']);
+	};
+
 	this._initDateFormatsJSON = async function() {
 		let dateFormatsJSON;
-		let xhr = await Zotero.HTTP.request('GET', Zotero.getExtensionURL('utilities/resource/dateFormats.json'), { responseType: 'json' });
+		let url = Zotero.getExtensionURL('utilities/resource/dateFormats.json');
+		if (Zotero.isTranslateSandbox) {
+			url = await url;
+		}
+		let xhr = await Zotero.HTTP.request('GET', url, { responseType: 'json' });
 		dateFormatsJSON = xhr.response;
 		Zotero.Date.init(dateFormatsJSON);
-	}
+	};
 
 	/**
 	 * Get versions, platform, etc.
@@ -322,7 +320,7 @@ var Zotero = window.Zotero = new function() {
 	};
 	
 	this.logError = function(err) {
-		if(!window.console) return;
+		if(!global.console) return;
 		
 		// Firefox uses this
 		var fileName = (err.fileName ? err.fileName : null);
@@ -332,30 +330,19 @@ var Zotero = window.Zotero = new function() {
 		if(!fileName && err.sourceURL) fileName = err.sourceURL;
 		if(!lineNumber && err.line) lineNumber = err.line;
 		
-		// Chrome only gives a stack
-		if(!fileName && !lineNumber && err.stack) {
+		if (!fileName && !lineNumber) {
+			let stack = err.stack || new Error().stack;
 			const stackRe = /^\s+at (?:[^(\n]* \()?([^\n]*):([0-9]+):([0-9]+)\)?$/m;
-			var m = stackRe.exec(err.stack);
+			var m = stackRe.exec(stack);
 			if(m) {
 				fileName = m[1];
 				lineNumber = m[2];
 			}
 		}
 		
-		if(!fileName && !lineNumber && Zotero.isIE && typeof err === "object") {
-			// IE can give us a line number if we re-throw the exception, but we wrap this in a
-			// setTimeout call so that we won't throw in the middle of a function
-			window.setTimeout(function() {
-				window.onerror = function(errmsg, fileName, lineNumber) {
-					try {
-						Zotero.Errors.log("message" in err ? err.message : err.toString(), fileName, lineNumber);
-					} catch(e) {};
-					return true;
-				};
-				throw err;
-				window.onerror = undefined;
-			}, 0);
-			return;
+		let message = err.message;
+		if (!message) {
+			message = err.toJSON();
 		}
 		
 		if(fileName && lineNumber) {
@@ -380,10 +367,7 @@ var Zotero = window.Zotero = new function() {
 	};
 	
 	this.getExtensionURL = function(path) {
-		if (Zotero.isBookmarklet) {
-			return ZOTERO_CONFIG.BOOKMARKLET_URL + path;
-		}
-		else if (Zotero.isSafari) {
+		if (Zotero.isSafari) {
 			return `${safari.extension.baseURI}safari/` + path;
 		}
 		else {

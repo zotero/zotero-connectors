@@ -224,10 +224,6 @@ var MESSAGES = {
 		remove: false
 	},
 	Repo: {
-		getTranslatorCode: {
-			response: true,
-			background: {minArgs: 2}
-		},
 		update: false
 	},
 	WebRequestIntercept: {

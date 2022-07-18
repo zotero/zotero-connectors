@@ -26,6 +26,13 @@
 Zotero.Errors = new function() {
 	var _output = [];
 	
+	this.init = async function() {
+		if (Zotero.isManifestV3) {
+			let storedData = await browser.storage.session.get({'loggedErrors': []});
+			_output = storedData.loggedErrors.concat(_output);
+		}
+	}
+	
 	/**
 	 * Error handler
 	 * @param {String} string Error string
@@ -43,6 +50,9 @@ Zotero.Errors = new function() {
 		err.push("]");
 		err = err.join("");
 		_output.push(err);
+		if (Zotero.isManifestV3) {
+			browser.storage.session.set({'loggedErrors': _output});
+		}
 	}
 	
 	/**

@@ -28,10 +28,7 @@
  * See messages.js for an overview of the message handling process.
  */
 Zotero.Messaging = new function() {
-	var _messageListeners = {
-			"structuredCloneTest":function() {}
-		},
-		_nextTabIndex = 1;
+	var _messageListeners = {};
 	
 	/**
 	 * Add a message listener
@@ -48,6 +45,7 @@ Zotero.Messaging = new function() {
 	 * @param {Number} frameId not available in safari
 	 */
 	this.receiveMessage = async function(messageName, args, tab, frameId) {
+		await Zotero.initDeferred.promise;
 		//Zotero.debug("Messaging: Received message: "+messageName);
 		if (!Array.isArray(args)) {
 			args = [args];
@@ -179,7 +177,7 @@ Zotero.Messaging = new function() {
 			});
 		} else if(Zotero.isSafari) {
 			// Safari handled in safari/messaging_global.js
-			Zotero.Messaging.initialized = true;
 		}
+		Zotero.Messaging.initialized = true;
 	}
 }

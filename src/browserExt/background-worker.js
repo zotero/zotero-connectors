@@ -1,7 +1,7 @@
 /*
 	***** BEGIN LICENSE BLOCK *****
 	
-	Copyright © 2020 Center for History and New Media
+	Copyright © 2021 Center for History and New Media
 					George Mason University, Fairfax, Virginia, USA
 					http://zotero.org
 	
@@ -23,21 +23,20 @@
 	***** END LICENSE BLOCK *****
 */
 
-module.exports = function(filetext, config) {
-	// Defaults to all false, so just need to set true flags in the build script
-	config = Object.assign({
-		bookmarklet: false,
-		firefox: false,
-		safari: false,
-		browserExt: false,
-		manifestV3: false,
-	}, config);
-	for (let browserOption in config) {
-		let value = config[browserOption];
-		browserOption = browserOption[0].toUpperCase() + browserOption.slice(1);
-		let regexp = new RegExp(`/\\* this\\.is${browserOption} = SET IN BUILD SCRIPT \\*/`);
-		filetext = filetext.replace(regexp,
-			`this.is${browserOption} = ${value}`)
+// This is the Chrome MV3 background worker entrypoint script
+
+// No way to inspect service-worker startup issues
+// See https://groups.google.com/a/chromium.org/g/chromium-extensions/c/lLb3EJzjw0o
+try {
+	var scriptsToImport = [
+		/*BACKGROUND SCRIPTS*/,
+		"keep-mv3-alive.js",
+		"background.js"
+	];
+
+	for (let script of scriptsToImport) {
+		self.importScripts('./'+script);
 	}
-	return filetext
+} catch (e) {
+	console.error(e);
 }

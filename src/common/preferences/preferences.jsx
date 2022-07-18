@@ -892,7 +892,7 @@ Zotero_Preferences.Components.ShortcutInput = class extends React.Component {
 	}
 
 	render() {
-		let val = Zotero.Utilities.kbEventToShortcutString(this.state.modifiers);
+		let val = Zotero.Utilities.Connector.kbEventToShortcutString(this.state.modifiers);
 
 		let classes = "shortcut-input";
 		if (this.state.invalid) {

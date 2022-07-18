@@ -206,8 +206,8 @@ Zotero.Proxies = new function() {
 		let redirect = Zotero.Proxies._maybeRedirect(details);
 		if (redirect) {
 			meta.proxyRedirected = true;
+			browser.tabs.update(details.tabId, {url: redirect.redirectUrl});
 		}
-		return redirect;
 	};
 	
 	this._maybeAddHost = function(details) {

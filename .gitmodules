@@ -13,3 +13,6 @@
 [submodule "src/utilities"]
 	path = src/utilities
 	url = https://github.com/zotero/utilities.git
+[submodule "lib/SingleFile-Lite"]
+	path = lib/SingleFile-Lite
+	url = https://github.com/gildas-lormeau/SingleFile-Lite.git

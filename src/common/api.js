@@ -194,12 +194,12 @@ Zotero.API = new function() {
 	 * Gets authorized username
 	 * @param {Function} callback Callback to receive username (or null if none is define)
 	 */
-	this.getUserInfo = Zotero.Promise.method(function() {
+	this.getUserInfo = async function() {
 		let keys = ['auth-token_secret', 'auth-userID', 'auth-username'];
 		return Zotero.Prefs.getAsync(keys).catch(function() {
 			return null;
 		});
-	});
+	};
 	
 	/**
 	 * Creates a new item. In Safari, this runs in the background script. In Chrome, it

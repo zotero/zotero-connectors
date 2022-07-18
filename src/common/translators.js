@@ -237,7 +237,7 @@ Zotero.Translators = new function() {
 	 */
 	this.serialize = function(translator, properties) {
 		// handle translator arrays
-		if(translator.length !== undefined) {
+		if (Array.isArray(translator)) {
 			var newTranslators = new Array(translator.length);
 			for(var i in translator) {
 				newTranslators[i] = Zotero.Translators.serialize(translator[i], properties);

@@ -30,22 +30,39 @@
 
 Zotero.Utilities = Zotero.Utilities || {};
 
-Zotero.Utilities.kbEventToShortcutString = function(e) {
-	const keymap = [
-		['ctrlKey', 'Ctrl+'],
-		['shiftKey', 'Shift+'],
-		['altKey', 'Alt+'],
-		['metaKey', '⌘'],
-	];
-	let val= "";
-	for (let [key, value] of keymap) {
-		if (e[key]) {
-			val += value;
+Zotero.Utilities.Connector = {
+	kbEventToShortcutString: function (e) {
+		const keymap = [
+			['ctrlKey', 'Ctrl+'],
+			['shiftKey', 'Shift+'],
+			['altKey', 'Alt+'],
+			['metaKey', '⌘'],
+		];
+		let val= "";
+		for (let [key, value] of keymap) {
+			if (e[key]) {
+				val += value;
+			}
 		}
+		val += e.key.length == 1 ? e.key.toUpperCase() : '';
+		return val;
+	},
+	
+	createMV3PersistentObject: async function (name) {
+		let stored = await browser.storage.session.get({[name]: "{}"});
+		let obj = JSON.parse(stored[name]);
+		return new Proxy(obj, {
+			set: function (target, prop, value) {
+				target[prop] = value;
+				browser.storage.session.set({[name]: JSON.stringify(target)});
+			},
+			deleteProperty: function(target, prop) {
+				delete target[prop];
+				browser.storage.session.set({[name]: JSON.stringify(target)});
+			}
+		})
 	}
-	val += e.key.length == 1 ? e.key.toUpperCase() : '';
-	return val;
-}
+};
 
 if (!Zotero.Utilities.Internal) {
 	Zotero.Utilities.Internal = {};

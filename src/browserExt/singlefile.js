@@ -24,13 +24,25 @@
 */
 
 Zotero.SingleFile = {
+	backgroundFetch: async function(url, options = {}) {
+		options.responseType = 'arraybuffer';
+		let xhr = await Zotero.COHTTP.request("GET", url, options);
+		return {
+			status: xhr.status,
+			arrayBuffer: async () => xhr.response,
+			headers: { get: header => xhr.getResponseHeader(header) },
+
+		}
+	},
 	retrievePageData: async function() {
 		try {
 			// Call to background script to inject SingleFile
 			await Zotero.Connector_Browser.injectSingleFile();
 
 			Zotero.debug("SingleFile: Retrieving page data");
-			let pageData = await singlefile.getPageData(Zotero.SingleFile.CONFIG);
+			let pageData = await singlefile.getPageData(Zotero.SingleFile.CONFIG, {
+				fetch: (...args) => this.backgroundFetch(...args)
+			});
 			Zotero.debug("SingleFile: Done retrieving page data");
 
 			return pageData.content;

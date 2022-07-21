@@ -67,15 +67,15 @@ var Zotero_Preferences = {
 		} else {
 			Zotero_Preferences.selectPane("general");
 		}
-		
-		Zotero_Preferences.General.init();
-		Zotero_Preferences.Advanced.init();
 
 		var checkboxes = document.querySelectorAll('[type="checkbox"][data-pref]');
 		for (let checkbox of checkboxes) {
 			checkbox.addEventListener('change', Zotero_Preferences.onPrefCheckboxChange);
 			checkbox.checked = await Zotero.Prefs.getAsync(checkbox.dataset.pref);
-		}
+		}		
+		
+		Zotero_Preferences.General.init();
+		Zotero_Preferences.Advanced.init();
 
 		if (Zotero.isBrowserExt) {
 			Zotero.Prefs.loadNamespace('proxies').then(function() {
@@ -248,7 +248,7 @@ Zotero_Preferences.Advanced = {
 		const googleDocsEnabledCheckbox = document.getElementById("advanced-checkbox-google-docs-enabled");
 		function onGoogleDocsEnabledChange() {
 			let inputs = document.querySelectorAll('#advanced-google-docs-subprefs input');
-			inputs.forEach(input => input.disabled = !this.checked);
+			inputs.forEach(input => input.disabled = !googleDocsEnabledCheckbox.checked);
 		}
 		googleDocsEnabledCheckbox.addEventListener('change', onGoogleDocsEnabledChange);
 		setTimeout(() => onGoogleDocsEnabledChange.call(googleDocsEnabledCheckbox), 20);

@@ -56,7 +56,7 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 		}
 				
 		logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
-				options.body.length > options.logBodyLength ? '...' : '';
+			(options.body.length > options.logBodyLength ? '...' : '');
 		// TODO: make sure below does its job in every API call instance
 		// Don't display password or session id in console
 		logBody = logBody.replace(/password":"[^"]+/, 'password":"********');

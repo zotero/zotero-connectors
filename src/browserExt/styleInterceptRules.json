@@ -1,0 +1,16 @@
+[
+	{
+		"id": 1,
+		"priority": 1,
+		"action": {
+			"type": "redirect",
+			"redirect": {
+				"regexSubstitution": "https://www.zotero.org/styles/#importConfirm=\\1"
+			}
+		},
+		"condition": {
+			"regexFilter": "^https://www\\.zotero\\.org/styles/([^#?].+)$",
+			"resourceTypes": ["main_frame"]
+		}
+	}
+]

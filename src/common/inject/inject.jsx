@@ -273,7 +273,8 @@ Zotero.Inject = new function() {
 		}
 	}
 
-	this.confirm = function(props) {
+	this.confirm = async function(props) {
+		await Zotero.initializedPromise;
 		return Zotero.ModalPrompt.confirm(props);
 	};
 

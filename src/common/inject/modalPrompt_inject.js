@@ -70,6 +70,7 @@ if (isTopWindow) {
 		};
 		for (let i in style) iframe.style[i] = style[i];
 		document.body.appendChild(iframe);
+		setTimeout(() => deferred.reject(new Error('Timed out while injecting modal prompt')), 800);
 		return deferred.promise;
 	}
 

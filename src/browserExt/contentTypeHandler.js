@@ -66,11 +66,20 @@ Zotero.ContentTypeHandler = {
 			Zotero.ContentTypeHandler.ignoreURL.delete(details.url);
 			return;
 		}
-		
-		// Offer to install CSL by Content-Type
+
 		let contentType = details.responseHeadersObject['content-type'].split(';')[0];
-		if (Zotero.ContentTypeHandler.cslContentTypes.has(contentType)) {
-			return Zotero.ContentTypeHandler.handleStyle(details);
+		if (Zotero.isManifestV3) {
+			let match = details.url.match(/https?:\/\/(?:www\.)zotero\.org\/styles\/?#importConfirm=(.*)$/);
+			if (match) {
+				return Zotero.ContentTypeHandler.handleStyle(details, `https://www.zotero.org/styles/${match[1]}`);
+			}
+			return;
+		}
+		else {
+			// Offer to install CSL by Content-Type
+			if (Zotero.ContentTypeHandler.cslContentTypes.has(contentType)) {
+				return Zotero.ContentTypeHandler.handleStyle(details);
+			}
 		}
 		// Offer to install CSL if URL path ends with .csl and host is allowed
 		if (details.url.match(/https:\/\/[^/]+\/[^?]+\.csl(\?|$)/)) {
@@ -91,17 +100,23 @@ Zotero.ContentTypeHandler = {
 			return;
 		}
 	},
-	
-	handleStyle: function(details) {
+
+	handleStyle: function(details, styleUrl) {
+		styleUrl = styleUrl || details.url;
 		(async () => {
 			if (!(await Zotero.Connector.checkIsOnline())) return;
-			let response = await Zotero.ContentTypeHandler.confirm(details, `Add citation style to Zotero?`)
-			if (response && response.button == 1) {
-				Zotero.debug(`ContentTypeHandler: Importing style ${details.url}`);
-				await Zotero.ContentTypeHandler.importFile(details, 'csl');
-			}
-			else if (!Zotero.isManifestV3) {
-				await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, details.url);
+			try {
+				let response = await Zotero.ContentTypeHandler.confirm(details, `Add citation style to Zotero?`)
+				if (response && response.button == 1) {
+					Zotero.debug(`ContentTypeHandler: Importing style ${styleUrl}`);
+					await Zotero.ContentTypeHandler.importFile({ tabId: details.tabId, url: styleUrl }, 'csl');
+				}
+				else {
+					await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, styleUrl);
+				}
+			} catch (e) {
+				Zotero.logError(e);
+				await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, styleUrl);
 			}
 		})();
 		if (!Zotero.isManifestV3) {
@@ -153,7 +168,18 @@ Zotero.ContentTypeHandler = {
 		return {redirectUrl: 'javascript:'};	
 	},
 	
-	_redirectToOriginal: function(tabId, url) {
+	_redirectToOriginal: async function(tabId, url) {
+		if (Zotero.isManifestV3) {
+			await chrome.declarativeNetRequest.updateEnabledRulesets({
+				disableRulesetIds: ['styleIntercept']
+			});
+			(async () => {
+				await Zotero.Promise.delay(2000);
+				chrome.declarativeNetRequest.updateEnabledRulesets({
+					enableRulesetIds: ['styleIntercept']
+				});
+			})();
+		}
 		Zotero.ContentTypeHandler.ignoreURL.add(url);
 		// Ignore the next request to this url and redirect
 		browser.tabs.update(tabId, {url});
@@ -169,6 +195,9 @@ Zotero.ContentTypeHandler = {
 	 */
 	confirm: async function(details, message, checkboxText="") {
 		let tab = await browser.tabs.get(details.tabId);
+		if (Zotero.isManifestV3) {
+			await Zotero.Connector_Browser.waitForTabToLoad(tab);
+		}
 		
 		var props = {message};
 		if (checkboxText.length) {
@@ -179,8 +208,10 @@ Zotero.ContentTypeHandler = {
 			}
 		}
 		let confirmURL = browser.runtime.getURL(`confirm.html`);
-		let response = await Zotero.Messaging.sendMessage('confirm', props, tab);
-		// If captured URL was pasted on about:blank or other browser pages the response is immediate
+		try {
+			var response = await Zotero.Messaging.sendMessage('confirm', props, tab);
+		} catch (e) {}
+		// In MV2: If captured URL was pasted on about:blank or other browser pages the response is immediate
 		// with undefined and means we cannot inject and display the UI, so we have to do some additional work
 		if (!response && tab.url != confirmURL) {
 			var responsePromise = new Zotero.Promise(function(resolve, reject) {

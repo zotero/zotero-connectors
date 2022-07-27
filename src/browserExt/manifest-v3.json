@@ -15,6 +15,13 @@
 	"host_permissions": ["http://*/*", "https://*/*"],
 	"permissions": ["tabs", "contextMenus", "cookies", "scripting",
 		"webRequest", "declarativeNetRequest", "webNavigation", "storage"],
+	"declarative_net_request": {
+		"rule_resources": [{
+			"id": "styleIntercept",
+			"enabled": true,
+			"path": "styleInterceptRules.json"
+		}]
+	},
 	"optional_permissions": ["management"],
 	"background": {
 		"service_worker": "background-worker.js"

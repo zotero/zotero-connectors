@@ -488,6 +488,30 @@ Zotero.Connector_Browser = new function() {
 	this.openConfigEditor = function(tab) {
 		this.openTab(browser.runtime.getURL(`preferences/config.html`), tab);
 	};
+	
+	this.waitForTabToLoad = async function(tab) {
+		if (typeof tab === 'number') {
+			tab = await browser.tabs.get(tab);
+		}
+		if (tab.status == 'complete') {
+			return;
+		}
+		return new Promise (async (resolve, reject) => {
+			async function waitForLoad(tabId, changeInfo) {
+				try {
+					if (changeInfo.status == 'complete') {
+						browser.tabs.onUpdated.removeListener(waitForLoad);
+						resolve();
+					}
+				} catch (_) {}
+			}
+			browser.tabs.onUpdated.addListener(waitForLoad);
+			setTimeout(() => {
+				browser.tabs.onUpdated.removeListener(waitForLoad)
+				reject(new Error('Timeout waiting for tab to load'));
+			}, 5000);
+		})
+	}
 
 	/**
 	 * Display an old-school firefox notification by injecting HTML directly into DOM.

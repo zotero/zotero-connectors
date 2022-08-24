@@ -28,7 +28,7 @@ Zotero.SingleFile = {
 		options.responseType = 'arraybuffer';
 		let xhr = await Zotero.COHTTP.request("GET", url, options);
 		if (Zotero.isSafari) {
-			xhr.response = Uint8Array.from(xhr.response).buffer;
+			xhr.response = this._base64StringToUint8Array(xhr.response).buffer;
 		}
 		return {
 			status: xhr.status,
@@ -80,6 +80,16 @@ Zotero.SingleFile = {
 			// load and that doesn't seem better.
 			eval(script);
 		}
+	},
+	
+	_base64StringToUint8Array(base64) {
+		const text = atob(base64);
+		const length = text.length;
+		const bytes = new Uint8Array(length);
+		for (let i = 0; i < length; i++) {
+			bytes[i] = text.charCodeAt(i);
+		}
+		return bytes;
 	}
 };
 

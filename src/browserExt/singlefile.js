@@ -34,9 +34,11 @@ Zotero.SingleFile = {
 
 		}
 	},
+	
 	retrievePageData: async function() {
 		try {
 			// Call to background script to inject SingleFile
+			this._injectSingleFileHooks();
 			await Zotero.Connector_Browser.injectSingleFile();
 
 			Zotero.debug("SingleFile: Retrieving page data");
@@ -51,5 +53,14 @@ Zotero.SingleFile = {
 			Zotero.debug(e.stack, 2);
 			throw e;
 		}
+	},
+	
+	// This file must be injected in the non-extension space for deferred image loading to work
+	_injectSingleFileHooks: function() {
+		const scriptElement = document.createElement("script");
+		scriptElement.src = Zotero.getExtensionURL("lib/SingleFile/single-file-hooks-frames.js");
+		scriptElement.async = false;
+		document.body.appendChild(scriptElement);
+		scriptElement.remove();
 	}
 };

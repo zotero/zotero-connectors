@@ -242,7 +242,6 @@ function copyResources {
 	mkdir -p "$browser_builddir/lib/SingleFile/lib"
 	cp -r "$SRCDIR/zotero/resource/SingleFile/lib/single-file-bootstrap.js" \
 	  "$SRCDIR/zotero/resource/SingleFile/lib/single-file-hooks-frames.js" \
-	  "$SRCDIR/zotero/resource/SingleFile/lib/single-file-background.js" \
 	  "$SRCDIR/zotero/resource/SingleFile/lib/single-file.js" \
 		"$browser_builddir/lib/SingleFile"
 	# Copy SingleFile config object from client code

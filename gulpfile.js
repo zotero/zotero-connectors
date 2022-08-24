@@ -140,7 +140,6 @@ if (!argv.p) {
 var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclude, [
 	'webRequestIntercept.js',
 	'contentTypeHandler.js',
-	'lib/SingleFile/single-file-background.js',
 	'firefoxPDF.js'
 ]);
 

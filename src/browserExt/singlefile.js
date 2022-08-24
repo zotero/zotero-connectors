@@ -38,7 +38,6 @@ Zotero.SingleFile = {
 	retrievePageData: async function() {
 		try {
 			// Call to background script to inject SingleFile
-			this._injectSingleFileHooks();
 			await Zotero.Connector_Browser.injectSingleFile();
 
 			Zotero.debug("SingleFile: Retrieving page data");
@@ -60,7 +59,9 @@ Zotero.SingleFile = {
 		const scriptElement = document.createElement("script");
 		scriptElement.src = Zotero.getExtensionURL("lib/SingleFile/single-file-hooks-frames.js");
 		scriptElement.async = false;
-		document.body.appendChild(scriptElement);
+		(document.documentElement || document).appendChild(scriptElement);
 		scriptElement.remove();
 	}
 };
+
+Zotero.SingleFile._injectSingleFileHooks();

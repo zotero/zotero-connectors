@@ -256,7 +256,7 @@ MESSAGES.COHTTP = {
 					let match = xhr.responseHeaders.match(new RegExp(`^${name}: (.*)$`, 'mi'));
 					return match ? match[1] : null;
 				};
-				if (xhr.response.startsWith && xhr.response.startsWith('blob:')) {
+				if (Array.isArray(xhr.response) || (xhr.response.startsWith && xhr.response.startsWith('blob:'))) {
 					xhr.response = await unpackArrayBuffer(xhr.response);
 				} else {
 					xhr.responseText = xhr.response;
@@ -272,14 +272,31 @@ MESSAGES.COHTTP = {
 // on the receiving end.
 // There's been an open bug on the chrome bugtracker to fix this since
 // 2013: https://bugs.chromium.org/p/chromium/issues/detail?id=248548
+// 
+// And with manifestV3 service workers do not support URL.createObjectURL
+// so our best chance is to just pass the array bytes
+// but there's a 64MB limit or Chrome literally crashes
+const MAX_CONTENT_SIZE = 8 * (1024 * 1024);
 function packArrayBuffer(arrayBuffer) {
-	if (Zotero.isFirefox) return arrayBuffer;
+	if (!Zotero.isChrome) return arrayBuffer;
+	if (Zotero.isManifestV3) {
+		let array = Array.from(new Uint8Array(arrayBuffer));
+		if (array.length > MAX_CONTENT_SIZE) {
+			// Truncating to MAX_CONTENT_SIZE. The largest filetype we save is images, and
+			// 8MB limit should be good for 99.9% of the cases.
+			array = array.slice(0, MAX_CONTENT_SIZE);
+		}
+		return array;
+	}
 	return URL.createObjectURL(new Blob([arrayBuffer]));
 }
 
-async function unpackArrayBuffer(blobURL) {
-	if (Zotero.isFirefox) return blobURL;
-	let blob = await (await fetch(blobURL)).blob();
+async function unpackArrayBuffer(packedBuffer) {
+	if (!Zotero.isChrome) return packedBuffer;
+	if (Zotero.isManifestV3) {
+		return new Uint8Array(packedBuffer).buffer
+	}
+	let blob = await (await fetch(packedBuffer)).blob();
 	return new Promise((resolve) => {
 		var fileReader = new FileReader();
 		fileReader.onload = function(event) {

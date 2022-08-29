@@ -168,8 +168,8 @@ Zotero.HTTP = new function() {
 		}
 		
 		let responseData;
-		if (typeof response[options.responseType] == 'function') {
-			responseData = await response[options.responseType]();
+		if (options.responseType == 'arraybuffer') {
+			responseData = await response.arrayBuffer();
 		} 
 		else {
 			responseData = await response.text();
@@ -192,8 +192,10 @@ Zotero.HTTP = new function() {
 		}
 		
 		let responseHeaders = {};
+		let responseHeadersString = "";
 		for (let [key, value] of response.headers.entries()) {
 			responseHeaders[key.toLowerCase()] = value;
+			responseHeadersString += `${key}: ${value}\r\n`;
 		}
 		
 		return {
@@ -201,7 +203,7 @@ Zotero.HTTP = new function() {
 			response: responseData,
 			status: response.status,
 			statusText: response.statusText,
-			getAllResponseHeaders: () => responseHeaders,
+			getAllResponseHeaders: () => responseHeadersString,
 			getResponseHeader: name => responseHeaders[name.toLowerCase()]
 		};
 	};

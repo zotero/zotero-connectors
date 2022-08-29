@@ -31,7 +31,6 @@ Zotero.SingleFile = {
 			status: xhr.status,
 			arrayBuffer: async () => xhr.response,
 			headers: { get: header => xhr.getResponseHeader(header) },
-
 		}
 	},
 	
@@ -42,7 +41,7 @@ Zotero.SingleFile = {
 
 			Zotero.debug("SingleFile: Retrieving page data");
 			let pageData = await singlefile.getPageData(Zotero.SingleFile.CONFIG, {
-				fetch: (...args) => this.backgroundFetch(...args)
+				fetch: (...args) => Zotero.SingleFile.backgroundFetch(...args)
 			});
 			Zotero.debug("SingleFile: Done retrieving page data");
 

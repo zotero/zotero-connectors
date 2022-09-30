@@ -293,23 +293,19 @@ var Zotero = global.Zotero = new function() {
 		info.appName = Zotero.appName;
 		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());
 		
-		var str = '';
-		for (var key in info) {
-			str += key + ' => ' + info[key] + ', ';
-		}
+		
 		if (Zotero.isBackground && Zotero.isChrome) {
 			let granted = await browser.permissions.contains({permissions: ['management']});
 			if (granted) {
-				str += 'extensions => ';
 				let extensions = await browser.management.getAll();
-				for (let extension of extensions) {
-					if (!extension.enabled || extension.name == Zotero.appName) continue;
-					str += `${extension.name} (${extension.version}, ${extension.type}), `;
-				}
+				info.extensions = extensions
+					.filter(extension => extension.enabled && extension.name != Zotero.appName)
+					.map(extension => {
+						return `${extension.name}: ${extension.version}, ${extension.type}`;
+					}).join(', ')
 			}
 		}
-		str = str.substr(0, str.length - 2);
-		return str;
+		return JSON.stringify(info, null, 2);
 	};
 	
 	/**

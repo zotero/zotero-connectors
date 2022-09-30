@@ -318,6 +318,10 @@ Zotero.Connector_Debug = new function() {
 	 */
 	this.submitReport = async function() {
 		let body = await Zotero.Debug.get();
+		let sysInfo = JSON.parse(await Zotero.getSystemInfo());
+		let errors = (await Zotero.Errors.getErrors()).join('\n');
+		sysInfo.timestamp = Zotero.Date.dateToSQL(new Date(), true);
+		body = `${errors}\n\n${JSON.stringify(sysInfo, null, 2)}\n\n${body}`;
 		let xmlhttp = await Zotero.HTTP.request("POST", ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1", {body});
 
 		let responseXML;

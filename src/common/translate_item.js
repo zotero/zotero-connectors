@@ -47,7 +47,7 @@ Zotero.Translate.ItemSaver = function(options) {
 	// Add listener for callbacks, but only for Safari or the bookmarklet. In Chrome, we
 	// (have to) save attachments from the inject page.
 	if(Zotero.Messaging && !Zotero.Translate.ItemSaver._attachmentCallbackListenerAdded
-			&& (Zotero.isBookmarklet || Zotero.isSafari)) {
+			&& Zotero.isSafari) {
 		Zotero.Messaging.addMessageListener("attachmentCallback", function(data) {
 			var id = data[0],
 				status = data[1];
@@ -295,13 +295,6 @@ Zotero.Translate.ItemSaver.prototype = {
 				if (e.status == 404) {
 					Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 					return this._pollForProgressLegacy(items, attachmentCallback);
-				} else if (Zotero.isBookmarklet && e.status == 400) {
-					Zotero.Messaging.sendMessage("progressWindow.done", [true]);
-					for (let item of items) {
-						for (let attachment of item.attachments) {
-							attachmentCallback(Object.assign({}, attachment, {parentItem: item.id}), 100);
-						}
-					}
 				}
 				
 				for (let attachment of attachments) {
@@ -480,9 +473,8 @@ Zotero.Translate.ItemSaver.prototype = {
 				attachmentCallback && attachmentCallback(attachment, 0);
 				deferredHeadersProcessed.resolve();
 				deferredAttachmentData.resolve();
-			} else if (Zotero.isBookmarklet && window.isSecureContext && attachment.url.indexOf('https') != 0) {
-				deferredAttachmentData.reject(new Error('Cannot load a HTTP attachment in a HTTPS page'));
-			} else {
+			}
+			else {
 				let method = (attachment.snapshot === false ? "HEAD" : "GET");
 				let options = { responseType: (isSnapshot ? "document" : "arraybuffer"), timeout: 60000 };
 				Zotero.HTTP.request(method, attachment.url, options).then((xhr) => {

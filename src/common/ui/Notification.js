@@ -24,8 +24,8 @@
 */
 
 (function() {
-var win = Zotero.isBookmarklet ? window.parent : window,
-	doc = Zotero.isBookmarklet ? window.parent.document : window.document;
+var win = window,
+	doc = window.document;
 win.Zotero = win.Zotero || {};
 Zotero.UI = Zotero.UI || {};
 

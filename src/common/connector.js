@@ -37,11 +37,6 @@ Zotero.Connector = new function() {
 	 * @param {Function} callback
 	 */
 	this.checkIsOnline = async function() {
-		// Only check once in bookmarklet
-		if(Zotero.isBookmarklet && this.isOnline !== null) {
-			return this.isOnline;
-		}
-
 		return this.ping({}).catch(function(e) {
 			if (e.status != 0) {
 				Zotero.debug("Checking if Zotero is online returned a non-zero HTTP status.");
@@ -92,10 +87,6 @@ Zotero.Connector = new function() {
 	 * @param {Function} callback - Function to be called when requests complete.
 	 */
 	this.callMethod = async function(options, data, tab) {
-		// Don't bother trying if not online in bookmarklet
-		if (Zotero.isBookmarklet && this.isOnline === false) {
-			throw new Zotero.Connector.CommunicationError("Zotero Offline", 0);
-		}
 		if (typeof options == 'string') {
 			options = {method: options};
 		}
@@ -194,7 +185,7 @@ Zotero.Connector = new function() {
 	 * @param	{Object} data RPC data. See documentation above.
 	 */
 	this.callMethodWithCookies = function(options, data, tab) {
-		if (Zotero.isBrowserExt && !Zotero.isBookmarklet) {
+		if (Zotero.isBrowserExt) {
 			let cookieParams = {
 				url: tab.url
 			};

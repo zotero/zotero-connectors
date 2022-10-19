@@ -25,7 +25,6 @@
 
 'use strict';
 
-const { watchBookmarklet, processBookmarkletScripts } = require('./scripts/gulpfile_bookmarklet');
 const replaceBrowser = require('./scripts/replace_browser');
 const exec = require('child_process').exec;
 const through = require('through2');
@@ -412,9 +411,5 @@ gulp.task('process-custom-scripts', function() {
 		.pipe(processFile())
 		.pipe(gulp.dest((data) => data.base));
 });
-
-gulp.task('watch-bookmarklet', watchBookmarklet(argv));
-
-gulp.task('process-bookmarklet-scripts', processBookmarkletScripts(argv));
 
 gulp.task('default', gulp.series(['watch']));

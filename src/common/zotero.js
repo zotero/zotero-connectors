@@ -230,7 +230,7 @@ var Zotero = global.Zotero = new function() {
 	};
 	
 	/**
-	 * Initializes Zotero services for injected pages and the inject side of the bookmarklet
+	 * Initializes Zotero services for injected pages
 	 */
 	this.initInject = async function() {
 		Zotero.isInject = true;

@@ -30,7 +30,7 @@ function usage {
 	cat >&2 <<DONE
 Usage: $0 [-p PLATFORMS] [-v VERSION] [-d]
 Options
- -p PLATFORMS        platform(s) (b=browserExt, s=safari, k=bookmarklet; defaults to all)
+ -p PLATFORMS        platform(s) (b=browserExt, s=safari; defaults to all)
  -v VERSION          use version VERSION
  -d                  build for debugging (enable translator tester, don't minify)
 DONE
@@ -41,7 +41,6 @@ GULP=$CWD/node_modules/gulp/bin/gulp.js
 
 BUILD_BROWSER_EXT=0
 BUILD_SAFARI=0
-BUILD_BOOKMARKLET=0
 while getopts "hp:v:d" opt; do
 	case $opt in
 		h)
@@ -53,7 +52,6 @@ while getopts "hp:v:d" opt; do
 				case ${OPTARG:i:1} in
 					b) BUILD_BROWSER_EXT=1;;
 					s) BUILD_SAFARI=1;;
-					k) BUILD_BOOKMARKLET=1;;
 					*)
 						echo "$0: Invalid platform option ${OPTARG:i:1}"
 						usage
@@ -83,10 +81,9 @@ if [[ ! -z "$TEST_CHROME" ]] || [[ ! -z "$TEST_FX" ]]; then
 elif [[ ! -z $TEST_SAFARI ]]; then
 	BUILD_SAFARI=1
 # Default to all builds if none specified
-elif [[ $BUILD_BROWSER_EXT -eq 0 ]] && [[ $BUILD_SAFARI -eq 0 ]] && [[ $BUILD_BOOKMARKLET -eq 0 ]]; then
+elif [[ $BUILD_BROWSER_EXT -eq 0 ]] && [[ $BUILD_SAFARI -eq 0 ]]; then
 	BUILD_BROWSER_EXT=1
 	BUILD_SAFARI=1
-	BUILD_BOOKMARKLET=1
 fi
 
 if [ -z $VERSION ]; then
@@ -136,10 +133,6 @@ if [[ ! -z $DEBUG ]]; then
 fi
 
 
-BOOKMARKLET_AUXILIARY_JS=( \
-	"$SRCDIR/bookmarklet/loader.js" \
-	)
-
 # Remove log file
 rm -f "$LOG"
 
@@ -154,8 +147,7 @@ rm -rf "$BUILD_DIR/browserExt" \
 # Make directories if they don't exist
 for dir in "$DISTDIR" \
 	"$BUILD_DIR/safari" \
-	"$BUILD_DIR/browserExt" \
-	"$BUILD_DIR/bookmarklet"; do
+	"$BUILD_DIR/browserExt"; do
 	if [ ! -d "$dir" ]; then
 		mkdir "$dir"
 	fi
@@ -375,31 +367,3 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 fi
 
 echo "done"
-
-if [ $BUILD_BOOKMARKLET == 1 ]; then
-	echo -n "Building bookmarklet..."
-	
-	# Copy HTML to dist directory
-	cp -R "$SRCDIR/bookmarklet/debug_mode.html" \
-		"$SRCDIR/bookmarklet/iframe.html" \
-		"$SRCDIR/bookmarklet/auth_complete.html" \
-		"$SRCDIR/bookmarklet/upload.js" \
-		"$SRCDIR/common/itemSelector" \
-		"$SRCDIR/common/progressWindow" \
-		"$BUILD_DIR/bookmarklet"
-	cp "$SRCDIR/bookmarklet/htaccess" "$BUILD_DIR/bookmarklet/.htaccess"
-	rm -rf "$BUILD_DIR/bookmarklet/images"
-	mkdir "$BUILD_DIR/bookmarklet/images"
-	cp $ICONS $IMAGES "$BUILD_DIR/bookmarklet/images"
-	
-	# Update scripts
-	if [ ! -z $DEBUG ]; then
-		"$GULP" process-bookmarklet-scripts --connector-version "$VERSION" > "$LOG" 2>&1
-	else
-		"$GULP" process-bookmarklet-scripts --connector-version "$VERSION" -p > "$LOG" 2>&1
-	fi
-	
-	echo "done"
-else
-	rmdir "$BUILD_DIR/bookmarklet"
-fi

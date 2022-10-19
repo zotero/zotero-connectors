@@ -259,21 +259,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	// Messaging
 	//
 	sendMessage(name, data = {}) {
-		if (!Zotero.isBookmarklet) {
-			return Zotero.Messaging.sendMessage(`progressWindowIframe.${name}`, data);
-		}
-		return window.top.postMessage([`progressWindowIframe.${name}`, data], "*");
+		return Zotero.Messaging.sendMessage(`progressWindowIframe.${name}`, data);
 	}
 
 	addMessageListener(name, handler) {
-		if (!Zotero.isBookmarklet) {
-			return Zotero.Messaging.addMessageListener(name, handler);
-		}
-		window.addEventListener('message', function(event) {
-			if (event.data && event.data[0] == name) {
-				handler(event.data[1]);
-			}
-		});
+		return Zotero.Messaging.addMessageListener(name, handler);
 	}
 	
 	sendUpdate() {

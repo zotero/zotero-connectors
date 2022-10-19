@@ -26,7 +26,6 @@
 module.exports = function(filetext, config) {
 	// Defaults to all false, so just need to set true flags in the build script
 	config = Object.assign({
-		bookmarklet: false,
 		firefox: false,
 		safari: false,
 		browserExt: false,

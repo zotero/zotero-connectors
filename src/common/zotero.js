@@ -27,7 +27,7 @@ var global = typeof window == "undefined" ? self : window;
 
 var Zotero = global.Zotero = new function() {
 	this.version = "5.0";
-	this.locale = navigator.languages[0];
+	this.locale = typeof navigator != "undefined" ? navigator.languages[0] : 'en';
 	this.isConnector = true;
 	// Old flag for 4.0 connector, probably not used anymore
 	this.isFx = false;
@@ -260,12 +260,18 @@ var Zotero = global.Zotero = new function() {
 
 	this._initDateFormatsJSON = async function() {
 		let dateFormatsJSON;
-		let url = Zotero.getExtensionURL('utilities/resource/dateFormats.json');
-		if (Zotero.isTranslateSandbox) {
-			url = await url;
+		if (Zotero.isSafari) {
+			dateFormatsJSON = await Zotero.Messaging.sendMessage('Swift.getDateFormatsJSON');
 		}
-		let xhr = await Zotero.HTTP.request('GET', url, { responseType: 'json' });
-		dateFormatsJSON = xhr.response;
+		else {
+			let url = Zotero.getExtensionURL('utilities/resource/dateFormats.json');
+			if (Zotero.isTranslateSandbox) {
+				url = await url;
+			}
+			let xhr = await Zotero.HTTP.request('GET', url, {responseType: 'json'});
+			dateFormatsJSON = xhr.response;
+		}
+		Zotero.Date.init(dateFormatsJSON);
 		Zotero.Date.init(dateFormatsJSON);
 	};
 

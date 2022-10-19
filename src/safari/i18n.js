@@ -29,8 +29,9 @@
 Zotero.i18n = {
 	init: async function() {
 		if (Zotero.isBackground) {
-			this.localeJSON = await Zotero.Messaging.sendMessage('Swift.getLocale');
-			this.localeJSON = JSON.parse(this.localeJSON);
+			const defaultLocale = JSON.parse(await Zotero.Messaging.sendMessage('Swift.getDefaultLocale'));
+			const currentLocale = JSON.parse(await Zotero.Messaging.sendMessage('Swift.getCurrentLocale'));
+			this.localeJSON = Object.assign({}, defaultLocale, currentLocale);
 		} else {
 			this.localeJSON = await Zotero.i18n.getStrings();
 		}

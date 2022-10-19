@@ -24,14 +24,18 @@
 */
 
 Zotero.HTTP.request = async function(method, url, options={}) {
-	let args = {
-		method,
-		// Swift's URL class does not deal well with non-standard URL symbols
-		// Also this is a bit of a flaky solution here, but sometimes translators
-		// provide already URL encoded URLs, other times they do not, and there
-		// is no good way to check whether an URL is already encoded
-		url: url.includes('%') ? url : encodeURI(url)
-	};
+	let args = { method, url };
+	// Default options
+	options = Object.assign({
+		body: null,
+		headers: {},
+		debug: false,
+		logBodyLength: 1024,
+		timeout: 15000,
+		responseType: '',
+		responseCharset: null,
+		successCodes: null
+	}, options);
 	options.method = method;
 	
 	let logBody = '';
@@ -39,7 +43,7 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 		if (!(typeof options.body == 'undefined' || options.body == null)) {
 			throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
 		}
-	} else if(options.body) {
+	} else if (options.body) {
 		options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
 		
 		if (!options.headers) options.headers = {};
@@ -52,7 +56,7 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 		}
 				
 		logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
-				options.body.length > options.logBodyLength ? '...' : '';
+			(options.body.length > options.logBodyLength ? '...' : '');
 		// TODO: make sure below does its job in every API call instance
 		// Don't display password or session id in console
 		logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
@@ -63,7 +67,7 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 	
 	try {
 		var response = await Zotero.Messaging.sendMessage('HTTP.request', args);
-		var [status, responseText, headers] = response;
+		var [status, responseText, headers, responseURL] = response;
 	} catch (err) {
 		status = 0;
 		headers = {};
@@ -80,7 +84,9 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 	Object.keys(headers).forEach(key => headers[key.toLowerCase()] = headers[key]);
 	return {
 		status, responseText,
+		response: responseText,
 		responseHeaders: headerString,
+		responseURL,
 		getAllResponseHeaders: () => headerString,
 		getResponseHeader: name => headers[name.toLowerCase()]
 	};

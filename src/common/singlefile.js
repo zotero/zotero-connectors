@@ -27,6 +27,9 @@ Zotero.SingleFile = {
 	backgroundFetch: async function(url, options = {}) {
 		options.responseType = 'arraybuffer';
 		let xhr = await Zotero.COHTTP.request("GET", url, options);
+		if (Zotero.isSafari) {
+			xhr.response = this._base64StringToUint8Array(xhr.response).buffer;
+		}
 		return {
 			status: xhr.status,
 			arrayBuffer: async () => xhr.response,
@@ -36,8 +39,14 @@ Zotero.SingleFile = {
 	
 	retrievePageData: async function() {
 		try {
-			// Call to background script to inject SingleFile
-			await Zotero.Connector_Browser.injectSingleFile();
+			if (typeof singlefile === 'undefined') {
+				if (Zotero.isSafari) {
+					await this._injectSingleFileSafari();
+				} else {
+					// Call to background script to inject SingleFile
+					await Zotero.Connector_Browser.injectSingleFile();
+				}
+			}
 
 			Zotero.debug("SingleFile: Retrieving page data");
 			let pageData = await singlefile.getPageData(Zotero.SingleFile.CONFIG, {
@@ -60,6 +69,26 @@ Zotero.SingleFile = {
 		scriptElement.async = false;
 		(document.documentElement || document).appendChild(scriptElement);
 		scriptElement.remove();
+	},
+
+	async _injectSingleFileSafari() {
+		const singleFileScripts = ["lib/SingleFile/single-file-bootstrap.js", "lib/SingleFile/single-file.js"]
+		for (let src of singleFileScripts) {
+			let script = await Zotero.Messaging.sendMessage('Swift.getFileContents', [src]);
+			// I'm not happy to do it this way, but the other option is to include singleFile with every
+			// load and that doesn't seem better.
+			eval(script);
+		}
+	},
+	
+	_base64StringToUint8Array(base64) {
+		const text = atob(base64);
+		const length = text.length;
+		const bytes = new Uint8Array(length);
+		for (let i = 0; i < length; i++) {
+			bytes[i] = text.charCodeAt(i);
+		}
+		return bytes;
 	}
 };
 

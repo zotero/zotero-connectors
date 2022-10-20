@@ -158,14 +158,12 @@ Zotero.ContentTypeHandler = {
 		})();
 		if (!Zotero.isManifestV3) {
 			// Don't continue until we get confirmation
+			if (Zotero.isFirefox) {
+				// Chrome redirects to a blank page on cancel, firefox opens an empty tab on redirect to `javascript:`
+				return { cancel: true };
+			}
 			return {redirectUrl: 'javascript:'};
 		}
-		// Don't continue until we get confirmation
-		if (Zotero.isFirefox) {
-			// Chrome redirects to a blank page on cancel, firefox opens an empty tab on redirect to `javascript:`
-			return { cancel: true };
-		}
-		return {redirectUrl: 'javascript:'};	
 	},
 	
 	_redirectToOriginal: async function(tabId, url) {

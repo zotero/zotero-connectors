@@ -313,6 +313,11 @@ if [[ $BUILD_BROWSER_EXT == 1 ]] || [[ $BUILD_SAFARI == 1 ]]; then
 fi
 
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
+	# Remove MV3 manifest file
+	rm "$BUILD_DIR/chrome/manifest-v3.json"
+	rm "$BUILD_DIR/manifestv3/manifest-v3.json"
+	rm "$BUILD_DIR/firefox/manifest-v3.json"
+	
 	# Chrome modifications
 	
 	# Use larger icons where available in Chrome, which actually wants 19px icons

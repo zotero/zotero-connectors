@@ -45,7 +45,7 @@ var Zotero = global.Zotero = new function() {
 	}.bind(this));
 	
 	// Safari  global page detection
-	if (typeof globalThis != "undefined" && window === globalThis && typeof browser == "undefined") {
+	if (typeof globalThis !== "undefined" && typeof window !== 'undefined' && window === globalThis && typeof browser === "undefined") {
 		this.isSafari = true;
 		this.isMac = true;
 	}

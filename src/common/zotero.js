@@ -45,7 +45,7 @@ var Zotero = global.Zotero = new function() {
 	}.bind(this));
 	
 	// Safari  global page detection
-	if (typeof globalThis !== "undefined" && typeof window !== 'undefined' && window === globalThis && typeof browser === "undefined") {
+	if (typeof globalThis !== "undefined" && typeof window !== 'undefined' && window === globalThis && typeof browser === "undefined" && typeof chrome === "undefined") {
 		this.isSafari = true;
 		this.isMac = true;
 	}
@@ -271,7 +271,6 @@ var Zotero = global.Zotero = new function() {
 			let xhr = await Zotero.HTTP.request('GET', url, {responseType: 'json'});
 			dateFormatsJSON = xhr.response;
 		}
-		Zotero.Date.init(dateFormatsJSON);
 		Zotero.Date.init(dateFormatsJSON);
 	};
 

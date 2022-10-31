@@ -426,7 +426,7 @@ Zotero_Preferences.Components.ProxySettings = class ProxySettings extends React.
 				<div className="group">
 					<div className="group-title">Proxy Settings</div>
 					<div className="group-content">
-						<p>Zotero will transparently redirect requests through saved proxies. See the <a href="https://www.zotero.org/support/proxies">proxy documentation</a> for more information.</p>
+						<p>Zotero will transparently redirect requests through saved proxies. See the <a href="https://www.zotero.org/support/connector_preferences#proxies">proxy documentation</a> for more information.</p>
 						<p></p>
 						<Zotero_Preferences.Components.ProxyPreferences onTransparentChange={this.handleTransparentChange}/>
 					</div>

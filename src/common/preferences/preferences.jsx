@@ -157,7 +157,7 @@ var Zotero_Preferences = {
 Zotero_Preferences.General = {
 	init: function() {
 
-		if (Zotero.isBrowserExt) {
+		if (Zotero.isBrowserExt && !Zotero.isManifestV3) {
 			let elem = document.getElementById('intercept-and-import');
 			elem.style.display = null;
 			this.mimeTypeHandlingComponent = React.createElement(Zotero_Preferences.Components.MIMETypeHandling, null);

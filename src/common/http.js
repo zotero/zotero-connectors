@@ -170,7 +170,10 @@ Zotero.HTTP = new function() {
 		let responseData;
 		if (options.responseType == 'arraybuffer') {
 			responseData = await response.arrayBuffer();
-		} 
+		}
+		else if (options.responseType == 'json') {
+			responseData = await response.json();
+		}
 		else {
 			responseData = await response.text();
 		} 

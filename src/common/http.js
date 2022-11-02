@@ -204,6 +204,7 @@ Zotero.HTTP = new function() {
 		return {
 			responseText: typeof responseData == 'string' ? responseData : '',
 			response: responseData,
+			responseURL: response.url,
 			status: response.status,
 			statusText: response.statusText,
 			getAllResponseHeaders: () => responseHeadersString,

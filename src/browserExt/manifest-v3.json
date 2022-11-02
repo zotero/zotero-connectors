@@ -37,6 +37,12 @@
 			"run_at": "document_start",
 			"js": [
 				"zotero-google-docs-integration/kixAddZoteroMenu.js",
+			]
+		},
+		{
+			"matches": ["https://docs.google.com/document/*"],
+			"run_at": "document_end",
+			"js": [
 				"zotero-google-docs-integration/googleDocs.js",
 				"zotero-google-docs-integration/client.js",
 				"zotero-google-docs-integration/clientAppsScript.js",

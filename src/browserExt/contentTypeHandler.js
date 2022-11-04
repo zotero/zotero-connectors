@@ -33,8 +33,6 @@
 
 "use strict";
 
-const url = require('url');
-
 Zotero.ContentTypeHandler = {
 	cslContentTypes: new Set(["application/vnd.citationstyles.style+xml", "text/x-csl"]),
 	importContentTypes: new Set([
@@ -132,7 +130,7 @@ Zotero.ContentTypeHandler = {
 	handleImportContent: function(details) {
 		(async () => {
 			if (!(await Zotero.Connector.checkIsOnline())) return;
-			let URI = url.parse(details.url);
+			let URI = new URL(details.url);
 			let hosts = Zotero.Prefs.get('allowedInterceptHosts');
 			let isEnabledHost = hosts.indexOf(URI.host) != -1;
 			if (isEnabledHost) {

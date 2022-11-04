@@ -39,8 +39,6 @@
 
 "use strict";
 
-var url = require('url');
-
 /**
  * A singleton to handle URL rewriting proxies
  * @namespace
@@ -317,7 +315,7 @@ Zotero.Proxies = new function() {
 				}
 				
 				if (!proxy) continue;
-				let requestURI = url.parse(details.url);
+				let requestURI = new URL(details.url);
 				Zotero.debug("Proxies: Detected "+detectorName+" proxy "+proxy.scheme+" for "+requestURI.host);
 				
 				notifyNewProxy(proxy, requestURI.host);
@@ -333,7 +331,7 @@ Zotero.Proxies = new function() {
 			// Don't redirect https websites via http proxies
 			|| details.url.substr(0, 5) == 'https' && proxied.substr(0, 5) != 'https') return;
 		
-		var proxiedURI = url.parse(proxied);
+		var proxiedURI = new URL(proxied);
 		if (details.requestHeadersObject['referer']) {
 			// If the referrer is a proxiable host, we already have access (e.g., we're
 			// on-campus) and shouldn't redirect
@@ -343,7 +341,7 @@ Zotero.Proxies = new function() {
 			}
 			// If the referrer is the same host as we're about to redirect to, we shouldn't
 			// or we risk a loop
-			if (url.parse(details.requestHeadersObject['referer']).hostname == proxiedURI.hostname) {
+			if (new URL(details.requestHeadersObject['referer']).hostname == proxiedURI.hostname) {
 				Zotero.debug("Proxies: skipping redirect; redirect URI and referrer have same host");
 				return;
 			}
@@ -358,14 +356,14 @@ Zotero.Proxies = new function() {
 			}
 			// Finally, if the original URI is the same as the host we're about to redirect
 			// to, then we also risk a loop
-			if (url.parse(details.originUrl).hostname == proxiedURI.hostname) {
+			if (new URL(details.originUrl).hostname == proxiedURI.hostname) {
 				Zotero.debug("Proxies: skipping redirect; redirect URI and original URI have same host");
 				return;
 			}
 		}
 
 		// parse the original request's URL so that we can extract host, etc.
-		let uri = url.parse(details.url);
+		let uri = new URL(details.url);
 
 		// make sure that the top two domains (e.g. gmu.edu in foo.bar.gmu.edu) of the
 		// channel and the site to which we're redirecting don't match, to prevent loops.
@@ -513,58 +511,58 @@ Zotero.Proxies = new function() {
 
 	/**
 	 * Returns a page's proper URL from a proxied URL. Uses both transparent and opaque proxies.
-	 * @param {String} URL
+	 * @param {String} url
 	 * @param {Boolean} onlyReturnIfProxied Controls behavior if the given URL is not proxied. If
 	 *	it is false or unspecified, unproxied URLs are returned verbatim. If it is true, the
 	 *	function will return "false" if the given URL is unproxied.
 	 * @type String
 	 */
-	this.proxyToProper = function(URL, onlyReturnIfProxied) {
+	this.proxyToProper = function(url, onlyReturnIfProxied) {
 		for (var proxy of Zotero.Proxies.proxies) {
 			if (proxy.regexp) {
-				var m = proxy.regexp.exec(URL);
+				var m = proxy.regexp.exec(url);
 				if (m) {
 					var toProper = proxy.toProper(m);
-					Zotero.debug("Proxies.proxyToProper: "+URL+" to "+toProper);
+					Zotero.debug("Proxies.proxyToProper: "+url+" to "+toProper);
 					return toProper;
 				}
 			}
 		}
-		return (onlyReturnIfProxied ? false : URL);
+		return (onlyReturnIfProxied ? false : url);
 	};
 
 	/**
 	 * Returns a page's proxied URL from the proper URL. Uses only transparent proxies.
-	 * @param {String} URL
+	 * @param {String} url
 	 * @param {Boolean} onlyReturnIfProxied Controls behavior if the given URL is not proxied. If
 	 *	it is false or unspecified, unproxied URLs are returned verbatim. If it is true, the
 	 *	function will return "false" if the given URL is unproxied.
 	 * @type String
 	 */
-	this.properToProxy = function(URL, onlyReturnIfProxied) {
-		var uri = url.parse(URL);
+	this.properToProxy = function(url, onlyReturnIfProxied) {
+		var uri = new URL(url);
 		if (Zotero.Proxies.hosts[uri.host]) {
 			var toProxy = Zotero.Proxies.hosts[uri.host].toProxy(uri);
-			Zotero.debug("Proxies.properToProxy: "+URL+" to "+toProxy);
+			Zotero.debug("Proxies.properToProxy: "+url+" to "+toProxy);
 			return toProxy;
 		}
-		return (onlyReturnIfProxied ? false : URL);
+		return (onlyReturnIfProxied ? false : url);
 	};
 
 	/**
 	 * Check the url for potential proxies and deproxify, providing a schema to build
 	 * a proxy object.
 	 * 
-	 * @param URL
+	 * @param url
 	 * @returns {Object} Unproxied url to proxy object
 	 */
-	this.getPotentialProxies = function(URL) {
+	this.getPotentialProxies = function(url) {
 		var urlToProxy = {};
 		// If it's a known proxied URL just return it
 		if (Zotero.Proxies.transparent) {
 			for (var proxy of Zotero.Proxies.proxies) {
 				if (proxy.regexp) {
-					var m = proxy.regexp.exec(URL);
+					var m = proxy.regexp.exec(url);
 					if (m) {
 						let proper = proxy.toProper(m);
 						urlToProxy[proper] = proxy.toJSON();
@@ -573,12 +571,12 @@ Zotero.Proxies = new function() {
 				}
 			}
 		}
-		urlToProxy[URL] = null;
+		urlToProxy[url] = null;
 		
 		// if there is a subdomain that is also a TLD, also test against URI with the domain
 		// dropped after the TLD
 		// (i.e., www.nature.com.mutex.gmu.edu => www.nature.com)
-		var m = /^(https?:\/\/)([^\/]+)/i.exec(URL);
+		var m = /^(https?:\/\/)([^\/]+)/i.exec(url);
 		if (m) {
 			// First, drop the 0- if it exists (this is an III invention)
 			var host = m[2];
@@ -601,7 +599,7 @@ Zotero.Proxies = new function() {
 					if (TLDS[parts[j].toLowerCase()]) {
 						var properHost = parts.slice(0, j+1).join(".");
 						// protocol + properHost + /path
-						var properURL = m[1]+properHost+URL.substr(m[0].length);
+						var properURL = m[1]+properHost+url.substr(m[0].length);
 						// Accommodating URLS like https://kns-cnki-net-443.webvpn.fafu.edu.cn:880/
 						// where the TLD part j==3, but j+1 is not the start of the proxy host
 						// See https://forums.zotero.org/discussion/comment/407995/#Comment_407995
@@ -835,12 +833,12 @@ Zotero.Proxy.prototype.toProper = function(m) {
  */
 Zotero.Proxy.prototype.toProxy = function(uri) {
 	if (typeof uri == "string") {
-		uri = url.parse(uri);
+		uri = new URL(uri);
 		// If there's no path it is set to null, but we need
 		// at least an empty string to avoid doing many checks
-		uri.path = uri.path || '';
+		uri.pathname = uri.pathname || '';
 	}
-	if (this.regexp.exec(uri.href) || Zotero.Proxies._isBlacklisted(uri.host)) {
+	if (this.regexp.exec(uri.href) || Zotero.Proxies._isBlacklisted(uri.hostname)) {
 		return uri.href;
 	}
 	var proxyURL = this.scheme;
@@ -849,13 +847,13 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
 		var param = this.parameters[i];
 		var value = "";
 		if (param == "%h") {
-			value = (this.dotsToHyphens && uri.protocol == 'https:') ? uri.host.replace(/\./g, '-') : uri.host;
+			value = (this.dotsToHyphens && uri.protocol == 'https:') ? uri.hostname.replace(/\./g, '-') : uri.hostname;
 		} else if (param == "%p") {
-			value = uri.path.substr(1);
+			value = uri.pathname.substr(1);
 		} else if (param == "%d") {
-			value = uri.path.substr(0, uri.path.lastIndexOf("/"));
+			value = uri.pathname.substr(0, uri.path.lastIndexOf("/"));
 		} else if (param == "%f") {
-			value = uri.path.substr(uri.path.lastIndexOf("/")+1)
+			value = uri.pathname.substr(uri.path.lastIndexOf("/")+1)
 		}
 
 		proxyURL = proxyURL.substr(0, this.indices[param])+value+proxyURL.substr(this.indices[param]+2);
@@ -901,7 +899,7 @@ Zotero.Proxies.Detectors = {};
  */
 Zotero.Proxies.Detectors.EZProxy = function(details) {
 	// Try to catch links from one proxy-by-port site to another
-	var uri = url.parse(details.url);
+	var uri = new URL(details.url);
 	if (uri.port && [80, 443].indexOf(uri.port) == -1) {
 		// Two options here: we could have a redirect from an EZProxy site to another, or a link
 		// If it's a redirect, we'll have to catch the Location: header
@@ -909,13 +907,13 @@ Zotero.Proxies.Detectors.EZProxy = function(details) {
 		var fromProxy = false;
 		if ([301, 302, 303].indexOf(details.statusCode) !== -1) {
 			try {
-				toProxy = url.parse(details.responseHeadersObject["location"]);
+				toProxy = new URL(details.responseHeadersObject["location"]);
 				fromProxy = uri;
 			} catch(e) {}
 		} else {
 			try {
 				toProxy = uri;
-				fromProxy = url.parse(details.requestHeadersObject["referer"]);
+				fromProxy = new URL(details.requestHeadersObject["referer"]);
 			} catch (e) {}
 		}
 		
@@ -946,12 +944,12 @@ Zotero.Proxies.Detectors.EZProxy = function(details) {
 	
 	// Now try to catch redirects
 	try {
-		var proxiedURI = url.parse(details.responseHeadersObject["location"]);
+		var proxiedURI = new URL(details.responseHeadersObject["location"]);
 	} catch (e) {
 		return false;
 	}
 	if (!proxiedURI.protocol || details.statusCode != 302 || details.responseHeadersObject["server"] != "EZproxy") return false;
-	return Zotero.Proxies.Detectors.EZProxy.learn(url.parse(details.url), proxiedURI);
+	return Zotero.Proxies.Detectors.EZProxy.learn(new URL(details.url), proxiedURI);
 }
 
 /**
@@ -962,7 +960,7 @@ Zotero.Proxies.Detectors.EZProxy = function(details) {
  */
 Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 	// look for query
-	var m =  /(url|qurl)=([^&]+)/i.exec(loginURI.query);
+	var m =  /(url|qurl)=([^&]+)/i.exec(loginURI.search);
 	if (!m) return false;
 	
 	// Ignore if we already know about it
@@ -970,7 +968,7 @@ Zotero.Proxies.Detectors.EZProxy.learn = function(loginURI, proxiedURI) {
 	
 	// Found URL
 	var properURL = (m[1].toLowerCase() == "qurl" ? decodeURI(m[2]) : m[2]);
-	var properURI = url.parse(properURL);
+	var properURI = new URL(properURL);
 	if (!properURI.protocol) {
 		return false;
 	}
@@ -1040,13 +1038,13 @@ Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function
 	this.deregister(details);
 	// Make sure this is a redirect involving an EZProxy
 	try {
-		var loginURI = url.parse(details.responseHeadersObject["location"]);
+		var loginURI = new URL(details.responseHeadersObject["location"]);
 	} catch (e) {
 		return;
 	}
 	if (!loginURI.host || details.statusCode != 302 || details.responseHeadersObject["server"] != "EZproxy") return false;
 
-	var proxy = Zotero.Proxies.Detectors.EZProxy.learn(url.parse(loginURI), url.parse(details.url));
+	var proxy = Zotero.Proxies.Detectors.EZProxy.learn(new URL(loginURI), new URL(details.url));
 	if (proxy) {
 		Zotero.debug("Proxies: Proxy-by-port EZProxy "+aSubject.URI.hostPort+" corresponds to "+proxy.hosts[0]);
 		Zotero.Proxies.save(proxy);

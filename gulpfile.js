@@ -45,7 +45,6 @@ const argv = require('yargs')
 	.argv;
 
 var injectInclude = [
-	'node_modules.js',
 	'zotero_config.js',
 	'zotero.js',
 	'translate/promise.js',
@@ -107,7 +106,6 @@ var injectIncludeManifestV3 = ['browser-polyfill.js'].concat(
 	injectIncludeLast);
 
 var backgroundInclude = [
-	'node_modules.js',
 	'zotero_config.js',
 	'zotero.js',
 	'i18n.js',
@@ -270,17 +268,6 @@ function processFile() {
 				file.contents = Buffer.from(file.contents.toString()
 					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/g, argv.p ? '' : '$1'));
 				break;
-			case 'node_modules.js':
-				await new Promise((resolve) => {
-					// Stream needs to be converted to a buffer because of complicated stream cloning quantum bugs
-					// so we cannot just do file = browserify.bundle()
-					//   Also
-					// We used to be able to pass in the whole file object here before gulp 4.
-					// It doesn't work anymore and produces weird minified content
-					// so we pass in the file path instead which works well
-					browserify(file.path).bundle((err, buf) => {file.contents = buf; resolve()});
-				});
-				break;
 		}
 
 		let f;
@@ -392,7 +379,6 @@ gulp.task('process-custom-scripts', function() {
 		'./src/browserExt/manifest.json',
 		'./src/browserExt/manifest-v3.json',
 		'./src/browserExt/confirm.html',
-		'./src/common/node_modules.js',
 		'./src/common/preferences/preferences.html',
 		'./src/common/progressWindow/progressWindow.html',
 		'./src/common/modalPrompt/modalPrompt.html',

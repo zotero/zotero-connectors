@@ -650,7 +650,7 @@ Zotero.Connector_Browser = new function() {
 		else if(id.startsWith("zotero-context-menu-proxy-reload-")) {
 			const proxyIdx = parts[parts.length-1];
 			const proxy = Zotero.Proxies.proxies[proxyIdx];
-			const proxied = proxy.toProxy(url);
+			const proxied = proxy.toProxy(tab.url);
 			browser.tabs.update({ url: proxied });
 		}
 	}

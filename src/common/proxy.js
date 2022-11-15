@@ -555,6 +555,8 @@ Zotero.Proxies = new function() {
 	 * @returns {Object} Unproxied url to proxy object
 	 */
 	this.getPotentialProxies = function(url) {
+		// make sure url has a trailing slash
+		url = new URL(url).href;
 		var urlToProxy = {};
 		// If it's a known proxied URL just return it
 		if (Zotero.Proxies.transparent) {
@@ -786,6 +788,8 @@ Zotero.Proxy.prototype.compileRegexp = function() {
  */
 Zotero.Proxy.prototype.toProper = function(m) {
 	if (!Array.isArray(m)) {
+		// make sure url has a trailing slash
+		m = new URL(m).href;
 		let match = this.regexp.exec(m);
 		if (!match) {
 			return m

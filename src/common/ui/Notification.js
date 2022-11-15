@@ -71,6 +71,7 @@ Zotero.UI.Notification.rootStyle = {
 	padding: "3px 2em 4px",
 	display: "flex",
 	flexDirection: "row",
+	lineHeight: "2.2em",
 	alignItems: "center",
 	boxSizing: "border-box",
 	cursor: "default",
@@ -79,7 +80,6 @@ Zotero.UI.Notification.rootStyle = {
 Zotero.UI.Notification.textStyle = {
 	fontFamily: "Lucida Grande, Tahoma, sans",
 	fontSize: "13.5px",
-	lineHeight: "2.2em",
 	fontWeight: "bold",
 	color: "black",
 };

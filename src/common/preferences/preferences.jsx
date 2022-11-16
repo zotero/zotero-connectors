@@ -567,7 +567,7 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponen
 			if (value == '+') {
 				let newProxy = {
 					id: Date.now(),
-					toProxyScheme: 'https://www.example.com/login?qurl=%s',
+					toProxyScheme: 'https://www.example.com/login?qurl=%u',
 					toProperScheme: '%h.example.com/%p',
 					autoAssociate: true,
 					hosts: []
@@ -702,10 +702,10 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponen
 				</p>
 				<p style={{display: "flex", alignItems: "center"}}>
 					<label style={{alignSelf: "center", marginRight: "5px"}}>Login URL Scheme: </label>
-					<input style={{flexGrow: "1"}} type="text" name="toProxyScheme" onChange={this.handleSchemeChange} value={currentProxy.toProxyScheme} ref={"toProxyInput"}/>
+					<input style={{flexGrow: "1"}} type="text" name="toProxyScheme" onChange={this.handleSchemeChange} value={currentProxy.toProxyScheme || ""} ref={"toProxyInput"}/>
 				</p>	
 				<p style={{display: "flex", alignItems: "center"}}>
-					<label style={{alignSelf: "center", marginRight: "5px"}}>Reverse-Proxy Scheme: </label>
+					<label style={{alignSelf: "center", marginRight: "5px"}}>Proxied URL Scheme: </label>
 					<input style={{flexGrow: "1"}} type="text" name="toProperScheme" onChange={this.handleSchemeChange} value={currentProxy.toProperScheme} ref={"toProperInput"}/>
 				</p>
 				<p>

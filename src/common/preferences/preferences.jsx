@@ -326,7 +326,7 @@ Zotero_Preferences.Advanced = {
 			let result = await Zotero.ModalPrompt.confirm({
 				message: Zotero.getString('reports_debug_output_submitted', 'D' + reportID).replace(/\n/g, '<br/>'),
 				button1Text: "OK",
-				button2Text: Zotero.getString("general_copyToClipboard"),
+				button2Text: !Zotero.isSafari ? Zotero.getString("general_copyToClipboard") : "",
 			});
 			if (result.button == 2) {
 				navigator.clipboard.writeText('D' + reportID);
@@ -361,7 +361,7 @@ Zotero_Preferences.Advanced = {
 			let result = await Zotero.ModalPrompt.confirm({
 				message: Zotero.getString('reports_report_submitted', reportID).replace(/\n/g, '<br/>'),
 				button1Text: "OK",
-				button2Text: Zotero.getString("general_copyToClipboard"),
+				button2Text: !Zotero.isSafari ? Zotero.getString("general_copyToClipboard") : "",
 			});
 			if (result.button == 2) {
 				navigator.clipboard.writeText(reportID);

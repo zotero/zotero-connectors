@@ -78,6 +78,9 @@ Zotero.HTTP = new function() {
 		// requests send full browser cookies.
 		// That is not the case with Safari though and without cookies requests to proxied
 		// resources fail, so we use on-page xhr there.
+		// However, if the request requires replacing user-agent, we still send the request via
+		// the background page since we're unable to replace user-agent via an on-page xhr and
+		// since user-agent option is explicitly set, it takes priority.
 		let sameOriginRequestViaSafari = Zotero.isSafari && Zotero.HTTP.isSameOrigin(url) && !options.headers['User-Agent'];
 		if (Zotero.isInject && !sameOriginRequestViaSafari) {
 			// Make a cross-origin request via the background page, parsing the responseText with

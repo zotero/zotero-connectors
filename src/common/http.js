@@ -74,7 +74,12 @@ Zotero.HTTP = new function() {
 			successCodes: null
 		}, options);
 		
-		if (Zotero.isInject) {
+		// There is no reason to run xhr not from background page for web extensions since those
+		// requests send full browser cookies.
+		// That is not the case with Safari though and without cookies requests to proxied
+		// resources fail, so we use on-page xhr there.
+		let sameOriginRequestViaSafari = Zotero.isSafari && Zotero.HTTP.isSameOrigin(url) && !options.headers['User-Agent'];
+		if (Zotero.isInject && !sameOriginRequestViaSafari) {
 			// Make a cross-origin request via the background page, parsing the responseText with
 			// DOMParser and returning a Proxy with 'response' set to the parsed document
 			let isDocRequest = options.responseType == 'document';

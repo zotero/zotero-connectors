@@ -170,7 +170,10 @@ Zotero.Connector = new function() {
 		// Unexpected error, including a timeout
 		.catch(function (e) {
 			// Don't log status 0 (Zotero offline) report, it's chatty and needless
-			if (!(e instanceof Zotero.HTTP.StatusError && e.status === 0)) {
+			if (e instanceof Zotero.HTTP.StatusError && e.status === 0) {
+				Zotero.debug(e);
+			}
+			else {
 				Zotero.logError(e);
 			}
 			deferred.reject(e);

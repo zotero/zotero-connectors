@@ -312,9 +312,9 @@ Zotero.Inject = new function() {
 		}
 	};
 	
-	this.expiredMV3BuildPrompt = function () {
+	this.expiredBetaBuildPrompt = function () {
 		return this.confirm({
-			title: "Zotero Connector beta build has expired",
+			title: "Build Expired",
 			button1Text: "OK",
 			button2Text: "",
 			message: `This Zotero Connector beta build has expired. Please download the latest version from zotero.org.`
@@ -763,8 +763,8 @@ if(!isHiddenIFrame) {
 			return Zotero.Inject.firstUsePrompt();
 		});
 		
-		Zotero.Messaging.addMessageListener("expiredMV3Build", function () {
-			return Zotero.Inject.expiredMV3BuildPrompt();
+		Zotero.Messaging.addMessageListener("expiredBetaBuild", function () {
+			return Zotero.Inject.expiredBetaBuildPrompt();
 		});
 
 		if(document.readyState !== "complete") {

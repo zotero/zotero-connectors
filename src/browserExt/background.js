@@ -34,8 +34,8 @@ Zotero.Connector_Browser = new function() {
 		/*INJECT SCRIPTS*/
 	];
 	// Default: February 1, 2053 (so we don't have to deal with this when developing)
-	var _MV3DevBuildDeadline = new Date(2053, 0, 1, 0, 0, 0);
-	var _isMV3DevBuildBeyondDeadline = false;
+	var _betaBuildExpiration = new Date(2053, 0, 1, 0, 0, 0);
+	var _isBetaBuildBeyondExpiration = false;
 	// Exposed for tests
 	this._tabInfo = _tabInfo;
 	
@@ -50,7 +50,7 @@ Zotero.Connector_Browser = new function() {
 				}
 			}
 			this.isDev = (await browser.management.getSelf()).installType === 'development';
-			_isMV3DevBuildBeyondDeadline = this.isDev && new Date > _MV3DevBuildDeadline;
+			_isBetaBuildBeyondExpiration = this.isDev && new Date > _betaBuildExpiration;
 		}
 	}
 
@@ -548,7 +548,7 @@ Zotero.Connector_Browser = new function() {
 			return chrome.tabs.query( { lastFocusedWindow: true, active: true },
 				(tabs) => tabs.length && this._updateExtensionUI(tabs[0]));
 		}
-		if (Zotero.Prefs.get('firstUse') || _isMV3DevBuildBeyondDeadline) return _showMessageButton(tab);
+		if (Zotero.Prefs.get('firstUse') || _isBetaBuildBeyondExpiration) return _showMessageButton(tab);
 		if (!tab.active || tab.id < 0) return;
 		let url = tab.url || tab.pendingUrl;
 		if (!url) {
@@ -875,8 +875,8 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _browserAction(tab) {
-		if (_isMV3DevBuildBeyondDeadline) {
-			Zotero.Messaging.sendMessage('expiredMV3Build')
+		if (_isBetaBuildBeyondExpiration) {
+			Zotero.Messaging.sendMessage('expiredBetaBuild')
 		}
 		else if (Zotero.Prefs.get('firstUse')) {
 			Zotero.Messaging.sendMessage("firstUse", null, tab)

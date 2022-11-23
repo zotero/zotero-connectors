@@ -300,9 +300,9 @@ function processFile() {
 							.replace("/*INJECT SCRIPTS*/",
 								injectScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
 							.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"');
-						if (typeof process.env.ZOTERO_MV3_DEV_BUILD_DEADLINE != 'undefined') {
-							contents = contents.replace('_MV3DevBuildDeadline = new Date(2053, 0, 1, 0, 0, 0)',
-								`_MV3DevBuildDeadline = new Date(${process.env.ZOTERO_MV3_DEV_BUILD_DEADLINE})`);
+						if (typeof process.env.ZOTERO_BETA_BUILD_EXPIRATION != 'undefined') {
+							contents = contents.replace('_betaBuildExpiration = new Date(2053, 0, 1, 0, 0, 0)',
+								`_betaBuildExpiration = new Date(${process.env.ZOTERO_BETA_BUILD_EXPIRATION})`);
 						}
 						f.contents = Buffer.from(contents);
 					}

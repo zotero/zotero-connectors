@@ -33,6 +33,9 @@ Zotero.Connector_Browser = new function() {
 	var _injectTranslationScripts = [
 		/*INJECT SCRIPTS*/
 	];
+	// Default: February 1, 2053 (so we don't have to deal with this when developing)
+	var _MV3DevBuildDeadline = new Date(2053, 0, 1, 0, 0, 0);
+	var _isMV3DevBuildBeyondDeadline = false;
 	// Exposed for tests
 	this._tabInfo = _tabInfo;
 	
@@ -46,6 +49,8 @@ Zotero.Connector_Browser = new function() {
 					delete _tabInfo[tab.id];
 				}
 			}
+			this.isDev = (await browser.management.getSelf()).installType === 'development';
+			_isMV3DevBuildBeyondDeadline = this.isDev && new Date > _MV3DevBuildDeadline;
 		}
 	}
 
@@ -542,8 +547,8 @@ Zotero.Connector_Browser = new function() {
 		if (!tab) {
 			return chrome.tabs.query( { lastFocusedWindow: true, active: true },
 				(tabs) => tabs.length && this._updateExtensionUI(tabs[0]));
-		}	
-		if (Zotero.Prefs.get('firstUse')) return _showFirstUseUI(tab);
+		}
+		if (Zotero.Prefs.get('firstUse') || _isMV3DevBuildBeyondDeadline) return _showMessageButton(tab);
 		if (!tab.active || tab.id < 0) return;
 		let url = tab.url || tab.pendingUrl;
 		if (!url) {
@@ -815,7 +820,7 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 
-	function _showFirstUseUI(tab) {
+	function _showMessageButton(tab) {
 		var icon = `${Zotero.platform}/zotero-z-32px-australis.png`;
 		browser.action.setIcon({
 			tabId: tab.id,
@@ -870,7 +875,10 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	function _browserAction(tab) {
-		if (Zotero.Prefs.get('firstUse')) {
+		if (_isMV3DevBuildBeyondDeadline) {
+			Zotero.Messaging.sendMessage('expiredMV3Build')
+		}
+		else if (Zotero.Prefs.get('firstUse')) {
 			Zotero.Messaging.sendMessage("firstUse", null, tab)
 			.then(function () {
 				Zotero.Prefs.set('firstUse', false);
@@ -879,7 +887,8 @@ Zotero.Connector_Browser = new function() {
 		}
 		else if(_tabInfo[tab.id] && _tabInfo[tab.id].translators && _tabInfo[tab.id].translators.length) {
 			Zotero.Connector_Browser.saveWithTranslator(tab, 0, {fallbackOnFailure: true});
-		} else {
+		}
+		else {
 			if (_tabInfo[tab.id] && _tabInfo[tab.id].isPDF) {
 				Zotero.Connector_Browser.saveAsWebpage(
 					tab,

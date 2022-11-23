@@ -31,7 +31,6 @@ const through = require('through2');
 const gulp = require('gulp');
 const plumber = require('gulp-plumber');
 const babel = require('@babel/core');
-const browserify = require('browserify');
 const schemaJSON = require('./src/zotero/resource/schema/global/schema.json');
 const argv = require('yargs')
 	.boolean('p')
@@ -295,12 +294,17 @@ function processFile() {
 					if (['manifest.json', "manifest-v3.json", "background.js", "background-worker.js"].includes(basename)) {
 						let backgroundScripts = browser == 'manifestv3' ? backgroundIncludeManifestV3 : backgroundIncludeBrowserExt;
 						let injectScripts = browser == "manifestv3" ? injectIncludeManifestV3 : injectIncludeBrowserExt;
-						f.contents = Buffer.from(f.contents.toString()
+						let contents = f.contents.toString()
 							.replace("/*BACKGROUND SCRIPTS*/",
 								backgroundScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
 							.replace("/*INJECT SCRIPTS*/",
 								injectScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
-							.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"'));
+							.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"');
+						if (typeof process.env.ZOTERO_MV3_DEV_BUILD_DEADLINE != 'undefined') {
+							contents = contents.replace('_MV3DevBuildDeadline = new Date(2053, 0, 1, 0, 0, 0)',
+								`_MV3DevBuildDeadline = new Date(${process.env.ZOTERO_MV3_DEV_BUILD_DEADLINE})`);
+						}
+						f.contents = Buffer.from(contents);
 					}
 					if (basename == 'zotero.js') {
 						let contents = f.contents.toString()

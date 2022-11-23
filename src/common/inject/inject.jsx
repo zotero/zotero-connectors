@@ -311,6 +311,15 @@ Zotero.Inject = new function() {
 			return lastChainedPromise;
 		}
 	};
+	
+	this.expiredMV3BuildPrompt = function () {
+		return this.confirm({
+			title: "Zotero Connector beta build has expired",
+			button1Text: "OK",
+			button2Text: "",
+			message: `This Zotero Connector beta build has expired. Please download the latest version from zotero.org.`
+		});
+	};
 
 	this.firstUsePrompt = function () {
 		var clientName = ZOTERO_CONFIG.CLIENT_NAME;
@@ -752,6 +761,10 @@ if(!isHiddenIFrame) {
 		
 		Zotero.Messaging.addMessageListener("firstUse", function () {
 			return Zotero.Inject.firstUsePrompt();
+		});
+		
+		Zotero.Messaging.addMessageListener("expiredMV3Build", function () {
+			return Zotero.Inject.expiredMV3BuildPrompt();
 		});
 
 		if(document.readyState !== "complete") {

@@ -966,6 +966,10 @@ Zotero.Connector_Browser = new function() {
 				var returnValue = listener.apply(this, arguments);
 				if (returnValue && returnValue.then) {
 					returnValue.catch(function(e) {
+						if (e && e.message && e.message.startsWith('No tab with id:')) {
+							Zotero.debug(e);
+							return;
+						}
 						Zotero.logError(e);
 						throw (e);
 					});

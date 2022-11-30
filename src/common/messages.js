@@ -121,6 +121,7 @@ var MESSAGES = {
 		}
 	},
 	Debug: {
+		get: true,
 		bgInit: false,
 		clear: false,
 		log: {
@@ -156,12 +157,10 @@ var MESSAGES = {
 		storing: true,
 		get: true,
 		count: true,
-		submitReport: true
 	},
 	Errors: {
 		log: false,
 		getErrors: true,
-		sendErrorReport: true
 	},
 	Messaging: {
 		sendMessage: {
@@ -267,7 +266,7 @@ MESSAGES.COHTTP = {
 	}
 };
 
-if(Zotero.isSafari) {
+if (Zotero.isSafari) {
 	MESSAGES.API.createItem = true;
 	MESSAGES.API.uploadAttachment = false;
 	MESSAGES.i18n = {
@@ -280,9 +279,6 @@ if(Zotero.isSafari) {
 		onTabData: true,
 		getExtensionVersion: true
 	});
-	MESSAGES.Debug.get = true;
-	delete MESSAGES.Errors.sendErrorReport;
-	delete MESSAGES.Connector_Debug.submitReport;
 }
 
 // Chrome does not support passing arrayBuffers via the message

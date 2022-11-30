@@ -347,7 +347,7 @@ var Zotero = global.Zotero = new function() {
 		}
 		
 		if(fileName && lineNumber) {
-			console.error(err+" at "+fileName+":"+lineNumber);
+			console.error(message+" at "+fileName+":"+lineNumber);
 		} else {
 			console.error(err);
 		}

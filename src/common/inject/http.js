@@ -78,7 +78,7 @@ Zotero.HTTP.processDocuments = async function (urls, processor, options = {}) {
 	
 	if (typeof urls == "string") urls = [urls];
 	var funcs = urls.map(url => () => {
-		return Zotero.HTTP.request(
+		return Zotero.COHTTP.request(
 			"GET",
 			url,
 			{
@@ -86,7 +86,14 @@ Zotero.HTTP.processDocuments = async function (urls, processor, options = {}) {
 			}
 		)
 		.then((xhr) => {
-			var doc = Zotero.HTTP.wrapDocument(xhr.response, url);
+			Zotero.debug("Parsing cross-origin response for " + url);
+			let parser = new DOMParser();
+			let contentType = xhr.getResponseHeader("Content-Type");
+			if (contentType != 'application/xml' && contentType != 'text/xml') {
+				contentType = 'text/html';
+			}
+			let doc = parser.parseFromString(xhr.responseText, contentType);
+			doc = Zotero.HTTP.wrapDocument(doc, url);
 			return processor(doc, url);
 		});
 	});

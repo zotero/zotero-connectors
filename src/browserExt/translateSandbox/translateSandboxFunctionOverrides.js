@@ -32,6 +32,32 @@ function serializeTranslator(translator, properties) {
 	return serializedTranslator;
 }
 
+const requestOverride = {
+	handler: {
+		// avoid trying to post responseXML
+		preSend: async function(xhr) {
+			return {
+				response: xhr.response,
+				responseText: xhr.response,
+				status: xhr.status,
+				statusText: xhr.statusText,
+				responseHeaders: xhr.getAllResponseHeaders()
+			};
+		},
+	},
+	local: {
+		postReceive: async function(xhr) {
+			xhr.getAllResponseHeaders = () => xhr.responseHeaders;
+			xhr.getResponseHeader = function(name) {
+				let match = xhr.responseHeaders.match(new RegExp(`^${name}: (.*)$`, 'mi'));
+				return match ? match[1] : null;
+			};
+			xhr.responseText = xhr.response;
+			return xhr;
+		}
+	}
+}
+
 const CONTENT_SCRIPT_FUNCTION_OVERRIDES = {
 	'Translators.get': {
 		handler: {
@@ -98,29 +124,6 @@ const CONTENT_SCRIPT_FUNCTION_OVERRIDES = {
 	'API.run': true,
 	'API.uploadAttachment': true,
 	'SingleFile.retrievePageData': true,
-	'HTTP.request': {
-		handler: {
-			// avoid trying to post responseXML
-			preSend: async function(xhr) {
-				return {
-					response: xhr.response,
-					responseText: xhr.response,
-					status: xhr.status,
-					statusText: xhr.statusText,
-					responseHeaders: xhr.getAllResponseHeaders()
-				};
-			},
-		},
-		local: {
-			postReceive: async function(xhr) {
-				xhr.getAllResponseHeaders = () => xhr.responseHeaders;
-				xhr.getResponseHeader = function(name) {
-					let match = xhr.responseHeaders.match(new RegExp(`^${name}: (.*)$`, 'mi'));
-					return match ? match[1] : null;
-				};
-				xhr.responseText = xhr.response;
-				return xhr;
-			}
-		}
-	},
+	'COHTTP.request': requestOverride,
+	'HTTP.request': requestOverride,
 };

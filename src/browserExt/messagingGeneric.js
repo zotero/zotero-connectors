@@ -91,6 +91,7 @@ Zotero.MessagingGeneric = class {
 				catch (e) {
 					console.log(`Zotero: Failed to invoke a remote function ${fnName}`);
 					console.log(e)
+					throw e;
 				}
 			};
 		}

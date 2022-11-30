@@ -341,9 +341,12 @@ var Zotero = global.Zotero = new function() {
 			}
 		}
 		
-		let message = err.message;
-		if (!message) {
-			message = err.toJSON();
+		let message = err;
+		if (typeof message != 'string') {
+			message = err.message;
+			if (typeof message != 'string' && typeof err == 'object') {
+				message = err.toJSON();
+			}
 		}
 		
 		if(fileName && lineNumber) {

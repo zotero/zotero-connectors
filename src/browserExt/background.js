@@ -42,13 +42,15 @@ Zotero.Connector_Browser = new function() {
 	this.init = async function() {
 		if (Zotero.isManifestV3) {
 			this._tabInfo = _tabInfo = await Zotero.Utilities.Connector.createMV3PersistentObject('tabInfo');
-			let tabs = await browser.tabs.query({});
-			for (let tab of tabs) {
-				// Remove cached tabInfo for tabs that are no longer open after service worker restart
-				if (!tab.id in _tabInfo) {
-					delete _tabInfo[tab.id];
+			setInterval(async () => {
+				let tabs = await browser.tabs.query({});
+				for (let tab of tabs) {
+					// Remove cached tabInfo for tabs that are no longer open every 15 minutes
+					if (!tab.id in _tabInfo) {
+						delete _tabInfo[tab.id];
+					}
 				}
-			}
+			}, 15 * 60e3);
 			this.isDev = (await browser.management.getSelf()).installType === 'development';
 			_isBetaBuildBeyondExpiration = this.isDev && new Date > _betaBuildExpiration;
 		}
@@ -836,11 +838,7 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Removes information about a specific tab
 	 */
-	function _clearInfoForTab(tabID, changeInfo) {
-		if (tabID in _tabInfo) {
-			_tabInfo[tabID].frameChecked = false;
-		}
-		if (changeInfo && !changeInfo.url) return;
+	function _clearInfoForTab(tabID) {
 		delete _tabInfo[tabID];
 	}
 	

@@ -39,6 +39,8 @@ const requestOverride = {
 			return {
 				response: xhr.response,
 				responseText: xhr.response,
+				responseURL: xhr.responseURL,
+				responseType: xhr.responseType,
 				status: xhr.status,
 				statusText: xhr.statusText,
 				responseHeaders: xhr.getAllResponseHeaders()
@@ -53,6 +55,19 @@ const requestOverride = {
 				return match ? match[1] : null;
 			};
 			xhr.responseText = xhr.response;
+			if (xhr.responseType == 'document') {
+				let contentType = xhr.getResponseHeader("Content-Type");
+				if (contentType != 'application/xml' && contentType != 'text/xml') {
+					contentType = 'text/html';
+				}
+				let doc = new DOMParser().parseFromString(xhr.responseText, contentType);
+				
+				xhr = new Proxy(xhr, {
+					get: function (target, name) {
+						return name == 'response' ? doc : target[name];
+					}
+				});
+			}
 			return xhr;
 		}
 	}

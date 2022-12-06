@@ -237,6 +237,7 @@ MESSAGES.COHTTP = {
 			preSend: async function(xhr) {
 				let result = {
 					response: xhr.response,
+					responseType: xhr.responseType,
 					status: xhr.status,
 					statusText: xhr.statusText,
 					responseHeaders: xhr.getAllResponseHeaders(),

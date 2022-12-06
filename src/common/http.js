@@ -94,7 +94,10 @@ Zotero.HTTP = new function() {
 				coOptions.headers['Cookie'] = document.cookie;
 			}
 			return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
-				if (!isDocRequest) return xmlhttp;
+				if (!isDocRequest || Zotero.isManifestV3) {
+					xmlhttp.responseType = options.responseType;
+					return xmlhttp;
+				}
 				
 				Zotero.debug("Parsing cross-origin response for " + url);
 				let parser = new DOMParser();
@@ -213,6 +216,7 @@ Zotero.HTTP = new function() {
 			responseText: typeof responseData == 'string' ? responseData : '',
 			response: responseData,
 			responseURL: response.url,
+			responseType: options.responseType,
 			status: response.status,
 			statusText: response.statusText,
 			getAllResponseHeaders: () => responseHeadersString,

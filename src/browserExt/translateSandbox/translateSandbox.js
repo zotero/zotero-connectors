@@ -85,6 +85,9 @@ Zotero.TranslateSandbox = {
 		// Custom handler for setDocument()
 		this.messaging.addMessageListener(`Translate.setDocument`, ([html, url]) => {
 			let doc = new DOMParser().parseFromString(html, 'text/html');
+			let baseElem = doc.createElement('base');
+			baseElem.setAttribute('href', url);
+			doc.querySelector('head').appendChild(baseElem);
 			doc = Zotero.HTTP.wrapDocument(doc, url);
 			this.translate.setDocument(doc);
 		});

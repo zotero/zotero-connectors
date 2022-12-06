@@ -95,7 +95,8 @@ Zotero.Inject = new function() {
 					Zotero.Messaging.sendMessage("pageModified", null);
 				}, false);
 			} else {
-				_translate.setDocument(document);
+				// Async in MV3
+				await (async () => _translate.setDocument(document))();
 			}
 			return _translate.getTranslators(true).then(function(translators) {
 				if (!translators.length && Zotero.isSafari) {
@@ -128,7 +129,8 @@ Zotero.Inject = new function() {
 		else {
 			translate = new Zotero.Translate.Web();
 		}
-		translate.setDocument(document);
+		// Async in MV3
+		await (async () => translate.setDocument(document))();
 		if (sessionID) {
 			translate.setHandler("select", function(obj, items, callback) {
 				// Close the progress window before displaying Select Items

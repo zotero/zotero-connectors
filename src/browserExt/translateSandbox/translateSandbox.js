@@ -90,6 +90,9 @@ Zotero.TranslateSandbox = {
 			doc.querySelector('head').appendChild(baseElem);
 			doc = Zotero.HTTP.wrapDocument(doc, url);
 			this.translate.setDocument(doc);
+			// Won't respond the message and translate initialization will hang in the main content script
+			// if this is removed, so don't!
+			return true;
 		});
 
 		await this.messaging.sendMessage('frameReady');

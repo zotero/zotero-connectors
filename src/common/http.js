@@ -145,6 +145,10 @@ Zotero.HTTP = new function() {
 			await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
 			delete options.headers['User-Agent'];
 		}
+		if (options.headers['Referer']) {
+			options.referrer = options.headers['Referer'];
+			delete options.headers['Referer'];
+		}
 		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
 		if (options.responseType == '') {
 			options.responseType = 'text';
@@ -161,6 +165,8 @@ Zotero.HTTP = new function() {
 				headers,
 				body: options.body,
 				credentials: Zotero.isInject ? 'same-origin' : 'include',
+				referrer: options.referrer,
+				referrerPolicy: options.referrer ? "unsafe-url" : "strict-origin-when-cross-origin"
 			}
 			if (abortController) {
 				fetchOptions.signal = abortController.signal;

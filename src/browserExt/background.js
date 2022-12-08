@@ -38,9 +38,17 @@ Zotero.Connector_Browser = new function() {
 	var _isBetaBuildBeyondExpiration = false;
 	// Exposed for tests
 	this._tabInfo = _tabInfo;
+	let buttonContext = ['browser_action'];
 	
 	this.init = async function() {
 		if (Zotero.isManifestV3) {
+			if (!Zotero.isFirefox) {
+				// Chrome recently stopped displaying context menus on button right-click
+				// with 'browser_action' as context. It's supposed to work, so maybe a bug
+				// in Chrome, but let's fix it on our side. Firefox, meanwhile, throws if 'action'
+				// is included in the context list.
+				buttonContext.push('action');
+			}
 			this._tabInfo = _tabInfo = await Zotero.Utilities.Connector.createMV3PersistentObject('tabInfo');
 			setInterval(async () => {
 				let tabs = await browser.tabs.query({});
@@ -587,7 +595,7 @@ Zotero.Connector_Browser = new function() {
 			browser.contextMenus.create({
 				id: saveMenuID,
 				title: `${Zotero.getString('general_saveTo', 'Zotero')}`,
-				contexts: ['browser_action', 'page', 'selection']
+				contexts: [...buttonContext, 'page', 'selection']
 			});
 		}
 		
@@ -741,7 +749,7 @@ Zotero.Connector_Browser = new function() {
 				id: "zotero-context-menu-translator-save-" + i,
 				title: _getTranslatorLabel(translators[i]),
 				parentId: parentID,
-				contexts: ['page', 'browser_action']
+				contexts: ['page', ...buttonContext]
 			});
 		}
 	}
@@ -762,13 +770,13 @@ Zotero.Connector_Browser = new function() {
 			id: "zotero-context-menu-webpage-withSnapshot-save",
 			title: "Save to Zotero (Web Page with Snapshot)",
 			parentId: parentID,
-			contexts: ['page', 'browser_action']
+			contexts: ['page', ...buttonContext]
 		}));
 		fns.push(() => browser.contextMenus.create({
 			id: "zotero-context-menu-webpage-withoutSnapshot-save",
 			title: "Save to Zotero (Web Page without Snapshot)",
 			parentId: parentID,
-			contexts: ['page', 'browser_action']
+			contexts: ['page', ...buttonContext]
 		}));
 		// Swap order if automatic snapshots disabled
 		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
@@ -793,7 +801,7 @@ Zotero.Connector_Browser = new function() {
 		browser.contextMenus.create({
 			id: parentID,
 			title: "Reload via Proxy",
-			contexts: ['page', 'browser_action']
+			contexts: ['page', ...buttonContext]
 		});
 
 		var i = 0;
@@ -803,7 +811,7 @@ Zotero.Connector_Browser = new function() {
 				id: `zotero-context-menu-proxy-reload-${i++}`,
 				title: `Reload via ${name}`,
 				parentId: parentID,
-				contexts: ['page', 'browser_action']
+				contexts: ['page', ...buttonContext]
 			});
 		}
 	}

@@ -49,7 +49,6 @@ if (isTopWindow) {
 	var frameInitialized;
 	var closeTimeoutID;
 	window.Zotero.progressWindowReady = frameReadyDeferred.promise;
-	frameReadyDeferred.promise.then(() => frameInitialized = true);
 	
 	var currentSessionID;
 	var createdSessions = new Set();
@@ -372,6 +371,7 @@ if (isTopWindow) {
 	async function showFrame() {
 		let iframe
 		if (!frameInitialized) {
+			frameInitialized = true;
 			iframe = await initFrame();
 		} else {
 			iframe = await frameReadyDeferred.promise;

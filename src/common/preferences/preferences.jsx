@@ -274,6 +274,8 @@ Zotero_Preferences.Advanced = {
 			document.getElementById('advanced-checkbox-enable-logging').checked = !!status;
 		});
 		Zotero.Prefs.getAsync("debug.store").then(function(status) {
+			document.getElementById("advanced-checkbox-enable-logging").checked = !!status;
+			document.getElementById("advanced-checkbox-enable-logging").onchange();
 			document.getElementById('advanced-checkbox-enable-at-startup').checked = !!status;
 		});
 		Zotero.Prefs.getAsync("debug.log").then(function(status) {

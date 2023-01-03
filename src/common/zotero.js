@@ -215,6 +215,9 @@ var Zotero = global.Zotero = new function() {
 		await Zotero.Prefs.init();
 		
 		Zotero.Debug.init();
+		let storingDebugOnRestart = Zotero.Prefs.get('debug.store');
+		if (storingDebugOnRestart) Zotero.Debug.setStore(storingDebugOnRestart);
+		Zotero.Prefs.set('debug.store', false);
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.init();
 			await Zotero.Connector_Browser.init();
@@ -382,7 +385,6 @@ var Zotero = global.Zotero = new function() {
 
 Zotero.Prefs = new function() {
 	const DEFAULTS = {
-		"debug.log": false,
 		"debug.stackTrace": false,
 		"debug.store": false,
 		"debug.store.limit": 750000,

@@ -324,6 +324,7 @@ var Zotero = global.Zotero = new function() {
 	};
 	
 	this.logError = function(err) {
+		Zotero.debug(err, 1);
 		if(!global.console) return;
 		
 		// Firefox uses this

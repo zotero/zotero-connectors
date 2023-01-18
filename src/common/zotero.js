@@ -304,7 +304,7 @@ var Zotero = global.Zotero = new function() {
 		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());
 		
 		
-		if (Zotero.isBackground && Zotero.isChrome) {
+		if (Zotero.isBackground && Zotero.isBrowserExt) {
 			let granted = await browser.permissions.contains({permissions: ['management']});
 			if (granted) {
 				let extensions = await browser.management.getAll();

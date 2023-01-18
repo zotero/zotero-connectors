@@ -360,14 +360,6 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	for img in "$BUILD_DIR"/firefox/images/*48px.png; do
 		cp $img `echo $img | sed 's/@48px//'`
 	done
-	
-	# Remove 'optional_permissions' property used by Chrome from the manifest.
-	# If we start using other optional permissions in Firefox before 'management'
-	# is supported in Firefox, we can probably get jq to delete just 'management'.
-	pushd $BUILD_DIR/firefox > /dev/null
-	cat manifest.json | jq '. |= del(.optional_permissions)' > manifest.json-tmp
-	mv manifest.json-tmp manifest.json
-	popd > /dev/null
 
 fi
 

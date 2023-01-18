@@ -302,8 +302,8 @@ Zotero_Preferences.Advanced = {
 		var submitOutputButton = document.getElementById('advanced-button-submit-output');
 		toggleDisabled(submitOutputButton, true);
 
-		// We have to request within a user gesture in chrome
-		if (Zotero.isChrome) {
+		// We have to request permissions within a user gesture (even though we use this in Zotero.getSystemInfo())
+		if (Zotero.browserExt) {
 			try {
 				await browser.permissions.request({permissions: ['management']});
 			} catch (e) {
@@ -337,8 +337,8 @@ Zotero_Preferences.Advanced = {
 		var reportErrorsButton = document.getElementById('advanced-button-report-errors');
 		toggleDisabled(reportErrorsButton, true);
 		
-		// We have to request within a user gesture in chrome
-		if (Zotero.isChrome) {
+		// We have to request permissions within a user gesture (even though we use this in Zotero.getSystemInfo())
+		if (Zotero.browserExt) {
 			try {
 				await browser.permissions.request({permissions: ['management']});
 			} catch (e) {

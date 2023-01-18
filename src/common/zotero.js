@@ -58,6 +58,7 @@ var Zotero = global.Zotero = new function() {
 
 		this.isChrome = this.isEdge = false;
 		if (this.isBrowserExt && !this.isFirefox) {
+			this.isChromium = true;
 			if (global.navigator.userAgent.includes("Edg/")) {
 				this.isEdge = true;
 			} else {

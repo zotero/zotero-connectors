@@ -33,7 +33,8 @@ var Zotero = global.Zotero = new function() {
 	this.isFx = false;
 	
 	// For autocomplete in IDEs
-	this.allowRepoTranslatorTester = this.isManifestV3 = null;
+	this.allowRepoTranslatorTester = this.isManifestV3
+		= this.isFirefox = this.isSafari = this.isBrowserExt = null;
 	/* this.allowRepoTranslatorTester = SET IN BUILD SCRIPT */;
 	/* this.isManifestV3 = SET IN BUILD SCRIPT */;
 

@@ -702,7 +702,7 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponen
 					You may use the following variables in your proxy schemes:<br/>
 					&#37;h - The hostname of the proxied site (e.g., www.example.com)<br/>
 					&#37;p - The path of the proxied page excluding the leading slash (e.g., about/index.html)<br/>
-					&#37;u - Full encoded proxied site url (e.g. https://www.example.com)
+					&#37;u - Full encoded proxied site url (e.g. https://www.example.com/about/index.html)
 				</p>
 				
 				<div style={{display: "flex", flexDirection: "column", marginTop: "10px"}}>

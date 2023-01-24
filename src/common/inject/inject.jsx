@@ -768,6 +768,11 @@ if(!isHiddenIFrame) {
 		Zotero.Messaging.addMessageListener("expiredBetaBuild", function () {
 			return Zotero.Inject.expiredBetaBuildPrompt();
 		});
+		
+		// Cannot copy to clipboard in the background page
+		Zotero.Messaging.addMessageListener("clipboardWrite", function (text) {
+			navigator.clipboard.writeText(text);
+		});
 
 		if(document.readyState !== "complete") {
 			window.addEventListener("pageshow", function(e) {

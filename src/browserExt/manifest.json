@@ -14,7 +14,7 @@
 	},
 	"permissions": ["http://*/*", "https://*/*", "tabs", "contextMenus", "cookies", 
 		"webRequest", "webRequestBlocking", "webNavigation", "storage"],
-	"optional_permissions": ["management"],
+	"optional_permissions": ["management", "clipboardWrite"],
 	"background": {
 		"scripts": [
 			/*BACKGROUND SCRIPTS*/,

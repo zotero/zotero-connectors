@@ -584,10 +584,11 @@ Zotero.Connector_Browser = new function() {
 		// Show the save menu if we have more than one save option to show, which is true in all cases
 		// other than for PDFs with no translator
 		var showSaveMenu = (translators && translators.length) || !isPDF;
+		let unproxiedURL = Zotero.Proxies.proxyToProper(url, true);
 		var showProxyMenu = !isPDF
 			&& Zotero.Proxies.proxies.length > 0
 			// Don't show proxy menu if already proxied
-			&& !Zotero.Proxies.proxyToProper(url, true);
+			&& !unproxiedURL;
 		
 		var saveMenuID;
 		if (showSaveMenu) {
@@ -619,6 +620,9 @@ Zotero.Connector_Browser = new function() {
 		if (showProxyMenu) {
 			_showProxyContextMenuItems(url);
 		}
+		if (unproxiedURL) {
+			_showCopyUnproxiedUrlCopyContextMenuItem(url, unproxiedURL);
+		}
 		
 		if (Zotero.isFirefox) {
 			_showPreferencesContextMenuItem();
@@ -648,6 +652,16 @@ Zotero.Connector_Browser = new function() {
 		},
 		"zotero-context-menu-preferences": function () {
 			browser.tabs.create({url: browser.runtime.getURL('preferences/preferences.html')});
+		},
+		"zotero-context-menu-copy-unproxied-url": async (info, tab) => {
+			await browser.permissions.request({permissions: ['clipboardWrite']});
+			// navigator.clipboard.writeText doesn't work in the background page because it has no focus
+			Zotero.Messaging.sendMessage('clipboardWrite', [Zotero.Proxies.proxyToProper(tab.url)], tab);
+		},
+		"zotero-context-menu-copy-unproxied-link": async (info, tab) => {
+			await browser.permissions.request({permissions: ['clipboardWrite']});
+			// navigator.clipboard.writeText doesn't work in the background page because it has no focus
+			Zotero.Messaging.sendMessage('clipboardWrite', [Zotero.Proxies.proxyToProper(info.linkUrl)], tab);
 		}
 	};
 	
@@ -816,16 +830,38 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 
+	function _showCopyUnproxiedUrlCopyContextMenuItem(url, unproxiedURL) {
+		// No button context because clipboard API requires the document to be focused
+		// and context-menu on the button moves the focus to browser chrome
+		browser.contextMenus.create({
+			id: `zotero-context-menu-copy-unproxied-url`,
+			title: `Copy unproxied url ${unproxiedURL}`,
+			contexts: ['page']
+		});
+		for (let proxy of Zotero.Proxies.proxies) {
+			let proxyHostname = proxy.toDisplayName();
+			if (url.includes(proxyHostname)) {
+				browser.contextMenus.create({
+					id: `zotero-context-menu-copy-unproxied-link`,
+					title: `Copy unproxied link`,
+					contexts: ['link'],
+					targetUrlPatterns: [`*://*.${proxyHostname}/*`]
+				});		
+				break;
+			}
+		}
+	}
+
 	function _showPreferencesContextMenuItem() {
 		browser.contextMenus.create({
 			type: "separator",
 			id: "zotero-context-menu-pref-separator",
-			contexts: ['all']
+			contexts: ['page', ...buttonContext]
 		});
 		browser.contextMenus.create({
 			id: "zotero-context-menu-preferences",
 			title: "Preferences",
-			contexts: ['all']
+			contexts: ['page', ...buttonContext]
 		});
 	}
 	

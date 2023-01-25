@@ -1000,7 +1000,7 @@ Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function
 	if (isProxiedHost) {
 		let isExisting;
 		for (let proxy of Zotero.Proxies.proxies) {
-			let isExisting = proxy.regexp.test(details.url)
+			isExisting = proxy.regexp.test(details.url)
 			if (isExisting) {
 				if (!proxy.toProxyScheme) {
 					// Add a proxyScheme if not present

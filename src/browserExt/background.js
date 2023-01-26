@@ -621,7 +621,7 @@ Zotero.Connector_Browser = new function() {
 			_showProxyContextMenuItems(url);
 		}
 		if (unproxiedURL) {
-			_showCopyUnproxiedUrlCopyContextMenuItem(url, unproxiedURL);
+			_showCopyUnproxiedURLCopyContextMenuItem(url);
 		}
 		
 		if (Zotero.isFirefox) {
@@ -814,7 +814,7 @@ Zotero.Connector_Browser = new function() {
 		var parentID = "zotero-context-menu-proxy-reload-menu";
 		browser.contextMenus.create({
 			id: parentID,
-			title: "Reload via Proxy",
+			title: Zotero.getString("reloadViaProxy"),
 			contexts: ['page', ...buttonContext]
 		});
 
@@ -823,19 +823,19 @@ Zotero.Connector_Browser = new function() {
 			let name = proxy.toDisplayName();
 			browser.contextMenus.create({
 				id: `zotero-context-menu-proxy-reload-${i++}`,
-				title: `Reload via ${name}`,
+				title: Zotero.getString("reloadVia", name),
 				parentId: parentID,
 				contexts: ['page', ...buttonContext]
 			});
 		}
 	}
 
-	function _showCopyUnproxiedUrlCopyContextMenuItem(url, unproxiedURL) {
+	function _showCopyUnproxiedURLCopyContextMenuItem(url) {
 		// No button context because clipboard API requires the document to be focused
 		// and context-menu on the button moves the focus to browser chrome
 		browser.contextMenus.create({
 			id: `zotero-context-menu-copy-unproxied-url`,
-			title: `Copy unproxied url ${unproxiedURL}`,
+			title: Zotero.getString('copyUnproxiedPageURL'),
 			contexts: ['page']
 		});
 		for (let proxy of Zotero.Proxies.proxies) {
@@ -843,7 +843,7 @@ Zotero.Connector_Browser = new function() {
 			if (url.includes(proxyHostname)) {
 				browser.contextMenus.create({
 					id: `zotero-context-menu-copy-unproxied-link`,
-					title: `Copy unproxied link`,
+					title: Zotero.getString('copyUnproxiedLink'),
 					contexts: ['link'],
 					targetUrlPatterns: [`*://*.${proxyHostname}/*`]
 				});		

@@ -47,7 +47,9 @@
  * @property hosts {Zotero.Proxy{}} Object mapping hosts to proxies
  */
 Zotero.Proxies = new function() {
-	this.PROXY_REDIRECTION_LOOP_TIMEOUT = 3600e3;
+	this.REDIRECT_LOOP_TIMEOUT = 3600e3;
+	this.REDIRECT_LOOP_MONITOR_COUNT = 4;
+	this.REDIRECT_LOOP_MONITOR_TIMEOUT = 5e3;
 	/**
 	 * Initializes the proxy settings
 	 * @returns Promise{boolean} proxy enabled/disabled status
@@ -210,7 +212,11 @@ Zotero.Proxies = new function() {
 		let redirect = Zotero.Proxies._maybeRedirect(details);
 		if (redirect) {
 			// We will track this tab in case it causes a redirect loop
-			this._redirectedTabIDs[details.tabId] = { host: new URL(details.url).host, count: 4};
+			this._redirectedTabIDs[details.tabId] = {
+				host: new URL(details.url).host,
+				count: this.REDIRECT_LOOP_MONITOR_COUNT,
+				timeout: Date.now() + this.REDIRECT_LOOP_MONITOR_TIMEOUT
+			};
 			browser.tabs.update(details.tabId, {url: redirect.redirectUrl});
 		}
 	};
@@ -220,7 +226,7 @@ Zotero.Proxies = new function() {
 			Zotero.debug('Called Proxies._toggleRedirectLoopPrevention() without an argument');
 		}
 		Zotero.debug(`Proxies: ${value ? "Enabling" : "Disabling"} loop prevention`)
-		this._loopPreventionTimestamp = value ? (Date.now() + this.PROXY_REDIRECTION_LOOP_TIMEOUT) : 0;
+		this._loopPreventionTimestamp = value ? (Date.now() + this.REDIRECT_LOOP_TIMEOUT) : 0;
 		Zotero.Prefs.set('proxies.loopPreventionTimestamp', this._loopPreventionTimestamp)
 	}
 	
@@ -242,7 +248,7 @@ Zotero.Proxies = new function() {
 				delete this._redirectedTabIDs[details.tabId];
 				return true;
 			}
-			else if (redirectedTab.count-- <= 0) {
+			else if (redirectedTab.count-- <= 0 || redirectedTab.timeout <= Date.now()) {
 				// Did not detect a redirect loop on this host
 				delete this._redirectedTabIDs[details.tabId];
 			}

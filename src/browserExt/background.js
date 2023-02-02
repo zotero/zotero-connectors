@@ -680,6 +680,9 @@ Zotero.Connector_Browser = new function() {
 			const proxyIdx = parts[parts.length-1];
 			const proxy = Zotero.Proxies.proxies[proxyIdx];
 			const proxied = proxy.toProxy(tab.url);
+			if (Zotero.Proxies.isPreventingRedirectLoops()) {
+				Zotero.Proxies.toggleRedirectLoopPrevention(false)
+			}
 			browser.tabs.update({ url: proxied });
 		}
 	}

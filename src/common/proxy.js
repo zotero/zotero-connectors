@@ -47,6 +47,7 @@
  * @property hosts {Zotero.Proxy{}} Object mapping hosts to proxies
  */
 Zotero.Proxies = new function() {
+	this.PROXY_REDIRECTION_LOOP_TIMEOUT = 3600e3;
 	/**
 	 * Initializes the proxy settings
 	 * @returns Promise{boolean} proxy enabled/disabled status
@@ -56,6 +57,8 @@ Zotero.Proxies = new function() {
 		this.transparent = false;
 		this.proxies = [];
 		this.hosts = {};
+		this._redirectedTabIDs = {};
+		this._loopPreventionTimestamp = Zotero.Prefs.get('proxies.loopPreventionTimestamp');
 		
 		this.loadPrefs();
 		
@@ -95,6 +98,7 @@ Zotero.Proxies = new function() {
 	this.enable = function() {
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onWebRequest);
+			browser.webNavigation.onCommitted.addListener(Zotero.Proxies._checkForRedirectLoop)
 		} else {
 			safari.application.addEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
@@ -104,6 +108,7 @@ Zotero.Proxies = new function() {
 	this.disable = function() {
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onWebRequest);
+			browser.webNavigation.onCommitted.removeListener(Zotero.Proxies._checkForRedirectLoop)
 		} else {
 			safari.application.removeEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
@@ -184,12 +189,13 @@ Zotero.Proxies = new function() {
 	 *
 	 * @param {Object} details - webRequest details object
 	 */
-	this.onWebRequest = function (details, meta) {
-		if (meta.proxyRedirected || details.statusCode >= 400
-			|| details.frameId != 0) {
+	this.onWebRequest = (details, meta) => {
+		if (details.statusCode >= 400 || details.frameId != 0) {
 			return;
 		}
 
+		Zotero.Proxies._checkForRedirectLoop(details);
+		
 		Zotero.Proxies._maybeAddHost(details);
 		
 		if (Zotero.Proxies.autoRecognize) {
@@ -198,13 +204,51 @@ Zotero.Proxies = new function() {
 
 		Zotero.Proxies.updateDisabledByDomain();
 		if (Zotero.Proxies.disabledByDomain) return;
-
+		
+		if (Zotero.Proxies.isPreventingRedirectLoops()) return;
+		
 		let redirect = Zotero.Proxies._maybeRedirect(details);
 		if (redirect) {
-			meta.proxyRedirected = true;
+			// We will track this tab in case it causes a redirect loop
+			this._redirectedTabIDs[details.tabId] = { host: new URL(details.url).host, count: 4};
 			browser.tabs.update(details.tabId, {url: redirect.redirectUrl});
 		}
 	};
+	
+	this.toggleRedirectLoopPrevention = function(value) {
+		if (typeof value === "undefined") {
+			Zotero.debug('Called Proxies._toggleRedirectLoopPrevention() without an argument');
+		}
+		Zotero.debug(`Proxies: ${value ? "Enabling" : "Disabling"} loop prevention`)
+		this._loopPreventionTimestamp = value ? (Date.now() + this.PROXY_REDIRECTION_LOOP_TIMEOUT) : 0;
+		Zotero.Prefs.set('proxies.loopPreventionTimestamp', this._loopPreventionTimestamp)
+	}
+	
+	this.isPreventingRedirectLoops = function() {
+		return this._loopPreventionTimestamp > Date.now();
+	}
+	
+	this._checkForRedirectLoop = (details) => {
+		if (details.frameId != 0) return;
+		let redirectedTab = this._redirectedTabIDs[details.tabId];
+		if (redirectedTab) {
+			if (details.transitionQualifiers && details.transitionQualifiers.includes('forward_back')) {
+				// History navigation (back button) may cause false-positives here, so we stop monitoring
+				delete this._redirectedTabIDs[details.tabId];
+			}
+			else if (redirectedTab.host == new URL(details.url).host) {
+				// Rerouted back to the original host after a redirect, so likely there is a redirect loop
+				this.toggleRedirectLoopPrevention(true);
+				delete this._redirectedTabIDs[details.tabId];
+				return true;
+			}
+			else if (redirectedTab.count-- <= 0) {
+				// Did not detect a redirect loop on this host
+				delete this._redirectedTabIDs[details.tabId];
+			}
+		}
+		return false;
+	}
 	
 	this._maybeAddHost = function(details) {
 		// see if there is a proxy we already know
@@ -250,6 +294,7 @@ Zotero.Proxies = new function() {
 			}
 			proxy.hosts.push(host);
 			Zotero.Proxies.save(proxy);
+			Zotero.toggleRedirectLoopPrevention(false);
 
 			_showNotification(
 				'New Zotero Proxy Host',

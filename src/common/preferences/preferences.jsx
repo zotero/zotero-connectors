@@ -438,7 +438,7 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 		super(props);
 		let state = {};
 		let settings = ['transparent', 'autoRecognize', 'showRedirectNotification',
-			 'disableByDomain', 'disableByDomainString'];
+			 'disableByDomain', 'disableByDomainString', 'loopPreventionTimestamp'];
 		for (let setting of settings) {
 			state[setting] = Zotero.Prefs.get('proxies.'+setting);
 		}
@@ -454,6 +454,11 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 	
 	handleTextInputChange(event) {
 		this.updateState(event.target.name, event.target.value);
+	}
+	
+	reenableProxyRedirection = () => {
+		Zotero.Proxies.toggleRedirectLoopPrevention(false);
+		this.setState({ loopPreventionTimestamp: 0 });
 	}
 	
 	updateState(name, value) {
@@ -473,18 +478,29 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 		if (Zotero.isBrowserExt) {
 			autoRecognise = <label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label>;
 		}
+		let redirectLoopPrevention = ''
+		if (this.state.loopPreventionTimestamp > Date.now() && this.state.transparent) {
+			redirectLoopPrevention = (
+				<div className="group">
+					<b>Zotero detected a proxy redirect loop and has temporarily suspended automatic proxy redirection</b> <input type="button" onClick={this.reenableProxyRedirection} value="Reenable proxy redirection"/>
+				</div>
+			)
+		}
 		return (
 			<div>
-				<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;Enable proxy redirection</label>
-				<div style={{marginLeft: "1em"}}>
-					<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;Show a notification when redirecting through a proxy</label>
-					{autoRecognise}
-					<p>
-						<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains<span>*</span></label>
-						<input style={{marginTop: "0.5em", marginLeft: "1.5em"}} type="text" onChange={this.handleTextInputChange} disabled={!this.state.transparent || !this.state.disableByDomain} name="disableByDomainString" defaultValue={this.state.disableByDomainString}/>
-					</p>
+				{redirectLoopPrevention}
+				<div>
+					<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;Enable proxy redirection</label>
+					<div style={{marginLeft: "1em"}}>
+						<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;Show a notification when redirecting through a proxy</label>
+						{autoRecognise}
+						<p>
+							<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains<span>*</span></label>
+							<input style={{marginTop: "0.5em", marginLeft: "1.5em"}} type="text" onChange={this.handleTextInputChange} disabled={!this.state.transparent || !this.state.disableByDomain} name="disableByDomainString" defaultValue={this.state.disableByDomainString}/>
+						</p>
+					</div>
+					<p><span>*</span>Available when Zotero is running</p>
 				</div>
-				<p><span>*</span>Available when Zotero is running</p>
 			</div>
 		);
 	}

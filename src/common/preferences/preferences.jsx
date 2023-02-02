@@ -482,7 +482,7 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 		if (this.state.loopPreventionTimestamp > Date.now() && this.state.transparent) {
 			redirectLoopPrevention = (
 				<div className="group">
-					<b>Zotero detected a proxy redirect loop and has temporarily suspended automatic proxy redirection</b> <input type="button" onClick={this.reenableProxyRedirection} value="Reenable proxy redirection"/>
+					<b>Zotero detected a proxy redirect loop and has temporarily suspended automatic proxy redirection.</b> <input type="button" onClick={this.reenableProxyRedirection} value="Reenable proxy redirection"/>
 				</div>
 			)
 		}

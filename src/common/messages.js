@@ -220,7 +220,8 @@ var MESSAGES = {
 	Proxies: {
 		loadPrefs: false,
 		save: false,
-		remove: false
+		remove: false,
+		toggleRedirectLoopPrevention: false
 	},
 	Repo: {
 		update: false

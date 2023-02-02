@@ -415,6 +415,7 @@ Zotero.Prefs = new function() {
 		"proxies.disableByDomainString": '.edu',
 		"proxies.proxies": [],
 		"proxies.clientChecked": false,
+		"proxies.loopPreventionTimestamp": 0,
 		
 		"integration.googleDocs.enabled": true,
 		"integration.googleDocs.useGoogleDocsAPI": false,

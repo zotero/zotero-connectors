@@ -92,4 +92,10 @@ Zotero.SingleFile = {
 	}
 };
 
-Zotero.SingleFile._injectSingleFileHooks();
+if (window.top) {
+	try {
+		if (window.top == window) {
+			Zotero.SingleFile._injectSingleFileHooks();
+		}
+	} catch(e) {};
+}

@@ -43,6 +43,7 @@ if (isTopWindow) {
 	var iframe;
 	var initialized = false;
 	var frameSrc;
+	var previousFocus;
 	frameSrc = Zotero.getExtensionURL('modalPrompt/modalPrompt.html');
 
 	async function init() {
@@ -52,6 +53,9 @@ if (isTopWindow) {
 			deferred.resolve();
 			// Prevent the flash of white screen
 			iframe.style.display = "block"
+		});
+		Zotero.Messaging.addMessageListener('modalPrompt.close', function () {
+			previousFocus && previousFocus.ownerDocument.defaultView.focus() && previousFocus.focus();
 		});
 
 		iframe = document.createElement('iframe');
@@ -75,6 +79,25 @@ if (isTopWindow) {
 	}
 
 	/**
+	 * Return the active element of a page, regardless of shadow root or iframe window.
+	 * @returns {HTMLElement}
+	 */
+	function getActiveElement(element = document.activeElement) {
+		const shadowRoot = element.shadowRoot
+		const contentDocument = element.contentDocument
+
+		if (shadowRoot && shadowRoot.activeElement) {
+			return getActiveElement(shadowRoot.activeElement)
+		}
+
+		if (contentDocument && contentDocument.activeElement) {
+			return getActiveElement(contentDocument.activeElement)
+		}
+
+		return element
+	}	
+
+	/**
 	 *
 	 * @param props {Object} to be passed to ModalPrompt component
 	 * @returns {Promise{Object}} Object with properties:
@@ -88,6 +111,7 @@ if (isTopWindow) {
 				await init();
 			}
 			iframe.style.display = 'block';
+			previousFocus = getActiveElement();
 			let result = await Zotero.Messaging.sendMessage('modalPrompt.show', props, null, null);
 			iframe.style.display = 'none';
 			return result

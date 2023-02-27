@@ -47,7 +47,10 @@ Zotero.UI.ModalPrompt = class ModalPrompt extends React.Component {
 	
 	componentDidMount() {
 		document.addEventListener('keyup', this.escListener);
-		setTimeout(() => this.refs.button1.focus());
+		setTimeout(() => {
+			window.focus();
+			this.refs.button1.focus()
+		}, 50);
 	}
 	
 	componentWillUnmount() {
@@ -132,11 +135,12 @@ Zotero.UI.ModalPrompt = class ModalPrompt extends React.Component {
 			message = <span dangerouslySetInnerHTML={{__html: message}}/>
 		}
 		return (<div className="ModalPrompt-overlay" onClick={onClickOutside}>
-			<div className="ModalPrompt">
-				<h2 className="ModalPrompt-title">
+			<div className="ModalPrompt" role="dialog" aria-labelledby="zotero-modal-prompt-title"
+					aria-describedby="zotero-modal-prompt-message">
+				<h2 id="zotero-modal-prompt-title" className="ModalPrompt-title">
 					{this.props.title}
 				</h2>
-				<p className="ModalPrompt-body">
+				<p id="zotero-modal-prompt-message" className="ModalPrompt-body">
 					{message}
 				</p>
 				{checkbox}

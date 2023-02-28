@@ -563,6 +563,7 @@ Zotero.Inject = new function() {
 		var data = {
 			sessionID,
 			url: document.location.toString(),
+			referrer: document.referrer,
 			cookie: document.cookie,
 			title: title,
 			html: document.documentElement.innerHTML,

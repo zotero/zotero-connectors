@@ -155,7 +155,6 @@ done
 
 echo -n "Building connectors..."
 
-# Copy translation-related resources for Chrome/Safari
 function copyResources {
 	browser="$1"
 	if [ "$browser" == "safari" ]; then
@@ -231,7 +230,12 @@ function copyResources {
 	
 	# Remove .jsx files - we'll deal with those in gulp
 	find "$browser_builddir" -type f -name "*.jsx" -delete
-
+	
+	# Delete other non-deployed files
+	find "$browser_builddir" -name ".git*" -delete
+	rm -rf "$browser_builddir/utilities/.github"
+	rm -rf "$browser_builddir/utilities/test"
+	
 	# Copy SingleFile submodule code
 	mkdir -p "$browser_builddir/lib/SingleFile/lib"
 	cp -r "$SRCDIR/zotero/resource/SingleFile/lib/single-file-bootstrap.js" \
@@ -247,7 +251,6 @@ function copyResources {
 			"$browser_builddir/tools/testTranslators"
 	else
 		rm -rf "$browser_builddir/tools"
-		rm -rf "$browser_builddir/tests"
 	fi
 }
 
@@ -361,6 +364,14 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 		cp $img `echo $img | sed 's/@48px//'`
 	done
 
+fi
+
+# TODO: Would be better to skip these in gulpfile.js for non-debug builds and remove them in
+# copyResources instead
+if [ -z $DEBUG ]; then
+	rm -rf "$BUILD_DIR/chrome/test"
+	rm -rf "$BUILD_DIR/manifestv3/test"
+	rm -rf "$BUILD_DIR/firefox/test"
 fi
 
 echo "done"

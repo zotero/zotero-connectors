@@ -232,7 +232,7 @@ function copyResources {
 	find "$browser_builddir" -type f -name "*.jsx" -delete
 	
 	# Delete other non-deployed files
-	find "$browser_builddir" -name ".git*" -delete
+	find "$browser_builddir" -type f -name ".git*" -delete
 	rm -rf "$browser_builddir/utilities/.github"
 	rm -rf "$browser_builddir/utilities/test"
 	

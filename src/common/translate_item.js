@@ -124,6 +124,18 @@ Zotero.Translate.ItemSaver.prototype = {
 			}
 		}
 		
+		// If saving via a translator on a pdf page, we add that page as an attachment
+		// At time of implementation this only happens for DOI translators
+		if (items.length === 1 && document.contentType === 'application/pdf') {
+			// Remove any pdf attachments added by the translator
+			items[0].attachments = items[0].attachments.filter(attachment => attachment.mimeType !== 'application/pdf');
+			items[0].attachments.push({
+				title: 'Full Text PDF',
+				url: document.location.href,
+				mimeType: document.contentType,
+			})
+		}
+		
 		try {
 			var data = await Zotero.Connector.callMethodWithCookies("saveItems", payload)
 		}

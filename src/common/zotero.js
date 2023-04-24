@@ -110,18 +110,16 @@ var Zotero = global.Zotero = new function() {
 	
 	this.migrate = async function() {
 		let lastVersion = Zotero.Prefs.get('lastVersion') || Zotero.version;
-		var [major, minor, patch] = lastVersion.split('.');
-		Zotero.Prefs.set('lastVersion', Zotero.version);
 		// If coming from a version before 5.0.24, reset the
 		// auto-associate setting for all existing proxies, since it wasn't being set properly for
 		// proxies imported from the client
-		if (major == 5 && minor == 0 && patch < 24 && Zotero.Prefs.get('proxies.clientChecked')) {
+		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.24") < 0 && Zotero.Prefs.get('proxies.clientChecked')) {
 			for (let proxy of Zotero.Proxies.proxies) {
 				proxy.autoAssociate = true;
 			}
 			Zotero.Proxies.storeProxies();
 		}
-		if (major == 5 && minor == 0 && patch < 32 && Zotero.Proxies.proxies.length > 1) {
+		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.32") < 0 && Zotero.Proxies.proxies.length > 1) {
 			let pairs = [];
 			// merge pairs of proxies with http and https protocols
 			for (let i = 0; i < Zotero.Proxies.proxies.length; i++) {
@@ -157,7 +155,7 @@ var Zotero = global.Zotero = new function() {
 			}
 		}
 		// Botched dotsToHyphen pref migration to protocolless schemes in 5.0.32
-		if (major == 5 && minor == 0 && patch < 35) {
+		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.35") < 0) {
 			for (let proxy of Zotero.Proxies.proxies) {
 				if (proxy.scheme.indexOf('%h') == 0) {
 					proxy.dotsToHyphens = true;
@@ -166,9 +164,13 @@ var Zotero = global.Zotero = new function() {
 			Zotero.Proxies.storeProxies();
 		}
 		// Skip first-use dialog for existing users when enabled for non-Firefox browsers
-		if (major == 5 && minor == 0 && patch < 87 && !this.isFirefox) {
+		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.87") < 0 && !this.isFirefox) {
 			Zotero.Prefs.set('firstUse', false);
 		}
+		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.109") < 0) {
+			Zotero.Prefs.set('integration.googleDocs.useGoogleDocsAPI', false)
+		}
+		Zotero.Prefs.set('lastVersion', Zotero.version);
 	};
 	
 	/**

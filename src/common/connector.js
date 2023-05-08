@@ -315,7 +315,7 @@ Zotero.Connector_Debug = new function() {
 	 */
 	this.submitReport = async function() {
 		let body = await Zotero.Debug.get();
-		let sysInfo = JSON.parse(await Zotero.getSystemInfo());
+		let sysInfo = JSON.parse(await Zotero.Errors.getSystemInfo());
 		let errors = (await Zotero.Errors.getErrors()).join('\n');
 		sysInfo.timestamp = new Date().toString();
 		body = `${errors}\n\n${JSON.stringify(sysInfo, null, 2)}\n\n${body}`;

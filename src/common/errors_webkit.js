@@ -61,6 +61,45 @@ Zotero.Errors = new function() {
 	this.getErrors = async function() {
 		return _output.slice();
 	}
+
+	/**
+	 * Get versions, platform, etc.
+	 */
+	this.getSystemInfo = async function () {
+		var info;
+		if (Zotero.isSafari && Zotero.isBackground) {
+			info = {
+				connector: "true",
+				version: this.version,
+				platform: "Safari App Extension",
+			};
+		} else {
+			info = {
+				connector: "true",
+				version: this.version,
+				platform: navigator.platform,
+				locale: navigator.language,
+				userAgent: navigator.userAgent
+			};
+		}
+		
+		info.appName = Zotero.appName;
+		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());
+		
+		
+		if (Zotero.isBackground && Zotero.isBrowserExt) {
+			let granted = await browser.permissions.contains({permissions: ['management']});
+			if (granted) {
+				let extensions = await browser.management.getAll();
+				info.extensions = extensions
+					.filter(extension => extension.enabled && extension.name != Zotero.appName)
+					.map(extension => {
+						return `${extension.name}: ${extension.version}, ${extension.type}`;
+					}).join(', ')
+			}
+		}
+		return JSON.stringify(info, null, 2);
+	}
 	
 	/**
 	 * Sends an error report to the server
@@ -69,7 +108,7 @@ Zotero.Errors = new function() {
 	 * in the global page
 	 */
 	this.sendErrorReport = async function() {
-		var info = await Zotero.getSystemInfo();
+		var info = await this.getSystemInfo();
 		var parts = {
 			error: "true",
 			errorData: (await this.getErrors()).join('\n'),

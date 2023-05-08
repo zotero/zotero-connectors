@@ -161,6 +161,7 @@ var MESSAGES = {
 	Errors: {
 		log: false,
 		getErrors: true,
+		getSystemInfo: true,
 	},
 	Messaging: {
 		sendMessage: {

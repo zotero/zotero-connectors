@@ -303,7 +303,7 @@ Zotero_Preferences.Advanced = {
 		toggleDisabled(submitOutputButton, true);
 
 		// We have to request permissions within a user gesture (even though we use this in Zotero.getSystemInfo())
-		if (Zotero.browserExt) {
+		if (Zotero.isBrowserExt) {
 			try {
 				await browser.permissions.request({permissions: ['management']});
 			} catch (e) {
@@ -338,7 +338,7 @@ Zotero_Preferences.Advanced = {
 		toggleDisabled(reportErrorsButton, true);
 		
 		// We have to request permissions within a user gesture (even though we use this in Zotero.getSystemInfo())
-		if (Zotero.browserExt) {
+		if (Zotero.isBrowserExt) {
 			try {
 				await browser.permissions.request({permissions: ['management']});
 			} catch (e) {

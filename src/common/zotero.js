@@ -281,7 +281,7 @@ var Zotero = global.Zotero = new function() {
 		Zotero.Date.init(dateFormatsJSON);
 	};
 
-	this.getSystemInfo = Zotero.Errors.getSystemInfo;
+	this.getSystemInfo = (...args) => Zotero.Errors.getSystemInfo(...args);
 	
 	/**
 	 * Writes a line to the debug console

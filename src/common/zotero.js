@@ -167,7 +167,7 @@ var Zotero = global.Zotero = new function() {
 		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.87") < 0 && !this.isFirefox) {
 			Zotero.Prefs.set('firstUse', false);
 		}
-		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.109") < 0) {
+		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.110") < 0) {
 			Zotero.Prefs.set('integration.googleDocs.useGoogleDocsAPI', false)
 		}
 		Zotero.Prefs.set('lastVersion', Zotero.version);

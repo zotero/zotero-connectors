@@ -151,11 +151,6 @@ var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclu
 	'firefoxPDF.js'
 ]);
 
-var backgroundIncludeManifestV3 = backgroundIncludeBrowserExt.filter(file => !file.includes('SingleFile')).concat([
-	'lib/SingleFile/single-file-extension-core.js',
-	'lib/SingleFile/single-file-background.js',
-]);
-
 function reloadChromeExtensionsTab(cb) {
 	console.log("Reloading Chrome extensions tab");
 
@@ -284,7 +279,7 @@ function processFile() {
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				f.contents = Buffer.from(f.contents.toString()
 					.replace("/*INJECT SCRIPTS*/",
-						injectIncludeManifestV3.map((s) => `"${s}"`).join(',\n\t\t\t'))
+						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
 					.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"'));
 				this.push(f);
 			}
@@ -292,7 +287,7 @@ function processFile() {
 				['chrome', 'firefox', 'manifestv3'].forEach((browser) => {
 					f = file.clone({contents: false});
 					if (['manifest.json', "manifest-v3.json", "background.js", "background-worker.js"].includes(basename)) {
-						let backgroundScripts = browser == 'manifestv3' ? backgroundIncludeManifestV3 : backgroundIncludeBrowserExt;
+						let backgroundScripts = backgroundIncludeBrowserExt;
 						let injectScripts = browser == "manifestv3" ? injectIncludeManifestV3 : injectIncludeBrowserExt;
 						let contents = f.contents.toString()
 							.replace("/*BACKGROUND SCRIPTS*/",

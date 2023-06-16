@@ -238,9 +238,9 @@ function copyResources {
 	
 	# Copy SingleFile submodule code
 	mkdir -p "$browser_builddir/lib/SingleFile/lib"
-	cp -r "$SRCDIR/zotero/resource/SingleFile/lib/single-file-bootstrap.js" \
-	  "$SRCDIR/zotero/resource/SingleFile/lib/single-file-hooks-frames.js" \
-	  "$SRCDIR/zotero/resource/SingleFile/lib/single-file.js" \
+	cp -r "$LIBDIR/SingleFile-Lite/lib/single-file-bootstrap.js" \
+	  "$LIBDIR/SingleFile-Lite/lib/single-file-hooks-frames.js" \
+	  "$LIBDIR/SingleFile-Lite/lib/single-file.js" \
 		"$browser_builddir/lib/SingleFile"
 	# Copy SingleFile config object from client code
 	cp "$SRCDIR/zotero/chrome/content/zotero/xpcom/singlefile.js" "$browser_builddir/singlefile-config.js"
@@ -341,18 +341,7 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	
 	# Chrome Manifest V3 modifications
 	rsync -a $BUILD_DIR/chrome/images/ $BUILD_DIR/manifestv3/images/
-	
-	# Replace SingleFile code for MV3 with SingleFile-Lite
-	rm -rf "$BUILD_DIR/manifestv3/lib/SingleFile"
-	mkdir -p "$BUILD_DIR/manifestv3/lib/SingleFile"
-	cp -r "$LIBDIR/SingleFile-Lite/lib/single-file-extension-core.js" \
-	  "$LIBDIR/SingleFile-Lite/lib/single-file-background.js" \
-	  "$LIBDIR/SingleFile-Lite/lib/single-file.js" \
-	  "$LIBDIR/SingleFile-Lite/lib/single-file-frames.js" \
-	  "$LIBDIR/SingleFile-Lite/lib/chrome-browser-polyfill.js" \
-	  "$LIBDIR/SingleFile-Lite/lib/single-file-hooks-frames.js" \
-		"$BUILD_DIR/manifestv3/lib/SingleFile"
-	
+
 	# Firefox modifications
 	
 	# TEMP: Copy 2x icons to 1x until getImageSrc() is updated to detect HiDPI

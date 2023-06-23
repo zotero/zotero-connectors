@@ -295,6 +295,9 @@ Zotero.HTTP = new function() {
 						return t.evaluate.apply(t, arguments)
 					}
 				}
+				else if (prop == 'documentURI') {
+					return docURL.href;
+				}
 				else {
 					if (typeof t[prop] == 'function') {
 						return t[prop].bind(t);

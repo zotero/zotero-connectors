@@ -28,6 +28,8 @@
 
 "use strict";
 
+const MAX_STRING_LENGTH = 64 * 1024 * 1024;
+
 Zotero.Utilities = Zotero.Utilities || {};
 
 Zotero.Utilities.Connector = {
@@ -61,6 +63,40 @@ Zotero.Utilities.Connector = {
 				browser.storage.session.set({[name]: JSON.stringify(target)});
 			}
 		})
+	},
+	
+	// Chrome has a limit of somewhere between 64 and 128 MB for messages.
+	// There's been an open bug on the chrome bugtracker to fix this since
+	// 2017: https://bugs.chromium.org/p/chromium/issues/detail?id=774158
+	// 
+	// And with manifestV3 service workers do not support URL.createObjectURL
+	// so our best chance is to just pass the array bytes
+	// but there's a 64MB limit or Chrome literally crashes
+	packString: function (string) {
+		if (!Zotero.isChromium) return string;
+		if (Zotero.isManifestV3) {
+			if (string.length > MAX_STRING_LENGTH) {
+				// Truncating to MAX_CONTENT_SIZE.
+				string = string.slice(0, MAX_STRING_LENGTH);
+			}
+			return string;
+		}
+		return URL.createObjectURL(new Blob([string]));
+	},
+
+	unpackString: async function (string) {
+		if (!Zotero.isChromium) return string;
+		if (Zotero.isManifestV3) {
+			return string;
+		}
+		let blob = await (await fetch(string)).blob();
+		return new Promise((resolve) => {
+			var fileReader = new FileReader();
+			fileReader.onload = function(event) {
+				resolve(event.target.result);
+			};
+			fileReader.readAsText(blob);
+		});
 	}
 };
 

@@ -136,6 +136,7 @@ var MESSAGES = {
 		checkIsOnline: true,
 		callMethod: true,
 		callMethodWithCookies: true,
+		saveSingleFile: true,
 		getClientVersion: true,
 		reportActiveURL: false,
 		getPref: true

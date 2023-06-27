@@ -619,50 +619,21 @@ Zotero.Inject = new function() {
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", progressItem);
 
 				try {
-					data.snapshotContent = await Zotero.SingleFile.retrievePageData();
+					data.snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
 				}
 				catch (e) {
 					// Swallow error, will fallback to save in client
 					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: false } });
 				}
 
-				try {
-					result = await Zotero.Connector.callMethodWithCookies({
-							method: "saveSingleFile",
-							headers: {"Content-Type": "application/json"}
-						},
-						data
-					);
+				result = await Zotero.Connector.saveSingleFile({
+						method: "saveSingleFile",
+						headers: {"Content-Type": "application/json"}
+					},
+					data
+				);
 
-					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
-				}
-				catch (e) {
-					if (e.status === 400 && e.value === 'Endpoint does not support content-type\n') {
-						let snapshotContent = data.snapshotContent;
-						delete data.snapshotContent;
-
-						data.pageData = {
-							content: snapshotContent,
-							resources: {}
-						};
-
-						// This means a Zotero client that expects SingleFileZ. We can just feed
-						// it a payload it is expecting with no resources.
-						result = await Zotero.Connector.callMethodWithCookies({
-								method: "saveSingleFile",
-								headers: {"Content-Type": "multipart/form-data"}
-							},
-							{
-								payload: JSON.stringify(data)
-							}
-						);
-
-						Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
-					}
-					else {
-						throw e;
-					}
-				}
+				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
 			}
 
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);

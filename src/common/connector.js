@@ -241,6 +241,15 @@ Zotero.Connector = new function() {
 	}
 
 	/**
+	 * This is callMethodWithCookies except that it unpacks the singlefile snapshot.
+	 * We need to pack the snapshot because Chrome limits IPC messages to 128MB.
+	 */
+	this.saveSingleFile = async function(options, data, tab) {
+		data.snapshotContent = await Zotero.Utilities.Connector.unpackString(data.snapshotContent);
+		return this.callMethodWithCookies(options, data, tab);
+	}
+
+	/**
 	 * If running an integration method check if the tab is still available to receive
 	 * a response from Zotero and if not - respond with an error message so that
 	 * the integration operation can be discarded in Zotero

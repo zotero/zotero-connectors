@@ -245,7 +245,9 @@ Zotero.Connector = new function() {
 	 * We need to pack the snapshot because Chrome limits IPC messages to 128MB.
 	 */
 	this.saveSingleFile = async function(options, data, tab) {
-		data.snapshotContent = await Zotero.Utilities.Connector.unpackString(data.snapshotContent);
+		if (data.snapshotContent) {
+			data.snapshotContent = await Zotero.Utilities.Connector.unpackString(data.snapshotContent);
+		}
 		return this.callMethodWithCookies(options, data, tab);
 	}
 

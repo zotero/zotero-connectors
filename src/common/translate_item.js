@@ -106,21 +106,25 @@ Zotero.Translate.ItemSaver.prototype = {
 			payload.cookie = document.cookie;
 		}
 		payload.proxy = this._proxy && this._proxy.toJSON();
-		
-		// Add page data for snapshot
-		let singleFile = false;
-		for (let item of items) {
-			for (let attachment of item.attachments) {
-				if (attachment.mimeType !== 'text/html'
-					|| attachment.snapshot === false) {
-					continue;
-				}
-				if (attachment.url && !this._urlMatchesLocation(attachment.url)) {
-					continue;
-				}
 
-				attachment.singleFile = true;
-				singleFile = true;
+		let singleFile = false;
+		// Saving with singlefile does not work in Incognito with Chromium, will fall back
+		// to saving via the client.
+		if (!Zotero.isChromium || !await Zotero.Connector_Browser.isIncognito()) {
+			// Add page data for snapshot
+			for (let item of items) {
+				for (let attachment of item.attachments) {
+					if (attachment.mimeType !== 'text/html'
+						|| attachment.snapshot === false) {
+						continue;
+					}
+					if (attachment.url && !this._urlMatchesLocation(attachment.url)) {
+						continue;
+					}
+
+					attachment.singleFile = true;
+					singleFile = true;
+				}
 			}
 		}
 		

@@ -570,6 +570,11 @@ Zotero.Inject = new function() {
 			skipSnapshot: !options.snapshot,
 			singleFile: true
 		};
+		
+		// SingleFile does not work in Chromium incognito due to object passing via object URL not being available
+		if (Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()){
+			delete data.singleFile;
+		}
 
 		var image;
 		if (document.contentType == 'application/pdf') {
@@ -604,17 +609,17 @@ Zotero.Inject = new function() {
 					progress: 100
 				}
 			);
-
+			
+			let progressItem = {
+				sessionID,
+				id: 2,
+				iconSrc: Zotero.ItemTypes.getImageSrc("attachment-snapshot"),
+				title: "Snapshot",
+				parentItem: 1,
+				progress: 0
+			};
 			// Once snapshot item is created, if requested, run SingleFile
 			if (!data.pdf && result && result.saveSingleFile) {
-				let progressItem = {
-					sessionID,
-					id: 2,
-					iconSrc: Zotero.ItemTypes.getImageSrc("attachment-snapshot"),
-					title: "Snapshot",
-					parentItem: 1,
-					progress: 0
-				};
 
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", progressItem);
 
@@ -634,6 +639,13 @@ Zotero.Inject = new function() {
 				);
 
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+			}
+			
+			if (result && result.attachments) {
+				for (let attachment of result.attachments) {
+					progressItem.title = attachment.title;
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+				}
 			}
 
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);

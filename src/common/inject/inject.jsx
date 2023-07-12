@@ -738,12 +738,12 @@ if(!isHiddenIFrame) {
 			}
 		});
 		// add listener to rerun detection on page modifications
-		Zotero.Messaging.addMessageListener("pageModified", function() {
+		Zotero.Messaging.addMessageListener("pageModified", Zotero.Utilities.debounce(function() {
 			Zotero.Inject.init(true);
-		});
-		Zotero.Messaging.addMessageListener('historyChanged', function() {
+		}, 1000));
+		Zotero.Messaging.addMessageListener('historyChanged', Zotero.Utilities.debounce(function() {
 			Zotero.Inject.init(true);
-		});
+		}, 1000));
 		
 		Zotero.Messaging.addMessageListener("firstUse", function () {
 			return Zotero.Inject.firstUsePrompt();

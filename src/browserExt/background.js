@@ -416,7 +416,7 @@ Zotero.Connector_Browser = new function() {
 	
 	this.openWindow = async function(url, options={}, tab=null) {
 		if (!tab) {
-			tab = (await browser.tabs.query({active: true}))[0];
+			tab = (await browser.tabs.query({ lastFocusedWindow: true, active: true }))[0];
 		}
 		options = Object.assign({
 			width: 800,

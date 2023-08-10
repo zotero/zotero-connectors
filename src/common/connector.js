@@ -64,6 +64,7 @@ Zotero.Connector = new function() {
 				Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
 				Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
 				Zotero.Connector.googleDocsAddNoteEnabled = !!response.prefs.googleDocsAddNoteEnabled;
+				Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
 			}
 			return response || {};
 		});

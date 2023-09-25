@@ -74,6 +74,149 @@ Zotero.HTTP = new function() {
 			successCodes: null
 		}, options);
 		
+		if (Zotero.isManifestV3) {
+			return Zotero.HTTP._requestFetch(method, url, options);
+		}
+		else {
+			return Zotero.HTTP._requestXHR(method, url, options);
+		}
+	};
+	
+	this._requestXHR = async function(method, url, options) {
+		var useContentXHR = false;
+		
+		// There is no reason to run xhr not from background page for web extensions since those
+		// requests send full browser cookies.
+		// That is not the case with Safari though and without cookies requests to proxied
+		// resources fail, so we use on-page xhr there.
+		// However, if the request requires replacing user-agent, we still send the request via
+		// the background page since we're unable to replace user-agent via an on-page xhr and
+		// since user-agent option is explicitly set, it takes priority.
+		let sameOriginRequestViaSafari = Zotero.isSafari && Zotero.HTTP.isSameOrigin(url) && !options.headers['User-Agent'];
+		if (Zotero.isInject && !sameOriginRequestViaSafari) {
+			// The privileged XHR that Firefox makes available to content scripts so that they
+			// can make cross-domain requests doesn't include the Referer header in requests [1],
+			// so sites that check for it don't work properly. As long as we're not making a
+			// cross-domain request, we can use the content XHR that it provides, which does
+			// include Referer. Chrome's XHR in content scripts includes Referer by default.
+			//
+			// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#XHR_and_Fetch
+			if (Zotero.HTTP.isSameOrigin(url) && !(Zotero.isSafari && options.headers['User-Agent'])) {
+				if (typeof content != 'undefined' && content.XMLHttpRequest) {
+					Zotero.debug("Using content XHR");
+					useContentXHR = true;
+				}
+			}
+			else {
+				if (Zotero.isBookmarklet) {
+					Zotero.debug("HTTP: Attempting cross-site request from bookmarklet; this may fail");
+				}
+				else {
+					// Make a cross-origin request via the background page, parsing the responseText with
+					// DOMParser and returning a Proxy with 'response' set to the parsed document
+					let isDocRequest = options.responseType == 'document';
+					let coOptions = Object.assign({}, options);
+					if (isDocRequest) {
+						coOptions.responseType = 'text';
+					}
+					if (Zotero.isSafari && options.headers['User-Agent']) {
+						coOptions.headers['Cookie'] = document.cookie;
+					}
+					return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
+						if (!isDocRequest) return xmlhttp;
+						
+						Zotero.debug("Parsing cross-origin response for " + url);
+						let parser = new DOMParser();
+						let contentType = xmlhttp.getResponseHeader("Content-Type");
+						if (contentType != 'application/xml' && contentType != 'text/xml') {
+							contentType = 'text/html';
+						}
+						let doc = parser.parseFromString(xmlhttp.responseText, contentType);
+						
+						return new Proxy(xmlhttp, {
+							get: function (target, name) {
+								return name == 'response' ? doc : target[name];
+							}
+						});
+					});
+				}
+			}
+		}
+		
+		let logBody = '';
+		if (['GET', 'HEAD'].includes(method)) {
+			if (options.body != null) {
+				throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
+			}
+		} else if(options.body) {
+			if (options.headers["Content-Type"] !== 'multipart/form-data') {
+				options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
+
+				logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
+						options.body.length > options.logBodyLength ? '...' : '';
+				// TODO: make sure below does its job in every API call instance
+				// Don't display password or session id in console
+				logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
+				logBody = logBody.replace(/password=[^&]+/, 'password=********');
+			}
+			
+			if (!options.headers) options.headers = {};
+			if (!options.headers["Content-Type"]) {
+				options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+			}
+			else if (options.headers["Content-Type"] == 'multipart/form-data') {
+				// Allow XHR to set Content-Type with boundary for multipart/form-data
+				delete options.headers["Content-Type"];
+			}
+		}	
+		
+		if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
+			await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
+			delete options.headers['User-Agent'];
+		}
+		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
+		
+		var xmlhttp = useContentXHR ? new content.XMLHttpRequest() : new XMLHttpRequest();
+		xmlhttp.timeout = options.timeout;
+		var promise = Zotero.HTTP._attachHandlers(url, xmlhttp, options);
+		
+		xmlhttp.open(method, url, true);
+
+		for (let header in options.headers) {
+			xmlhttp.setRequestHeader(header, options.headers[header]);
+		}
+		
+		xmlhttp.responseType = options.responseType || '';
+		
+		// Maybe should provide "mimeType" option instead. This is xpcom legacy, where responseCharset
+		// could be controlled manually
+		if (options.responseCharset) {
+			xmlhttp.overrideMimeType("text/plain; charset=" + options.responseCharset);
+		}
+		
+		xmlhttp.send(options.body);
+		
+		return promise.then(function(xmlhttp) {
+			if (options.debug) {
+				if (xmlhttp.responseType == '' || xmlhttp.responseType == 'text') {
+					Zotero.debug(`HTTP ${xmlhttp.status} response: ${xmlhttp.responseText}`);
+				}
+				else {
+					Zotero.debug(`HTTP ${xmlhttp.status} response`);
+				}
+			}	
+			
+			let invalidDefaultStatus = options.successCodes === null &&
+				(xmlhttp.status < 200 || xmlhttp.status >= 300);
+			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(xmlhttp.status);
+			if (invalidDefaultStatus || invalidStatus) {
+				throw new Zotero.HTTP.StatusError(xmlhttp, url, typeof xmlhttp.responseText == 'string' ? xmlhttp.responseText : undefined);
+			}
+			return xmlhttp;
+		});
+	}
+	
+	this._requestFetch = async function(method, url, options) {
 		// There is no reason to run xhr not from background page for web extensions since those
 		// requests send full browser cookies.
 		// That is not the case with Safari though and without cookies requests to proxied
@@ -228,7 +371,7 @@ Zotero.HTTP = new function() {
 			getAllResponseHeaders: () => responseHeadersString,
 			getResponseHeader: name => responseHeaders[name.toLowerCase()]
 		};
-	};
+	}
 	/**
 	* Send an HTTP GET request via XMLHTTPRequest
 	*
@@ -307,6 +450,34 @@ Zotero.HTTP = new function() {
 			}
 		});
 		return wrappedDoc;
+	};
+	
+	
+	/**
+	 * Adds request handlers to the XMLHttpRequest and returns a promise that resolves when
+	 * the request is complete. xmlhttp.send() still needs to be called, this just attaches the
+	 * handler
+	 *
+	 * See {@link Zotero.HTTP.request} for parameters
+	 * @private
+	 */
+	this._attachHandlers = function(url, xmlhttp, options) {
+		var deferred = Zotero.Promise.defer();
+		xmlhttp.onload = () => deferred.resolve(xmlhttp);
+		xmlhttp.onerror = xmlhttp.onabort = function() {
+			var e = new Zotero.HTTP.StatusError(xmlhttp, url, typeof xmlhttp.responseText == 'string' ? xmlhttp.responseText : undefined);
+			if (options.successCodes === false) {
+				deferred.resolve(xmlhttp);
+			} else {
+				deferred.reject(e);
+			}
+		};
+		xmlhttp.ontimeout = function() {
+			var e = new Zotero.HTTP.TimeoutError(url, xmlhttp.timeout);
+			Zotero.logError(e);
+			deferred.reject(e);
+		};
+		return deferred.promise;
 	};
 }
 

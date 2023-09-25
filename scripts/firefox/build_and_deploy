@@ -51,6 +51,12 @@ if [ $channel != "release" ]; then
 	version="$version$channel$rev"
 fi
 
+# Use beta Google Docs endpoint
+if [ $channel = "beta" ]; then
+        export ZOTERO_GOOGLE_DOCS_API_URL=$ZOTERO_GOOGLE_DOCS_API_URL_BETA
+        export ZOTERO_GOOGLE_DOCS_OAUTH_CLIENT_KEY=$ZOTERO_GOOGLE_DOCS_OAUTH_CLIENT_KEY_BETA
+fi
+
 # Replace 'beta' with 'beta.' so that semver sorts beta10 > beta9
 # https://github.com/npm/node-semver/issues/30#issuecomment-64028037
 CMP=$(node -e "console.log(require('semver').compare('$version'.replace('beta', 'beta.'), '$current_version'.replace('beta', 'beta.'), true))")

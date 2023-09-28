@@ -82,7 +82,7 @@ Zotero.HTTP.processDocuments = async function (urls, processor, options = {}) {
 			"GET",
 			url,
 			{
-				responseType: 'document'
+				responseType: 'text'
 			}
 		)
 		.then((xhr) => {

@@ -279,7 +279,7 @@ function processFile() {
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				f.contents = Buffer.from(f.contents.toString()
 					.replace("/*INJECT SCRIPTS*/",
-						injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'))
+						injectIncludeManifestV3.map((s) => `"${s}"`).join(',\n\t\t\t'))
 					.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"'));
 				this.push(f);
 			}

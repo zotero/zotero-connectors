@@ -620,7 +620,7 @@ Zotero.Connector_Browser = new function() {
 		if (showProxyMenu) {
 			_showProxyContextMenuItems(url);
 		}
-		if (unproxiedURL) {
+		if (unproxiedURL && !(Zotero.isFirefox && isPDF)) {
 			_showCopyUnproxiedURLCopyContextMenuItem(url);
 		}
 		

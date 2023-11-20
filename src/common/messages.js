@@ -229,7 +229,7 @@ var MESSAGES = {
 		update: false
 	},
 	WebRequestIntercept: {
-		replaceUserAgent: true,
+		replaceHeader: true,
 	}
 };
 

@@ -135,15 +135,22 @@ Zotero.WebRequestIntercept = {
 		}
 	},
 	
-	replaceUserAgent: function(url, userAgent) {
-		function userAgentReplacer(details) {
+	replaceHeader: function(url, header, value) {
+		let headerReplacer = (details) => {
 			if (details.url === url) {
-				Zotero.debug(`Replacing User-Agent for ${url} to ${userAgent}`);
-				browser.webRequest.onBeforeSendHeaders.removeListener(userAgentReplacer);
-				return {requestHeaders: [{name: 'User-Agent', value: userAgent}]};
+				Zotero.debug(`Replacing ${header} for ${url} to ${value}`);
+				browser.webRequest.onBeforeSendHeaders.removeListener(headerReplacer);
+				for (let requestHeader of details.headers) {
+					if (requestHeader.name.toLowerCase() == header.toLowerCase()) {
+						requestHeader.value = value;
+						return {requestHeaders: details.requestHeaders};
+					}
+				}
+				details.requestHeaders.append({name: header, value});
+				return {requestHeaders: details.requestHeaders};
 			}
 		}
-		browser.webRequest.onBeforeSendHeaders.addListener(userAgentReplacer, {urls: ['<all_urls>'], types: ['xmlhttprequest']}, ['blocking', 'requestHeaders']);
+		browser.webRequest.onBeforeSendHeaders.addListener(headerReplacer, {urls: ['<all_urls>'], types: ['xmlhttprequest']}, ['blocking', 'requestHeaders']);
 	}
 }
 

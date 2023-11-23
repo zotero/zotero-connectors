@@ -23,8 +23,6 @@
     ***** END LICENSE BLOCK *****
 */
 
-const FORBIDDEN_HEADERS = new Set(['accept-charset', 'accept-encoding', 'access-control-request-headers', 'access-control-request-method', 'connection', 'content-length', 'cookie', 'date', 'dnt', 'expect', 'host', 'keep-alive', 'origin', 'permissions-policy', 'referer', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'user-agent', 'via']);
-
 /**
  * Functions for performing HTTP requests, both via XMLHTTPRequest and using a hidden browser
  * @namespace
@@ -172,6 +170,10 @@ Zotero.HTTP = new function() {
 			}
 		}	
 		
+		if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
+			await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
+			delete options.headers['User-Agent'];
+		}
 		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
 		
 		var xmlhttp = useContentXHR ? new content.XMLHttpRequest() : new XMLHttpRequest();
@@ -181,12 +183,7 @@ Zotero.HTTP = new function() {
 		xmlhttp.open(method, url, true);
 
 		for (let header in options.headers) {
-			if (!this.isForbiddenHeader(header) || !Zotero.isBrowserExt) {
-				xmlhttp.setRequestHeader(header, options.headers[header]);
-			}
-			else {
-				Zotero.WebRequestIntercept.replaceHeader(url, header, options.headers[header]);
-			}
+			xmlhttp.setRequestHeader(header, options.headers[header]);
 		}
 		
 		xmlhttp.responseType = options.responseType || '';
@@ -288,7 +285,7 @@ Zotero.HTTP = new function() {
 			}
 		}
 		if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
-			await Zotero.WebRequestIntercept.replaceHeader(url, 'User-Agent', options.headers['User-Agent']);
+			await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
 			delete options.headers['User-Agent'];
 		}
 		if (options.headers['Referer']) {
@@ -416,12 +413,6 @@ Zotero.HTTP = new function() {
 		});
 		return true;	
 	};
-	
-	this.isForbiddenHeader = function(header) {
-		header = header.toLowerCase();
-		if (header.startsWith('sec-') || header.startsWith('proxy-')) return true;
-		return FORBIDDEN_HEADERS.has(header);
-	}
 	
 	
 	/**

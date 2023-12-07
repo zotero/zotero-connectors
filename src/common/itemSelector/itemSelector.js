@@ -31,7 +31,10 @@ var responseSent = false;
 /**
  * Called when item selector is loaded
  */
-function load() {
+async function load() {
+	Zotero.Messaging.init();
+	await Zotero.i18n.init();
+
 	// decode JSON-ized data regading items to save
 	var queryArg = window.location.hash.substr(1);
 	// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
@@ -84,6 +87,8 @@ function load() {
 			cancel();
 		}
 	});
+	
+	Zotero.i18n.translateFragment(document);
 }
 
 /**

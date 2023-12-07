@@ -23,21 +23,25 @@
 		<title>Zotero Item Selector</title>
 	</head>
 	<body>
-		<div id="label">Select which items you'd like to add to your library:</div>
+		<div id="label" data-l10n-id="itemSelector_title">Select which items you'd like to add to your library:</div>
 		<div id="item-selector"></div>
 		<div id="buttons">
 			<div id="select-deselect">
-				<input type="submit" id="select" value="Select All"/>
-				<input type="submit" id="deselect" value="Deselect All"/>
+				<input type="submit" id="select" value="Select All" data-l10n-id="general_selectAll"/>
+				<input type="submit" id="deselect" value="Deselect All" data-l10n-id="general_deselectAll"/>
 			</div>
 			<div id="cancel-ok">
-				<input type="submit" value="Cancel" id="cancel"/>
-				<input type="submit" value="OK" id="ok"/>
+				<input type="submit" value="Cancel" id="cancel" data-l10n-id="general_cancel"/>
+				<input type="submit" value="OK" id="ok" data-l10n-id="general_cancel"/>
 			</div>
 		</div>
-		<!--BEGIN CONNECTOR-->
-		<script type="text/javascript" src="../browser-polyfill.js"></script>
-		<!--END CONNECTOR-->
+		<script src="../browser-polyfill.js"></script>
+		<script src="../zotero_config.js"></script>
+		<script src="../zotero.js"></script>
+		<script src="../messages.js"></script>
+		<script src="../messaging_inject.js"></script>
+		<script src="../i18n.js"></script>
+		<script src="../i18n_common.js"></script>
 		<script type="text/javascript" src="itemSelector_browserSpecific.js"></script>
 		<script type="text/javascript" src="itemSelector.js"></script>
 	</body>

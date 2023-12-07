@@ -26,8 +26,17 @@
 	"general_warning": {
 		"message": "Warning"
 	},
+	"general_ok": {
+		"message": "Ok"
+	},
 	"general_cancel": {
 		"message": "Cancel"
+	},
+	"general_selectAll": {
+		"message": "Select All"
+	},
+	"general_deselectAll": {
+		"message": "Deselect All"
 	},
 	"general_pleaseWait": {
 		"message": "Please wait…"
@@ -65,6 +74,10 @@
 	},
 	"progressWindow_error_upgradeClient_latestVersion": {
 		"message": "latest version"
+	},
+	
+	"itemSelector_title": {
+		"message": "Select which items you'd like to add to your library:"
 	},
 	
 	"extensionIsDisabled": {

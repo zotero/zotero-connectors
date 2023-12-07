@@ -976,8 +976,8 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	this.saveAsWebpage = function(tab, frameId, options) {
-		if (Zotero.isFirefox && Zotero.browserMajorVersion >= 60 && _tabInfo[tab.id].isPDF) {
-			return Zotero.Utilities.saveFirefoxPDF(tab, frameId);
+		if (_tabInfo[tab.id].uninjectable) {
+			return Zotero.Utilities.saveWithoutProgressWindow(tab, frameId);
 		}
 	
 		if (tab.id != -1) {

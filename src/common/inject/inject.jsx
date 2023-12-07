@@ -560,11 +560,14 @@ Zotero.Inject = new function() {
 		if (!sessionID) {
 			throw new Error("Trying to save as webpage without session ID");
 		}
+		try {
+			var cookie = document.cookie;
+		} catch (e) {}
 		var data = {
 			sessionID,
 			url: document.location.toString(),
 			referrer: document.referrer,
-			cookie: document.cookie,
+			cookie,
 			title: title,
 			html: document.documentElement.innerHTML,
 			skipSnapshot: !options.snapshot,

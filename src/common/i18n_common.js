@@ -27,7 +27,7 @@ Zotero.i18n.translateFragment = function (elem) {
 	let elems = elem.querySelectorAll('[data-l10n-id]')
 	for (let elem of elems) {
 		let str = Zotero.getString(elem.dataset.l10nId);
-		if (elem.tag === 'input' && elem.type === "submit") {
+		if (elem.nodeName === 'INPUT' && elem.type === "submit") {
 			elem.value = str;
 		}
 		else {

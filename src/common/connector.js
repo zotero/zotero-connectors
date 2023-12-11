@@ -58,16 +58,24 @@ Zotero.Connector = new function() {
 		return Zotero.Connector[pref];
 	}
 	
-	this.ping = function(payload={}) {
-		return Zotero.Connector.callMethod("ping", payload).then(function(response) {
-			if (response && 'prefs' in response) {
-				Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
-				Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
-				Zotero.Connector.googleDocsAddNoteEnabled = !!response.prefs.googleDocsAddNoteEnabled;
-				Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
+	this.ping = async function(payload={}) {
+		let response = await Zotero.Connector.callMethod("ping", payload);
+		if (response && 'prefs' in response) {
+			Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
+			Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
+			Zotero.Connector.googleDocsAddNoteEnabled = !!response.prefs.googleDocsAddNoteEnabled;
+			Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
+			if (response.prefs.translatorsHash) {
+				(async () => {
+					let translatorsHash = await Zotero.Translators.getTranslatorsHash();
+					if (response.prefs.translatorsHash != translatorsHash) {
+						Zotero.debug("Zotero Ping: Translator hash mismatch detected. Updating translators from Zotero")
+						return Zotero.Repo.update();
+					}
+				})()
 			}
-			return response || {};
-		});
+		}
+		return response || {};
 	}
 	
 	this.getClientVersion = async function() {

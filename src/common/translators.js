@@ -36,6 +36,8 @@ Zotero.Translators = new function() {
 	var _fullFrameDetectionWhitelist = ['resolver.ebscohost.com'];
 	var _resetAttempted = false;
 	
+	this._translatorsHash = null;
+	
 	/**
 	 * Initializes translator cache, loading all relevant translators into memory
 	 * @param {Zotero.Translate[]} [translators] List of translators. If not specified, it will be
@@ -101,6 +103,23 @@ Zotero.Translators = new function() {
 			_cache[type].sort(cmp);
 		}
 	}
+	
+	/**
+	 * Gets a hash of all translators (to check whether Connector needs an update)
+	 */
+	this.getTranslatorsHash = async function () {
+		if (this._translatorsHash) return this._translatorsHash;
+		if(!_initialized) await this.init();
+		const translators = Object.keys(_translators).map(id => _translators[id]);
+
+		let hashString = "";
+		for (let translator of translators) {
+			hashString += `${translator.translatorID}:${translator.lastUpdated},`;
+		}
+		this._translatorsHash = Zotero.Utilities.Connector.md5(hashString);
+		return this._translatorsHash;
+	};
+	
 	
 	/**
 	 * Gets the translator that corresponds to a given ID, without attempting to retrieve code
@@ -328,6 +347,7 @@ Zotero.Translators = new function() {
 		
 		// Reinitialize
 		await Zotero.Translators.init(serializedTranslators);
+		this._translatorsHash = null;
 	}
 }
 

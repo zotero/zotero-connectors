@@ -31,30 +31,34 @@ Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
 	if (details.method != "GET" && details.statusCode < 300 && details.statusCode >= 400) return;
 	
 	let isPDF = false;
+	let isCSPProtected = false;
 
 	// Firefox currently does not allow to inject scripts into pdf pages
 	// See https://bugzilla.mozilla.org/show_bug.cgi?id=1454760#c3
 	if (Zotero.isFirefox) {
 		const contentType = details.responseHeadersObject['content-type'];
-		if (!contentType) return;
-		if (
-			!contentType.includes("application/pdf") &&
-			!contentType.includes("application/octet-stream")
-		) return;
-		
-		// While Firefox will show the PDF viewer for application/octet-stream, it must pass some
-		// additional checks: the URL must end in .pdf and the PDF must be a top-level document.
-		// https://searchfox.org/mozilla-central/rev/50c3cf7a3c931409b54efa009795b69c19383541/toolkit/components/pdfjs/content/PdfStreamConverter.jsm#1100-1121
-		if (contentType.includes("application/octet-stream")) {
-			if (!details.url.includes(".pdf") || !details.type === "main_frame") return;
+		if (contentType) {
+			if (contentType.includes("application/pdf")) {
+				isPDF = true;
+			}
+			// While Firefox will show the PDF viewer for application/octet-stream, it must pass some
+			// additional checks: the URL must end in .pdf and the PDF must be a top-level document.
+			// https://searchfox.org/mozilla-central/rev/50c3cf7a3c931409b54efa009795b69c19383541/toolkit/components/pdfjs/content/PdfStreamConverter.jsm#1100-1121
+			else if (contentType.includes("application/octet-stream")
+					&& details.url.includes(".pdf") && details.type === "main_frame") {
+				isPDF = true;
+			}
 		}
-		
 	}
 	
-	// Address pages like github gists where we are prevented from injecting the progress window due to
-	// the restrictive CSP.
-	const csp = details.responseHeadersObject['content-security-policy'];
-	if (!csp.includes("sandbox") || csp.includes("allow-scripts")) return;
+	if (!isPDF) {
+		// Address pages like github gists where we are prevented from injecting the progress window due to
+		// the restrictive CSP.
+		const csp = details.responseHeadersObject['content-security-policy'];
+		isCSPProtected = csp && csp.includes("sandbox") && !csp.includes("allow-scripts");
+	}
+	
+	if (!isPDF && !isCSPProtected) return;
 	
 	// Somehow browser.webNavigation.onCommitted runs later than headersReceived
 	setTimeout(async function() {

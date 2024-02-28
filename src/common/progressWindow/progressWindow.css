@@ -117,6 +117,16 @@ button:active {
 	font-size: 11px;
 }
 
+.ProgressWindow-filterInput {
+	width: 100%;
+	box-sizing: border-box;
+	margin-right: 8px;
+	padding-left: 5px;
+	padding-right: 5px;
+	font-size: 12px;
+	margin-bottom: 6px;
+}
+
 .ProgressWindow-targetSelector {
 	height: 218px;
 	overflow-y: scroll;

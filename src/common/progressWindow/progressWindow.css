@@ -117,12 +117,43 @@ button:active {
 	font-size: 11px;
 }
 
+.ProgressWindow-filterWrapper {
+	display: flex;
+	margin-bottom: 6px;
+}
+.ProgressWindow-filterInput {
+	width: 100%;
+	box-sizing: border-box;
+	padding-left: 5px;
+	padding-right: 20px;
+	font-size: 12px;
+}
+.ProgressWindow-cross {
+	width: 17px;
+	height: 17px;
+	margin-left: -20px;
+	align-self: center;
+	border: none;
+	border-radius: 15px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: 10px;
+}
+.ProgressWindow-cross.hidden {
+	display: none;
+}
+
 .ProgressWindow-targetSelector {
 	height: 218px;
 	overflow-y: scroll;
 	background: white;
 	border: 1px solid lightgray;
 	padding-bottom: 2px
+}
+
+.ProgressWindow-targetSelector .context-row .tree-item-label {
+	opacity: 0.6;
 }
 
 .ProgressWindow-progressBox {

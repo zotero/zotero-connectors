@@ -65,6 +65,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder')
 		};
 		
+		this.expandedRowsCache = {};
+		
 		this.headlineSelectNode = React.createRef();
 		
 		this.handleMouseEnter = this.handleMouseEnter.bind(this);
@@ -167,6 +169,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			targets.forEach((t) => {
 				if (getTargetType(t.id) == 'library') {
 					t.expanded = true;
+					this.expandedRowsCache[t.id] = true;
 				}
 			});
 			
@@ -535,13 +538,20 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	setFilter() {
 		let filter = document.querySelector('.ProgressWindow-filterInput')?.value || "";
 		filter = filter.toLowerCase();
+		let isFilterEmpty = filter.length == 0;
 		let passingIDs = {};
 		let rows = this.state.targets;
+		if (!isFilterEmpty && Object.keys(this.expandedRowsCache).length == 0) {
+			// Just started filtering - remember which rows were expanded
+			for (let row of rows) {
+				this.expandedRowsCache[row.id] = row.expanded;
+			}
+		}
 		// Go through the rows from the bottom to the top
 		for (let i = rows.length - 1; i >= 0; i--) {
 			let row = rows[i];
 			// If a row passes the filter, record it
-			if (filter.length == 0 || row.name.toLowerCase().includes(filter) || passingIDs[row.id]) {
+			if (isFilterEmpty || row.name.toLowerCase().includes(filter) || passingIDs[row.id]) {
 				passingIDs[row.id] = true;
 				// Find the row's immediate parent and try to mark it as passing as well
 				let maybeParenIndex = i - 1;
@@ -558,9 +568,24 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.setState((prevState) => {
 			return {
 				targets: [...prevState.targets.map((target) => {
-					return Object.assign({}, target, { passesFilter: !!passingIDs[target.id] });
+					let updated = Object.assign({}, target, { passesFilter: !!passingIDs[target.id] });
+					if (!isFilterEmpty) {
+						// Expand all visible rows during filtering
+						updated.expanded = true;
+					}
+					else {
+						// Filter was cleared: each row's expanded status is restored
+						// to what it was before filtering
+						updated.expanded = !!this.expandedRowsCache[target.id];
+					}
+					return updated;
 				})]
 			};
+		}, () => {
+			if (isFilterEmpty && Object.keys(this.expandedRowsCache).length > 0) {
+				// Filter was cleared: empty the expanded rows cache
+				this.expandedRowsCache = {};
+			}
 		});
 	}
 	

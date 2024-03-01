@@ -129,7 +129,7 @@ Zotero.Connector_Browser = new function() {
 		}
 		browser.tabs.get(tabId).then(function(tab) {
 			_tabInfo[tab.id] = Object.assign(_tabInfo[tab.id] || {injections: {}}, {translators: [], isPDF: true, frameId});
-			Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+			Zotero.Connector_Browser.injectTranslationScripts(tab, frameId, frameURL);
 			Zotero.Connector_Browser._updateExtensionUI(tab);
 		});
 	}
@@ -207,7 +207,7 @@ Zotero.Connector_Browser = new function() {
 
 	/**
 	 * Checks whether a given frame has any matching translators. Injects translation code
-	 * if translators are found.
+	 * into the first frame on the page or if translators are found.
 	 * 
 	 * @param tab
 	 * @param frameId
@@ -229,12 +229,7 @@ Zotero.Connector_Browser = new function() {
 				// Also in the first frame detected
 				// See https://github.com/zotero/zotero-connectors/issues/156
 				_tabInfo[tab.id].frameChecked = true;
-				// If you try to inject here immediately Firefox throws
-				// "Frame not found, or missing host permission"
-				if (Zotero.isFirefox) {
-					await Zotero.Promise.delay(100);
-				}
-				return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+				return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId, url);
 			}
 		}
 		// Frame url shouldn't ever match the tab url but sometimes it does and causes weird
@@ -249,7 +244,7 @@ Zotero.Connector_Browser = new function() {
 				return;
 			}
 			Zotero.debug(translators[0].length+  " translators found. Injecting into [tab.url, url]: " + tab.url + " , " + url);
-			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId);
+			return Zotero.Connector_Browser.injectTranslationScripts(tab, frameId, url);
 		});
 	};
 		
@@ -260,10 +255,11 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Checks whether translation scripts are already injected into a frame and if not - injects
 	 * @param tab {Object}
-	 * @param [frameId=0] {Number] Defaults to top frame
+	 * @param [frameId=0] {Number} Defaults to top frame
+	 * @param [url=null] {String} URL of the frame being injected
 	 * @returns {Promise} A promise that resolves when all scripts have been injected
 	 */
-	this.injectTranslationScripts = async function(tab, frameId=0) {
+	this.injectTranslationScripts = async function(tab, frameId=0, url=null) {
 		// Prevent triggering multiple times
 		let key = tab.id+'-'+frameId;
 		let deferred = this.injectTranslationScripts[key];
@@ -276,7 +272,8 @@ Zotero.Connector_Browser = new function() {
 		
 		let response = await Zotero.Messaging.sendMessage('ping', null, tab, frameId)
 		if (response && frameId == 0) return deferred.resolve();
-		Zotero.debug(`Injecting translation scripts into ${frameId} ${tab.url}`);
+		url = url ? `${url} - ${tab.url}` : tab.url
+		Zotero.debug(`Injecting translation scripts into ${frameId} ${url}`);
 		try {
 			return await Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, tab, frameId);
 		} catch (e) {
@@ -900,7 +897,13 @@ Zotero.Connector_Browser = new function() {
 		}
 		_tabInfo[tabId] = {
 			url: url,
-			injections: {}
+			injections: {},
+			translators: null,
+			selectCallback: null,
+			frameChecked: false,
+			isPDF: false,
+			uninjectable: false,
+			instanceID: null
 		}
 	}
 
@@ -1037,30 +1040,38 @@ Zotero.Connector_Browser = new function() {
 		// Ignore developer tools, item selector
 		if (details.tabId <= 0 || _isDisabledForURL(details.url, true)
 			|| details.url.indexOf(browser.runtime.getURL("itemSelector/itemSelector.html")) === 0) return;
-		
-		// Don't process again if URL hasn't changed
-		if (_tabInfo[details.tabId] && _tabInfo[details.tabId].url == details.url) {
-			return Zotero.Connector_Browser._updateExtensionUI(tab);
+			
+		// Ignore a history change that doesn't change URL (fired for all normal navigation)
+		if (historyChange && _tabInfo[details.tabId] && _tabInfo[details.tabId].url == details.url) {
+			return;
 		}
-		
+
 		if (details.frameId == 0) {
 			_updateInfoForTab(details.tabId, details.url);
-			// Getting the tab is uber slow in Firefox. Since _updateInfoForTab() resets the
-			// object we use to store tab related metadata, it needs to fire ASAP, so that other hooks
-			// such as those from webNavigation events can update the metadata, without it being overwritten
+		}
+
+		if (details.frameId == 0) {
 			var tab = await browser.tabs.get(details.tabId);
 			Zotero.Connector_Browser._updateExtensionUI(tab);
 			Zotero.Connector.reportActiveURL(tab.url);
 		}
-		if (!tab) {
-			var tab = await browser.tabs.get(details.tabId);
+		
+		// If you try to inject a frame here in Firefox it claims we don't have
+		// host permissions for the frame (false/bug), so we do it in onDOMContentLoaded
+		// (but it makes frame translator detection slower in Firefox)
+		if (!Zotero.isFirefox) {
+			if (!tab) tab = await browser.tabs.get(details.tabId);
+			await Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
 		}
-		// _updateInfoForTab will reject pending injections, but we need to make sure this
-		// executes in the next event loop such that the rejections can be processed
-		await Zotero.Promise.delay(1);
-		await Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
 		if (historyChange && details.frameId === 0) {
 			Zotero.Messaging.sendMessage('historyChanged');
+		}
+	}
+	
+	async function onDOMContentLoaded(details) {
+		if (Zotero.isFirefox) {
+			let tab = await browser.tabs.get(details.tabId);
+			await Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
 		}
 	}
 
@@ -1079,6 +1090,7 @@ Zotero.Connector_Browser = new function() {
 	})));
 	
 	browser.webNavigation.onCommitted.addListener(waitForInit(logListenerErrors(onNavigation)));
+	browser.webNavigation.onDOMContentLoaded.addListener(waitForInit(logListenerErrors(onDOMContentLoaded)))
 	browser.webNavigation.onHistoryStateUpdated.addListener(waitForInit(logListenerErrors(details => onNavigation(details, true))));
 }
 

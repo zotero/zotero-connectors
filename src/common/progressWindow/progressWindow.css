@@ -152,6 +152,10 @@ button:active {
 	padding-bottom: 2px
 }
 
+.ProgressWindow-targetSelector .context-row .tree-item-label {
+	opacity: 0.6;
+}
+
 .ProgressWindow-progressBox {
 	margin-top: 10px;
 	margin-bottom: 4px

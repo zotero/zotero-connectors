@@ -1030,6 +1030,9 @@ class TargetTree extends React.Component {
 					if (isFocused) {
 						className += "focused";
 					}
+					if (!item.passesFilter && item.passingParent) {
+						className += " context-row";
+					}
 					
 					return (
 						<div className={className} style={{marginLeft: depth * 5 + "px"}}>

@@ -89,7 +89,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.handleDone = this.handleDone.bind(this);
 		this.setFilter = this.setFilter.bind(this);
 		this.clearFilter = this.clearFilter.bind(this);
-		this.expandSelectedParents = this.expandSelectedParents.bind(this);
+		this.expandToTarget = this.expandToTarget.bind(this);
 	}
 	
 	getInitialState() {
@@ -171,18 +171,15 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			targets.forEach((t) => {
 				if (getTargetType(t.id) == 'library') {
 					t.expanded = true;
-					this.expandedRowsCache[t.id] = true;
 				}
 			});
 			
 			// Expand to selected node
-			let parent = getParent(targets, target.id);
-			while (parent) {
-				if (parent.expanded) {
-					break;
-				}
-				parent.expanded = true;
-				parent = getParent(targets, parent.id);
+			this.expandToTarget(targets, target);
+
+			// Record which rows are expanded so they're not collapsed in setFilter()
+			for (let row of targets) {
+				this.expandedRowsCache[row.id] = row.expanded;
 			}
 		}
 		
@@ -420,19 +417,14 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	/**
 	 * Expand all parent rows of the selected row
 	 */
-	expandSelectedParents() {
-		let selectedIndex = this.state.targets.findIndex(row => row.id == this.state.target.id);
-		let target = this.state.targets[selectedIndex];
-		let lastLevel = target.level;
-		for (let i = selectedIndex - 1; i >= 0; i--) {
-			let parent = this.state.targets[i];
-			// If the row has the level right above the last level we saw, expand it
-			if (parent && parent.level == lastLevel - 1) {
-				if (!parent.expanded) {
-					this.handleRowToggle(parent.id);
-				}
-				lastLevel--;
+	expandToTarget(targets, target) {
+		let parent = getParent(targets, target.id);
+		while (parent) {
+			if (parent.expanded) {
+				break;
 			}
+			parent.expanded = true;
+			parent = getParent(targets, parent.id);
 		}
 	}
 	handleKeyDown(event) {
@@ -452,7 +444,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						this.onTargetChange(firstPassingTarget.id);
 					}
 				}
-				this.expandSelectedParents();
 			}
 		}
 		if (event.key == 'Escape') {
@@ -656,7 +647,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				// Filter was cleared: empty the expanded rows cache
 				this.expandedRowsCache = {};
 				// Ensure that the selected row's parent's are not collapsed 
-				this.expandSelectedParents();
+				this.expandToTarget(this.state.targets, this.state.target);
 			}
 		});
 	}

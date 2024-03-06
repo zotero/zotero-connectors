@@ -129,13 +129,19 @@ button:active {
 	font-size: 12px;
 }
 .ProgressWindow-cross {
-	width: 16px;
-	height: 16px;
-	background: url('x-8.svg') no-repeat center;
+	width: 17px;
+	height: 17px;
 	margin-left: -20px;
 	align-self: center;
 	border: none;
 	border-radius: 15px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: 10px;
+}
+.ProgressWindow-cross.hidden {
+	display: none;
 }
 
 .ProgressWindow-targetSelector {

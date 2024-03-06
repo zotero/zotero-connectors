@@ -595,7 +595,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		let isFilterEmpty = filter.length == 0;
 		// Show the cross icon only when the filter is non-empty
 		if (crossIcon) {
-			crossIcon.hidden = isFilterEmpty;
+			if (isFilterEmpty) {
+				crossIcon.classList.add("hidden");
+			}
+			else {
+				crossIcon.classList.remove("hidden");
+			}
 		}
 		let passingIDs = {};
 		let passingParentIDs = {};
@@ -666,11 +671,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						onInput={this.setFilter}
 						placeholder={this.text.filterPlaceholder}>
 					</input>
-					<button className="ProgressWindow-cross"
-							hidden="true"
+					<button className="ProgressWindow-cross hidden"
 							onClick={this.clearFilter}
-							tabindex={-1}>
-					</button>
+							tabindex={-1}>⛌</button>
 				</div>
 				<div className="ProgressWindow-targetSelector">
 					<TargetTree

@@ -88,6 +88,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.onTagsBlur = this.onTagsBlur.bind(this);
 		this.handleDone = this.handleDone.bind(this);
 		this.setFilter = this.setFilter.bind(this);
+		this.clearFilter = this.clearFilter.bind(this);
 	}
 	
 	getInitialState() {
@@ -416,6 +417,24 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	handleKeyDown(event) {
+		if (event.target.classList.contains("ProgressWindow-filterInput")) {
+			// Escape from a non-empty collections filter just clears it 
+			if (event.key == 'Escape' && event.target.value.length > 0) {
+				this.clearFilter();
+				return;
+			}
+			// Tab from collections filter will select the first passing row
+			// if the currently selected row is filtered out
+			if (event.key == "Tab" && !event.shiftKey) {
+				var target = this.state.targets.find(row => row.id == this.state.target.id);
+				if (!target.passesFilter) {
+					let firstPassingTarget = this.state.targets.find(row => row.passesFilter);
+					if (firstPassingTarget) {
+						this.onTargetChange(firstPassingTarget.id);
+					}
+				}
+			}
+		}
 		if (event.key == 'Escape') {
 			this.handleDone();
 		}
@@ -534,12 +553,32 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			{" " + this.state.target.name + "…"}
 		</React.Fragment>;
 	}
+
+
+	/**
+	 * Clear the value of the collections filter and display all rows
+	 */
+	clearFilter() {
+		let filter = document.querySelector('.ProgressWindow-filterInput');
+		if (!filter) {
+			return;
+		}
+		filter.value = "";
+		this.setFilter();
+		filter.focus();
+	}
 	
 	setFilter() {
 		let filter = document.querySelector('.ProgressWindow-filterInput')?.value || "";
+		let crossIcon = document.querySelector(".ProgressWindow-cross");
 		filter = filter.toLowerCase();
 		let isFilterEmpty = filter.length == 0;
+		// Show the cross icon only when the filter is non-empty
+		if (crossIcon) {
+			crossIcon.hidden = isFilterEmpty;
+		}
 		let passingIDs = {};
+		let passingParentIDs = {};
 		let rows = this.state.targets;
 		if (!isFilterEmpty && Object.keys(this.expandedRowsCache).length == 0) {
 			// Just started filtering - remember which rows were expanded
@@ -550,17 +589,20 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		// Go through the rows from the bottom to the top
 		for (let i = rows.length - 1; i >= 0; i--) {
 			let row = rows[i];
+			let isPassing = row.name.toLowerCase().includes(filter);
 			// If a row passes the filter, record it
-			if (isFilterEmpty || row.name.toLowerCase().includes(filter) || passingIDs[row.id]) {
-				passingIDs[row.id] = true;
-				// Find the row's immediate parent and try to mark it as passing as well
+			if (isFilterEmpty || isPassing || passingParentIDs[row.id]) {
+				if (isPassing) {
+					passingIDs[row.id] = true;
+				}
+				// Find the row's immediate parent and mark it as a parent of a passing item
 				let maybeParenIndex = i - 1;
 				while (maybeParenIndex >= 0 && rows[maybeParenIndex].level >= row.level) {
 					maybeParenIndex -= 1;
 				}
 				let maybeParent = rows[maybeParenIndex];
 				if (maybeParent && maybeParent.level == row.level - 1) {
-					passingIDs[maybeParent.id] = true;
+					passingParentIDs[maybeParent.id] = true;
 				}
 			}
 		}
@@ -568,7 +610,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.setState((prevState) => {
 			return {
 				targets: [...prevState.targets.map((target) => {
-					let updated = Object.assign({}, target, { passesFilter: !!passingIDs[target.id] });
+					let updated = Object.assign({}, target, {
+						passesFilter: !!passingIDs[target.id],
+						passingParent: !!passingParentIDs[target.id]
+					});
 					if (!isFilterEmpty) {
 						// Expand all visible rows during filtering
 						updated.expanded = true;
@@ -599,10 +644,15 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						onInput={this.setFilter}
 						placeholder={this.text.filterPlaceholder}>
 					</input>
+					<button className="ProgressWindow-cross"
+							hidden="true"
+							onClick={this.clearFilter}
+							tabindex={-1}>
+					</button>
 				</div>
 				<div className="ProgressWindow-targetSelector">
 					<TargetTree
-						rows={this.state.targets.filter(target => target.passesFilter)}
+						rows={this.state.targets.filter(target => target.passesFilter || target.passingParent)}
 						focused={this.state.targets.find(row => row.id == this.state.target.id)}
 						onExpandRows={this.handleExpandRows}
 						onCollapseRows={this.handleCollapseRows}

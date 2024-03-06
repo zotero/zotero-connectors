@@ -89,6 +89,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.handleDone = this.handleDone.bind(this);
 		this.setFilter = this.setFilter.bind(this);
 		this.clearFilter = this.clearFilter.bind(this);
+		this.expandSelectedParents = this.expandSelectedParents.bind(this);
 	}
 	
 	getInitialState() {
@@ -416,6 +417,24 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 	}
 	
+	/**
+	 * Expand all parent rows of the selected row
+	 */
+	expandSelectedParents() {
+		let selectedIndex = this.state.targets.findIndex(row => row.id == this.state.target.id);
+		let target = this.state.targets[selectedIndex];
+		let lastLevel = target.level;
+		for (let i = selectedIndex - 1; i >= 0; i--) {
+			let parent = this.state.targets[i];
+			// If the row has the level right above the last level we saw, expand it
+			if (parent && parent.level == lastLevel - 1) {
+				if (!parent.expanded) {
+					this.handleRowToggle(parent.id);
+				}
+				lastLevel--;
+			}
+		}
+	}
 	handleKeyDown(event) {
 		if (event.target.classList.contains("ProgressWindow-filterInput")) {
 			// Escape from a non-empty collections filter just clears it 
@@ -433,6 +452,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						this.onTargetChange(firstPassingTarget.id);
 					}
 				}
+				this.expandSelectedParents();
 			}
 		}
 		if (event.key == 'Escape') {
@@ -630,6 +650,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			if (isFilterEmpty && Object.keys(this.expandedRowsCache).length > 0) {
 				// Filter was cleared: empty the expanded rows cache
 				this.expandedRowsCache = {};
+				// Ensure that the selected row's parent's are not collapsed 
+				this.expandSelectedParents();
 			}
 		});
 	}

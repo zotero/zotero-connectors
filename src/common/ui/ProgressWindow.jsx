@@ -664,7 +664,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					</input>
 					<button className="ProgressWindow-cross hidden"
 							onClick={this.clearFilter}
-							tabindex={-1}>⛌</button>
+							tabindex={-1}/>
 				</div>
 				<div className="ProgressWindow-targetSelector">
 					<TargetTree

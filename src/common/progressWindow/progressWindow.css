@@ -124,21 +124,16 @@ button:active {
 .ProgressWindow-filterInput {
 	width: 100%;
 	box-sizing: border-box;
-	padding-left: 5px;
-	padding-right: 20px;
+	padding: 2px 20px 2px 6px;
 	font-size: 12px;
 }
 .ProgressWindow-cross {
-	width: 17px;
-	height: 17px;
+	width: 16px;
+	height: 16px;
+	background: url('searchfield-cancel.svg') no-repeat center;
 	margin-left: -20px;
 	align-self: center;
 	border: none;
-	border-radius: 15px;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	font-size: 10px;
 }
 .ProgressWindow-cross.hidden {
 	display: none;

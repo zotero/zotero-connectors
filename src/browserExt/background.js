@@ -40,6 +40,17 @@ Zotero.Connector_Browser = new function() {
 	this._tabInfo = _tabInfo;
 	let buttonContext = ['browser_action'];
 	
+	// Set true for long-running tasks like a Google Docs integration HTTP request to Zotero
+	// where MV3 otherwise would kill the service worker and break the integration session
+	// requiring a Zotero restart
+	this._keepServiceWorkerAlive = 0;
+	
+	this.shouldKeepServiceWorkerAlive = () => this._keepServiceWorkerAlive;
+	// Parallel async functions may call this, so we use a counter to make sure
+	// one keep-alive function finishing does not kill the service worker for other
+	// still-running functions
+	this.setKeepServiceWorkerAlive = (val) => this._keepServiceWorkerAlive += val ? 1 : -1;
+	
 	this.init = async function() {
 		if (Zotero.isManifestV3) {
 			if (!Zotero.isFirefox) {

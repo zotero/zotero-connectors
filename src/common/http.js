@@ -216,16 +216,8 @@ Zotero.HTTP = new function() {
 		});
 	}
 	
-	this._requestFetch = async function(method, url, options) {
-		// There is no reason to run xhr not from background page for web extensions since those
-		// requests send full browser cookies.
-		// That is not the case with Safari though and without cookies requests to proxied
-		// resources fail, so we use on-page xhr there.
-		// However, if the request requires replacing user-agent, we still send the request via
-		// the background page since we're unable to replace user-agent via an on-page xhr and
-		// since user-agent option is explicitly set, it takes priority.
-		let sameOriginRequestViaSafari = Zotero.isSafari && Zotero.HTTP.isSameOrigin(url) && !options.headers['User-Agent'];
-		if (Zotero.isInject && !sameOriginRequestViaSafari) {
+	this._requestFetch = Zotero.Utilities.Connector.keepServiceWorkerAliveFunction(async function(method, url, options) {
+		if (Zotero.isInject) {
 			// Make a cross-origin request via the background page, parsing the responseText with
 			// DOMParser and returning a Proxy with 'response' set to the parsed document
 			let isDocRequest = options.responseType == 'document';
@@ -371,7 +363,8 @@ Zotero.HTTP = new function() {
 			getAllResponseHeaders: () => responseHeadersString,
 			getResponseHeader: name => responseHeaders[name.toLowerCase()]
 		};
-	}
+	});
+	
 	/**
 	* Send an HTTP GET request via XMLHTTPRequest
 	*

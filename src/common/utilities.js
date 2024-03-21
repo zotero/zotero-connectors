@@ -51,6 +51,7 @@ Zotero.Utilities.Connector = {
 	},
 	
 	createMV3PersistentObject: async function (name) {
+		if (!Zotero.isManifestV3) return {};
 		let stored = await browser.storage.session.get({[name]: "{}"});
 		let obj = JSON.parse(stored[name]);
 		return new Proxy(obj, {
@@ -63,6 +64,20 @@ Zotero.Utilities.Connector = {
 				browser.storage.session.set({[name]: JSON.stringify(target)});
 			}
 		})
+	},
+	
+	keepServiceWorkerAliveFunction: function(fn) {
+		return async function(...args) {
+			try {
+				Zotero.Connector_Browser.setKeepServiceWorkerAlive(true);
+				let result = fn.apply(this, args);
+				if (result.then) result = await result;
+				return result;
+			}
+			finally {
+				Zotero.Connector_Browser.setKeepServiceWorkerAlive(false);
+			}
+		}
 	},
 	
 	// Chrome has a limit of somewhere between 64 and 128 MB for messages.

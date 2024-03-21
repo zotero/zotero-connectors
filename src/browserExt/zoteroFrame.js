@@ -61,11 +61,11 @@ class ZoteroFrame {
 			});
 		}
 		
-		document.body.appendChild(this._frame);
+		document.body?.appendChild(this._frame);
 	}
 
 	remove() {
-		document.body.removeChild(this._frame);
+		document.body?.removeChild(this._frame);
 	}
 	
 	_initMessaging(messagingOptions) {

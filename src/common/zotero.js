@@ -179,7 +179,7 @@ var Zotero = global.Zotero = new function() {
 	this.initGlobal = async function() {
 		await Zotero.Errors.init();
 		if (Zotero.isManifestV3) {
-			Zotero.logError(new Error(`Initialization started at ${Zotero.Date.dateToSQL(new Date())}`));
+			Zotero.logError(new Error(`Service worker (re)started at ${Zotero.Date.dateToSQL(new Date())}`));
 		}
 		Zotero.isBackground = true;
 		
@@ -231,6 +231,9 @@ var Zotero = global.Zotero = new function() {
 		Zotero.Proxies.init();
 		await this._initDateFormatsJSON();
 		Zotero.initDeferred.resolve();
+		if (Zotero.GoogleDocs.API.init) {
+			await Zotero.GoogleDocs.API.init();
+		}
 		Zotero.initialized = true;
 
 		await Zotero.migrate();

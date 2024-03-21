@@ -39,7 +39,7 @@ Zotero.SandboxedTranslateManager = {
 		}
 		this.frame = new ZoteroFrame(
 			{ src: browser.runtime.getURL('translateSandbox/translateSandbox.html') },
-			{},
+			{ width: "0", height: "0" },
 			{ handlerFunctionOverrides: CONTENT_SCRIPT_FUNCTION_OVERRIDES }
 		);
 		

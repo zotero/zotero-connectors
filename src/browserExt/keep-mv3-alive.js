@@ -26,13 +26,16 @@
 //Based on
 //https://stackoverflow.com/questions/66618136/persistent-service-worker-in-chrome-extension/66618269#66618269
 
+const LET_DIE_AFTER = 60*60e3; // 1 hour
+
+const startedOn = Date.now();
 let lifeline;
 keepAlive();
 
 chrome.runtime.onConnect.addListener(port => {
 	if (port.name === 'keepAlive') {
 		lifeline = port;
-		setTimeout(keepAliveForced, 295e3); // 5 minutes minus 5 seconds
+		setTimeout(keepAliveForced, 25e3); // 25s
 		port.onDisconnect.addListener(keepAliveForced);
 	}
 });
@@ -40,6 +43,7 @@ chrome.runtime.onConnect.addListener(port => {
 function keepAliveForced() {
 	lifeline?.disconnect();
 	lifeline = null;
+	if (startedOn + LET_DIE_AFTER < Date.now() && !Zotero.Connector_Browser.shouldKeepServiceWorkerAlive()) return;
 	keepAlive();
 }
 
@@ -49,8 +53,7 @@ async function keepAlive() {
 		try {
 			await chrome.scripting.executeScript({
 				target: { tabId: tab.id },
-				function: () => chrome.runtime.connect({ name: 'keepAlive' }),
-				// `function` will become `func` in Chrome 93+
+				func: () => chrome.runtime.connect({ name: 'keepAlive' }),
 			});
 			chrome.tabs.onUpdated.removeListener(retryOnTabUpdate);
 			return;

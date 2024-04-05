@@ -216,7 +216,7 @@ Zotero.HTTP = new function() {
 		});
 	}
 	
-	this._requestFetch = Zotero.Utilities.Connector.keepServiceWorkerAliveFunction(async function(method, url, options) {
+	this._requestFetch = async function(method, url, options) {
 		if (Zotero.isInject) {
 			// Make a cross-origin request via the background page, parsing the responseText with
 			// DOMParser and returning a Proxy with 'response' set to the parsed document
@@ -250,120 +250,127 @@ Zotero.HTTP = new function() {
 			});
 		}
 		
-		let logBody = '';
-		if (['GET', 'HEAD'].includes(method)) {
-			if (options.body != null) {
-				throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
-			}
-		} else if(options.body) {
-			if (options.headers["Content-Type"] !== 'multipart/form-data') {
-				options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
+		try {
+			Zotero.Connector_Browser.setKeepServiceWorkerAlive(true);
+			
+			let logBody = '';
+			if (['GET', 'HEAD'].includes(method)) {
+				if (options.body != null) {
+					throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
+				}
+			} else if(options.body) {
+				if (options.headers["Content-Type"] !== 'multipart/form-data') {
+					options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
 
-				logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
-						options.body.length > options.logBodyLength ? '...' : '';
-				// TODO: make sure below does its job in every API call instance
-				// Don't display password or session id in console
-				logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
-				logBody = logBody.replace(/password=[^&]+/, 'password=********');
+					logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
+							options.body.length > options.logBodyLength ? '...' : '';
+					// TODO: make sure below does its job in every API call instance
+					// Don't display password or session id in console
+					logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
+					logBody = logBody.replace(/password=[^&]+/, 'password=********');
+				}
+				
+				if (!options.headers) options.headers = {};
+				if (!options.headers["Content-Type"]) {
+					options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+				}
+				else if (options.headers["Content-Type"] == 'multipart/form-data') {
+					// Allow XHR to set Content-Type with boundary for multipart/form-data
+					delete options.headers["Content-Type"];
+				}
+			}
+			if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
+				await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
+				delete options.headers['User-Agent'];
+			}
+			if (options.headers['Referer']) {
+				options.referrer = options.headers['Referer'];
+				delete options.headers['Referer'];
+			}
+			Zotero.debug(`HTTP ${method} ${url}${logBody}`);
+			if (options.responseType == '') {
+				options.responseType = 'text';
 			}
 			
-			if (!options.headers) options.headers = {};
-			if (!options.headers["Content-Type"]) {
-				options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+			if (options.timeout) {
+				var abortController = new AbortController();
+				setTimeout(abortController.abort.bind(abortController), options.timeout);
 			}
-			else if (options.headers["Content-Type"] == 'multipart/form-data') {
-				// Allow XHR to set Content-Type with boundary for multipart/form-data
-				delete options.headers["Content-Type"];
+			let headers = new Headers(options.headers);
+			try {
+				let fetchOptions = {
+					method,
+					headers,
+					body: options.body,
+					credentials: Zotero.isInject ? 'same-origin' : 'include',
+					referrer: options.referrer,
+					referrerPolicy: options.referrer ? "unsafe-url" : "strict-origin-when-cross-origin"
+				}
+				if (abortController) {
+					fetchOptions.signal = abortController.signal;
+				}
+				var response = await fetch(url, fetchOptions);
+			} catch (e) {
+				var err;
+				if (e.name == 'AbortError') {
+					err = new Zotero.HTTP.TimeoutError(url, options.timeout);
+				}
+				else {
+					err = new Zotero.HTTP.StatusError({status: 0}, url);
+				}
+				// Zotero.logError(err);
+				throw err;
 			}
-		}
-		if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
-			await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
-			delete options.headers['User-Agent'];
-		}
-		if (options.headers['Referer']) {
-			options.referrer = options.headers['Referer'];
-			delete options.headers['Referer'];
-		}
-		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
-		if (options.responseType == '') {
-			options.responseType = 'text';
-		}
-		
-		if (options.timeout) {
-			var abortController = new AbortController();
-			setTimeout(abortController.abort.bind(abortController), options.timeout);
-		}
-		let headers = new Headers(options.headers);
-		try {
-			let fetchOptions = {
-				method,
-				headers,
-				body: options.body,
-				credentials: Zotero.isInject ? 'same-origin' : 'include',
-				referrer: options.referrer,
-				referrerPolicy: options.referrer ? "unsafe-url" : "strict-origin-when-cross-origin"
+			
+			let responseData;
+			if (options.responseType == 'arraybuffer') {
+				responseData = await response.arrayBuffer();
 			}
-			if (abortController) {
-				fetchOptions.signal = abortController.signal;
-			}
-			var response = await fetch(url, fetchOptions);
-		} catch (e) {
-			var err;
-			if (e.name == 'AbortError') {
-				err = new Zotero.HTTP.TimeoutError(url, options.timeout);
+			else if (options.responseType == 'json') {
+				responseData = await response.json();
 			}
 			else {
-				err = new Zotero.HTTP.StatusError({status: 0}, url);
-			}
-			// Zotero.logError(err);
-			throw err;
-		}
-		
-		let responseData;
-		if (options.responseType == 'arraybuffer') {
-			responseData = await response.arrayBuffer();
-		}
-		else if (options.responseType == 'json') {
-			responseData = await response.json();
-		}
-		else {
-			responseData = await response.text();
-		} 
+				responseData = await response.text();
+			} 
 
-		if (options.debug) {
-			if (options.responseType == '' || options.responseType == 'text') {
-				Zotero.debug(`HTTP ${response.status} response: ${responseData}`);
+			if (options.debug) {
+				if (options.responseType == '' || options.responseType == 'text') {
+					Zotero.debug(`HTTP ${response.status} response: ${responseData}`);
+				}
+				else {
+					Zotero.debug(`HTTP ${xmlhttp.status} response`);
+				}
 			}
-			else {
-				Zotero.debug(`HTTP ${xmlhttp.status} response`);
+			
+			let invalidDefaultStatus = options.successCodes === null &&
+				(response.status < 200 || response.status >= 300);
+			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(response.status);
+			if (invalidDefaultStatus || invalidStatus) {
+				throw new Zotero.HTTP.StatusError(response, url, typeof responseData == 'string' ? responseData : '');
 			}
+			
+			let responseHeaders = {};
+			let responseHeadersString = "";
+			for (let [key, value] of response.headers.entries()) {
+				responseHeaders[key.toLowerCase()] = value;
+				responseHeadersString += `${key}: ${value}\r\n`;
+			}
+			
+			return {
+				responseText: typeof responseData == 'string' ? responseData : '',
+				response: responseData,
+				responseURL: response.url,
+				responseType: options.responseType,
+				status: response.status,
+				statusText: response.statusText,
+				getAllResponseHeaders: () => responseHeadersString,
+				getResponseHeader: name => responseHeaders[name.toLowerCase()]
+			};
 		}
-		
-		let invalidDefaultStatus = options.successCodes === null &&
-			(response.status < 200 || response.status >= 300);
-		let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(response.status);
-		if (invalidDefaultStatus || invalidStatus) {
-			throw new Zotero.HTTP.StatusError(response, url, typeof responseData == 'string' ? responseData : '');
+		finally {
+			Zotero.Connector_Browser.setKeepServiceWorkerAlive(false);
 		}
-		
-		let responseHeaders = {};
-		let responseHeadersString = "";
-		for (let [key, value] of response.headers.entries()) {
-			responseHeaders[key.toLowerCase()] = value;
-			responseHeadersString += `${key}: ${value}\r\n`;
-		}
-		
-		return {
-			responseText: typeof responseData == 'string' ? responseData : '',
-			response: responseData,
-			responseURL: response.url,
-			responseType: options.responseType,
-			status: response.status,
-			statusText: response.statusText,
-			getAllResponseHeaders: () => responseHeadersString,
-			getResponseHeader: name => responseHeaders[name.toLowerCase()]
-		};
-	});
+	};
 	
 	/**
 	* Send an HTTP GET request via XMLHTTPRequest

@@ -142,7 +142,6 @@ var MESSAGES = {
 		getPref: true
 	},
 	Connector_Browser: {
-		setKeepServiceWorkerAlive: true,
 		onSelect: true,
 		onPageLoad: false,
 		onTranslators: false,

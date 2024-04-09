@@ -23,6 +23,8 @@
     ***** END LICENSE BLOCK *****
 */
 
+const MAX_BACKOFF = 64e3;
+
 /**
  * Functions for performing HTTP requests, both via XMLHTTPRequest and using a hidden browser
  * @namespace
@@ -31,6 +33,9 @@ Zotero.HTTP = new function() {
 	this.StatusError = function(xmlhttp, url, responseText) {
 		this.message = `HTTP request to ${url} rejected with status ${xmlhttp.status}`;
 		this.status = xmlhttp.status;
+		if (xmlhttp.getResponseHeader && xmlhttp.getResponseHeader('Retry-After')) {
+			this.retryAfter = xmlhttp.getResponseHeader('Retry-After');
+		}
 		try {
 			this.responseText = responseText;
 		} catch (e) {}
@@ -56,6 +61,8 @@ Zotero.HTTP = new function() {
 	 *         <li>responseType - The response type of the request from the XHR spec</li>
 	 *         <li>responseCharset - The charset the response should be interpreted as</li>
 	 *         <li>successCodes - HTTP status codes that are considered successful, or FALSE to allow all</li>
+	 *         <li>maxBackoff - how many times should a HTTP 429 backoff be attempted before the request fails
+	 *         		[default 0]</li>
 	 *     </ul>
 	 * @return {Promise<XMLHttpRequest>} A promise resolved with the XMLHttpRequest object if the
 	 *     request succeeds, or rejected if the browser is offline or a non-2XX status response
@@ -71,14 +78,43 @@ Zotero.HTTP = new function() {
 			timeout: 15000,
 			responseType: '',
 			responseCharset: null,
-			successCodes: null
+			successCodes: null,
+			maxBackoff: 10,
+			backoff: 0,
 		}, options);
+		let originalOptions = Zotero.Utilities.deepCopy(options);
 		
-		if (Zotero.isManifestV3) {
-			return Zotero.HTTP._requestFetch(method, url, options);
+		try {
+			if (Zotero.isManifestV3) {
+				return await Zotero.HTTP._requestFetch(method, url, options);
+			}
+			else {
+				return await Zotero.HTTP._requestXHR(method, url, options);
+			}
+
 		}
-		else {
-			return Zotero.HTTP._requestXHR(method, url, options);
+		catch (e) {
+			if ((e.status === 429 || e.retryAfter) && options.backoff < options.maxBackoff) {
+				if (e.status === 429) {
+					Zotero.debug(`HTTP 429 returned, attempting a backoff #${options.backoff+1}`)
+				}
+				else {
+					Zotero.debug(`HTTP ${e.status} returned with Retry-After: ${e.retryAfter}, attempting a backoff #${options.backoff+1}`)
+				}
+				if (e.retryAfter && parseInt(e.retryAfter) == e.retryAfter) {
+					if (e.retryAfter * 1000 > MAX_BACKOFF) {
+						Zotero.debug(`HTTP 429 Retry-After ${e.retryAfter} is higher than max backoff. Not retrying.`);
+						throw e;
+					}
+					await Zotero.Promise.delay(e.retryAfter * 1000);
+				}
+				else {
+					await Zotero.Promise.delay(Math.min(Math.pow(2, options.backoff)*1000, MAX_BACKOFF) + Math.round(Math.random() * 1000));
+				}
+				originalOptions.backoff++;
+				return this.request(method, url, originalOptions);
+			}
+			throw e;
 		}
 	};
 	
@@ -342,13 +378,6 @@ Zotero.HTTP = new function() {
 				}
 			}
 			
-			let invalidDefaultStatus = options.successCodes === null &&
-				(response.status < 200 || response.status >= 300);
-			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(response.status);
-			if (invalidDefaultStatus || invalidStatus) {
-				throw new Zotero.HTTP.StatusError(response, url, typeof responseData == 'string' ? responseData : '');
-			}
-			
 			let responseHeaders = {};
 			let responseHeadersString = "";
 			for (let [key, value] of response.headers.entries()) {
@@ -356,7 +385,7 @@ Zotero.HTTP = new function() {
 				responseHeadersString += `${key}: ${value}\r\n`;
 			}
 			
-			return {
+			response = {
 				responseText: typeof responseData == 'string' ? responseData : '',
 				response: responseData,
 				responseURL: response.url,
@@ -366,6 +395,15 @@ Zotero.HTTP = new function() {
 				getAllResponseHeaders: () => responseHeadersString,
 				getResponseHeader: name => responseHeaders[name.toLowerCase()]
 			};
+
+			let invalidDefaultStatus = options.successCodes === null &&
+				(response.status < 200 || response.status >= 300);
+			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(response.status);
+			if (invalidDefaultStatus || invalidStatus) {
+				throw new Zotero.HTTP.StatusError(response, url, typeof responseData == 'string' ? responseData : '');
+			}
+			
+			return response;
 		}
 		finally {
 			Zotero.Connector_Browser.setKeepServiceWorkerAlive(false);

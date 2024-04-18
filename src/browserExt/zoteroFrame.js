@@ -42,9 +42,6 @@ class ZoteroFrame {
 		for (let key in attributes) {
 			this._frame[key] = attributes[key];
 		}
-		for (let key in style) {
-			this._frame.style[key] = style[key];
-		}
 		this._frame.setAttribute("frameborder", "0");
 
 		if (!messagingOptions) {
@@ -62,6 +59,11 @@ class ZoteroFrame {
 		}
 		
 		document.body?.appendChild(this._frame);
+		for (let key in style) {
+			if (this._frame.style) {
+				this._frame.style[key] = style[key];
+			}
+		}
 	}
 
 	remove() {

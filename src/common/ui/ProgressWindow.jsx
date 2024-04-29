@@ -353,9 +353,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.onTargetChange(event.target.value);
 	}
 	
-	onDisclosureChange() {
+	onDisclosureChange(e) {
+		let viaKeyPress = e.nativeEvent.clientY == 0 && e.nativeEvent.clientX == 0;
 		var show = !this.state.targetSelectorShown;
-		if (show) {
+		// No refocus on click triggered from keyboard
+		if (show && !viaKeyPress) {
 			this.focusTreeOnUpdate = true;
 		}
 		this.setState({

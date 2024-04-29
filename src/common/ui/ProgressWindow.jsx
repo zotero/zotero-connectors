@@ -62,7 +62,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder'),
-			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder')
+			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder'),
+			collapseBtn: Zotero.getString('progressWindow_collapse'),
+			expandBtn: Zotero.getString('progressWindow_expand'),
 		};
 		
 		this.expandedRowsCache = {};
@@ -548,6 +550,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				</select>
 				<button className={"ProgressWindow-disclosure"
 							+ (this.state.targetSelectorShown ? " is-open" : "")}
+						aria-expanded={this.state.targetSelectorShown}
+						aria-label={this.state.targetSelectorShown ? this.text.collapseBtn : this.text.expandBtn }
 						onClick={this.onDisclosureChange}
 						onKeyPress={this.handleDisclosureKeyPress}/>
 			</React.Fragment>

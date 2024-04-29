@@ -48,6 +48,12 @@
 	"progressWindow_savingTo": {
 		"message": "Saving to"
 	},
+	"progressWindow_expand": {
+		"message": "Expand collection selector"
+	},
+	"progressWindow_collapse": {
+		"message": "Collapse collection selector"
+	},
 	"progressWindow_tagPlaceholder": {
 		"message": "Tags (separated by commas)"
 	},

@@ -132,6 +132,8 @@ Zotero.Inject = new function() {
 		// Async in MV3
 		await (async () => translate.setDocument(document))();
 		if (sessionID) {
+			let itemsTotal = 0;
+			let itemsSaved = 0;
 			translate.setHandler("select", function(obj, items, callback) {
 				// Close the progress window before displaying Select Items
 				Zotero.Messaging.sendMessage("progressWindow.close", null);
@@ -161,12 +163,17 @@ Zotero.Inject = new function() {
 					// If items were selected, reopen the save popup
 					if (returnItems && !Zotero.Utilities.isEmpty(returnItems)) {
 						let sessionID = this.sessionDetails.id;
+						// Record how many items are being saved so that progress window can know
+						// when all top-level items are loaded
+						itemsTotal = Object.keys(returnItems).length;
+						itemsSaved = 0;
 						Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 					}
 					callback(returnItems);
 				}.bind(this))();
 			}.bind(this));
 			translate.setHandler("itemSaving", function(obj, item) {
+				itemsSaved += 1;
 				// this relays an item from this tab to the top level of the window
 				Zotero.Messaging.sendMessage(
 					"progressWindow.itemProgress",
@@ -174,7 +181,9 @@ Zotero.Inject = new function() {
 						sessionID,
 						id: item.id,
 						iconSrc: Zotero.ItemTypes.getImageSrc(item.itemType),
-						title: item.title
+						title: item.title,
+						itemsLoaded: itemsSaved >= itemsTotal ? itemsSaved : false,
+						itemType: item.itemType
 					}
 				);
 			});
@@ -187,7 +196,9 @@ Zotero.Inject = new function() {
 						id: item.id,
 						iconSrc: Zotero.ItemTypes.getImageSrc(item.itemType),
 						title: item.title,
-						progress: 100
+						progress: 100,
+						itemsLoaded: itemsSaved >= itemsTotal ? itemsSaved : false,
+						itemType: item.itemType
 					}
 				);
 				for(var i=0; i<item.attachments.length; i++) {
@@ -199,7 +210,8 @@ Zotero.Inject = new function() {
 							id: attachment.id,
 							iconSrc: determineAttachmentIcon(attachment),
 							title: attachment.title,
-							parentItem: item.id
+							parentItem: item.id,
+							itemType: determineAttachmentType(attachment)
 						}
 					);
 				}
@@ -213,7 +225,8 @@ Zotero.Inject = new function() {
 								iconSrc: Zotero.getExtensionURL("images/treeitem-note.png"),
 								title: Zotero.Utilities.cleanTags(note.note),
 								parentItem: item.id,
-								progress: 100
+								progress: 100,
+								itemType: Zotero.getString("itemType_note")
 							}
 						)
 					}
@@ -228,7 +241,8 @@ Zotero.Inject = new function() {
 						iconSrc: determineAttachmentIcon(attachment),
 						title: attachment.title,
 						parentItem: attachment.parentItem,
-						progress
+						progress,
+						itemType: determineAttachmentType(attachment)
 					}
 				);
 			});
@@ -244,6 +258,14 @@ Zotero.Inject = new function() {
 		return Zotero.ItemTypes.getImageSrc(
 			contentType === "application/pdf" ? "attachment-pdf" : "attachment-snapshot"
 		);
+	}
+
+	function determineAttachmentType(attachment) {
+		if (attachment.linkMode === "linked_url") return Zotero.getString("itemType_link");
+		var contentType = attachment.contentType || attachment.mimeType;
+		if (contentType == "application/pdf") return Zotero.getString("itemType_pdf");
+		if (contentType == "text/html") return Zotero.getString("itemType_snapshot");
+		return Zotero.getString("itemType_attachment");
 	}
 
 	/**
@@ -444,7 +466,7 @@ Zotero.Inject = new function() {
 			Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 			return;
 		}
-		
+
 		var sessionID = Zotero.Utilities.randomString();
 		Zotero.Messaging.sendMessage(
 			"progressWindow.show",
@@ -612,7 +634,8 @@ Zotero.Inject = new function() {
 					iconSrc: Zotero.ItemTypes.getImageSrc(image),
 					title,
 					parentItem: false,
-					progress: 100
+					progress: 100,
+					itemsLoaded: 1
 				}
 			);
 			
@@ -622,7 +645,9 @@ Zotero.Inject = new function() {
 				iconSrc: Zotero.ItemTypes.getImageSrc("attachment-snapshot"),
 				title: "Snapshot",
 				parentItem: 1,
-				progress: 0
+				progress: 0,
+				itemType: Zotero.getString("itemType_snapshot"),
+				itemsLoaded: 1
 			};
 			// Once snapshot item is created, if requested, run SingleFile
 			if (!data.pdf && result && result.saveSingleFile) {

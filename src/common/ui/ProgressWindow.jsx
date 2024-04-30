@@ -57,12 +57,15 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.state = this.getInitialState();
 		
 		this.nArcs = 20;
+		this.announceAlerts = false;
+		this.alertTimeout = null;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder'),
-			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder')
+			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder'),
+			saveToZotero: Zotero.getString('progressWindow_saveToZotero')
 		};
 		
 		this.expandedRowsCache = {};
@@ -118,6 +121,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		(new Image()).src = 'disclosure-open.svg';
 		
 		this.sendMessage('registered');
+		
+		document.querySelector("#progress-window").setAttribute("aria-label", this.text.saveToZotero);
 	}
 	
 	
@@ -193,6 +198,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!targets) {
 			state.targetSelectorShown = false;
 		}
+		// Alert that the item is being saved
+		document.getElementById("messageAlert").textContent = `${text} ${target.name}`;
 		this.setState(state, () => {
 			this.setFilter();
 		});
@@ -245,8 +252,15 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			else if (typeof progress == 'number') {
 				p.percentage = progress;
 			}
+			if (params.itemType) {
+				p.itemType = params.itemType
+			}
 			return newState;
 		});
+		// Do not being announcing alerts until all top level items are loaded
+		if (!this.announceAlerts) {
+			this.announceAlerts = params.itemsLoaded;
+		}
 	}
 	
 	addError() {
@@ -261,6 +275,63 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 	}
 	
+	// For screenreader accessibility, announce alerts as items are saved/downloaded
+	handleAlerts(items) {
+		clearTimeout(this.alertTimeout);
+		let parentItemIndex = 0;
+		// Do not announce anything until all top level items are saved
+		if (!this.announceAlerts) return;
+		// Generate the first top level message "Saving X items ..."
+		let shortenTitle = (title) => title.split(/\s+/).slice(0, 5).join(' ');
+		let alertQueue = [];
+		let toplevelItems = items.filter(item => !item.parentItem && item.percentage == 100);
+		if (toplevelItems.length == 1) {
+			alertQueue = [{ text: Zotero.getString("progressWindow_savingItem", shortenTitle(toplevelItems[0].title)), id: 'saving_items_count' }];
+		}
+		else {
+			let topLevelTitles = toplevelItems.map((item, index) => Zotero.getString("progressWindow_saveItem", [index + 1, shortenTitle(item.title)])).join(", ");
+			alertQueue = [{ text: Zotero.getString("progressWindow_savingItems", [this.announceAlerts, topLevelTitles]), id: 'saving_items_count' }];
+		}
+		
+		// Generate messages about attachments and notes
+		for (let { parentItem, percentage, id, itemType } of items) {
+			let message;
+			if (parentItem) {
+				// Attachments being downloaded
+				if (percentage === false) {
+					message = Zotero.getString("progressWindow_downloadFailed", [itemType, parentItemIndex]);
+				}
+				else if (percentage === 100) {
+					message = Zotero.getString("progressWindow_downloadComplete", [itemType, parentItemIndex]);
+				}
+			}
+			else if (percentage === 100) {
+				// Parent item has been saved
+				parentItemIndex += 1;
+			}
+			if (message) {
+				alertQueue.push({text: message, id: id});
+			}
+		}
+		
+		// Debounce the updates
+		let timeoutExists = this.alertTimeout !== null;
+		this.alertTimeout = setTimeout(() => {
+			let logNode = document.getElementById("messageLog");
+			for (let { text, id } of alertQueue) {
+				// Make sure a message is not appended twice
+				if(logNode.querySelector(`[value='${text}']`)) continue;
+
+				// Insert new log entry
+				let div = document.createElement("div");
+				div.setAttribute("data-id", id);
+				div.setAttribute("value", text);
+				div.textContent = text;
+				logNode.appendChild(div);
+			}
+		}, timeoutExists ? 0 : 1000);
+	}
+
 	//
 	// Messaging
 	//
@@ -513,6 +584,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				{this.state.targets
 					? this.renderHeadlineSelect()
 					: (this.state.target ? this.renderHeadlineTarget() : "")}
+				<div id="messageAlert" role="alert" style={{ fontSize: 0 }}/>
+				<div id="messageLog" role="log" aria-relevant="additions" style={{ fontSize: 0 }}/>
 			</div>
 		);
 	}
@@ -708,6 +781,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			}
 		}
 		items = newItems;
+		this.handleAlerts(items);
 		
 		return (
 			<div className="ProgressWindow-progressBox">
@@ -840,9 +914,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				see <a href={url} title={url}>Getting Help</a> for more information.
 			</span>;
 		}
-		
+
 		return (
-			<div className="ProgressWindow-error" key={index}>
+			<div className="ProgressWindow-error" key={index} role="alert">
 				{contents}
 			</div>
 		);

@@ -48,6 +48,9 @@
 	"progressWindow_savingTo": {
 		"message": "Saving to"
 	},
+	"progressWindow_saveToZotero": {
+		"message": "Save to Zotero"
+	},
 	"progressWindow_tagPlaceholder": {
 		"message": "Tags (separated by commas)"
 	},

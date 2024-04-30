@@ -62,7 +62,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder'),
-			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder')
+			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder'),
+			saveToZotero: Zotero.getString('progressWindow_saveToZotero')
 		};
 		
 		this.expandedRowsCache = {};
@@ -118,6 +119,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		(new Image()).src = 'disclosure-open.svg';
 		
 		this.sendMessage('registered');
+		
+		document.querySelector("#progress-window").setAttribute("aria-label", this.text.saveToZotero);
 	}
 	
 	

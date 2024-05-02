@@ -57,6 +57,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.state = this.getInitialState();
 		
 		this.nArcs = 20;
+		this.alertQueue = [];
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
@@ -196,6 +197,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!targets) {
 			state.targetSelectorShown = false;
 		}
+		this.setAlertMessage(`${text} ${target.name}`, 'destination_alert');
 		this.setState(state, () => {
 			this.setFilter();
 		});
@@ -250,6 +252,29 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			}
 			return newState;
 		});
+		// For screenreader accessibility, announce alerts as items are saved/downloaded
+		let message;
+		if (params.parentItem) {
+			// Attachments being downloaded
+			if (params.progress === false) {
+				message = Zotero.getString("progressWindow_downloadFailed", params.title);
+			}
+			else if (params.progress === 0) {
+				message = Zotero.getString("progressWindow_downloadStarted", params.title);
+			}
+			else if (params.progress === 100) {
+				message = Zotero.getString("progressWindow_downloadComplete", params.title);
+			}
+		}
+		else if (params.progress === 100) {
+			// Parent item has been saved
+			message = Zotero.getString("progressWindow_itemSaved", params.title);
+		}
+
+		if (message) {
+			this.setAlertMessage(message, id);
+		}
+		
 	}
 	
 	addError() {
@@ -264,6 +289,50 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 	}
 	
+	/**
+	 * Announce an alert for screen readers. To handle multiple events coming in at the same time,
+	 * messages go into a queue from where processMessageQueue() polls and adds them to the alert note
+	 * If there are multiple events with the same id being added to the queue at the 
+	 * same time (e.g. download started and download finished) - only the last event is kept.
+	 * @param {string} text - message to be announced
+	 * @param {string} id - id of the item for deduplication
+	 */
+	setAlertMessage(text, id) {
+		let alertNode = document.getElementById("messageAlert");
+
+		this.alertQueue = this.alertQueue.filter(obj => obj.id !== id);
+
+		this.alertQueue.push({message: text, id: id });
+
+		// Initialize the loop that processes the alert queue
+		if (alertNode.textContent.length == 0) {
+			this.processMessageQueue();
+		}
+	}
+
+	/**
+	 * Periodically poll the queue of alert messages and place them into the alert node.
+	 */
+	processMessageQueue = () => {
+		const internal = 2000;
+		let alertNode = document.getElementById("messageAlert");
+
+		// If the queue is empty, wait
+		if (this.alertQueue.length == 0) {
+			setTimeout(this.processMessageQueue, internal);
+			return;
+		}
+		// Get the first message and announce if it is not the same a the last alert (sanity check)
+		let { message, _ } = this.alertQueue[0];
+		if (alertNode.textContent != message) {
+			alertNode.textContent = message;
+		}
+		// Delete the element from the queue
+		this.alertQueue.shift();
+		// Wait a bit and then try to announce the next message
+		setTimeout(this.processMessageQueue, internal);
+	}
+
 	//
 	// Messaging
 	//
@@ -516,6 +585,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				{this.state.targets
 					? this.renderHeadlineSelect()
 					: (this.state.target ? this.renderHeadlineTarget() : "")}
+				<div id="messageAlert" role="alert" style={{ fontSize: 0 }}/>
 			</div>
 		);
 	}

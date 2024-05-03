@@ -58,6 +58,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		this.nArcs = 20;
 		this.alertQueue = [];
+		this.announcedAlerts = new Set();
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
@@ -302,8 +303,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 
 		this.alertQueue = this.alertQueue.filter(obj => obj.id !== id);
 
-		this.alertQueue.push({message: text, id: id });
-
+		this.alertQueue.push({text, id});
 		// Initialize the loop that processes the alert queue
 		if (alertNode.textContent.length == 0) {
 			this.processMessageQueue();
@@ -311,26 +311,28 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 
 	/**
-	 * Periodically poll the queue of alert messages and place them into the alert node.
+	 * Process the queue of alert messages and place them into the alert node.
 	 */
-	processMessageQueue = () => {
-		const internal = 2000;
+	processMessageQueue = async () => {
 		let alertNode = document.getElementById("messageAlert");
+		while (this.alertQueue.length > 0) {
+			// Read first message but don't delete it yet from the queue
+			let { text } = this.alertQueue[0];
+			if (!this.announcedAlerts.has(text)) {
+				this.announcedAlerts.add(text);
+				// Only announce the first 5 words from the announcement for brevity
+				alertNode.textContent = text.split(/\s+/).slice(0, 5).join(' ');
+				await Zotero.Promise.delay(1000);
+			}
 
-		// If the queue is empty, wait
-		if (this.alertQueue.length == 0) {
-			setTimeout(this.processMessageQueue, internal);
-			return;
+			// Remove the message
+			if (text == this.alertQueue[0].text) {
+				this.alertQueue.shift();
+			}
+			
 		}
-		// Get the first message and announce if it is not the same a the last alert (sanity check)
-		let { message, _ } = this.alertQueue[0];
-		if (alertNode.textContent != message) {
-			alertNode.textContent = message;
-		}
-		// Delete the element from the queue
-		this.alertQueue.shift();
-		// Wait a bit and then try to announce the next message
-		setTimeout(this.processMessageQueue, internal);
+		// Empty alert node so that setAlertMessage() can initiate queue processing again if needed
+		alertNode.textContent = "";
 	}
 
 	//
@@ -913,9 +915,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				see <a href={url} title={url}>Getting Help</a> for more information.
 			</span>;
 		}
-		
+
+		// Clear existing alert queue so that this alert is announced first
+		this.alertQueue = [];
 		return (
-			<div className="ProgressWindow-error" key={index}>
+			<div className="ProgressWindow-error" key={index} role="alert">
 				{contents}
 			</div>
 		);

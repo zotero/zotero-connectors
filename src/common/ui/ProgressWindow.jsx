@@ -326,7 +326,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			}
 
 			// Remove the message
-			if (text == this.alertQueue[0].text) {
+			if (text == this.alertQueue[0]?.text) {
 				this.alertQueue.shift();
 			}
 			

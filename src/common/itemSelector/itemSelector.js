@@ -46,6 +46,7 @@ async function load() {
 	items = data[1];
 	
 	// add checkboxes to selector
+	let index = 0;
 	for(var i in items) {
 		var title, checked = false;
 		if(items[i] && typeof(items[i]) == "object" && items[i].title !== undefined) {
@@ -61,12 +62,15 @@ async function load() {
 		
 		var checkbox = document.createElement('input');
 		checkbox.setAttribute('type', 'checkbox');
+		checkbox.setAttribute('aria-labelledby', `item_${index}`);
 		if(checked) checkbox.setAttribute('checked', 1);
 		item.appendChild(checkbox);
 		checkboxes[i] = checkbox;
 		
 		var span = document.createElement('span');
 		span.appendChild(document.createTextNode(title));
+		span.setAttribute("id", `item_${index}`);
+		index++;
 		if(span.addEventListener) {
 			span.addEventListener("click", makeClickHandler(checkbox), false);
 		} else {

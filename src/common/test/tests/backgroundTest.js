@@ -39,7 +39,7 @@ describe('Connector_Browser', function() {
 						// Independent of the online status of Zotero client we need to observer content types
 						// to trigger the onPDFFrame icon, but don't want to affect the already attached
 						// observer state, so we generate a custom function to work with
-						let customObserver = details => Zotero.ContentTypeHandler.observe(details);
+						let customObserver = details => Zotero.ContentTypeHandler.onHeadersReceived(details);
 						Zotero.WebRequestIntercept.addListener('headersReceived', customObserver);
 						deferred.promise.then(() => Zotero.WebRequestIntercept.removeListener('headersReceived', customObserver));
 					}

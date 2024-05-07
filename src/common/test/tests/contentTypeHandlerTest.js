@@ -30,7 +30,7 @@ describe("ContentTypeHandler", function() {
 		it('calls Zotero.Connector_Browser.onPDFFrame when pdf frame loads', Promise.coroutine(function* () {
 			let args = yield background(function() {
 				var stub = sinon.stub(Zotero.Connector_Browser, 'onPDFFrame');
-				Zotero.ContentTypeHandler.observe({
+				Zotero.ContentTypeHandler.onHeadersReceived({
 					frameId: 1, tabId: 1, url: 'test', method: "GET",
 					responseHeadersObject: {'content-type': 'application/pdf'}
 				});
@@ -73,7 +73,7 @@ describe("ContentTypeHandler", function() {
 					stub2.callsFake(function(details) {
 						return deferred.resolve(details);
 					});
-					Zotero.ContentTypeHandler.observe({frameId: 1, tabId, url: 'test', method: "GET",
+					Zotero.ContentTypeHandler.onHeadersReceived({frameId: 1, tabId, url: 'test', method: "GET",
 						responseHeadersObject: {'content-type': 'application/x-research-info-systems'}});
 						
 					let result = await deferred.promise;
@@ -96,7 +96,7 @@ describe("ContentTypeHandler", function() {
 					var stub2 = sinon.stub(Zotero.ContentTypeHandler, '_redirectToOriginal').callsFake(function(tabId, url) {
 						deferred.resolve(url);
 					});
-					Zotero.ContentTypeHandler.observe({frameId: 1, tabId, url: 'test', method: "GET",
+					Zotero.ContentTypeHandler.onHeadersReceived({frameId: 1, tabId, url: 'test', method: "GET",
 						responseHeadersObject: {'content-type': 'application/x-research-info-systems'}});
 						
 					let result = await deferred.promise;
@@ -121,7 +121,7 @@ describe("ContentTypeHandler", function() {
 						return confirm.apply(Zotero.ContentTypeHandler, arguments);
 					});
 					
-					Zotero.ContentTypeHandler.observe({frameId: 1, tabId, url: 'http://www.zotero.org/', method: "GET",
+					Zotero.ContentTypeHandler.onHeadersReceived({frameId: 1, tabId, url: 'http://www.zotero.org/', method: "GET",
 						responseHeadersObject: {'content-type': 'application/x-research-info-systems'}});
 
 					let result = await deferred.promise;

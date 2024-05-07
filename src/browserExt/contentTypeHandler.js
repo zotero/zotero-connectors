@@ -48,14 +48,14 @@ Zotero.ContentTypeHandler = {
 	ignoreURL: new Set(),
 
 	enable: function() {
-		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.observe);
+		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
 	},
 	
 	disable: function() {
-		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.observe);
+		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
 	},
 
-	observe: function(details) {
+	onHeadersReceived: function (details) {
 		// Only attempt intercepting GET requests. To do others we need to cache requestBody on
 		// onBeforeSend, which is likely to kill performance.
 		if (!details.responseHeadersObject['content-type'] || details.method != "GET") return;
@@ -65,103 +65,101 @@ Zotero.ContentTypeHandler = {
 			return;
 		}
 
-		let contentType = details.responseHeadersObject['content-type'].split(';')[0];
+		const contentType = details.responseHeadersObject['content-type'].split(';')[0];
 		if (Zotero.isManifestV3) {
 			let match = details.url.match(/https?:\/\/(?:www\.)zotero\.org\/styles\/?#importConfirm=(.*)$/);
 			if (match) {
-				return Zotero.ContentTypeHandler.handleStyle(details, `https://www.zotero.org/styles/${match[1]}`);
+				(async () => {
+					if (await Zotero.ContentTypeHandler._shouldImportStyle(details.tabId)) {
+						await Zotero.ContentTypeHandler.importFile(`https://www.zotero.org/styles/${match[1]}`, details.tabId, 'csl');
+					}
+					else {
+						await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, `https://www.zotero.org/styles/${match[1]}`);
+					}
+				})();
 			}
 			return;
 		}
-		else {
-			// Offer to install CSL by Content-Type
-			if (Zotero.ContentTypeHandler.cslContentTypes.has(contentType)) {
-				return Zotero.ContentTypeHandler.handleStyle(details);
-			}
+		if (Zotero.ContentTypeHandler._isImportableStyle(details.url, contentType)) {
+			// We are in a blocking handler, and we need to return a navigation cancelling object,
+			// but we need to do more stuff afterwards
+			(async () => {
+				if (await Zotero.ContentTypeHandler._shouldImportStyle(details.tabId)) {
+					await Zotero.ContentTypeHandler.importFile(details.url, details.tabId, 'csl');
+				}
+				else {
+					await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, details.url);
+				}
+			})();
+			return Zotero.ContentTypeHandler._cancelWebNavigation();
 		}
-		// Offer to install CSL if URL path ends with .csl and host is allowed
-		if (details.url.match(/https:\/\/[^/]+\/[^?]+\.csl(\?|$)/)) {
-			let host = details.url.match(/https:\/\/([^/]+)\//)[1];
-			let hosts = Zotero.Prefs.get('allowedCSLExtensionHosts');
-			if (Array.isArray(hosts) && hosts.includes(host)) {
-				return Zotero.ContentTypeHandler.handleStyle(details);
-			}
-		}
-		if (Zotero.Prefs.get('interceptKnownFileTypes')
-				&& Zotero.ContentTypeHandler.importContentTypes.has(contentType)) {
-			return Zotero.ContentTypeHandler.handleImportContent(details);
-		}
-		if (contentType == 'application/pdf') {
-			if (details.frameId != 0) {
-				setTimeout(() => Zotero.Connector_Browser.onPDFFrame(details.url, details.frameId, details.tabId));
-			}
-			return;
+		else if (Zotero.ContentTypeHandler._isImportableContent(contentType)) {
+			(async () => {
+				if (await Zotero.ContentTypeHandler._shouldImportContent(details.url, details.tabId)) {
+					await Zotero.ContentTypeHandler.importFile(details.url, details.tabId, 'import');
+				}
+				else {
+					await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, details.url);
+				}
+			})();
+			return Zotero.ContentTypeHandler._cancelWebNavigation();
 		}
 	},
 
-	handleStyle: function(details, styleUrl) {
-		styleUrl = styleUrl || details.url;
-		(async () => {
-			if (!(await Zotero.Connector.checkIsOnline())) return;
-			try {
-				let response = await Zotero.ContentTypeHandler.confirm(details, `Add citation style to Zotero?`)
-				if (response && response.button == 1) {
-					Zotero.debug(`ContentTypeHandler: Importing style ${styleUrl}`);
-					await Zotero.ContentTypeHandler.importFile({ tabId: details.tabId, url: styleUrl }, 'csl');
-				}
-				else {
-					await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, styleUrl);
-				}
-			} catch (e) {
-				Zotero.logError(e);
-				await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, styleUrl);
+	_isImportableStyle: function (url, contentType) {
+		const URI = new URL(url);
+		// Offer to install CSL by Content-Type
+		if (Zotero.ContentTypeHandler.cslContentTypes.has(contentType)) {
+			return true;
+		}
+		// Offer to install CSL if URL path ends with .csl and host is allowed
+		else if (URI.pathname.match(/\.csl$/)) {
+			let hosts = Zotero.Prefs.get('allowedCSLExtensionHosts');
+			if (Array.isArray(hosts) && hosts.includes(URI.hostname)) {
+				return true;
 			}
-		})();
-		if (!Zotero.isManifestV3) {
-			// Don't continue until we get confirmation
-			if (Zotero.isFirefox) {
-				// Chrome redirects to a blank page on cancel, firefox opens an empty tab on redirect to `javascript:`
-				return { cancel: true };
+		}
+		return false
+	},
+
+	_shouldImportStyle: async function(tabId) {
+		if (!(await Zotero.Connector.checkIsOnline())) return false
+		let response = await Zotero.ContentTypeHandler.confirm(`Add citation style to Zotero?`, tabId)
+		return response && response.button === 1;
+	},
+
+	_isImportableContent: function(contentType) {
+		return Zotero.Prefs.get('interceptKnownFileTypes') && Zotero.ContentTypeHandler.importContentTypes.has(contentType)
+	},
+
+	_shouldImportContent: async function(url, tabId) {
+		if (!(await Zotero.Connector.checkIsOnline())) return false;
+		const URI = new URL(url);
+		const hosts = Zotero.Prefs.get('allowedInterceptHosts');
+		const isEnabledHost = hosts.indexOf(URI.host) != -1;
+		if (isEnabledHost) {
+			return true;
+		} else {
+			let response = await Zotero.ContentTypeHandler.confirm(`Import items from ${URI.host} into Zotero?<br/><br/>` +
+				'You can manage automatic file importing in Zotero Connector preferences.', tabId,
+				'Always allow for this site')
+			if (response && response.button == 1) {
+				if (!isEnabledHost && response.checkboxChecked) {
+					hosts.push(URI.host);
+				}
+				Zotero.Prefs.set('allowedInterceptHosts', hosts);
+				return true;
 			}
-			return {redirectUrl: 'javascript:'};
 		}
 	},
 	
-	handleImportContent: function(details) {
-		(async () => {
-			if (!(await Zotero.Connector.checkIsOnline())) return;
-			let URI = new URL(details.url);
-			let hosts = Zotero.Prefs.get('allowedInterceptHosts');
-			let isEnabledHost = hosts.indexOf(URI.host) != -1;
-			if (isEnabledHost) {
-				Zotero.debug(`ContentTypeHandler: Importing a file ${details.url}`);
-				await Zotero.ContentTypeHandler.importFile(details, 'import');
-			} else {
-				Zotero.ContentTypeHandler.confirm(details, `Import items from ${URI.host} into Zotero?<br/><br/>` +
-					'You can manage automatic file importing in Zotero Connector preferences.',
-					'Always allow for this site').then(function(response) {
-					if (response && response.button == 1) {
-						Zotero.debug(`ContentTypeHandler: Importing a file ${details.url}`);
-						Zotero.ContentTypeHandler.importFile(details, 'import');
-						if (!isEnabledHost && response.checkboxChecked) {
-							hosts.push(URI.host);
-						}
-						Zotero.Prefs.set('allowedInterceptHosts', hosts);
-					}
-					else if (!Zotero.isManifestV3) {
-						Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, details.url);
-					}
-				});
-			}
-		})();
-		if (!Zotero.isManifestV3) {
-			// Don't continue until we get confirmation
-			if (Zotero.isFirefox) {
-				// Chrome redirects to a blank page on cancel, firefox opens an empty tab on redirect to `javascript:`
-				return { cancel: true };
-			}
-			return {redirectUrl: 'javascript:'};
+	// Return this for a blocked webNavigation when showing a confirmation dialog
+	_cancelWebNavigation: function() {
+		if (Zotero.isFirefox) {
+			// Chrome redirects to a blank page on cancel, firefox opens an empty tab on redirect to `javascript:`
+			return { cancel: true };
 		}
+		return {redirectUrl: 'javascript:'};
 	},
 	
 	_redirectToOriginal: async function(tabId, url) {
@@ -181,16 +179,47 @@ Zotero.ContentTypeHandler = {
 		browser.tabs.update(tabId, {url});
 	},
 	
+	_sendMessageAndHandleBlankPage: async function(message, props, tab) {
+		const confirmURL = browser.runtime.getURL(`confirm.html`);
+		try {
+			var response = await Zotero.Messaging.sendMessage(message, props, tab);
+		} catch (e) {}
+		// If captured URL was pasted on about:blank or other browser pages the response is immediate
+		// with undefined and means we cannot inject and display the UI, so we need to redirect to a page
+		// where we can do it
+		if (response === "undefined" && tab.url != confirmURL) {
+			await new Zotero.Promise(function(resolve, reject) {
+				browser.tabs.onUpdated.addListener(async function getResponse(tabId, changeInfo, tab) {
+					try {
+						if (changeInfo.status == 'complete' && tab.url == confirmURL) {
+							browser.tabs.onUpdated.removeListener(getResponse);
+							resolve();
+						}
+					} catch (e) {
+						reject(e);
+					}
+				});
+				browser.tabs.update(tab.id, {url: confirmURL});
+			});
+			tab = await browser.tabs.get(tab.id);
+			return this._sendMessageAndHandleBlankPage(message, props, tab);
+		}
+		else if (response === "undefined") {
+			throw new Error('Could not navigate blank page to an internal Zotero page for import UI')
+		}
+		return response;
+	},
+	
 	/**
 	 * Handle confirmation prompt by sending a message to injected script and
 	 * redirect to the URL if they click cancel
-	 * @param details {Object} as provided by Zotero.WebRequestsInterceptor
 	 * @param message {String} confirmation message to display
+	 * @param tabId {Number}
 	 * @param checkboxText {String} optional checkbox text
 	 * @returns {Promise{Boolean}} whether user clicked OK or Cancel
 	 */
-	confirm: async function(details, message, checkboxText="") {
-		let tab = await browser.tabs.get(details.tabId);
+	confirm: async function(message, tabId, checkboxText="") {
+		let tab = await browser.tabs.get(tabId);
 		if (Zotero.isManifestV3) {
 			await Zotero.Connector_Browser.waitForTabToLoad(tab);
 		}
@@ -203,49 +232,23 @@ Zotero.ContentTypeHandler = {
 				checkboxText
 			}
 		}
-		let confirmURL = browser.runtime.getURL(`confirm.html`);
-		try {
-			var response = await Zotero.Messaging.sendMessage('confirm', props, tab);
-		} catch (e) {}
-		// In MV2: If captured URL was pasted on about:blank or other browser pages the response is immediate
-		// with undefined and means we cannot inject and display the UI, so we have to do some additional work
-		if (!response && tab.url != confirmURL) {
-			var responsePromise = new Zotero.Promise(function(resolve, reject) {
-				browser.tabs.onUpdated.addListener(async function getResponse(tabId, changeInfo, tab) {
-					try {
-						if (changeInfo.status == 'complete' && tab.url == confirmURL) {
-							let response = await Zotero.ContentTypeHandler.confirm(details, message, checkboxText);
-							browser.tabs.onUpdated.removeListener(getResponse);
-							resolve(response);
-						}
-					} catch (e) {
-						reject(e);
-					}
-				});
-				browser.tabs.update(tab.id, {url: confirmURL});
-			});
-			response = await responsePromise;
-		} else if (!response) {
-			throw new Error('Cannot confirm whether user wants do download the file')
-		}
-
-		return response;
+		return this._sendMessageAndHandleBlankPage('confirm', props, tab);
 	},
 	
 	/**
 	 * Send an XHR request to retrieve and import the file into Standalone
 	 */
-	importFile: async function(details, type) {
+	importFile: async function(url, tabId, type) {
 		var sessionID = Zotero.Utilities.randomString();
 		var headline = type == 'csl' ? 'Installing Style' : null;
 		var readOnly = type == 'csl';
-		var tab = await browser.tabs.get(details.tabId);
-		Zotero.Messaging.sendMessage('progressWindow.show', [sessionID, headline, readOnly], tab);
+		var tab = await browser.tabs.get(tabId);
+		this._sendMessageAndHandleBlankPage('progressWindow.show', [sessionID, headline, readOnly], tab);
 	
-		let response = await fetch(details.url);
+		let response = await fetch(url);
 		let responseText = await response.text();
 		if (response.status < 200 || response.status >= 400) {
-			throw Error(`IMPORT: Retrieving ${details.url} failed with status ${response.status}.\nResponse body:\n${responseText}`);
+			throw Error(`IMPORT: Retrieving ${url} failed with status ${response.status}.\nResponse body:\n${responseText}`);
 		}
 		let options = {
 			headers: {
@@ -255,7 +258,7 @@ Zotero.ContentTypeHandler = {
 		// Style installation
 		if (type == 'csl') {
 			options.method = 'installStyle';
-			options.queryString = 'origin=' + encodeURIComponent(details.url);
+			options.queryString = 'origin=' + encodeURIComponent(url);
 			try {
 				let result = await Zotero.Connector.callMethod(options, responseText);
 				Zotero.Messaging.sendMessage(
@@ -271,13 +274,8 @@ Zotero.ContentTypeHandler = {
 				return Zotero.Messaging.sendMessage('progressWindow.done', [true], tab);
 			}
 			catch(e) {
-				if (e.status == 404) {
-					return Zotero.Messaging.sendMessage('progressWindow.done',
-						[false, 'upgradeClient'], tab);
-				} else {
-					return Zotero.Messaging.sendMessage('progressWindow.done',
-						[false, 'clientRequired'], tab);
-				}
+				return Zotero.Messaging.sendMessage('progressWindow.done',
+					[false, 'clientRequired'], tab);
 			}
 		}
 		// RIS/BibTeX import
@@ -286,7 +284,7 @@ Zotero.ContentTypeHandler = {
 			options.queryString = `session=${sessionID}`;
 			try {
 				let result = await Zotero.Connector.callMethod(options, responseText);
-				Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
+				Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID }, tab);
 				for (let i = 0; i < result.length && i < 20; i++) {
 					let item = result[i];
 					Zotero.Messaging.sendMessage(
@@ -304,10 +302,7 @@ Zotero.ContentTypeHandler = {
 			}
 			catch(e) {
 				let err = 'clientRequired';
-				if (e.status == 404) {
-					err = 'upgradeClient';
-				}
-				else if (e.status == 500 && e.value && e.value.libraryEditable === false) {
+				if (e.status == 500 && e.value && e.value.libraryEditable === false) {
 					err = 'collectionNotEditable';
 				}
 				return Zotero.Messaging.sendMessage('progressWindow.done', [false, err], tab);

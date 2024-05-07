@@ -50,11 +50,25 @@ Zotero.WebRequestIntercept = {
 		browser.webRequest.onHeadersReceived.addListener(Zotero.WebRequestIntercept.handleRequest('headersReceived'), {urls: ['<all_urls>'], types}, extraInfoSpec);
 
 		Zotero.WebRequestIntercept.addListener('beforeSendHeaders', Zotero.WebRequestIntercept.storeRequestHeaders)
+		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.WebRequestIntercept.offerSavingPDFInFrame)
 	},
 
 	storeRequestHeaders: function(details, meta) {
 		meta.requestHeadersObject = details.requestHeadersObject;
     },
+
+	offerSavingPDFInFrame: function(details) {
+		if (!details.responseHeadersObject['content-type']) return;
+		const contentType = details.responseHeadersObject['content-type'].split(';')[0];
+		
+		// If no translators are found for the top frame or the first child frame, and some frame
+		// contains a pdf, saving that PDF will be offered.
+		if (contentType == 'application/pdf') {
+			if (details.frameId != 0) {
+				setTimeout(() => Zotero.Connector_Browser.onPDFFrame(details.url, details.frameId, details.tabId));
+			}
+		}
+	},
 	
 	removeRequestMeta: function(details) {
 		delete Zotero.WebRequestIntercept.reqIDToReqMeta[details.requestId];

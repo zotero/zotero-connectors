@@ -473,7 +473,7 @@ if (isTopWindow) {
 		if (document.location.href.startsWith(Zotero.getExtensionURL('confirm.html'))) {
 			setTimeout(function() {
 				window.close();
-			}, 1000);
+			}, 3000);
 		}
 		else if (returnValue[0]) {
 			startCloseTimer(3000);

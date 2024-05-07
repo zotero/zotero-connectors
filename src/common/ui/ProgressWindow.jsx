@@ -59,6 +59,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.nArcs = 20;
 		this.alertQueue = [];
 		this.announcedAlerts = new Set();
+		this.announceAlerts = false;
+		this.alertQueueBeingProcessed = false;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
@@ -198,7 +200,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!targets) {
 			state.targetSelectorShown = false;
 		}
-		this.setAlertMessage(`${text} ${target.name}`, 'destination_alert');
+		// Alert that the item is being saved - it is done separately here as
+		// all other alerts wait for top level items to be saved first
+		let alert = `${text} ${target.name}`;
+		document.getElementById("messageAlert").innerText = alert;
+		this.announcedAlerts.add(alert);
 		this.setState(state, () => {
 			this.setFilter();
 		});
@@ -251,31 +257,15 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			else if (typeof progress == 'number') {
 				p.percentage = progress;
 			}
+			if (params.itemType) {
+				p.itemType = params.itemType
+			}
 			return newState;
 		});
-		// For screenreader accessibility, announce alerts as items are saved/downloaded
-		let message;
-		if (params.parentItem) {
-			// Attachments being downloaded
-			if (params.progress === false) {
-				message = Zotero.getString("progressWindow_downloadFailed", params.title);
-			}
-			else if (params.progress === 0) {
-				message = Zotero.getString("progressWindow_downloadStarted", params.title);
-			}
-			else if (params.progress === 100) {
-				message = Zotero.getString("progressWindow_downloadComplete", params.title);
-			}
+		// Do not being announcing alerts until all top level items are loaded
+		if (!this.announceAlerts) {
+			this.announceAlerts = params.itemsLoaded;
 		}
-		else if (params.progress === 100) {
-			// Parent item has been saved
-			message = Zotero.getString("progressWindow_itemSaved", params.title);
-		}
-
-		if (message) {
-			this.setAlertMessage(message, id);
-		}
-		
 	}
 	
 	addError() {
@@ -290,22 +280,40 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 	}
 	
-	/**
-	 * Announce an alert for screen readers. To handle multiple events coming in at the same time,
-	 * messages go into a queue from where processMessageQueue() polls and adds them to the alert note
-	 * If there are multiple events with the same id being added to the queue at the 
-	 * same time (e.g. download started and download finished) - only the last event is kept.
-	 * @param {string} text - message to be announced
-	 * @param {string} id - id of the item for deduplication
-	 */
-	setAlertMessage(text, id) {
-		let alertNode = document.getElementById("messageAlert");
+	handleAlerts(items) {
+		let parentItemIndex = 0;
+		if (this.alertQueueBeingProcessed || !this.announceAlerts) return;
+		this.alertQueue = [{ text: Zotero.getString("progressWindow_savingItems", this.announceAlerts), id: 'saving_items_count' }];
+		// "Saving to" alert is set in changeHeadline to be announced before items are saved.
+		// This is to make sure that the "saving to" message is announced even if alerts are fired very
+		// quickly after the popup opens
+		if (this.state.headlineText && this.state.target) {
+			this.alertQueue.push({ text: `${this.state.headlineText} ${this.state.target.name}`, id: 'target'});
+		}
 
-		this.alertQueue = this.alertQueue.filter(obj => obj.id !== id);
-
-		this.alertQueue.push({text, id});
-		// Initialize the loop that processes the alert queue
-		if (alertNode.textContent.length == 0) {
+		for (let { parentItem, title, percentage, id, itemType } of items) {
+			// For screenreader accessibility, announce alerts as items are saved/downloaded
+			let message;
+			if (parentItem) {
+				// Attachments being downloaded
+				if (percentage === false) {
+					message = Zotero.getString("progressWindow_downloadFailed", [itemType, parentItemIndex, title]);
+				}
+				else if (percentage === 0) {
+					message = Zotero.getString("progressWindow_downloadStarted", [itemType, parentItemIndex, title]);
+				}
+				else if (percentage === 100) {
+					message = Zotero.getString("progressWindow_downloadComplete", [itemType, parentItemIndex, title]);
+				}
+			}
+			else if (percentage === 100) {
+				// Parent item has been saved
+				parentItemIndex += 1;
+				message = Zotero.getString("progressWindow_itemSaved", [parentItemIndex, title]);
+			}
+			if (message) {
+				this.alertQueue.push({text: message, id: id});
+			}
 			this.processMessageQueue();
 		}
 	}
@@ -315,13 +323,16 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	 */
 	processMessageQueue = async () => {
 		let alertNode = document.getElementById("messageAlert");
+		if (this.alertQueueBeingProcessed) return;
+		this.alertQueueBeingProcessed = true;
 		while (this.alertQueue.length > 0) {
 			// Read first message but don't delete it yet from the queue
 			let { text } = this.alertQueue[0];
 			if (!this.announcedAlerts.has(text)) {
 				this.announcedAlerts.add(text);
-				// Only announce the first 5 words from the announcement for brevity
-				alertNode.textContent = text.split(/\s+/).slice(0, 5).join(' ');
+				console.log("Announce ", text);
+				// Only announce the first 10 words from the announcement for brevity
+				alertNode.textContent = text.split(/\s+/).slice(0, 10).join(' ');
 				await Zotero.Promise.delay(1000);
 			}
 
@@ -329,10 +340,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			if (text == this.alertQueue[0]?.text) {
 				this.alertQueue.shift();
 			}
-			
 		}
-		// Empty alert node so that setAlertMessage() can initiate queue processing again if needed
-		alertNode.textContent = "";
+		this.alertQueueBeingProcessed = false;
 	}
 
 	//
@@ -783,6 +792,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			}
 		}
 		items = newItems;
+		this.handleAlerts(items);
 		
 		return (
 			<div className="ProgressWindow-progressBox">

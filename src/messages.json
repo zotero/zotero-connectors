@@ -51,17 +51,20 @@
 	"progressWindow_saveToZotero": {
 		"message": "Save to Zotero"
 	},
+	"progressWindow_savingItems": {
+		"message": "Saving $1 items"
+	},
 	"progressWindow_itemSaved": {
-		"message": "Saved: $1"
+		"message": "Saved item $1: $2"
 	},
 	"progressWindow_downloadStarted": {
-		"message": "Download started: $1"
+		"message": "Downloading $1 for item $2: $3"
 	},
 	"progressWindow_downloadComplete": {
-		"message": "Downloaded: $1"
+		"message": "Downloaded $1 for item $2: $3"
 	},
 	"progressWindow_downloadFailed": {
-		"message": "Download failed: $1"
+		"message": "Failed download of $1 for item $2: $3"
 	},
 	"progressWindow_tagPlaceholder": {
 		"message": "Tags (separated by commas)"

@@ -55,6 +55,7 @@ Zotero.SingleFile = {
 			}
 
 			Zotero.debug("SingleFile: Retrieving page data");
+			if (Zotero.Inject.notification) Zotero.Inject.notification.dismiss()
 			let pageData = await singlefile.getPageData(Zotero.SingleFile.CONFIG, {
 				fetch: (...args) => Zotero.SingleFile.backgroundFetch(...args)
 			});

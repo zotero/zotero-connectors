@@ -301,12 +301,15 @@ Zotero.Inject = new function() {
 
 			let showNotificationPrompt = async function() {
 				await Zotero.Promise.delay(500);
-				await Zotero.Inject.loadReactComponents(['Notification']);
+				await Zotero.Connector_Browser.injectScripts('ui/Notification.js');
 				
-				var notification = new Zotero.UI.Notification(text, buttons);
-				if (timeout) setTimeout(notification.dismiss.bind(notification, null, 0), timeout);
-				return notification.show();
-			}.bind(this);
+				this.notification = new Zotero.UI.Notification(text, buttons);
+				if (timeout) setTimeout(() => {
+					this.notification.dismiss()
+					this.notification = null;
+				}, timeout);
+				return this.notification.show();
+			}.bind(Zotero.Inject);
 			
 			// Sequentialize notification display
 			lastChainedPromise = lastChainedPromise.then(showNotificationPrompt);

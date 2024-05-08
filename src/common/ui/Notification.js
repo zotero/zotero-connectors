@@ -146,11 +146,11 @@ Zotero.UI.Notification.prototype = {
 		return this.deferred.promise;
 	},
 	
-	dismiss: function(onClick, id) {
+	dismiss: function(onClick=null, buttonIndex=0) {
 		onClick && onClick(this);
 		if (!this.elems.root) return;
 		doc.body.removeChild(this.elems.root);
-		this.deferred.resolve(id);
+		this.deferred.resolve(buttonIndex);
 		this.deferred = null;
 	}
 };

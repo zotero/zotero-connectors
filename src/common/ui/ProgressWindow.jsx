@@ -283,11 +283,15 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!this.announceAlerts) return;
 		// Generate the first top level message "Saving X items ..."
 		let shortenTitle = (title) => title.split(/\s+/).slice(0, 5).join(' ');
+		let alertQueue = [];
 		let toplevelItems = items.filter(item => !item.parentItem && item.percentage == 100);
-		let topLevelTitles = toplevelItems.length == 1 ? shortenTitle(toplevelItems[0].title) :
-			toplevelItems.map((item, index) => Zotero.getString("progressWindow_saveItem", [index + 1, shortenTitle(item.title)]))
-			.join(", ")
-		let alertQueue = [{ text: Zotero.getString("progressWindow_savingItems", [this.announceAlerts, topLevelTitles]), id: 'saving_items_count' }];
+		if (toplevelItems.length == 1) {
+			alertQueue = [{ text: Zotero.getString("progressWindow_savingItem", shortenTitle(toplevelItems[0].title)), id: 'saving_items_count' }];
+		}
+		else {
+			let topLevelTitles = toplevelItems.map((item, index) => Zotero.getString("progressWindow_saveItem", [index + 1, shortenTitle(item.title)])).join(", ");
+			alertQueue = [{ text: Zotero.getString("progressWindow_savingItems", [this.announceAlerts, topLevelTitles]), id: 'saving_items_count' }];
+		}
 		
 		// Generate messages about attachments and notes
 		for (let { parentItem, percentage, id, itemType } of items) {
@@ -323,7 +327,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				div.setAttribute("data-id", id);
 				div.setAttribute("value", text);
 				div.textContent = text;
-				console.log(text);
 				logNode.appendChild(div);
 			}
 		}, timeoutExists ? 0 : 1000);

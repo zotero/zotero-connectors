@@ -54,6 +54,9 @@
 	"progressWindow_savingItems": {
 		"message": "Saving $1 items. $2"
 	},
+	"progressWindow_savingItem": {
+		"message": "Saving 1 item. $2"
+	},
 	"progressWindow_saveItem": {
 		"message": "Item $1: $2"
 	},

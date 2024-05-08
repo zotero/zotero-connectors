@@ -211,7 +211,7 @@ Zotero.Inject = new function() {
 							iconSrc: determineAttachmentIcon(attachment),
 							title: attachment.title,
 							parentItem: item.id,
-							itemType: "attachment",
+							itemType: determineAttachmentType(attachment)
 						}
 					);
 				}
@@ -242,7 +242,7 @@ Zotero.Inject = new function() {
 						title: attachment.title,
 						parentItem: attachment.parentItem,
 						progress,
-						itemType: "attachment"
+						itemType: determineAttachmentType(attachment)
 					}
 				);
 			});
@@ -258,6 +258,14 @@ Zotero.Inject = new function() {
 		return Zotero.ItemTypes.getImageSrc(
 			contentType === "application/pdf" ? "attachment-pdf" : "attachment-snapshot"
 		);
+	}
+
+	function determineAttachmentType(attachment) {
+		if (attachment.linkMode === "linked_url") return "Linked url attachment";
+		var contentType = attachment.contentType || attachment.mimeType;
+		if (contentType == "application/pdf") return "PDF attachment";
+		if (contentType == "text/html") return "Snapshot";
+		return "Attachment";
 	}
 
 	/**
@@ -635,7 +643,7 @@ Zotero.Inject = new function() {
 				title: "Snapshot",
 				parentItem: 1,
 				progress: 0,
-				itemType: "snapshot",
+				itemType: "Snapshot",
 				itemsLoaded: 1
 			};
 			// Once snapshot item is created, if requested, run SingleFile

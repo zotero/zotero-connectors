@@ -45,6 +45,22 @@
 		"message": "Copy to Clipboard"
 	},
 	
+	"itemType_pdf": {
+		"message": "PDF attachment"
+	},
+	"itemType_snapshot": {
+		"message": "Snapshot"
+	},
+	"itemType_note": {
+		"message": "Note"
+	},
+	"itemType_link": {
+		"message": "Linked url attachment"
+	},
+	"itemType_attachment": {
+		"message": "Attachment"
+	},
+	
 	"progressWindow_savingTo": {
 		"message": "Saving to"
 	},

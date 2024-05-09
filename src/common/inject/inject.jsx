@@ -226,7 +226,7 @@ Zotero.Inject = new function() {
 								title: Zotero.Utilities.cleanTags(note.note),
 								parentItem: item.id,
 								progress: 100,
-								itemType: "note"
+								itemType: Zotero.getString("itemType_note")
 							}
 						)
 					}
@@ -261,11 +261,11 @@ Zotero.Inject = new function() {
 	}
 
 	function determineAttachmentType(attachment) {
-		if (attachment.linkMode === "linked_url") return "Linked url attachment";
+		if (attachment.linkMode === "linked_url") return Zotero.getString("itemType_link");
 		var contentType = attachment.contentType || attachment.mimeType;
-		if (contentType == "application/pdf") return "PDF attachment";
-		if (contentType == "text/html") return "Snapshot";
-		return "Attachment";
+		if (contentType == "application/pdf") return Zotero.getString("itemType_pdf");
+		if (contentType == "text/html") return Zotero.getString("itemType_snapshot");
+		return Zotero.getString("itemType_attachment");
 	}
 
 	/**
@@ -643,7 +643,7 @@ Zotero.Inject = new function() {
 				title: "Snapshot",
 				parentItem: 1,
 				progress: 0,
-				itemType: "Snapshot",
+				itemType: Zotero.getString("itemType_snapshot"),
 				itemsLoaded: 1
 			};
 			// Once snapshot item is created, if requested, run SingleFile

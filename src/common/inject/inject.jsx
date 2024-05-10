@@ -264,6 +264,7 @@ Zotero.Inject = new function() {
 		if (attachment.linkMode === "linked_url") return Zotero.getString("itemType_link");
 		var contentType = attachment.contentType || attachment.mimeType;
 		if (contentType == "application/pdf") return Zotero.getString("itemType_pdf");
+		if (contentType == "application/epub+zip") return Zotero.getString("itemType_epub");
 		if (contentType == "text/html") return Zotero.getString("itemType_snapshot");
 		return Zotero.getString("itemType_attachment");
 	}

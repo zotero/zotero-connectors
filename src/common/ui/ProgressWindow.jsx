@@ -64,8 +64,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder'),
-			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder'),
-			saveToZotero: Zotero.getString('progressWindow_saveToZotero')
+			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder')
 		};
 		
 		this.expandedRowsCache = {};
@@ -122,7 +121,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		this.sendMessage('registered');
 		
-		document.querySelector("#progress-window").setAttribute("aria-label", this.text.saveToZotero);
+		document.querySelector("#progress-window").setAttribute("aria-label", Zotero.getString('general_saveTo', 'Zotero'));
 	}
 	
 	
@@ -278,31 +277,31 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	// For screenreader accessibility, announce alerts as items are saved/downloaded
 	handleAlerts(items) {
 		clearTimeout(this.alertTimeout);
-		let parentItemIndex = 0;
+		let toplevelItems = items.filter(item => !item.parentItem && item.percentage == 100);
 		// Do not announce anything until all top level items are saved
-		if (!this.announceAlerts) return;
+		if (!this.announceAlerts || toplevelItems.length == 0) return;
 		// Generate the first top level message "Saving X items ..."
 		let shortenTitle = (title) => title.split(/\s+/).slice(0, 5).join(' ');
 		let alertQueue = [];
-		let toplevelItems = items.filter(item => !item.parentItem && item.percentage == 100);
-		if (toplevelItems.length == 1) {
-			alertQueue = [{ text: Zotero.getString("progressWindow_savingItem", shortenTitle(toplevelItems[0].title)), id: 'saving_items_count' }];
-		}
-		else {
+		let savingMultipleItems = toplevelItems.length > 1;
+		if (savingMultipleItems) {
 			let topLevelTitles = toplevelItems.map((item, index) => Zotero.getString("progressWindow_saveItem", [index + 1, shortenTitle(item.title)])).join(", ");
 			alertQueue = [{ text: Zotero.getString("progressWindow_savingItems", [this.announceAlerts, topLevelTitles]), id: 'saving_items_count' }];
 		}
-		
+		else {
+			alertQueue = [{ text: Zotero.getString("progressWindow_savingItem", shortenTitle(toplevelItems[0].title)), id: 'saving_items_count' }];
+		}
+		let parentItemIndex = 0;
 		// Generate messages about attachments and notes
 		for (let { parentItem, percentage, id, itemType } of items) {
 			let message;
 			if (parentItem) {
 				// Attachments being downloaded
 				if (percentage === false) {
-					message = Zotero.getString("progressWindow_downloadFailed", [itemType, parentItemIndex]);
+					message = Zotero.getString(`progressWindow_downloadFailed${savingMultipleItems ? "Plural" : ""}`, [itemType, parentItemIndex]);
 				}
 				else if (percentage === 100) {
-					message = Zotero.getString("progressWindow_downloadComplete", [itemType, parentItemIndex]);
+					message = Zotero.getString(`progressWindow_downloadComplete${savingMultipleItems ? "Plural" : ""}`, [itemType, parentItemIndex]);
 				}
 			}
 			else if (percentage === 100) {
@@ -609,7 +608,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						className="ProgressWindow-headlineSelect"
 						onFocus={this.handleHeadlineSelectFocus}
 						onChange={this.onHeadlineSelectChange}
-						value={this.state.target.id}>
+						value={this.state.target.id}
+						aria-label={this.state.headlineText || ""}>
 					{rowTargets.map((row) => {
 						var props = {
 							key: row.id,
@@ -622,7 +622,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				<button className={"ProgressWindow-disclosure"
 							+ (this.state.targetSelectorShown ? " is-open" : "")}
 						onClick={this.onDisclosureChange}
-						onKeyPress={this.handleDisclosureKeyPress}/>
+						onKeyPress={this.handleDisclosureKeyPress}
+						aria-expanded={this.state.targetSelectorShown}
+						aria-label={Zotero.getString(`progressWindow_detailsBtn${this.state.targetSelectorShown ? "Hide" : "View"}`)}/>
 			</React.Fragment>
 		);
 	}
@@ -1127,7 +1129,8 @@ class TargetTree extends React.Component {
 				onCollapse: item => this.props.onCollapseRows([item.id]),
 				
 				autoExpandAll: false,
-				autoExpandDepth: 0
+				autoExpandDepth: 0,
+				label: Zotero.getString("progressWindow_collectionSelector")
 			}
 		);
 	}

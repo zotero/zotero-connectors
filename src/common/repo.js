@@ -61,9 +61,10 @@ Zotero.Repo = new function() {
 	/**
 	 * Update translator metadata
 	 * 
-	 * Either called by scheduled code to update metadata every REPOSITORY_CHECK_INTERVAL (24hrs) or
-	 * from the Preferences. Reset will be true if called from preferences and should force fetch from
-	 * Repo and ensure that all translator metadata is up to date.
+	 * Called:
+	 * - If Zotero.Translators._translatorHash differs from the one returned by Zotero /ping response
+	 * - When Reset Translators button in Preferences is clicked (with reset=true).
+	 * - Every REPOSITORY_CHECK_INTERVAL (24hrs) (when Zotero is unavailable)
 	 * 
 	 * If a browser is closed and reopened then Repo will not be checked unless 24hrs have passed
 	 * since last check.
@@ -94,6 +95,7 @@ Zotero.Repo = new function() {
 				}
 				catch (e) {
 					Zotero.logError('Failed to retrieve translators from Zotero Repo ' + e);
+					throw e;
 				}	
 			}
 		}

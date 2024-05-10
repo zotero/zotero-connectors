@@ -234,8 +234,16 @@ Zotero_Preferences.Advanced = {
 		document.getElementById("advanced-button-view-output").onclick = Zotero_Preferences.Advanced.viewDebugOutput;
 		document.getElementById("advanced-button-clear-output").onclick = Zotero_Preferences.Advanced.clearDebugOutput;
 		document.getElementById("advanced-button-submit-output").onclick = Zotero_Preferences.Advanced.submitDebugOutput;
-		document.getElementById("advanced-button-update-translators").onclick = function() { Zotero.Repo.update(false) };
-		document.getElementById("advanced-button-reset-translators").onclick = function() { Zotero.Repo.update(true) };
+		document.getElementById("advanced-button-reset-translators").addEventListener('click', async (event) => { 
+			event.target.value = "Resetting translators…";
+			try {
+				// Otherwise "Resetting translators..." flash-appears and it looks glitchy
+				await Promise.all([Zotero.Promise.delay(1000), Zotero.Repo.update(true)]);
+				event.target.value = "Translators updated!";
+			} catch (e) {
+				event.target.value = "Translator update failed";
+			}
+		});
 		document.getElementById("advanced-button-report-errors").onclick = Zotero_Preferences.Advanced.submitErrors;
 
 		const googleDocsEnabledCheckbox = document.getElementById("advanced-checkbox-google-docs-enabled");

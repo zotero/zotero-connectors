@@ -238,7 +238,10 @@ Zotero_Preferences.Advanced = {
 			event.target.value = "Resetting translators…";
 			try {
 				// Otherwise "Resetting translators..." flash-appears and it looks glitchy
-				await Promise.all([Zotero.Promise.delay(1000), Zotero.Repo.update(true)]);
+				await Promise.all([Zotero.Promise.delay(1000), (async () => {
+					await Zotero.Prefs.removeAllCachedTranslators();
+					return Zotero.Translators.updateFromRemote(true)
+				})()]);
 				event.target.value = "Translators updated!";
 			} catch (e) {
 				event.target.value = "Translator update failed";

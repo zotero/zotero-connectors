@@ -70,7 +70,7 @@ Zotero.Connector = new function() {
 					let translatorsHash = await Zotero.Translators.getTranslatorsHash();
 					if (response.prefs.translatorsHash != translatorsHash) {
 						Zotero.debug("Zotero Ping: Translator hash mismatch detected. Updating translators from Zotero")
-						return Zotero.Repo.update();
+						return Zotero.Translators.updateFromRemote();
 					}
 				})()
 			}

@@ -33,30 +33,7 @@
  * 4. Can override to fetch all metadata from Zotero Repo if needed
  */
 Zotero.Repo = new function() {
-	var _timeoutID;
 	this.infoRe = /^\s*{[\S\s]*?}\s*?[\r\n]/;
-	
-	/**
-	 * Try to retrieve translator metadata from Zotero Standalone and initialize repository check
-	 * timer
-	 */
-	this.init = new function() {
-		var promise;
-		return function() {
-			if (promise) return promise;
-			let promiseInternal = promise = new Promise(async (resolve, reject) => {
-				try {
-					await this.update();
-					resolve();
-				} catch (e) {
-					reject(e);
-				}
-			});
-			
-			promise = null;
-			return promiseInternal;
-		}
-	};
 	
 	/**
 	 * Update translator metadata
@@ -71,7 +48,7 @@ Zotero.Repo = new function() {
 	 * 
 	 * @param reset {Boolean} Fetches all metadata from repo instead of just the diff since last checked
 	 */
-	this.update = async function(reset) {
+	this.getAllTranslatorMetadata = async function(reset) {
 		// get the time
 		let nextCascadeToRepo = Zotero.Prefs.get("connector.repo.lastCheck.localTime")
 			+ZOTERO_CONFIG.REPOSITORY_CHECK_INTERVAL*1000;
@@ -91,7 +68,7 @@ Zotero.Repo = new function() {
 			}
 			else {
 				try {
-					translatorMetadata = await this._updateFromRepo(reset);
+					translatorMetadata = await this.getTranslatorMetadataFromServer(reset);
 				}
 				catch (e) {
 					Zotero.logError('Failed to retrieve translators from Zotero Repo ' + e);
@@ -100,29 +77,7 @@ Zotero.Repo = new function() {
 			}
 		}
 		
-		if (translatorMetadata) {
-			await Zotero.Translators.update(translatorMetadata, reset || isFromStandalone);
-		}
-		
-		if (_timeoutID) clearTimeout(_timeoutID);
-		let nextCheckIn;
-		if (translatorMetadata) {
-			// We got translator metadata so schedule a normal check in 24hrs
-			nextCheckIn = (ZOTERO_CONFIG.REPOSITORY_CHECK_INTERVAL * 1000) + 2000;
-		}
-		else if (repoCheckIntervalExpired || reset) {
-			// We failed to get metadata and repo check interval expired or this was a
-			// forced reset, so schedule a check soon (in 1hr) in hopes repo comes back alive
-			nextCheckIn = ZOTERO_CONFIG.REPOSITORY_RETRY_INTERVAL * 1000;
-		}
-		else {
-			// We failed to get metadata but this was neither a forced reset nor a scheduled check
-			// which means probably the user just restarted their browser,
-			// so we schedule the next check when the cascadeToRepo time is up
-			nextCheckIn = now - nextCascadeToRepo + 2000;
-		}
-		_timeoutID = setTimeout(this.update.bind(this, [reset]), nextCheckIn);
-		Zotero.debug(`Repo: Next check in ${nextCheckIn/1000}s`);
+		return translatorMetadata;
 	};
 	
 	/**
@@ -169,7 +124,7 @@ Zotero.Repo = new function() {
 		if(metadata.lastUpdated !== translator.lastUpdated) {
 			if (Zotero.Date.sqlToDate(metadata.lastUpdated) > Zotero.Date.sqlToDate(translator.lastUpdated)) {
 				Zotero.debug("Repo: Retrieved code for "+metadata.label+" newer than stored metadata; updating");
-				await Zotero.Translators.update([metadata]);
+				await Zotero.Translators.loadNewMetadata([metadata]);
 			} else {
 				Zotero.debug("Repo: Retrieved code for "+metadata.label+" older than stored metadata; not caching");
 			}
@@ -180,17 +135,17 @@ Zotero.Repo = new function() {
 	/**
 	 * Retrieve translator metadata from Zotero Standalone
 	 */
-	this._updateFromStandalone = async function() {
+	this.getTranslatorMetadataFromZotero = async function() {
 		let translatorMetadata = await Zotero.Connector.callMethod("getTranslators", {});
 		Zotero.Prefs.set("connector.repo.lastCheck.localTime", Date.now());
 		return translatorMetadata;
-		
 	}
 	
 	/**
 	 * Retrieve metadata from repository
+	 * @param reset {Boolean} When false only retrieves updates since last repo check
 	 */
-	this._updateFromRepo = async function(reset) {
+	this.getTranslatorMetadataFromServer = async function(reset=false) {
 		var url = ZOTERO_CONFIG.REPOSITORY_URL + "metadata?version=" + Zotero.version + "&last="+
 				(reset ? "0" : Zotero.Prefs.get("connector.repo.lastCheck.repoTime"));
 		

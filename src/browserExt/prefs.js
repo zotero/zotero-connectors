@@ -24,12 +24,11 @@
 */
 
 /**
- * There's a limit of 5MB of locally stored data.
+ * There's a limit of 10MB for locally stored data.
  * https://developer.chrome.com/extensions/storage#property-local
  */
 Zotero.Prefs = Object.assign(Zotero.Prefs, {
 	init: async function() {
-		await this.migrate();
 		try {
 			this.syncStorage = await browser.storage.local.get(null);
 		}
@@ -39,49 +38,45 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 		}
 	},
 
-	migrate: async function() {
-		try {
-			if (!localStorage.length) return;
-			let prefs = Object.assign({}, localStorage);
-			for (let k of Object.keys(prefs)) {
-				if (k.substr(0, 'pref-'.length) == 'pref-') {
-					prefs[k.substr('pref-'.length)] = JSON.parse(prefs[k]);
-				}
-				delete prefs[k];
-			}
-			// If translator metadata migration fails then we need the fetching from repo to
-			// fetch the full list
-			delete prefs["connector.repo.lastCheck.repoTime"];
-			delete prefs["connector.repo.lastCheck.localTime"];
-			await browser.storage.local.set(prefs);
-
-			if ('translatorMetadata' in localStorage) {
-				await browser.storage.local.set(
-					{translatorMetadata: JSON.parse(localStorage['translatorMetadata'])});
-			}
-			localStorage.clear()
-		}
-		catch (e) {
-			Zotero.debug('Attempting to migrate prefs threw an error');
-			// Let's not, since this will log on every start for firefox people with
-			// dom.storage.enabled: false
-			// Zotero.logError(e);
-			Zotero.debug(e.message);
-		}
-	},
-
-	set: function(pref, value) {
+	set: async function(pref, value) {
 		Zotero.debug("Setting "+pref+" to "+JSON.stringify(value).substr(0, 100));
 		let prefs = {};
 		prefs[pref] = value;
 
 		this.syncStorage[pref] = value;
-		return browser.storage.local.set(prefs);
+		try {
+			await browser.storage.local.set(prefs);
+		} catch (e) {
+			Zotero.debug(`Setting ${pref} failed. Attempting to free up space and trying again.`)
+			await this._freeUpPrefsSpace()
+			// If it fails here something else must be going wrong, we don't want to recurse
+			await browser.storage.local.set(prefs);
+		}
 	},
 
-	clear: function(pref) {
+	clear: async function(pref) {
 		if (Array.isArray(pref)) return Zotero.Promise.all(pref.map((p) => this.clear(p)));
 		delete this.syncStorage[pref];
 		return browser.storage.local.remove(pref);
+	},
+	
+	removeAllCachedTranslators: async function() {
+		Zotero.debug('Removing all cached translators');
+		let cachedTranslators = Object.keys(this.syncStorage).filter(key => key.startsWith(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX));
+		return this.clear(cachedTranslators);
+	},
+
+	/**
+	 * In case we run out of local storage (which currently it seems like we just about fit into the 10MB with
+	 * all translators with code cached), we randomly remove 5 cached translator codes. If it's good
+	 * enough for L1 cache, it's good enough for us.
+	 */
+	_freeUpPrefsSpace: async function() {
+		const numToRemove = 5;
+		let candidates = Object.keys(this.syncStorage).filter(key => key.startsWith(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX));
+		let toBeRemoved = [];
+		for (let i = 0; i < numToRemove; i++) {
+			toBeRemoved.push(candidates[Math.floor(Math.random() * candidates.length)]);
+		}
 	}
 });

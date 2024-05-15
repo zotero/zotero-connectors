@@ -227,7 +227,7 @@ var Zotero = global.Zotero = new function() {
 			await Zotero.Connector_Browser.init();
 		}
 		await Zotero.i18n.init();
-		Zotero.Repo.init();
+		Zotero.Translators.init();
 		Zotero.Proxies.init();
 		await this._initDateFormatsJSON();
 		Zotero.initDeferred.resolve();
@@ -419,6 +419,10 @@ Zotero.Prefs = new function() {
 	this.getAll = function() {
 		let prefs = Object.assign({}, DEFAULTS, this.syncStorage);
 		delete prefs['translatorMetadata'];
+		// Do not return translator code from storage as they are not prefs to be edited
+		for (const key of Object.keys(prefs)) {
+			if (key.startsWith(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX)) delete prefs[key];
+		}
 		return Zotero.Promise.resolve(prefs);
 	};
 	

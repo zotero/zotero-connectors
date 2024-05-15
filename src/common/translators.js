@@ -31,77 +31,229 @@ var TRANSLATOR_TYPES = Zotero.Translator.TRANSLATOR_TYPES;
  * @namespace
  */
 Zotero.Translators = new function() {
+	this.PREFS_TRANSLATOR_CODE_PREFIX = 'translatorCode_';
 	var _cache, _translators;
-	var _initialized = false;
+	var _initializedPromise;
 	var _fullFrameDetectionWhitelist = ['resolver.ebscohost.com'];
-	var _resetAttempted = false;
 	
 	this._translatorsHash = null;
 	
 	/**
 	 * Initializes translator cache, loading all relevant translators into memory
-	 * @param {Zotero.Translate[]} [translators] List of translators. If not specified, it will be
-	 *                                           retrieved from storage.
+	 * and setting up regular repo checks for translator updates
 	 */
-	this.init = async function(translators) {
-		if(!translators) {
-			translators = [];
-			if((Zotero.isBrowserExt || Zotero.isSafari) && Zotero.Prefs.get("translatorMetadata")) {
-				try {
-					translators = Zotero.Prefs.get("translatorMetadata");
-					if(typeof translators !== "object") {
-						translators = [];
-					}
-				} catch(e) {}
-			}
-		}
-		
+	this.init = async function() {
+		if (_initializedPromise) return _initializedPromise;
 		_cache = {"import":[], "export":[], "web":[], "search":[]};
 		_translators = {};
-		_initialized = true;
-		
-		// Build caches
-		for(var i=0; i<translators.length; i++) {
+		_initializedPromise = new Promise(async (resolve, reject) => {
 			try {
-				var translator = new Zotero.Translator(translators[i]);
-				_translators[translator.translatorID] = translator;
-				
-				for(var type in TRANSLATOR_TYPES) {
-					if(translator.translatorType & TRANSLATOR_TYPES[type]) {
-						_cache[type].push(translator);
-					}
+				let translators = Zotero.Prefs.get("translatorMetadata");
+				// No stored translators
+				if (typeof translators !== "object") {
+					translators = await Zotero.Repo.getAllTranslatorMetadata(true);
 				}
-			} catch(e) {
-				Zotero.logError(e);
-				try {
-					Zotero.logError("Could not load translator "+JSON.stringify(translators[i]));
-				} catch(e) {}
+				this._load(translators);
+				this.keepTranslatorsUpdated();
+				resolve();
 			}
-		}
+			catch (e) {
+				_initializedPromise = null;
+				reject(e);
+			}
+		})
 		
-		// Huge number of translator metadata missing. Attempt to reset.
-		// NOTE: If the number of translators significantly decreases (currently at 450ish)
-		// then this will trigger on every translator init.
-		if (Object.keys(_translators).length < 400 && !_resetAttempted) {
-			_resetAttempted = true;
-			Zotero.logError(new Error(`Only ${Object.keys(_translators).length} translators present in cache. Resetting`));
-			Zotero.Prefs.clear("connector.repo.lastCheck.repoTime");
-			Zotero.Prefs.clear("connector.repo.lastCheck.localTime");
-			return Zotero.Repo.update(true);
+	}
+	
+	this._load = function(jsonTranslators) {
+		_cache = {"import":[], "export":[], "web":[], "search":[]};
+		_translators = {};
+
+		// Build caches
+		for (let jsonTranslator of jsonTranslators) {
+			let translator = new Zotero.Translator(jsonTranslator);
+			this._loadTranslator(translator, false);
 		}
 		
 		// Sort by priority
-		var cmp = function (a, b) {
-			if (a.priority > b.priority) {
-				return 1;
+		for (const type in _cache) {
+			_cache[type].sort((a, b) => a.priority - b.priority);
+		}
+	}
+	
+	this._loadTranslator = function (translator, sort=true) {
+		try {
+			_translators[translator.translatorID] = translator;
+
+			for (const type in TRANSLATOR_TYPES) {
+				if (translator.translatorType & TRANSLATOR_TYPES[type]) {
+					_cache[type].push(translator);
+					if (sort) {
+						_cache[type].sort((a, b) => a.priority - b.priority);
+					}
+				}
 			}
-			else if (a.priority < b.priority) {
-				return -1;
+		} catch(e) {
+			Zotero.logError(e);
+			try {
+				Zotero.logError("Could not load translator "+JSON.stringify(jsonTranslator));
+			} catch(e) {}
+		}
+	}
+	
+	this._removeTranslator = function (translatorID) {
+		const translator = _translators[translatorID];
+		this.deleteTranslatorCode(translatorID)
+		delete _translators[translatorID];
+		for (const type in TRANSLATOR_TYPES) {
+			if (translator.translatorType & TRANSLATOR_TYPES[type]) {
+				const idx = _cache[type].findIndex(t => t.translatorID === translator.translatorID);
+				_cache[type].splice(idx, 1);
 			}
 		}
-		for(var type in _cache) {
-			_cache[type].sort(cmp);
+	}
+	
+	this.keepTranslatorsUpdated = async function() {
+		// We always get translator metadata from Zotero first. If it was successfully checked in the last 24 hours
+		// then there is nothing to do. If it hasn't been checked for 24 hours, then either Zotero was online
+		// and no changes to translators in the client caused an update, or Zotero was offline.
+		// Either way no harm in checking for updates every 24hr.
+		const nextCascadeToRepo = Zotero.Prefs.get("connector.repo.lastCheck.localTime")
+			+ZOTERO_CONFIG.REPOSITORY_CHECK_INTERVAL*1000;
+		const now = Date.now();
+		const repoCheckIntervalHasExpired = nextCascadeToRepo <= now;
+		let repoCheckFailed = false;
+		if (repoCheckIntervalHasExpired) {
+			try {
+				await this.updateFromRemote();
+			}
+			catch (e) {
+				repoCheckFailed = true;
+			}
 		}
+		
+		// If e.g. Zotero was last checked 6 hours ago when this runs, then we schedule the next
+		// check in 24hr - 6hr = 18hr to make sure one check occurs at least every 24hr.
+		let nextCheckIn = nextCascadeToRepo - now;
+		if (repoCheckIntervalHasExpired && repoCheckFailed) {
+			// We failed to get metadata and repo check interval expired,
+			// so schedule a check soon (in 1hr) in hopes repo comes back alive
+			nextCheckIn = ZOTERO_CONFIG.REPOSITORY_RETRY_INTERVAL * 1000;
+		}
+		Zotero.debug(`Repo: Next check in ${nextCheckIn/1000}s`);
+		await Zotero.Promise.delay(nextCheckIn);
+		return this.keepTranslatorsUpdated();
+	}
+
+	this.updateFromRemote = async function(reset=false) {
+		Zotero.debug('Retrieving translators from Zotero Client');
+		let translatorMetadata;
+		try {
+			translatorMetadata = await Zotero.Repo.getTranslatorMetadataFromZotero();
+			return this.loadNewMetadata(translatorMetadata, reset, false)
+		}
+		catch (e) {
+			Zotero.debug('Failed to retrieve translators from Zotero Client, attempting Repo');
+			try {
+				translatorMetadata = await Zotero.Repo.getTranslatorMetadataFromServer(reset);
+				return this.loadNewMetadata(translatorMetadata, reset, true)
+			}
+			catch (e) {
+				Zotero.logError('Failed to retrieve translators from Zotero Client and Zotero Repo ' + e);
+				throw e;
+			}	
+		}
+	}
+
+	/**
+	 * Merge stored translator metadata with newly fetched from repo
+	 * @param {Object[]} newMetadata Metadata for new translators
+	 * @param {Boolean} reset Whether this is an update for the full list of translators
+	 * @param {Boolean} fromRepo Whether this is an update from the repo or not
+	 */
+	this.loadNewMetadata = async function(newMetadata, reset=false, fromRepo=false) {
+		if (!newMetadata.length) return;
+		Zotero.debug('Loading new translator metadata');
+		let updatedTranslators = [];
+		let newTranslators = [];
+		let deletedTranslators = new Set();
+		
+		if (reset) {
+			await Zotero.Prefs.removeAllCachedTranslators();
+			this._load(newMetadata);
+			await this._storeTranslatorMetadata();
+			Zotero.debug(`Translators: Saved ${Object.keys(_translators).length} translators.`);
+			
+			// Reset translator hash
+			this._translatorsHash = null;
+			return;
+		}
+
+		if (!fromRepo) {
+			deletedTranslators = new Set(Object.keys(_translators));
+			for (const translatorMetadata of newMetadata) {
+				if (translatorMetadata.deleted) continue;
+				if (_translators[translatorMetadata.translatorID]) {
+					updatedTranslators.push(translatorMetadata);
+				} else {
+					newTranslators.push(translatorMetadata);
+				}
+				deletedTranslators.delete(translatorMetadata.translatorID);
+			}
+		}
+		else {
+			for (const translatorMetadata of newMetadata) {
+				if (translatorMetadata.deleted) {
+					deletedTranslators.add(translatorMetadata.translatorID);
+				}
+				else if(_translators.hasOwnProperty(translatorMetadata.translatorID)) {
+					updatedTranslators.push(translatorMetadata);
+				}
+				else {
+					newTranslators.push(translatorMetadata);
+				}
+			}
+		}
+		
+		if (!newTranslators.length && !updatedTranslators.length && !deletedTranslators.length) return;
+
+		// Load new translators
+		for (const translatorMetadata of newTranslators) {
+			Zotero.debug(`Translators: Adding ${translatorMetadata.label}`);
+			this._loadTranslator(translatorMetadata);
+		}
+
+		// Update existing translators and remove cached code
+		for (const translatorMetadata of updatedTranslators) {
+			let translator = _translators[translatorMetadata.translatorID]
+			// check whether translatorMetadata is actually newer than the existing translator
+			if (translator.lastUpdated === translatorMetadata.lastUpdated
+					|| Zotero.Date.sqlToDate(translatorMetadata.lastUpdated) < Zotero.Date.sqlToDate(translator.lastUpdated)) {
+				continue;
+			}
+			Zotero.debug(`Translators: Updating ${translatorMetadata.label}`);
+			translator.init(translatorMetadata)
+			this.deleteTranslatorCode(translator.translatorID)
+		}
+
+		// Remove deleted translators and their cached codes
+		for (const translatorID of deletedTranslators.keys()) {
+			// Remove storage cached code
+			Zotero.Prefs.clear(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + translatorID);
+			this._removeTranslator(translatorID)
+		}
+
+		// Serialize and store translators
+		await this._storeTranslatorMetadata();
+		Zotero.debug(`Translators: Saved (${Object.keys(_translators).length} translators. New ${newTranslators.length}, deleted ${deletedTranslators.length})`);
+
+		// Reset translator hash
+		this._translatorsHash = null;
+	}
+	
+	this._storeTranslatorMetadata = async function() {
+		let serializedTranslators = this.serialize(Object.values(_translators), Zotero.Translator.TRANSLATOR_CACHING_PROPERTIES);
+		return Zotero.Prefs.set('translatorMetadata', serializedTranslators);
 	}
 	
 	/**
@@ -109,7 +261,7 @@ Zotero.Translators = new function() {
 	 */
 	this.getTranslatorsHash = async function () {
 		if (this._translatorsHash) return this._translatorsHash;
-		if(!_initialized) await this.init();
+		await this.init();
 		const translators = Object.keys(_translators).map(id => _translators[id]);
 
 		let hashString = "";
@@ -118,15 +270,20 @@ Zotero.Translators = new function() {
 		}
 		this._translatorsHash = Zotero.Utilities.Connector.md5(hashString);
 		return this._translatorsHash;
-	};
+	}
 	
+	this.deleteTranslatorCode = async function (id) {
+		let translator = _translators[id];
+		if (translator) delete translator.code;
+		return Zotero.Prefs.clear(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + id);
+	}
 	
 	/**
 	 * Gets the translator that corresponds to a given ID, without attempting to retrieve code
 	 * @param {String} id The ID of the translator
 	 */
 	this.getWithoutCode = async function(id) {
-		if(!_initialized) await Zotero.Translators.init();
+		await Zotero.Translators.init();
 		return _translators[id] ? _translators[id] : false;
 	}
 
@@ -134,10 +291,18 @@ Zotero.Translators = new function() {
 	 * Load code for a translator
 	 */
 	this.getCodeForTranslator = async function (translator) {
-		if (!_initialized) await Zotero.Translators.init();
 		if (translator.code) return translator.code;
+		
+		let code;
+		try {
+			code = Zotero.Prefs.get(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + translator.translatorID);
+		}
+		catch (e) {
+			code = await Zotero.Repo.getTranslatorCode(translator.translatorID);
+			// Store in prefs for future retrieval
+			Zotero.Prefs.set(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + translator.translatorID, code);
+		}
 
-		let code = await Zotero.Repo.getTranslatorCode(translator.translatorID);
 		translator.code = code;
 		return code;
 	}
@@ -148,7 +313,7 @@ Zotero.Translators = new function() {
 	 * @param {String} id The ID of the translator
 	 */
 	this.get = async function (id) {
-		if (!_initialized) await Zotero.Translators.init();
+		await Zotero.Translators.init();
 		var translator = _translators[id];
 		if (!translator) {
 			return false;
@@ -170,7 +335,7 @@ Zotero.Translators = new function() {
 	 *                              repo is re-retrieved from Zotero Standalone.
 	 */
 	this.getAllForType = async function (type, debugMode) {
-		if(!_initialized) await Zotero.Translators.init();
+		await Zotero.Translators.init();
 		var translators = _cache[type].slice(0);
 		var codeGetter = new Zotero.Translators.CodeGetter(translators, debugMode);
 		await codeGetter.getAll();
@@ -186,6 +351,7 @@ Zotero.Translators = new function() {
 	 */
 	this.getWebTranslatorsForLocation = async function (URI, rootURI, callback) {
 		await Zotero.initDeferred.promise;
+		await Zotero.Translators.init();
 		if (callback) {
 			// If callback is present then this call is coming from an injected frame,
 			// so we may as well treat it as if it's a root-frame
@@ -200,7 +366,6 @@ Zotero.Translators = new function() {
 			}
 		}
 		var isFrame = URI !== rootURI;
-		if(!_initialized) await Zotero.Translators.init();
 		var allTranslators = _cache["web"];
 		var potentialTranslators = [];
 		var proxies = [];
@@ -269,85 +434,6 @@ Zotero.Translators = new function() {
 			newTranslator[property] = translator[property];
 		}
 		return newTranslator;
-	}
-	
-	/**
-	 * Saves all translator metadata to localStorage
-	 * @param {Object[]} newMetadata Metadata for new translators
-	 * @param {Boolean} reset Whether to clear all existing translators and overwrite them with
-	 *                        the specified translators.
-	 */
-	this.update = async function(newMetadata, reset=false) {
-		if (!_initialized) await Zotero.Translators.init();
-		if (!newMetadata.length) return;
-		var serializedTranslators = [];
-		
-		if (reset) {
-			serializedTranslators = this.serialize(newMetadata, Zotero.Translator.TRANSLATOR_CACHING_PROPERTIES);
-		}
-		else {
-			var hasChanged = false;
-			
-			// Update translators with new metadata
-			for(var i in newMetadata) {
-				var newTranslator = newMetadata[i];
-				
-				if (newTranslator.deleted) continue;
-				
-				if(_translators.hasOwnProperty(newTranslator.translatorID)) {
-					var oldTranslator = _translators[newTranslator.translatorID];
-					
-					// check whether translator has changed
-					if(oldTranslator.lastUpdated !== newTranslator.lastUpdated) {
-						// check whether newTranslator is actually newer than the existing
-						// translator, and if not, don't update
-						if(Zotero.Date.sqlToDate(newTranslator.lastUpdated) < Zotero.Date.sqlToDate(oldTranslator.lastUpdated)) {
-							continue;
-						}
-						
-						Zotero.debug(`Translators: Updating ${newTranslator.label}`);
-						oldTranslator.init(newTranslator);
-						hasChanged = true;
-					}
-				} else {
-					Zotero.debug(`Translators: Adding ${newTranslator.label}`);
-					_translators[newTranslator.translatorID] = new Zotero.Translator(newTranslator);
-					hasChanged = true;
-				}
-			}
-			
-			let deletedTranslators = newMetadata
-				.filter(translator => translator.deleted)
-				.map(translator => translator.translatorID);
-				
-			for (let id of deletedTranslators) {
-				// Already deleted
-				if (! _translators.hasOwnProperty(id)) continue;
-				
-				hasChanged = true;
-				Zotero.debug(`Translators: Removing ${_translators[id].label}`);
-				delete _translators[id];
-			}
-			
-			if(!hasChanged) return;
-			
-			// Serialize translators
-			for(var i in _translators) {
-				var serializedTranslator = this.serialize(_translators[i], Zotero.Translator.TRANSLATOR_CACHING_PROPERTIES);
-				
-				serializedTranslators.push(serializedTranslator);
-			}
-		}
-		
-		// Store
-		if (Zotero.isBrowserExt || Zotero.isSafari) {
-			Zotero.Prefs.set('translatorMetadata', serializedTranslators);
-			Zotero.debug("Translators: Saved updated translator list ("+serializedTranslators.length+" translators)");
-		}
-		
-		// Reinitialize
-		await Zotero.Translators.init(serializedTranslators);
-		this._translatorsHash = null;
 	}
 }
 

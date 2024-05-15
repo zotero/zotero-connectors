@@ -66,6 +66,7 @@
 const MESSAGE_SEPARATOR = ".";
 var MESSAGES = {
 	Translators: {
+		updateFromRemote: true,
 		get: {
 			background: {
 				preSend: async function(translators) {
@@ -217,6 +218,7 @@ var MESSAGES = {
 		getAll: true,
 		getDefault: true,
 		getAsync: true,
+		removeAllCachedTranslators: true,
 		clear: false
 	},
 	Proxies: {
@@ -224,9 +226,6 @@ var MESSAGES = {
 		save: false,
 		remove: false,
 		toggleRedirectLoopPrevention: false
-	},
-	Repo: {
-		update: false
 	},
 	WebRequestIntercept: {
 		replaceUserAgent: true,

@@ -484,4 +484,10 @@ Zotero.Prefs = new function() {
 		if (Array.isArray(pref)) return pref.forEach((p) => this.clear(p));
 		delete this.syncStorage[pref];
 	}
+
+	this.removeAllCachedTranslators = function() {
+		Zotero.debug('Removing all cached translators');
+		let cachedTranslators = Object.keys(this.syncStorage).filter(key => key.startsWith(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX));
+		return this.clear(cachedTranslators);
+	}
 }

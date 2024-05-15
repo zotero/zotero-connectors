@@ -59,12 +59,6 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 		delete this.syncStorage[pref];
 		return browser.storage.local.remove(pref);
 	},
-	
-	removeAllCachedTranslators: async function() {
-		Zotero.debug('Removing all cached translators');
-		let cachedTranslators = Object.keys(this.syncStorage).filter(key => key.startsWith(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX));
-		return this.clear(cachedTranslators);
-	},
 
 	/**
 	 * In case we run out of local storage (which currently it seems like we just about fit into the 10MB with

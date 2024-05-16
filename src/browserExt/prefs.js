@@ -72,5 +72,6 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 		for (let i = 0; i < numToRemove; i++) {
 			toBeRemoved.push(candidates[Math.floor(Math.random() * candidates.length)]);
 		}
+		return this.clear(toBeRemoved);
 	}
 });

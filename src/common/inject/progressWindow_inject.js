@@ -230,6 +230,7 @@ if (isTopWindow) {
 		var iframe = document.createElement('iframe');
 		iframe.id = frameID;
 		iframe.src = frameSrc;
+		iframe.title = Zotero.getString('general_saveTo', 'Zotero');
 		iframe.setAttribute('data-single-file-hidden-frame', '');
 		var style = {
 			position: 'fixed',
@@ -477,6 +478,7 @@ if (isTopWindow) {
 		}
 		else if (returnValue[0]) {
 			startCloseTimer(3000);
+			addEvent("willHide");
 		}
 		else {
 			if (returnValue.length < 2) {

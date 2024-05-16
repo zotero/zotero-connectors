@@ -97,6 +97,12 @@
 	"progressWindow_downloadFailedPlural": {
 		"message": "Failed download of $1 for item $2"
 	},
+	"progressWindow_allDone": {
+		"message": "Saving is complete. The dialog will close now."
+	},
+	"progressWindow_alreadySaved": {
+		"message": "Items from this webpage have already been processed."
+	},
 	"progressWindow_tagPlaceholder": {
 		"message": "Tags (separated by commas)"
 	},

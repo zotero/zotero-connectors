@@ -59,6 +59,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.nArcs = 20;
 		this.announceAlerts = false;
 		this.alertTimeout = null;
+		this.done = false;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
@@ -113,6 +114,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.addMessageListener('progressWindowIframe.shown', this.handleShown.bind(this));
 		this.addMessageListener('progressWindowIframe.hidden', this.handleHidden.bind(this));
 		this.addMessageListener('progressWindowIframe.reset', () => this.setState(this.getInitialState()));
+		this.addMessageListener('progressWindowIframe.willHide', this.handleHiding.bind(this));
 		
 		document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 		
@@ -197,8 +199,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!targets) {
 			state.targetSelectorShown = false;
 		}
-		// Alert that the item is being saved
-		document.getElementById("messageAlert").textContent = `${text} ${target.name}`;
+		// Alert that the item is being saved or has already been saved
+		let alert = this.done ? Zotero.getString("progressWindow_alreadySaved") : `${text} ${target.name}`;
+		document.getElementById("messageAlert").textContent = alert
 		this.setState(state, () => {
 			this.setFilter();
 		});
@@ -312,14 +315,19 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				alertQueue.push({text: message, id: id});
 			}
 		}
-		
-		// Debounce the updates
-		let timeoutExists = this.alertTimeout !== null;
+
+		// Debounce the updates mainly for voiceover that tends to interrupt currently
+		// announced phrase when aria-live changes despite it being "polite"
+		let noTimeout = this.alertTimeout === null;
 		this.alertTimeout = setTimeout(() => {
 			let logNode = document.getElementById("messageLog");
+			// Add message that the dialog will close in the end
+			if (this.done) {
+				alertQueue.push({text: Zotero.getString("progressWindow_allDone"), id: "allDone"});
+			}
 			for (let { text, id } of alertQueue) {
 				// Make sure a message is not appended twice
-				if(logNode.querySelector(`[value='${text}']`)) continue;
+				if (logNode.querySelector(`[value='${text}']`)) continue;
 
 				// Insert new log entry
 				let div = document.createElement("div");
@@ -328,7 +336,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				div.textContent = text;
 				logNode.appendChild(div);
 			}
-		}, timeoutExists ? 0 : 1000);
+		}, (noTimeout || this.done) ? 0 : 1000);
 	}
 
 	//
@@ -369,6 +377,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	
 	handleMouseMove() {
 		this.sendMessage('mousemove');
+	}
+
+	handleHiding() {
+		this.done = true;
 	}
 	
 	handleVisibilityChange() {

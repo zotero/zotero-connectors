@@ -79,7 +79,8 @@ Zotero.Errors = new function() {
 				version: this.version,
 				platform: navigator.platform,
 				locale: navigator.language,
-				userAgent: navigator.userAgent
+				userAgent: navigator.userAgent,
+				isManifestV3: Zotero.isManifestV3
 			};
 		}
 		

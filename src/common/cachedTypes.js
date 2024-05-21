@@ -175,9 +175,6 @@ Zotero.Connector_Types = new function() {
 		}
 	};
 	
-	/**
-	 * Passes schema to a callback
-	 */
 	this.getSchema = async function() {
 		return TypeSchema;
 	};

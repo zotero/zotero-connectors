@@ -59,13 +59,13 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.nArcs = 20;
 		this.announceAlerts = false;
 		this.alertTimeout = null;
+		this.done = false;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder'),
-			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder'),
-			saveToZotero: Zotero.getString('progressWindow_saveToZotero')
+			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder')
 		};
 		
 		this.expandedRowsCache = {};
@@ -114,6 +114,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.addMessageListener('progressWindowIframe.shown', this.handleShown.bind(this));
 		this.addMessageListener('progressWindowIframe.hidden', this.handleHidden.bind(this));
 		this.addMessageListener('progressWindowIframe.reset', () => this.setState(this.getInitialState()));
+		this.addMessageListener('progressWindowIframe.willHide', this.handleHiding.bind(this));
 		
 		document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 		
@@ -122,7 +123,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		this.sendMessage('registered');
 		
-		document.querySelector("#progress-window").setAttribute("aria-label", this.text.saveToZotero);
+		document.querySelector("#progress-window").setAttribute("aria-label", Zotero.getString('general_saveTo', 'Zotero'));
 	}
 	
 	
@@ -198,8 +199,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!targets) {
 			state.targetSelectorShown = false;
 		}
-		// Alert that the item is being saved
-		document.getElementById("messageAlert").textContent = `${text} ${target.name}`;
+		// Alert that the item is being saved or has already been saved
+		let alert = this.done ? Zotero.getString("progressWindow_alreadySaved") : `${text} ${target.name}`;
+		document.getElementById("messageAlert").textContent = alert
 		this.setState(state, () => {
 			this.setFilter();
 		});
@@ -278,31 +280,31 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	// For screenreader accessibility, announce alerts as items are saved/downloaded
 	handleAlerts(items) {
 		clearTimeout(this.alertTimeout);
-		let parentItemIndex = 0;
+		let toplevelItems = items.filter(item => !item.parentItem && item.percentage == 100);
 		// Do not announce anything until all top level items are saved
-		if (!this.announceAlerts) return;
+		if (!this.announceAlerts || toplevelItems.length == 0) return;
 		// Generate the first top level message "Saving X items ..."
 		let shortenTitle = (title) => title.split(/\s+/).slice(0, 5).join(' ');
 		let alertQueue = [];
-		let toplevelItems = items.filter(item => !item.parentItem && item.percentage == 100);
-		if (toplevelItems.length == 1) {
-			alertQueue = [{ text: Zotero.getString("progressWindow_savingItem", shortenTitle(toplevelItems[0].title)), id: 'saving_items_count' }];
-		}
-		else {
+		let savingMultipleItems = toplevelItems.length > 1;
+		if (savingMultipleItems) {
 			let topLevelTitles = toplevelItems.map((item, index) => Zotero.getString("progressWindow_saveItem", [index + 1, shortenTitle(item.title)])).join(", ");
 			alertQueue = [{ text: Zotero.getString("progressWindow_savingItems", [this.announceAlerts, topLevelTitles]), id: 'saving_items_count' }];
 		}
-		
+		else {
+			alertQueue = [{ text: Zotero.getString("progressWindow_savingItem", shortenTitle(toplevelItems[0].title)), id: 'saving_items_count' }];
+		}
+		let parentItemIndex = 0;
 		// Generate messages about attachments and notes
 		for (let { parentItem, percentage, id, itemType } of items) {
 			let message;
 			if (parentItem) {
 				// Attachments being downloaded
 				if (percentage === false) {
-					message = Zotero.getString("progressWindow_downloadFailed", [itemType, parentItemIndex]);
+					message = Zotero.getString(`progressWindow_downloadFailed${savingMultipleItems ? "Plural" : ""}`, [itemType, parentItemIndex]);
 				}
 				else if (percentage === 100) {
-					message = Zotero.getString("progressWindow_downloadComplete", [itemType, parentItemIndex]);
+					message = Zotero.getString(`progressWindow_downloadComplete${savingMultipleItems ? "Plural" : ""}`, [itemType, parentItemIndex]);
 				}
 			}
 			else if (percentage === 100) {
@@ -313,14 +315,19 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				alertQueue.push({text: message, id: id});
 			}
 		}
-		
-		// Debounce the updates
-		let timeoutExists = this.alertTimeout !== null;
+
+		// Debounce the updates mainly for voiceover that tends to interrupt currently
+		// announced phrase when aria-live changes despite it being "polite"
+		let noTimeout = this.alertTimeout === null;
 		this.alertTimeout = setTimeout(() => {
 			let logNode = document.getElementById("messageLog");
+			// Add message that the dialog will close in the end
+			if (this.done) {
+				alertQueue.push({text: Zotero.getString("progressWindow_allDone"), id: "allDone"});
+			}
 			for (let { text, id } of alertQueue) {
 				// Make sure a message is not appended twice
-				if(logNode.querySelector(`[value='${text}']`)) continue;
+				if (logNode.querySelector(`[value='${text}']`)) continue;
 
 				// Insert new log entry
 				let div = document.createElement("div");
@@ -329,7 +336,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				div.textContent = text;
 				logNode.appendChild(div);
 			}
-		}, timeoutExists ? 0 : 1000);
+		}, (noTimeout || this.done) ? 0 : 1000);
 	}
 
 	//
@@ -370,6 +377,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	
 	handleMouseMove() {
 		this.sendMessage('mousemove');
+	}
+
+	handleHiding() {
+		this.done = true;
 	}
 	
 	handleVisibilityChange() {
@@ -609,7 +620,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						className="ProgressWindow-headlineSelect"
 						onFocus={this.handleHeadlineSelectFocus}
 						onChange={this.onHeadlineSelectChange}
-						value={this.state.target.id}>
+						value={this.state.target.id}
+						aria-label={this.state.headlineText || ""}>
 					{rowTargets.map((row) => {
 						var props = {
 							key: row.id,
@@ -622,7 +634,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				<button className={"ProgressWindow-disclosure"
 							+ (this.state.targetSelectorShown ? " is-open" : "")}
 						onClick={this.onDisclosureChange}
-						onKeyPress={this.handleDisclosureKeyPress}/>
+						onKeyPress={this.handleDisclosureKeyPress}
+						aria-expanded={this.state.targetSelectorShown}
+						aria-label={Zotero.getString(`progressWindow_detailsBtn${this.state.targetSelectorShown ? "Hide" : "View"}`)}/>
 			</React.Fragment>
 		);
 	}
@@ -1127,7 +1141,8 @@ class TargetTree extends React.Component {
 				onCollapse: item => this.props.onCollapseRows([item.id]),
 				
 				autoExpandAll: false,
-				autoExpandDepth: 0
+				autoExpandDepth: 0,
+				label: Zotero.getString("progressWindow_collectionSelector")
 			}
 		);
 	}

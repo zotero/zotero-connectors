@@ -86,13 +86,13 @@
 		"message": "Item $1: $2"
 	},
 	"progressWindow_downloadComplete": {
-		"message": "Saved $1 for this item"
+		"message": "Saved $1"
 	},
 	"progressWindow_downloadCompletePlural": {
 		"message": "Saved $1 for item $2"
 	},
 	"progressWindow_downloadFailed": {
-		"message": "Failed download of $1 for this item"
+		"message": "Failed download of $1"
 	},
 	"progressWindow_downloadFailedPlural": {
 		"message": "Failed download of $1 for item $2"
@@ -101,7 +101,7 @@
 		"message": "Saving is complete. The dialog will close now."
 	},
 	"progressWindow_alreadySaved": {
-		"message": "Items from this webpage have already been processed."
+		"message": "Items from this webpage have already been saved."
 	},
 	"progressWindow_tagPlaceholder": {
 		"message": "Tags (separated by commas)"

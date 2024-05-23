@@ -63,19 +63,17 @@ Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
 	// Somehow browser.webNavigation.onCommitted runs later than headersReceived
 	setTimeout(async function() {
 		var tab = await browser.tabs.get(details.tabId);
-		Zotero.Connector_Browser._tabInfo[tab.id].uninjectable = true;
-		if (Zotero.Connector_Browser._tabInfo[tab.id]) {
-			Zotero.Connector_Browser._tabInfo[tab.id].isPDF = isPDF;
-		} else {
-			Zotero.Connector_Browser._tabInfo[tab.id] = { isPDF };
-		}
+		let tabInfo = Zotero.Connector_Browser.getTabInfo(tab.id);
+		tabInfo.uninjectable = true;
+		tabInfo.isPDF = isPDF;
 		Zotero.Connector_Browser._updateExtensionUI(tab);
 	}, 100);
 });
 
 Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 	let url = tab.url;
-	const pdf = Zotero.Connector_Browser._tabInfo[tab.id].isPDF;
+	let tabInfo = Zotero.Connector_Browser.getTabInfo(tab.id);
+	const pdf = tabInfo.isPDF;
 	// Get URL from iframe
 	if (frameId) {
 		({ url } = await browser.webNavigation.getFrame({ tabId: tab.id, frameId }));
@@ -114,7 +112,7 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 			tabId:tab.id,
 			title: "Saved!"
 		});
-		Zotero.Connector_Browser._tabInfo[tab.id].isPDF = false;
+		tabInfo.isPDF = false;
 	
 	} catch (e) {
 		Zotero.logError(e);

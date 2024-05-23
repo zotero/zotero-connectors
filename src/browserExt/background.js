@@ -177,9 +177,7 @@ Zotero.Connector_Browser = new function() {
 	this.onSelect = async function(items, tab) {
 		await Zotero.Connector_Browser.openWindow(
 			browser.runtime.getURL("itemSelector/itemSelector.html")
-				+ "#" + encodeURIComponent(JSON.stringify([tab.id, items]))
-				// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
-				.replace(/%3A/g, 'ZOTEROCOLON'),
+				+ "#" + encodeURIComponent(JSON.stringify([tab.id, items])),
 			{width: 600, height: 325}, tab
 		);
 		return new Promise((resolve) => {

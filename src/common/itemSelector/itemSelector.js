@@ -37,8 +37,6 @@ async function load() {
 
 	// decode JSON-ized data regading items to save
 	var queryArg = window.location.hash.substr(1);
-	// Remove once https://bugzilla.mozilla.org/show_bug.cgi?id=719905 is fixed
-	queryArg = queryArg.replace(/ZOTEROCOLON/g, '%3A');
 	var data = JSON.parse(decodeURIComponent(queryArg));
 	var itemSelector = document.getElementById('item-selector');
 	

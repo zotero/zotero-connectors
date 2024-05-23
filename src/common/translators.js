@@ -51,9 +51,12 @@ Zotero.Translators = new function() {
 				let translators = Zotero.Prefs.get("translatorMetadata");
 				// No stored translators
 				if (typeof translators !== "object" || !translators.length) {
-					translators = await Zotero.Repo.getAllTranslatorMetadata(true);
+					Zotero.debug(`Translators: First time launch, getting all translators.`);
+					await this.updateFromRemote(true);
 				}
-				this._load(translators);
+				else {
+					this._load(translators);
+				}
 				this.keepTranslatorsUpdated();
 				resolve();
 			}
@@ -79,6 +82,7 @@ Zotero.Translators = new function() {
 		for (const type in _cache) {
 			_cache[type].sort((a, b) => a.priority - b.priority);
 		}
+		Zotero.debug(`Translators: Saved ${Object.keys(jsonTranslators).length} translators.`);
 	}
 	
 	this._loadTranslator = function (translator, sort=true) {
@@ -145,6 +149,19 @@ Zotero.Translators = new function() {
 		return this.keepTranslatorsUpdated();
 	}
 
+	/**
+	 * Update translator metadata
+	 *
+	 * Called:
+	 * - If Zotero.Translators._translatorHash differs from the one returned by Zotero /ping response
+	 * - When Reset Translators button in Preferences is clicked (with reset=true).
+	 * - Every REPOSITORY_CHECK_INTERVAL (24hrs) (when Zotero is unavailable)
+	 *
+	 * If a browser is closed and reopened then Repo will not be checked unless 24hrs have passed
+	 * since last check.
+	 *
+	 * @param reset {Boolean} Fetches all metadata from repo instead of just the diff since last checked
+	 */
 	this.updateFromRemote = async function(reset=false) {
 		Zotero.debug('Retrieving translators from Zotero Client');
 		let translatorMetadata;
@@ -182,7 +199,6 @@ Zotero.Translators = new function() {
 			await Zotero.Prefs.removeAllCachedTranslators();
 			this._load(newMetadata);
 			await this._storeTranslatorMetadata();
-			Zotero.debug(`Translators: Saved ${Object.keys(_translators).length} translators.`);
 			
 			// Reset translator hash
 			this._translatorsHash = null;

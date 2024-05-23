@@ -36,51 +36,6 @@ Zotero.Repo = new function() {
 	this.infoRe = /^\s*{[\S\s]*?}\s*?[\r\n]/;
 	
 	/**
-	 * Update translator metadata
-	 * 
-	 * Called:
-	 * - If Zotero.Translators._translatorHash differs from the one returned by Zotero /ping response
-	 * - When Reset Translators button in Preferences is clicked (with reset=true).
-	 * - Every REPOSITORY_CHECK_INTERVAL (24hrs) (when Zotero is unavailable)
-	 * 
-	 * If a browser is closed and reopened then Repo will not be checked unless 24hrs have passed
-	 * since last check.
-	 * 
-	 * @param reset {Boolean} Fetches all metadata from repo instead of just the diff since last checked
-	 */
-	this.getAllTranslatorMetadata = async function(reset) {
-		// get the time
-		let nextCascadeToRepo = Zotero.Prefs.get("connector.repo.lastCheck.localTime")
-			+ZOTERO_CONFIG.REPOSITORY_CHECK_INTERVAL*1000;
-		let now = Date.now();
-		let repoCheckIntervalExpired = nextCascadeToRepo <= now;
-
-		let translatorMetadata;
-		let isFromStandalone = false;
-		try {
-			translatorMetadata = await this._updateFromStandalone();
-			isFromStandalone = true;
-		}
-		catch (e) {
-			Zotero.debug('Failed to retrieve translators from Zotero Standalone');
-			if (!repoCheckIntervalExpired && !reset) {
-				Zotero.debug('Local repo checked recently, not cascading');
-			}
-			else {
-				try {
-					translatorMetadata = await this.getTranslatorMetadataFromServer(reset);
-				}
-				catch (e) {
-					Zotero.logError('Failed to retrieve translators from Zotero Repo ' + e);
-					throw e;
-				}	
-			}
-		}
-		
-		return translatorMetadata;
-	};
-	
-	/**
 	 * Get translator code from repository
 	 * @param {String} translatorID ID of the translator to retrieve code for
 	 * @param {Boolean} debugMode used in translator tester to prevent fetching from repo
@@ -125,9 +80,10 @@ Zotero.Repo = new function() {
 			if (Zotero.Date.sqlToDate(metadata.lastUpdated) > Zotero.Date.sqlToDate(translator.lastUpdated)) {
 				Zotero.debug("Repo: Retrieved code for "+metadata.label+" newer than stored metadata; updating");
 				await Zotero.Translators.updateTranslator(metadata);
-			} else {
-				Zotero.debug("Repo: Retrieved code for "+metadata.label+" older than stored metadata; not caching");
 			}
+			// else {
+			// 	Zotero.debug("Repo: Retrieved code for "+metadata.label+" older than stored metadata; not caching");
+			// }
 		}
 		return code;
 	};

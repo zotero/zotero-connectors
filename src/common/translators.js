@@ -50,7 +50,7 @@ Zotero.Translators = new function() {
 			try {
 				let translators = Zotero.Prefs.get("translatorMetadata");
 				// No stored translators
-				if (typeof translators !== "object") {
+				if (typeof translators !== "object" || !translators.length) {
 					translators = await Zotero.Repo.getAllTranslatorMetadata(true);
 				}
 				this._load(translators);
@@ -134,7 +134,7 @@ Zotero.Translators = new function() {
 		
 		// If e.g. Zotero was last checked 6 hours ago when this runs, then we schedule the next
 		// check in 24hr - 6hr = 18hr to make sure one check occurs at least every 24hr.
-		let nextCheckIn = nextCascadeToRepo - now;
+		let nextCheckIn = Math.max(0, nextCascadeToRepo - now);
 		if (repoCheckIntervalHasExpired && repoCheckFailed) {
 			// We failed to get metadata and repo check interval expired,
 			// so schedule a check soon (in 1hr) in hopes repo comes back alive
@@ -215,12 +215,12 @@ Zotero.Translators = new function() {
 			}
 		}
 		
-		if (!newTranslators.length && !updatedTranslators.length && !deletedTranslators.length) return;
+		if (!newTranslators.length && !updatedTranslators.length && !deletedTranslators.size) return;
 
 		// Load new translators
 		for (const translatorMetadata of newTranslators) {
 			Zotero.debug(`Translators: Adding ${translatorMetadata.label}`);
-			this._loadTranslator(translatorMetadata);
+			this._loadTranslator(new Zotero.Translator(translatorMetadata));
 		}
 
 		// Update existing translators and remove cached code
@@ -245,10 +245,16 @@ Zotero.Translators = new function() {
 
 		// Serialize and store translators
 		await this._storeTranslatorMetadata();
-		Zotero.debug(`Translators: Saved (${Object.keys(_translators).length} translators. New ${newTranslators.length}, deleted ${deletedTranslators.length})`);
+		Zotero.debug(`Translators: Saved (${Object.keys(_translators).length} translators. New ${newTranslators.length}, deleted ${deletedTranslators.size})`);
 
 		// Reset translator hash
 		this._translatorsHash = null;
+	}
+	
+	this.updateTranslator = async function(translatorMetadata) {
+		let translator = _translators[translatorMetadata.translatorID]
+		translator.init(translatorMetadata)
+		await this._storeTranslatorMetadata();
 	}
 	
 	this._storeTranslatorMetadata = async function() {

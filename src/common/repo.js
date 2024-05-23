@@ -124,7 +124,7 @@ Zotero.Repo = new function() {
 		if(metadata.lastUpdated !== translator.lastUpdated) {
 			if (Zotero.Date.sqlToDate(metadata.lastUpdated) > Zotero.Date.sqlToDate(translator.lastUpdated)) {
 				Zotero.debug("Repo: Retrieved code for "+metadata.label+" newer than stored metadata; updating");
-				await Zotero.Translators.loadNewMetadata([metadata]);
+				await Zotero.Translators.updateTranslator(metadata);
 			} else {
 				Zotero.debug("Repo: Retrieved code for "+metadata.label+" older than stored metadata; not caching");
 			}

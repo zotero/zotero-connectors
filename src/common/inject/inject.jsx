@@ -300,7 +300,17 @@ Zotero.Inject = new function() {
 
 	this.confirm = async function(props) {
 		await Zotero.initializedPromise;
-		return Zotero.ModalPrompt.confirm(props);
+		// Remove MV3 importConfirm hash from the history after displaying the prompt so that going back
+		// does not trigger repeat prompts
+		let resultPromise = Zotero.ModalPrompt.confirm(props);
+		resultPromise.then(() => {
+			let url = new URL(document.location.href)
+			if (url.hash.includes('importConfirm')) {
+				url.hash = "";
+				history.replaceState(null, "", url.href)
+			}
+		});
+		return resultPromise;
 	};
 
 	/**

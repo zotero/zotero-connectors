@@ -19,11 +19,11 @@
 		"action": {
 			"type": "redirect",
 			"redirect": {
-				"regexSubstitution": "https://github.com/citation-style-language/styles/blob/\\1#importConfirm"
+				"regexSubstitution": "https://github.com/\\1/styles/blob/\\2#importConfirm"
 			}
 		},
 		"condition": {
-			"regexFilter": "^https://raw\\.githubusercontent\\.com/citation-style-language/styles/([^/]*/[^#?]+.csl)$",
+			"regexFilter": "^https://raw\\.githubusercontent\\.com/([^/]*)/styles/([^/]*/[^#?]+.csl)$",
 			"resourceTypes": ["main_frame"]
 		}
 	}

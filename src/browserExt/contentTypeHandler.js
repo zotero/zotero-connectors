@@ -46,8 +46,8 @@ Zotero.ContentTypeHandler = {
 		"ris" // Not even trying
 	]),
 	mv3CSLWhitelistRegexp: {
-		"https://www.zotero.org/styles/": /https?:\/\/(?:www\.)zotero\.org\/styles\/?#importConfirm=(.*)$/,
-		"https://raw.githubusercontent.com/citation-style-language/styles/": /https?:\/\/github\.com\/citation-style-language\/styles\/[^/]*\/([^.]*.csl)#importConfirm$/,
+		"https://www.zotero.org/styles/\\1": /https?:\/\/(?:www\.)zotero\.org\/styles\/?#importConfirm=(.*)$/,
+		"https://raw.githubusercontent.com/\\1/styles/\\2": /https?:\/\/github\.com\/([^/]*)\/styles\/[^/]*\/([^.]*.csl)#importConfirm$/,
 	},
 	ignoreURL: new Set(),
 
@@ -71,16 +71,20 @@ Zotero.ContentTypeHandler = {
 
 		const contentType = details.responseHeadersObject['content-type'].split(';')[0];
 		if (Zotero.isManifestV3) {
-			for (const destination in Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp) {
+			for (let destination in Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp) {
 				const regexp = Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp[destination];
 				let match = details.url.match(regexp);
 				if (match) {
+					match.forEach((m, index) => {
+						if (index === 0) return;
+						destination = destination.replace(`\\${index}`, m);
+					});
 					(async () => {
 						if (await Zotero.ContentTypeHandler._shouldImportStyle(details.tabId)) {
-							await Zotero.ContentTypeHandler.importFile(`${destination}${match[1]}`, details.tabId, 'csl');
+							await Zotero.ContentTypeHandler.importFile(destination, details.tabId, 'csl');
 						}
 						else {
-							await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, `${destination}${match[1]}`);
+							await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, destination);
 						}
 					})();
 					return;
@@ -195,7 +199,7 @@ Zotero.ContentTypeHandler = {
 		// If captured URL was pasted on about:blank or other browser pages the response is immediate
 		// with undefined and means we cannot inject and display the UI, so we need to redirect to a page
 		// where we can do it
-		if (response === "undefined" && tab.url != confirmURL) {
+		if (typeof response === "undefined" && tab.url != confirmURL) {
 			await new Zotero.Promise(function(resolve, reject) {
 				browser.tabs.onUpdated.addListener(async function getResponse(tabId, changeInfo, tab) {
 					try {
@@ -212,7 +216,7 @@ Zotero.ContentTypeHandler = {
 			tab = await browser.tabs.get(tab.id);
 			return this._sendMessageAndHandleBlankPage(message, props, tab);
 		}
-		else if (response === "undefined") {
+		else if (typeof response === "undefined") {
 			throw new Error('Could not navigate blank page to an internal Zotero page for import UI')
 		}
 		return response;

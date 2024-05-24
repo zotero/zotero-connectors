@@ -19,11 +19,11 @@
 		"action": {
 			"type": "redirect",
 			"redirect": {
-				"regexSubstitution": "https://github.com/\\1/styles/blob/\\2#importConfirm"
+				"regexSubstitution": "https://github.com/\\1/blob/\\2#importConfirm"
 			}
 		},
 		"condition": {
-			"regexFilter": "^https://raw\\.githubusercontent\\.com/([^/]*)/styles/([^/]*/[^#?]+.csl)$",
+			"regexFilter": "^https://raw\\.githubusercontent\\.com/([^/]*/[^/]*)/([^/]*/[^#?]+.csl)$",
 			"resourceTypes": ["main_frame"]
 		}
 	}

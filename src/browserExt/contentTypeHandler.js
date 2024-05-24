@@ -47,7 +47,7 @@ Zotero.ContentTypeHandler = {
 	]),
 	mv3CSLWhitelistRegexp: {
 		"https://www.zotero.org/styles/\\1": /https?:\/\/(?:www\.)zotero\.org\/styles\/?#importConfirm=(.*)$/,
-		"https://raw.githubusercontent.com/\\1/styles/\\2": /https?:\/\/github\.com\/([^/]*)\/styles\/[^/]*\/([^.]*.csl)#importConfirm$/,
+		"https://raw.githubusercontent.com/\\1/\\2": /https?:\/\/github\.com\/([^/]*\/[^/]*)\/[^/]*\/([^.]*.csl)#importConfirm$/,
 	},
 	ignoreURL: new Set(),
 

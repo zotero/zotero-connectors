@@ -12,5 +12,19 @@
 			"regexFilter": "^https://www\\.zotero\\.org/styles/([^#?]+)$",
 			"resourceTypes": ["main_frame"]
 		}
+	},
+	{
+		"id": 2,
+		"priority": 1,
+		"action": {
+			"type": "redirect",
+			"redirect": {
+				"regexSubstitution": "https://github.com/citation-style-language/styles/blob/\\1#importConfirm"
+			}
+		},
+		"condition": {
+			"regexFilter": "^https://raw\\.githubusercontent\\.com/citation-style-language/styles/([^/]*/[^#?]+.csl)$",
+			"resourceTypes": ["main_frame"]
+		}
 	}
 ]

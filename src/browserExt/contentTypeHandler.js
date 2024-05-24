@@ -45,6 +45,10 @@ Zotero.ContentTypeHandler = {
 		"text/ris", // Cell serves this
 		"ris" // Not even trying
 	]),
+	mv3CSLWhitelistRegexp: {
+		"https://www.zotero.org/styles/": /https?:\/\/(?:www\.)zotero\.org\/styles\/?#importConfirm=(.*)$/,
+		"https://raw.githubusercontent.com/citation-style-language/styles/": /https?:\/\/github\.com\/citation-style-language\/styles\/[^/]*\/([^.]*.csl)#importConfirm$/,
+	},
 	ignoreURL: new Set(),
 
 	enable: function() {
@@ -67,16 +71,20 @@ Zotero.ContentTypeHandler = {
 
 		const contentType = details.responseHeadersObject['content-type'].split(';')[0];
 		if (Zotero.isManifestV3) {
-			let match = details.url.match(/https?:\/\/(?:www\.)zotero\.org\/styles\/?#importConfirm=(.*)$/);
-			if (match) {
-				(async () => {
-					if (await Zotero.ContentTypeHandler._shouldImportStyle(details.tabId)) {
-						await Zotero.ContentTypeHandler.importFile(`https://www.zotero.org/styles/${match[1]}`, details.tabId, 'csl');
-					}
-					else {
-						await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, `https://www.zotero.org/styles/${match[1]}`);
-					}
-				})();
+			for (const destination in Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp) {
+				const regexp = Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp[destination];
+				let match = details.url.match(regexp);
+				if (match) {
+					(async () => {
+						if (await Zotero.ContentTypeHandler._shouldImportStyle(details.tabId)) {
+							await Zotero.ContentTypeHandler.importFile(`${destination}${match[1]}`, details.tabId, 'csl');
+						}
+						else {
+							await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, `${destination}${match[1]}`);
+						}
+					})();
+					return;
+				}
 			}
 			return;
 		}

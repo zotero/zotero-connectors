@@ -7,7 +7,7 @@ BUILD_DIR="$( cd "$ROOT_DIR"/build && pwd )"
 
 rm -rf "$ROOT_DIR"/dist/Zotero_Connector*.zip
 
-cd "$BUILD_DIR/chrome/"
+cd "$BUILD_DIR/manifestv3/"
 
 version=$(cat manifest.json | jq -r .version)
 filename="Zotero_Connector-$version.zip"

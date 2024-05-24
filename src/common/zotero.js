@@ -224,6 +224,7 @@ var Zotero = global.Zotero = new function() {
 		Zotero.Prefs.set('debug.store', false);
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.init();
+			Zotero.ContentTypeHandler.init();
 			await Zotero.Connector_Browser.init();
 		}
 		await Zotero.i18n.init();

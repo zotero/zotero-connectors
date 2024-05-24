@@ -50,13 +50,25 @@ Zotero.ContentTypeHandler = {
 		"https://raw.githubusercontent.com/\\1/\\2": /https?:\/\/github\.com\/([^/]*\/[^/]*)\/[^/]*\/([^.]*.csl)#importConfirm$/,
 	},
 	ignoreURL: new Set(),
+	
+	init: function() {
+		chrome.declarativeNetRequest.updateEnabledRulesets({
+			disableRulesetIds: ['styleIntercept']
+		});
+	},
 
 	enable: function() {
 		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
+		chrome.declarativeNetRequest.updateEnabledRulesets({
+			enableRulesetIds: ['styleIntercept']
+		});
 	},
 	
 	disable: function() {
 		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
+		chrome.declarativeNetRequest.updateEnabledRulesets({
+			disableRulesetIds: ['styleIntercept']
+		});
 	},
 
 	onHeadersReceived: function (details) {

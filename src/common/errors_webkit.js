@@ -91,12 +91,15 @@ Zotero.Errors = new function() {
 		if (Zotero.isBackground && Zotero.isBrowserExt) {
 			let granted = await browser.permissions.contains({permissions: ['management']});
 			if (granted) {
-				let extensions = await browser.management.getAll();
-				info.extensions = extensions
-					.filter(extension => extension.enabled && extension.name != Zotero.appName)
-					.map(extension => {
-						return `${extension.name}: ${extension.version}, ${extension.type}`;
-					}).join(', ')
+				// See https://github.com/zotero/zotero-connectors/issues/476
+				if (!Zotero.isChromium || chrome.management.getAll) {
+					let extensions = await browser.management.getAll();
+					info.extensions = extensions
+						.filter(extension => extension.enabled && extension.name != Zotero.appName)
+						.map(extension => {
+							return `${extension.name}: ${extension.version}, ${extension.type}`;
+						}).join(', ')
+				}
 			}
 		}
 		return JSON.stringify(info, null, 2);

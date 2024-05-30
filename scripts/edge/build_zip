@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
+BUILD_DIR="$( cd "$ROOT_DIR"/build && pwd )"
+
+rm -rf "$ROOT_DIR"/dist/Zotero_Connector*.zip
+
+cd "$BUILD_DIR/chrome/"
+
+version=$(cat manifest.json | jq -r .version)
+filename="Zotero_Connector-$version.zip"
+
+zip -r ../$filename *
+mv ../$filename "$ROOT_DIR/dist"
+
+echo
+echo "Built $ROOT_DIR/dist/$filename"

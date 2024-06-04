@@ -52,23 +52,29 @@ Zotero.ContentTypeHandler = {
 	ignoreURL: new Set(),
 	
 	init: function() {
-		chrome.declarativeNetRequest.updateEnabledRulesets({
-			disableRulesetIds: ['styleIntercept']
-		});
+		if (Zotero.isManifestV3) {
+			chrome.declarativeNetRequest.updateEnabledRulesets({
+				disableRulesetIds: ['styleIntercept']
+			});
+		}
 	},
 
 	enable: function() {
 		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
-		chrome.declarativeNetRequest.updateEnabledRulesets({
-			enableRulesetIds: ['styleIntercept']
-		});
+		if (Zotero.isManifestV3) {
+			chrome.declarativeNetRequest.updateEnabledRulesets({
+				enableRulesetIds: ['styleIntercept']
+			});
+		}
 	},
 	
 	disable: function() {
 		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
-		chrome.declarativeNetRequest.updateEnabledRulesets({
-			disableRulesetIds: ['styleIntercept']
-		});
+		if (Zotero.isManifestV3) {
+			chrome.declarativeNetRequest.updateEnabledRulesets({
+				disableRulesetIds: ['styleIntercept']
+			});
+		}
 	},
 
 	onHeadersReceived: function (details) {

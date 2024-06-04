@@ -264,6 +264,7 @@ var Zotero = global.Zotero = new function() {
 
 	this.initTranslateSandbox = async function() {
 		this.version = await Zotero.TranslateSandbox.sendMessage('getVersion');
+		Zotero.Schema.init();
 		await this._initDateFormatsJSON();
 		await Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
 			'reportTranslationFailure', 'capitalizeTitles']);

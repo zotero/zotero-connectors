@@ -81,7 +81,7 @@ Zotero.SandboxedTranslateManager = {
 				// generally be interested in translating the live page with all its changes
 				// but we're being safe.
 				for (let noscriptTag of doc.head.querySelectorAll('noscript')) {
-					let tags = noscriptTag.innerHTML.match(/<[^/>]*>/g);
+					let tags = noscriptTag.innerHTML.match(/<[^>]*>/g);
 					if (!tags) continue;
 					for (let tag of tags) {
 						if (!this.noscriptHeadAllowedTags.some(allowedTag => tag.startsWith(`<${allowedTag}`))) {

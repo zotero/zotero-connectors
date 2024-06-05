@@ -28,6 +28,7 @@ Zotero.SandboxedTranslateManager = {
 	// Adds the translation sandbox frame to the page
 	frame: null,
 	virtualTranslate: null,
+	noscriptHeadAllowedTags: ['link', 'meta', 'style'],
 	handlers: {
 		'getVersion': () => Zotero.version,
 		'Inject.getSessionDetails': () => Zotero.Inject.sessionDetails,
@@ -70,6 +71,25 @@ Zotero.SandboxedTranslateManager = {
 				});
 			},
 			setDocument: (doc) => {
+				// Only <link>, <meta> and <style> tags are allowed in <noscript> tags in head.
+				// If any other tag is included, web parsers are supposed to immediately break
+				// the <head> tag and any subsequent content of the <head> element is included
+				// in the <body> starting with the invalid content of the <noscript> tag.
+				// This is the behaviour of DOMParser and breaks EM translator meta tag detection
+				// on at least some pages, so we have to do this custom stupid handling.
+				// Also we could probably just strip these tags completely since we would
+				// generally be interested in translating the live page with all its changes
+				// but we're being safe.
+				for (let noscriptTag of doc.head.querySelectorAll('noscript')) {
+					let tags = noscriptTag.innerHTML.match(/<[^/>]*>/g);
+					if (!tags) continue;
+					for (let tag of tags) {
+						if (!this.noscriptHeadAllowedTags.some(allowedTag => tag.startsWith(`<${allowedTag}`))) {
+							noscriptTag.remove();
+							break;
+						}
+					}
+				}
 				return this.frame.sendMessage('Translate.setDocument', [doc.documentElement.outerHTML, doc.location.href]);
 			},
 			getTranslators: async (...args) => {

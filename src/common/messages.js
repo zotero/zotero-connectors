@@ -258,7 +258,7 @@ MESSAGES.COHTTP = {
 					let match = xhr.responseHeaders.match(new RegExp(`^${name}: (.*)$`, 'mi'));
 					return match ? match[1] : null;
 				};
-				if (Array.isArray(xhr.response) || (xhr.response.startsWith && xhr.response.startsWith('blob:'))) {
+				if (Array.isArray(xhr.response) && xhr.responseType === "arraybuffer" || (xhr.response.startsWith && xhr.response.startsWith('blob:'))) {
 					xhr.response = await unpackArrayBuffer(xhr.response);
 				} else {
 					xhr.responseText = xhr.response;

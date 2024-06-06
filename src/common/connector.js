@@ -67,8 +67,10 @@ Zotero.Connector = new function() {
 			Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
 			if (response.prefs.translatorsHash) {
 				(async () => {
-					let translatorsHash = await Zotero.Translators.getTranslatorsHash();
-					if (response.prefs.translatorsHash != translatorsHash) {
+					let sorted = !!response.prefs.sortedTranslatorHash;
+					let remoteHash = sorted ? response.prefs.sortedTranslatorHash : response.prefs.translatorsHash;
+					let translatorsHash = await Zotero.Translators.getTranslatorsHash(sorted);
+					if (remoteHash != translatorsHash) {
 						Zotero.debug("Zotero Ping: Translator hash mismatch detected. Updating translators from Zotero")
 						return Zotero.Translators.updateFromRemote();
 					}

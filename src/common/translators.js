@@ -37,6 +37,7 @@ Zotero.Translators = new function() {
 	var _fullFrameDetectionWhitelist = ['resolver.ebscohost.com'];
 	
 	this._translatorsHash = null;
+	this._sortedTranslatorHash = null;
 	
 	/**
 	 * Initializes translator cache, loading all relevant translators into memory
@@ -202,6 +203,7 @@ Zotero.Translators = new function() {
 			
 			// Reset translator hash
 			this._translatorsHash = null;
+			this._sortedTranslatorHash = null;
 			return;
 		}
 
@@ -240,17 +242,17 @@ Zotero.Translators = new function() {
 		}
 
 		// Update existing translators and remove cached code
-		for (const translatorMetadata of updatedTranslators) {
+		updatedTranslators = updatedTranslators.filter((translatorMetadata) => {
 			let translator = _translators[translatorMetadata.translatorID]
 			// check whether translatorMetadata is actually newer than the existing translator
-			if (translator.lastUpdated === translatorMetadata.lastUpdated
-					|| Zotero.Date.sqlToDate(translatorMetadata.lastUpdated) < Zotero.Date.sqlToDate(translator.lastUpdated)) {
-				continue;
+			if (translator.lastUpdated === translatorMetadata.lastUpdated) {
+				return false;
 			}
 			Zotero.debug(`Translators: Updating ${translatorMetadata.label}`);
 			translator.init(translatorMetadata)
 			this.deleteTranslatorCode(translator.translatorID)
-		}
+			return true;
+		});
 
 		// Remove deleted translators and their cached codes
 		for (const translatorID of deletedTranslators.keys()) {
@@ -261,10 +263,11 @@ Zotero.Translators = new function() {
 
 		// Serialize and store translators
 		await this._storeTranslatorMetadata();
-		Zotero.debug(`Translators: Saved (${Object.keys(_translators).length} translators. New ${newTranslators.length}, deleted ${deletedTranslators.size})`);
+		Zotero.debug(`Translators: Saved (${Object.keys(_translators).length} translators. New ${newTranslators.length}, deleted ${deletedTranslators.size}, updated ${updatedTranslators.length})`);
 
 		// Reset translator hash
 		this._translatorsHash = null;
+		this._sortedTranslatorHash = null;
 	}
 	
 	this.updateTranslator = async function(translatorMetadata) {
@@ -281,17 +284,21 @@ Zotero.Translators = new function() {
 	/**
 	 * Gets a hash of all translators (to check whether Connector needs an update)
 	 */
-	this.getTranslatorsHash = async function () {
-		if (this._translatorsHash) return this._translatorsHash;
+	this.getTranslatorsHash = async function (sorted) {
+		let prop = sorted ? "_sortedTranslatorHash" : "_translatorsHash";
+		if (this[prop]) return this[prop];
 		await this.init();
-		const translators = Object.keys(_translators).map(id => _translators[id]);
+		let translators = Object.keys(_translators).map(id => _translators[id]);
+		if (sorted) {
+			translators.sort((a, b) => a.translatorID.localeCompare(b.translatorID));
+		}
 
 		let hashString = "";
 		for (let translator of translators) {
 			hashString += `${translator.translatorID}:${translator.lastUpdated},`;
 		}
-		this._translatorsHash = Zotero.Utilities.Connector.md5(hashString);
-		return this._translatorsHash;
+		this[prop] = Zotero.Utilities.Connector.md5(hashString);
+		return this[prop];
 	}
 	
 	this.deleteTranslatorCode = async function (id) {

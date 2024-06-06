@@ -333,14 +333,16 @@ Zotero.HTTP = new function() {
 				setTimeout(abortController.abort.bind(abortController), options.timeout);
 			}
 			let headers = new Headers(options.headers);
+			let referrerRuleID;
+			if (options.referrer) {
+				referrerRuleID = await this._addReferrerToRequest(url, options.referrer)
+			}
 			try {
 				let fetchOptions = {
 					method,
 					headers,
 					body: options.body,
 					credentials: Zotero.isInject ? 'same-origin' : 'include',
-					referrer: options.referrer,
-					referrerPolicy: options.referrer ? "unsafe-url" : "strict-origin-when-cross-origin"
 				}
 				if (abortController) {
 					fetchOptions.signal = abortController.signal;
@@ -356,6 +358,11 @@ Zotero.HTTP = new function() {
 				}
 				// Zotero.logError(err);
 				throw err;
+			}
+			finally {
+				if (referrerRuleID) {
+					await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [referrerRuleID] });
+				}
 			}
 			
 			let responseData;
@@ -488,6 +495,36 @@ Zotero.HTTP = new function() {
 			}
 		});
 		return wrappedDoc;
+	};
+	
+	this._addReferrerToRequest = async function(url, referrer) {
+		const ruleID = Math.floor(Math.random() * 100000);
+		const rules = [{
+			id: ruleID,
+			action: {
+				type: 'modifyHeaders',
+				requestHeaders: [{
+					header: 'Referer',
+					operation: 'set',
+					value: referrer
+				}],
+			},
+			condition: {
+				resourceTypes: ['xmlhttprequest'],
+				initiatorDomains: [chrome.runtime.id],
+			}
+		}];
+		try {
+			await browser.declarativeNetRequest.updateDynamicRules({
+				removeRuleIds: rules.map(r => r.id),
+				addRules: rules,
+			});
+			Zotero.debug(`HTTP: Added a DNR rule to change referer for ${url} to ${referrer}`);
+		}
+		catch (e) {
+			Zotero.logError(e);
+		}
+		return ruleID;
 	};
 	
 	

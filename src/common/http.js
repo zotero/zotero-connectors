@@ -370,7 +370,13 @@ Zotero.HTTP = new function() {
 				responseData = await response.arrayBuffer();
 			}
 			else if (options.responseType == 'json') {
-				responseData = await response.json();
+				responseData = await response.text();
+				try {
+					responseData = JSON.parse(responseData);
+				}
+				catch (e) {
+					Zotero.debug(`HTTP: Failed to parse JSON from ${method} ${url}`);
+				}
 			}
 			else {
 				responseData = await response.text();

@@ -39,10 +39,9 @@ class ZoteroFrame {
 			id: Zotero.Utilities.randomString()
 		}, attributes);
 		this._frame = document.createElement("iframe");
-		for (let key in attributes) {
-			this._frame[key] = attributes[key];
-		}
-		this._frame.setAttribute("frameborder", "0");
+		
+		this._setFrameAttributes(attributes, style);
+
 
 		if (!messagingOptions) {
 			this.initializedPromise = Zotero.Promise.resolve();
@@ -59,6 +58,23 @@ class ZoteroFrame {
 		}
 		
 		document.body?.appendChild(this._frame);
+		
+		// Some websites (peda.net) run code that changes our iframe styling
+		// and in the case of the translation sandbox
+		// making it visible, so we need to be waiting for that and change it back.
+		let observer = new MutationObserver(() => {
+			observer.disconnect();
+			this._setFrameAttributes(attributes, style);
+			observer.observe(this._frame, { attributes: true })
+		});
+		observer.observe(this._frame, { attributes: true })
+	}
+	
+	_setFrameAttributes(attributes, style) {
+		for (let key in attributes) {
+			this._frame[key] = attributes[key];
+		}
+		this._frame.setAttribute("frameborder", "0");
 		for (let key in style) {
 			if (this._frame.style) {
 				this._frame.style[key] = style[key];

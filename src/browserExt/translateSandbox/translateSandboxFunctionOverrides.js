@@ -130,6 +130,7 @@ const CONTENT_SCRIPT_FUNCTION_OVERRIDES = {
 	'Connector.checkIsOnline': true,
 	'Connector.callMethod': true,
 	'Connector.callMethodWithCookies': true,
+	'Connector.saveSingleFile': true,
 	'Connector_Browser.isIncognito': true,
 	'Prefs.getAll': true,
 	'Prefs.getAsync': true,

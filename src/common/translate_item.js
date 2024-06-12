@@ -201,7 +201,7 @@ Zotero.Translate.ItemSaver.prototype = {
 	 */
 	_urlMatchesLocation: function(attachmentURL) {
 		// Complete match
-		if (attachmentURL === location.href) {
+		if (attachmentURL === this._baseURI) {
 			return true;
 		}
 		// Translators control the attachment URL and historically that URL was passed to
@@ -219,12 +219,12 @@ Zotero.Translate.ItemSaver.prototype = {
 		// Current URL: /records
 		// Current URL: /records?utm_source=search
 		// Current URL: /records?id=5678
-		const url = new URL (attachmentURL);
-		if (url.protocol + url.host + url.pathname === location.protocol + location.host
-				+ location.pathname) {
-			const locationURL = new URL(location.href);
+		const url = new URL(attachmentURL);
+		const targetUrl = new URL(this._baseURI);
+		if (url.protocol + url.host + url.pathname === targetUrl.protocol + targetUrl.host
+				+ targetUrl.pathname) {
 			for (const [param, value] of url.searchParams) {
-				if (locationURL.searchParams.get(param) !== value) {
+				if (targetUrl.searchParams.get(param) !== value) {
 					return false;
 				}
 			}

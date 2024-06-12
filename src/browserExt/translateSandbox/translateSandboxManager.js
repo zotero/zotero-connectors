@@ -71,7 +71,12 @@ Zotero.SandboxedTranslateManager = {
 					}
 				});
 			},
-			setDocument: (doc) => {
+			setDocument: (doc, updateLiveElements=false) => {
+				if (updateLiveElements) {
+					for (const checkbox of doc.querySelectorAll('input:checked')) {
+						checkbox.setAttribute('checked', '');
+					}
+				}
 				return this.frame.sendMessage('Translate.setDocument', [doc.documentElement.outerHTML, doc.location.href]);
 			},
 			getTranslators: async (...args) => {

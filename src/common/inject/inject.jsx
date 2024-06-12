@@ -114,7 +114,7 @@ Zotero.Inject = new function() {
 		}
 	};
 	
-	this.initTranslation = async function (document, sessionID) {
+	this.initTranslation = async function (document, sessionID, itemType) {
 		let translate;
 		if (Zotero.isManifestV3) {
 			try {
@@ -130,7 +130,12 @@ Zotero.Inject = new function() {
 			translate = new Zotero.Translate.Web();
 		}
 		// Async in MV3
-		await (async () => translate.setDocument(document))();
+		if (Zotero.isManifestV3) {
+			await translate.setDocument(document, itemType === 'multiple');
+		}
+		else {
+			translate.setDocument(document);
+		}
 		if (sessionID) {
 			let itemsTotal = 0;
 			let itemsSaved = 0;
@@ -499,7 +504,7 @@ Zotero.Inject = new function() {
 			saveOptions: options
 		};
 		
-		var translate = await this.initTranslation(document, sessionID);
+		var translate = await this.initTranslation(document, sessionID, translator.itemType);
 		var translators = [...this.translators];
 		while (translators[0].translatorID != translatorID) {
 			translators.shift();

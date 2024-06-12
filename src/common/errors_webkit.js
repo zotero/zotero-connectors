@@ -70,13 +70,13 @@ Zotero.Errors = new function() {
 		if (Zotero.isSafari && Zotero.isBackground) {
 			info = {
 				connector: "true",
-				version: this.version,
+				version: Zotero.version,
 				platform: "Safari App Extension",
 			};
 		} else {
 			info = {
 				connector: "true",
-				version: this.version,
+				version: Zotero.version,
 				platform: navigator.platform,
 				locale: navigator.language,
 				userAgent: navigator.userAgent,

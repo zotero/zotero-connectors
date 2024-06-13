@@ -36,12 +36,12 @@ class ZoteroFrame {
 	constructor(attributes={}, style={}, messagingOptions) {
 		if (!attributes.src) throw new Error("Attempted to construct a Zotero frame with no src attribute");
 		attributes = Object.assign({
-			id: Zotero.Utilities.randomString()
+			id: Zotero.Utilities.randomString(),
+			frameborder: "0"
 		}, attributes);
 		this._frame = document.createElement("iframe");
 		
 		this._setFrameAttributes(attributes, style);
-
 
 		if (!messagingOptions) {
 			this.initializedPromise = Zotero.Promise.resolve();
@@ -72,11 +72,12 @@ class ZoteroFrame {
 	
 	_setFrameAttributes(attributes, style) {
 		for (let key in attributes) {
-			this._frame[key] = attributes[key];
+			if (this._frame.getAttribute(key) !== attributes[key]) {
+				this._frame.setAttribute(key, attributes[key]);
+			}
 		}
-		this._frame.setAttribute("frameborder", "0");
 		for (let key in style) {
-			if (this._frame.style) {
+			if (this._frame.style[key] !== style[key]) {
 				this._frame.style[key] = style[key];
 			}
 		}

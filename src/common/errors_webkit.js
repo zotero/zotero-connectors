@@ -41,12 +41,13 @@ Zotero.Errors = new function() {
 	 */
 	this.log = function(string, url, line) {
 		// Special case for MV3 service worker restart info logging
+		var err;
 		if (string.startsWith('Service worker')) {
 			err = [`[Info: ${string}`];
 			url = line = null;
 		}
 		else {
-			var err = [`[JavaScript Error: "${string}"`];
+			err = [`[JavaScript Error: "${string}"`];
 		}
 		if(url || line) {
 			var info = [];

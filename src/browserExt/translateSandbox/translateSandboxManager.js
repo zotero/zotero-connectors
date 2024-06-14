@@ -51,6 +51,7 @@ Zotero.SandboxedTranslateManager = {
 	},
 	
 	initVirtualTranslate: async function() {
+		let translateDoc;
 		if (!this.frame) {
 			this.init();
 		}
@@ -72,6 +73,7 @@ Zotero.SandboxedTranslateManager = {
 				});
 			},
 			setDocument: (doc, updateLiveElements=false) => {
+				translateDoc = doc;
 				if (updateLiveElements) {
 					for (const checkbox of doc.querySelectorAll('input:checked')) {
 						checkbox.setAttribute('checked', '');
@@ -93,6 +95,23 @@ Zotero.SandboxedTranslateManager = {
 				}
 				return Reflect.get(target, property, ...args);
 			}
+		});
+		
+		// Handling for translate.monitorDOMChanges
+		let mutationObserver;
+		this.frame.addMessageListener('MutationObserver.observe', ([selector, config]) => {
+			// We allow at most one observer, or we'll have to keep track of them. Websites
+			// that need this will only have one translator applying an observer anyway.
+			if (mutationObserver) mutationObserver.disconnect();
+			mutationObserver = new MutationObserver(() => {
+				// We disconnect immediately because that's what monitorDOMChanges does, and if we don't
+				// there's an async messaging timeblock where more mutations may occur and result in
+				// pageModified being called multiple times.
+				mutationObserver.disconnect();
+				return Zotero.SandboxedTranslateManager.frame.sendMessage('MutationObserver.trigger');
+			});
+			const node = translateDoc.querySelector(selector);
+			mutationObserver.observe(node, config);
 		});
 	},
 };

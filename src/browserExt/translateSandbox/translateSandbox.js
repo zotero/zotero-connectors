@@ -47,6 +47,23 @@ Zotero.TranslateSandbox = {
 			addMessageListener: 'frame',
 			functionOverrides: CONTENT_SCRIPT_FUNCTION_OVERRIDES,
 		});
+
+		// Handling for translate.monitorDOMChanges
+		class UnsandboxedMutationObserver {
+			constructor(fn) {
+				Zotero.TranslateSandbox.addMessageListener('MutationObserver.trigger', () => {
+					// monitorDOMChanges includes the document where the change occurred in
+					// pageModified event, but we don't care for that in the Connector
+					fn([{target: {ownerDocument: 0}}], this)
+				});
+			}
+			observe(node, options) {
+				const selector = Zotero.Utilities.Connector.getNodeSelector(node);
+				Zotero.TranslateSandbox.messaging.sendMessage('MutationObserver.observe', [selector, options])
+			}
+			disconnect() {}
+		}
+
 		// Add a translate initializing method
 		this.messaging.addMessageListener('Translate.new', () => {
 			this.translate = new Zotero.Translate.Web();
@@ -88,7 +105,8 @@ Zotero.TranslateSandbox = {
 			let baseElem = doc.createElement('base');
 			baseElem.setAttribute('href', url);
 			doc.querySelector('head').appendChild(baseElem);
-			doc = Zotero.HTTP.wrapDocument(doc, url);
+			// Provide a MutationObserver for translate.monitorDOMChanges
+			doc = Zotero.HTTP.wrapDocument(doc, url, { defaultView: { MutationObserver: UnsandboxedMutationObserver } });
 			this.translate.setDocument(doc);
 			// Won't respond the message and translate initialization will hang in the main content script
 			// if this is removed, so don't!

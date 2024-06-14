@@ -114,6 +114,17 @@ Zotero.Utilities.Connector = {
 		});
 	}, 
 	
+	getNodeSelector(node) {
+		let selector = ``;
+		while (node.ownerDocument) {
+			if (node.classList.length) selector = Array.from(node.classList).map(cls => '.' + cls).join('') + selector
+			if (node.id) selector = `#${node.id}` + selector;
+			selector = ` ${node.nodeName.toLowerCase()}` + selector;
+			node = node.parentNode;
+		}
+		return selector;
+	},
+	
 	// Formatted version of a popular md5 implementation
 	// Original copyright (c) Paul Johnston & Greg Holt.
 	// https://stackoverflow.com/a/60467595 

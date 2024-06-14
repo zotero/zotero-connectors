@@ -471,7 +471,7 @@ Zotero.HTTP = new function() {
 	 * @param doc
 	 * @param docURL
 	 */
-	this.wrapDocument = function(doc, docURL, props) {
+	this.wrapDocument = function(doc, docURL, props={}) {
 		docURL = new URL(docURL);
 		var wrappedDoc = new Proxy(doc, {
 			get: function (t, prop) {

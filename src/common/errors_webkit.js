@@ -40,7 +40,14 @@ Zotero.Errors = new function() {
 	 * @param {Number} line Line where error occurred
 	 */
 	this.log = function(string, url, line) {
-		var err = ['[JavaScript Error: "', string, '"'];
+		// Special case for MV3 service worker restart info logging
+		if (string.startsWith('Service worker')) {
+			err = [`[Info: ${string}`];
+			url = line = null;
+		}
+		else {
+			var err = [`[JavaScript Error: "${string}"`];
+		}
 		if(url || line) {
 			var info = [];
 			if(url) info.push('file: "'+url+'"');

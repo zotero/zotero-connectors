@@ -149,15 +149,50 @@ Zotero.WebRequestIntercept = {
 		}
 	},
 	
-	replaceUserAgent: function(url, userAgent) {
-		function userAgentReplacer(details) {
-			if (details.url === url) {
-				Zotero.debug(`Replacing User-Agent for ${url} to ${userAgent}`);
-				browser.webRequest.onBeforeSendHeaders.removeListener(userAgentReplacer);
-				return {requestHeaders: [{name: 'User-Agent', value: userAgent}]};
+	replaceHeaders: async function(url, headers) {
+		if (!Zotero.isBrowserExt) return;
+		if (Zotero.isManifestV3 && Zotero.isChromium) return this.replaceHeadersDNR(url, headers);
+			function headerReplacer(details) {
+				if (details.url === url) {
+					browser.webRequest.onBeforeSendHeaders.removeListener(headerReplacer);
+					Zotero.debug(`Replacing headers for ${url} to ${JSON.stringify(headers)}`);
+					return { requestHeaders: headers };
+				}
 			}
+		browser.webRequest.onBeforeSendHeaders.addListener(headerReplacer, {urls: ['<all_urls>'], types: ['xmlhttprequest']}, ['blocking', 'requestHeaders']);
+	},
+	
+	replaceHeadersDNR: async function(url, headers) {
+		const requestHeaders = headers.map((headerObj) => {
+			return { header: headerObj.name, value: headerObj.value, operation: 'set' }
+		});
+		const ruleID = Math.floor(Math.random() * 100000);
+		const rules = [{
+			id: ruleID,
+			action: {
+				type: 'modifyHeaders',
+				requestHeaders,
+			},
+			condition: {
+				resourceTypes: ['xmlhttprequest'],
+				initiatorDomains: [chrome.runtime.id],
+			}
+		}];
+		try {
+			await browser.declarativeNetRequest.updateDynamicRules({
+				removeRuleIds: rules.map(r => r.id),
+				addRules: rules,
+			});
+			Zotero.debug(`HTTP: Added a DNR rule to change headers for ${url} to ${JSON.stringify(headers)}`);
 		}
-		browser.webRequest.onBeforeSendHeaders.addListener(userAgentReplacer, {urls: ['<all_urls>'], types: ['xmlhttprequest']}, ['blocking', 'requestHeaders']);
+		catch (e) {
+			Zotero.logError(e);
+		}
+		return ruleID;
+	},
+	
+	removeRuleDNR: async function(ruleId) {
+		return browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [ruleId] });
 	}
 }
 

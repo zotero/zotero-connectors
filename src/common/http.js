@@ -25,6 +25,8 @@
 
 const MAX_BACKOFF = 64e3;
 
+const HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Referer'];
+
 /**
  * Functions for performing HTTP requests, both via XMLHTTPRequest and using a hidden browser
  * @namespace
@@ -206,9 +208,14 @@ Zotero.HTTP = new function() {
 			}
 		}	
 		
-		if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
-			await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
-			delete options.headers['User-Agent'];
+		let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
+			.map(header => {
+				const val = { name: header, value: options.headers[header] }
+				delete options.headers['User-Agent'];
+				return val;
+			});
+		if (replaceHeaders.length) {
+			await Zotero.WebRequestIntercept.replaceHeaders(url, replaceHeaders);
 		}
 		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
 		
@@ -287,6 +294,7 @@ Zotero.HTTP = new function() {
 		}
 		
 		try {
+			let DNRRuleID;
 			Zotero.Connector_Browser.setKeepServiceWorkerAlive(true);
 			
 			let logBody = '';
@@ -315,14 +323,8 @@ Zotero.HTTP = new function() {
 					delete options.headers["Content-Type"];
 				}
 			}
-			if (options.headers['User-Agent'] && Zotero.isBrowserExt) {
-				await Zotero.WebRequestIntercept.replaceUserAgent(url, options.headers['User-Agent']);
-				delete options.headers['User-Agent'];
-			}
-			if (options.headers['Referer']) {
-				options.referrer = options.headers['Referer'];
-				delete options.headers['Referer'];
-			}
+
+			
 			Zotero.debug(`HTTP ${method} ${url}${logBody}`);
 			if (options.responseType == '') {
 				options.responseType = 'text';
@@ -332,11 +334,19 @@ Zotero.HTTP = new function() {
 				var abortController = new AbortController();
 				setTimeout(abortController.abort.bind(abortController), options.timeout);
 			}
-			let headers = new Headers(options.headers);
-			let referrerRuleID;
 			if (options.referrer) {
-				referrerRuleID = await this._addReferrerToRequest(url, options.referrer)
+				options.headers['Referer'] = options.referrer;
 			}
+			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
+				.map(header => {
+					const val = { name: header, value: options.headers[header] }
+					delete options.headers['User-Agent'];
+					return val;
+				});
+			if (replaceHeaders.length) {
+				DNRRuleID = await Zotero.WebRequestIntercept.replaceHeaders(url, replaceHeaders);
+			}
+			let headers = new Headers(options.headers);
 			try {
 				let fetchOptions = {
 					method,
@@ -360,8 +370,8 @@ Zotero.HTTP = new function() {
 				throw err;
 			}
 			finally {
-				if (referrerRuleID) {
-					await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [referrerRuleID] });
+				if (DNRRuleID) {
+					await Zotero.WebRequestIntercept.removeRuleDNR(DNRRuleID);
 				}
 			}
 			
@@ -505,37 +515,6 @@ Zotero.HTTP = new function() {
 		});
 		return wrappedDoc;
 	};
-	
-	this._addReferrerToRequest = async function(url, referrer) {
-		const ruleID = Math.floor(Math.random() * 100000);
-		const rules = [{
-			id: ruleID,
-			action: {
-				type: 'modifyHeaders',
-				requestHeaders: [{
-					header: 'Referer',
-					operation: 'set',
-					value: referrer
-				}],
-			},
-			condition: {
-				resourceTypes: ['xmlhttprequest'],
-				initiatorDomains: [chrome.runtime.id],
-			}
-		}];
-		try {
-			await browser.declarativeNetRequest.updateDynamicRules({
-				removeRuleIds: rules.map(r => r.id),
-				addRules: rules,
-			});
-			Zotero.debug(`HTTP: Added a DNR rule to change referer for ${url} to ${referrer}`);
-		}
-		catch (e) {
-			Zotero.logError(e);
-		}
-		return ruleID;
-	};
-	
 	
 	/**
 	 * Adds request handlers to the XMLHttpRequest and returns a promise that resolves when

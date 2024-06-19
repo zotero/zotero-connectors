@@ -23,9 +23,22 @@
     ***** END LICENSE BLOCK *****
 */
 
+const FETCH_REQUEST_EVENT = "single-file-request-fetch";
+const FETCH_RESPONSE_EVENT = "single-file-response-fetch";
+
 Zotero.SingleFile = {
-	backgroundFetch: async function(url, options = {}) {
+	singleFileFetch: async function(url, options = {}) {
+		try {
+			options.referrerPolicy = 'strict-origin-when-cross-origin';
+			return await this.hostFetch(url, options);
+		} catch (e) { }
+		// If hostFetch fails, we can still fetch via the bg page
+		// where we also support referrer replacing, but we have to
+		// remove the referrerPolicy, or the browser will refuse
+		// to send the invalid referrer.
 		options.responseType = 'arraybuffer';
+		options.referrer = document.location.href;
+		delete options.referrerPolicy;
 		let xhr = await Zotero.COHTTP.request("GET", url, options);
 		if (Zotero.isSafari) {
 			xhr.response = this._base64StringToUint8Array(xhr.response).buffer;
@@ -35,6 +48,34 @@ Zotero.SingleFile = {
 			arrayBuffer: async () => xhr.response,
 			headers: { get: header => xhr.getResponseHeader(header) },
 		}
+	},
+	
+	// Adapted from SingleFile content-fetch.js. We can do this, because we inject single-file-hooks-frames.js
+	// which contains host fetch handler.
+	hostFetch: async function (url, options) {
+		return new Promise((resolve, reject) => {
+			document.dispatchEvent(new CustomEvent(FETCH_REQUEST_EVENT, { detail: JSON.stringify({ url, options }) }));
+			document.addEventListener(FETCH_RESPONSE_EVENT, onResponseFetch, false);
+
+			function onResponseFetch(event) {
+				if (event.detail) {
+					if (event.detail.url == url) {
+						document.removeEventListener(FETCH_RESPONSE_EVENT, onResponseFetch, false);
+						if (event.detail.response) {
+							resolve({
+								status: event.detail.status,
+								headers: new Map(event.detail.headers),
+								arrayBuffer: async () => event.detail.response
+							});
+						} else {
+							reject(event.detail.error);
+						}
+					}
+				} else {
+					reject();
+				}
+			}
+		});
 	},
 	
 	retrievePageData: async function() {
@@ -57,7 +98,7 @@ Zotero.SingleFile = {
 			Zotero.debug("SingleFile: Retrieving page data");
 			if (Zotero.Inject.notification) Zotero.Inject.notification.dismiss()
 			let pageData = await singlefile.getPageData(Zotero.SingleFile.CONFIG, {
-				fetch: (...args) => Zotero.SingleFile.backgroundFetch(...args)
+				fetch: (...args) => Zotero.SingleFile.singleFileFetch(...args)
 			});
 			Zotero.debug("SingleFile: Done retrieving page data");
 

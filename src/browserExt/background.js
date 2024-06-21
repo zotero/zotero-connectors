@@ -27,6 +27,13 @@ if (!Zotero.isManifestV3) {
 	browser.action = browser.browserAction;
 }
 
+// Some websites break when injecting translation sandbox iframe into
+// the website's first iframe (which we do for websites like ebscohost
+// where often the translatable site is not the top frame, but first child frame).
+const INJECTION_BLACKLIST = new Set([
+	'lastpass.com'
+])
+
 Zotero.Connector_Browser = new function() {
 	var _tabInfo = {};
 	var _incompatibleVersionMessageShown;
@@ -258,6 +265,10 @@ Zotero.Connector_Browser = new function() {
 			// Injected via the manifest file
 			return;
 		} else {
+			if (Zotero.isManifestV3) {
+				const host = new URL(url).host;
+				if (INJECTION_BLACKLIST.has(host)) return;
+			}
 			let tabInfo = this.getTabInfo(tab.id);
 			if (!tabInfo.frameChecked) {
 				// Also in the first frame detected

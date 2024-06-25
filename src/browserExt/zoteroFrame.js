@@ -77,7 +77,7 @@ class ZoteroFrame {
 			}
 		}
 		for (let key in style) {
-			if (this._frame.style[key] !== style[key]) {
+			if (this._frame.style && this._frame.style[key] !== style[key]) {
 				this._frame.style[key] = style[key];
 			}
 		}

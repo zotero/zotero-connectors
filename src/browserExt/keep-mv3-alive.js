@@ -26,44 +26,15 @@
 //Based on
 //https://stackoverflow.com/questions/66618136/persistent-service-worker-in-chrome-extension/66618269#66618269
 
-const LET_DIE_AFTER = 60*60e3; // 1 hour
+const LET_DIE_AFTER = 10*60e3; // 1 hour
 
 const startedOn = Date.now();
-let lifeline;
-keepAlive();
+let interval;
 
-chrome.runtime.onConnect.addListener(port => {
-	if (port.name === 'keepAlive') {
-		lifeline = port;
-		setTimeout(keepAliveForced, 25e3); // 25s
-		port.onDisconnect.addListener(keepAliveForced);
+function keepAlive() {
+	if (startedOn + LET_DIE_AFTER < Date.now() && !Zotero.Connector_Browser.shouldKeepServiceWorkerAlive()) {
+		clearInterval(interval);
 	}
-});
-
-function keepAliveForced() {
-	lifeline?.disconnect();
-	lifeline = null;
-	if (startedOn + LET_DIE_AFTER < Date.now() && !Zotero.Connector_Browser.shouldKeepServiceWorkerAlive()) return;
-	keepAlive();
+	chrome.runtime.getPlatformInfo();
 }
-
-async function keepAlive() {
-	if (lifeline) return;
-	for (const tab of await chrome.tabs.query({ url: '*://*/*' })) {
-		try {
-			await chrome.scripting.executeScript({
-				target: { tabId: tab.id },
-				func: () => chrome.runtime.connect({ name: 'keepAlive' }),
-			});
-			chrome.tabs.onUpdated.removeListener(retryOnTabUpdate);
-			return;
-		} catch (e) {}
-	}
-	chrome.tabs.onUpdated.addListener(retryOnTabUpdate);
-}
-
-async function retryOnTabUpdate(tabId, info, tab) {
-	if (info.url && /^(file|https?):/.test(info.url)) {
-		keepAlive();
-	}
-}
+interval = setInterval(keepAlive, 20e3);

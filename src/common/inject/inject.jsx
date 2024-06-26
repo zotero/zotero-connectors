@@ -761,6 +761,10 @@ const isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browse
 // don't try to scrape on hidden frames
 if(!isHiddenIFrame) {
 	var doInject = async function () {
+		// Iframes where we inject translation can be non-text/html,
+		// and we shouldn't even bother translating them
+		// (and it also causes errors to be thrown when trying to create a ZoteroFrame)
+		if (!isTopWindow && document.contentType !== 'text/html') return;
 		await Zotero.initInject();
 
 		if (Zotero.isSafari && isTopWindow) {

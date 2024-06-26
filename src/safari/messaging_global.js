@@ -27,7 +27,7 @@ const MESSAGE_TIMEOUT = 5 * 60 * 1000;
 
 Zotero.Messaging._responseListeners = {};
 Zotero.Messaging.receiveSwiftMessage = async function(messageName, id, data=[], tabId=-1) {
-	// Zotero.debug(`Swift message received: ${messageName}, ${JSON.stringify(data).substr(0, 500)}`);
+	// Zotero.debug(`Swift message received: ${messageName}:${id}, ${JSON.stringify(data).substr(0, 500)}`);
 	if (messageName == 'response') {
 		let callback = Zotero.Messaging._responseListeners[id];
 		if (!callback) return;
@@ -75,6 +75,7 @@ Zotero.Messaging.sendMessage = async function(messageName, args=[], tab, message
 		Zotero.Messaging._responseListeners[messageId] = respond;
 
 		sendMessage(messageName, messageId, args, tabId);
+		// Zotero.debug(`Swift message sent: ${messageName}:${messageId}, ${JSON.stringify(args).substr(0, 500)}`);
 		// Make sure we don't slowly gobble up memory with callbacks
 		// The drawback is that Google Docs users will timeout in MESSAGE_TIMEOUT
 		// (at the time of writing this is 5min)

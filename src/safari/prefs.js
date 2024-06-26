@@ -36,7 +36,7 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 	set: async function(pref, value) {
 		Zotero.debug("Setting "+pref+" to "+JSON.stringify(value).substr(0, 100));
 		this.syncStorage[pref] = value;
-		await Zotero.Messaging.sendMessage('Swift.setPrefs', JSON.stringify(this.syncStorage));
+		Zotero.Messaging.sendMessage('Swift.setPrefs', JSON.stringify(this.syncStorage));
 	},
 
 	clear: async function(pref) {
@@ -46,6 +46,6 @@ Zotero.Prefs = Object.assign(Zotero.Prefs, {
 		pref.forEach((p) => {
 			delete this.syncStorage[p];
 		});
-		await Zotero.Messaging.sendMessage('Swift.setPrefs', JSON.stringify(this.syncStorage));
+		Zotero.Messaging.sendMessage('Swift.setPrefs', JSON.stringify(this.syncStorage));
 	}
 });

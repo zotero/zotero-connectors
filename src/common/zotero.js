@@ -235,6 +235,7 @@ var Zotero = global.Zotero = new function() {
 		if (Zotero.GoogleDocs.API.init) {
 			await Zotero.GoogleDocs.API.init();
 		}
+		await Zotero.TranslateBlocklistManager.init();
 		Zotero.initialized = true;
 
 		await Zotero.migrate();
@@ -377,6 +378,9 @@ Zotero.Prefs = new function() {
 		"firstSaveToServer": true,
 		"reportTranslationFailure": true,
 		"translatorMetadata": [],
+		"translateBlocklist": ["^lastpass.com/vault", "^help.rootsmagic.com/"],
+		"translateBlocklist.url": "https://repo.zotero.org/translate_blocklist",
+		"translateBlocklist.lastCheck": 0,
 		
 		"proxies.transparent": true,
 		"proxies.autoRecognize": true,

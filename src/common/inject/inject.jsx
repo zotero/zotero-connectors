@@ -748,6 +748,19 @@ Zotero.Inject = new function() {
 			fn();
 		});
 	}
+	
+	this.isTranslateBlocklisted = function () {
+		if (!Zotero.isManifestV3) return false;
+		let blocklist = Zotero.Prefs.get('translateBlocklist');
+		for (let blockRe of blocklist) {
+			blockRe = new RegExp(blockRe);
+			if (blockRe.test(document.location.href.substring(document.location.protocol.length + 2))) {
+				Zotero.debug(`Translate on ${document.location.href} blocked by translate blocklist ${blockRe}`)
+				return true;
+			}
+		}
+		return false;
+	}
 };
 
 // check whether this is a hidden browser window being used for scraping
@@ -766,7 +779,11 @@ if(!isHiddenIFrame) {
 		// (and it also causes errors to be thrown when trying to create a ZoteroFrame)
 		if (!isTopWindow && document.contentType !== 'text/html') return;
 		await Zotero.initInject();
-
+		
+		if (Zotero.Inject.isTranslateBlocklisted()) {
+			return;
+		}
+		
 		if (Zotero.isSafari && isTopWindow) {
 			Zotero.Connector_Browser.onPageLoad(document.location.href);
 		}

@@ -148,7 +148,8 @@ if (!argv.p) {
 var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclude, [
 	'webRequestIntercept.js',
 	'contentTypeHandler.js',
-	'saveWithoutProgressWindow.js'
+	'saveWithoutProgressWindow.js',
+	'translateSandbox/translateBlocklistManager.js'
 ]);
 
 function reloadChromeExtensionsTab(cb) {

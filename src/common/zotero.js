@@ -378,7 +378,7 @@ Zotero.Prefs = new function() {
 		"firstSaveToServer": true,
 		"reportTranslationFailure": true,
 		"translatorMetadata": [],
-		"translateBlocklist": ["^help.rootsmagic.com"],
+		"translateBlocklist": ["^help.rootsmagic.com$"],
 		"translateBlocklist.url": "https://repo.zotero.org/translate_blocklist",
 		"translateBlocklist.lastCheck": 0,
 		

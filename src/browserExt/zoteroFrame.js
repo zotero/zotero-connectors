@@ -93,6 +93,7 @@ class ZoteroFrame {
 		}
 		if (!messagingOptions.addMessageListener) {
 			messagingOptions.addMessageListener = (fn) => window.addEventListener('message', (messageEvent) => {
+				if (messageEvent.source !== this._frame.contentWindow) return;
 				if (messageEvent.data && Array.isArray(messageEvent.data)) {
 					fn(messageEvent.data);
 				}

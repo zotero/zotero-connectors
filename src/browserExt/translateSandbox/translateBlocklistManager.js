@@ -43,7 +43,7 @@ Zotero.TranslateBlocklistManager = {
 	},
 
 	async _fetchBlocklist() {
-		let xhr, blocklist;
+		let xhr, blocklist = [];
 		try {
 			Zotero.Prefs.set('translateBlocklist.lastCheck', Date.now());
 			xhr = await Zotero.HTTP.request('GET', Zotero.Prefs.get('translateBlocklist.url'))

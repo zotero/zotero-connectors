@@ -379,7 +379,7 @@ Zotero.Prefs = new function() {
 		"reportTranslationFailure": true,
 		"translatorMetadata": [],
 		"translateBlocklist": ["^help.rootsmagic.com"],
-		"translateBlocklist.url": "https://repo.zotero.org/translate_blacklist",
+		"translateBlocklist.url": "https://repo.zotero.org/translate_blocklist",
 		"translateBlocklist.lastCheck": 0,
 		
 		"proxies.transparent": true,

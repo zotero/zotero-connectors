@@ -1074,35 +1074,40 @@ Zotero.Connector_Browser = new function() {
 	}
 	
 	async function onNavigation(details, historyChange=false) {
-		let tabInfo = Zotero.Connector_Browser.getTabInfo(details.tabId);
-		
 		// Ignore developer tools, item selector
-		if (details.tabId <= 0 || _isDisabledForURL(details.url, true)
+		if (details.tabId <= 0
 			|| details.url.indexOf(browser.runtime.getURL("itemSelector/itemSelector.html")) === 0) return;
-			
+
+		let tabInfo = Zotero.Connector_Browser.getTabInfo(details.tabId);
+
 		// Ignore a history change that doesn't change URL (fired for all normal navigation)
 		if (historyChange && tabInfo.url == details.url) {
 			return;
 		}
 
-		if (details.frameId == 0) {
-			_updateInfoForTab(details.tabId, details.url);
+		let tab;
+		
+		// Only update button for disabled pages
+		if (_isDisabledForURL(details.url, true)) {
+			tab = await browser.tabs.get(details.tabId);
+			return Zotero.Connector_Browser._updateExtensionUI(tab);
 		}
 
-		if (details.frameId == 0) {
-			var tab = await browser.tabs.get(details.tabId);
-			Zotero.Connector_Browser._updateExtensionUI(tab);
-			Zotero.Connector.reportActiveURL(tab.url);
-		}
-		
-		// If you try to inject a frame here in Firefox it claims we don't have
+		// If you try to inject scripts into a frame here in Firefox it claims we don't have
 		// host permissions for the frame (false/bug), so we do it in onDOMContentLoaded
 		// (but it makes frame translator detection slower in Firefox)
 		if (!Zotero.isFirefox) {
 			if (!tab) tab = await browser.tabs.get(details.tabId);
 			await Zotero.Connector_Browser.onFrameLoaded(tab, details.frameId, details.url);
 		}
-		if (historyChange && details.frameId === 0) {
+		
+		if (details.frameId !== 0) return;
+		
+		_updateInfoForTab(details.tabId, details.url);
+		Zotero.Connector_Browser._updateExtensionUI(tab);
+		Zotero.Connector.reportActiveURL(tab.url);
+		
+		if (historyChange) {
 			Zotero.Messaging.sendMessage('historyChanged');
 		}
 	}

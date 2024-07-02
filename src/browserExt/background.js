@@ -937,11 +937,15 @@ Zotero.Connector_Browser = new function() {
 	}
 
 	function _isDisabledForURL(url, excludeTests=false) {
-		const isHttpPage = url.startsWith('http://') || url.startsWith('https://');
+		const isFileURL = url.startsWith('file:');
 		const isExtensionPage = url.includes('-extension://');
+		const isHttpPage = url.startsWith('http://') || url.startsWith('https://');
 		const isZoteroExtensionPage = url.startsWith(browser.runtime.getURL(''));
 		const isZoteroTestPage = isZoteroExtensionPage && url.includes('/test/data/');
 		if (excludeTests && isZoteroTestPage) return false;
+		if (isFileURL) {
+			return Zotero.getString('extensionIsDisabled_fileURL', [ZOTERO_CONFIG.CLIENT_NAME])
+		}
 		if (isExtensionPage) {
 			return Zotero.getString('extensionIsDisabled_extensionPage', [ZOTERO_CONFIG.CLIENT_NAME])
 		}

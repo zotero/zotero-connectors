@@ -139,10 +139,13 @@
 	},
 	
 	"extensionIsDisabled": {
-		"message": "$1 is disabled"
+		"message": "$1 Connector is not available on this page"
+	},
+	"extensionIsDisabled_fileURL": {
+		"message": "$1 Connector is not available on file URLs"
 	},
 	"extensionIsDisabled_extensionPage": {
-		"message": "$1 is disabled on extension pages"
+		"message": "$1 Connector is not available on extension pages"
 	},
 	
 	"appConnector": {

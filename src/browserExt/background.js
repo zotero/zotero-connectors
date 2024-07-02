@@ -932,7 +932,6 @@ Zotero.Connector_Browser = new function() {
 				}
 			}
 		}
-		tabInfo = Zotero.Connector_Browser.getTabInfo(tabId, true);
 		tabInfo.url = url;
 	}
 

@@ -75,8 +75,13 @@ Zotero.SandboxedTranslateManager = {
 			setDocument: (doc, updateLiveElements=false) => {
 				translateDoc = doc;
 				if (updateLiveElements) {
-					for (const checkbox of doc.querySelectorAll('input:checked')) {
-						checkbox.setAttribute('checked', '');
+					for (const checkbox of doc.querySelectorAll('input[type=checkbox]')) {
+						if (checkbox.checked) {
+							checkbox.setAttribute('checked', '');
+						}
+						else {
+							checkbox.removeAttribute('checked');
+						}
 					}
 				}
 				return this.frame.sendMessage('Translate.setDocument', [doc.documentElement.outerHTML, doc.location.href]);

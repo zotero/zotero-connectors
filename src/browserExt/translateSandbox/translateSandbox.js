@@ -102,16 +102,17 @@ Zotero.TranslateSandbox = {
 		// Custom handler for setDocument()
 		this.messaging.addMessageListener(`Translate.setDocument`, ([html, url]) => {
 			let doc = new DOMParser().parseFromString(html, 'text/html');
-			let baseElem = doc.querySelector('base');
+			let baseElem = doc.querySelector('base[href]');
+			let baseUrl = url;
 			if (baseElem) {
-				// If there's a base elem already set on the page, we need to use
+				// If there's a base elem already on the page, we need to use
 				// that as a base instead of using page url, so we resolve it here
-				url = new URL(baseElem.getAttribute('href'), url).href;
+				baseUrl = new URL(baseElem.getAttribute('href'), baseUrl).href;
 			}
 			else {
 				baseElem = doc.createElement('base');
 			}
-			baseElem.setAttribute('href', url);
+			baseElem.setAttribute('href', baseUrl);
 			doc.querySelector('head').appendChild(baseElem);
 			// Provide a MutationObserver for translate.monitorDOMChanges
 			doc = Zotero.HTTP.wrapDocument(doc, url, { defaultView: { MutationObserver: UnsandboxedMutationObserver } });

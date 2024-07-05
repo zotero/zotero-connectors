@@ -76,7 +76,7 @@
 		"gecko": {
 			"id": "zotero@chnm.gmu.edu",
 			"update_url": "https://zotero.org/AUTOFILLED",
-			"strict_min_version": "51.0"
+			"strict_min_version": "58.0"
 		}
 	}
 }

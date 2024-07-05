@@ -777,7 +777,9 @@ if(!isHiddenIFrame) {
 		// Iframes where we inject translation can be non-text/html,
 		// and we shouldn't even bother translating them
 		// (and it also causes errors to be thrown when trying to create a ZoteroFrame)
-		if (!isTopWindow && document.contentType !== 'text/html') return;
+		// Update: Except for 'application/pdf', like on https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9919149
+		const shouldInjectFrame = ['text/html', 'application/pdf'].includes(document.contentType);
+		if (!isTopWindow && !shouldInjectFrame) return;
 		await Zotero.initInject();
 		
 		if (Zotero.Inject.isTranslateBlocklisted()) {

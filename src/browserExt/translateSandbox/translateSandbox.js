@@ -58,6 +58,9 @@ Zotero.TranslateSandbox = {
 				});
 			}
 			observe(node, options) {
+				if (!(node instanceof Node)) {
+					throw new Error("TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.")
+				}
 				const selector = Zotero.Utilities.Connector.getNodeSelector(node);
 				Zotero.TranslateSandbox.messaging.sendMessage('MutationObserver.observe', [selector, options])
 			}

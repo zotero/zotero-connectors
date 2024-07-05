@@ -1103,6 +1103,7 @@ Zotero.Connector_Browser = new function() {
 		if (details.frameId !== 0) return;
 		
 		_updateInfoForTab(details.tabId, details.url);
+		if (!tab) tab = await browser.tabs.get(details.tabId);
 		Zotero.Connector_Browser._updateExtensionUI(tab);
 		Zotero.Connector.reportActiveURL(tab.url);
 		

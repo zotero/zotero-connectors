@@ -88,15 +88,23 @@ Zotero.Connector_Browser = new function() {
 	}
 
 	/**
-	 * Returns a mutable tabInfo object for a given tab
+	 * Resets and returns a mutable tabInfo object for a given tab
 	 * @param tabId
-	 * @param reset {Boolean}
 	 * @returns {Object}
 	 */
-	this.getTabInfo = function(tabId, reset=false) {
-		if (_tabInfo[tabId] && !reset) return _tabInfo[tabId];
+	 this.resetTabInfo = function (tabId) {
 		_tabInfo[tabId] = this._getNewTabInfo();
 		return _tabInfo[tabId];
+	}
+
+	/**
+	 * Returns a mutable tabInfo object for a given tab
+	 * @param tabId
+	 * @returns {Object}
+	 */
+	this.getTabInfo = function(tabId) {
+		if (_tabInfo[tabId]) return _tabInfo[tabId];
+		return this.resetTabInfo(tabId);
 	}
 
 	this.executeScript = function(tabId, details) {
@@ -924,6 +932,7 @@ Zotero.Connector_Browser = new function() {
 	
 	function _updateInfoForTab(tabId, url) {
 		let tabInfo = Zotero.Connector_Browser.getTabInfo(tabId);
+		// If URL changed reject running injections
 		if (tabInfo.url !== null && tabInfo.url !== url) {
 			Zotero.debug(`Connector_Browser: URL changed from ${tabInfo.url} to ${url}`);
 			if (tabInfo.injections) {
@@ -932,6 +941,8 @@ Zotero.Connector_Browser = new function() {
 				}
 			}
 		}
+		// Reset tabInfo
+		tabInfo = Zotero.Connector_Browser.resetTabInfo(tabId);
 		tabInfo.url = url;
 	}
 

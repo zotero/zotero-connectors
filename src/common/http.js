@@ -208,14 +208,16 @@ Zotero.HTTP = new function() {
 			}
 		}	
 		
-		let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
-			.map(header => {
-				const val = { name: header, value: options.headers[header] }
-				delete options.headers['User-Agent'];
-				return val;
-			});
-		if (replaceHeaders.length) {
-			await Zotero.WebRequestIntercept.replaceHeaders(url, replaceHeaders);
+		if (Zotero.isBackground) {
+			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
+				.map(header => {
+					const val = { name: header, value: options.headers[header] }
+					delete options.headers['User-Agent'];
+					return val;
+				});
+			if (replaceHeaders.length) {
+				await Zotero.WebRequestIntercept.replaceHeaders(url, replaceHeaders);
+			}
 		}
 		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
 		

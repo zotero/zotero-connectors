@@ -530,7 +530,7 @@ Zotero.HTTP = new function() {
 		var deferred = Zotero.Promise.defer();
 		xmlhttp.onload = () => deferred.resolve(xmlhttp);
 		xmlhttp.onerror = xmlhttp.onabort = function() {
-			var e = new Zotero.HTTP.StatusError(xmlhttp, url, typeof xmlhttp.responseText == 'string' ? xmlhttp.responseText : undefined);
+			var e = new Zotero.HTTP.StatusError(xmlhttp, url, ['', 'text'].includes(xmlhttp.responseType) ? xmlhttp.responseText : undefined);
 			if (options.successCodes === false) {
 				deferred.resolve(xmlhttp);
 			} else {

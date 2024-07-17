@@ -435,6 +435,8 @@ if (isTopWindow) {
 		else {
 			await updateFromClient(headline);
 		}
+		
+		return true;
 	});
 	
 	/**

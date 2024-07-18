@@ -235,7 +235,9 @@ var Zotero = global.Zotero = new function() {
 		if (Zotero.GoogleDocs.API.init) {
 			await Zotero.GoogleDocs.API.init();
 		}
-		await Zotero.TranslateBlocklistManager.init();
+		if (Zotero.isManifestV3) {
+			await Zotero.TranslateBlocklistManager.init();
+		}
 		Zotero.initialized = true;
 
 		await Zotero.migrate();

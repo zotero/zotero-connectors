@@ -103,7 +103,7 @@ Zotero.TranslateSandbox = {
 				.map(t => serializeTranslator(t, TRANSLATOR_PASSING_PROPERTIES));
 		});
 		// Custom handler for setDocument()
-		this.messaging.addMessageListener(`Translate.setDocument`, ([html, url]) => {
+		this.messaging.addMessageListener(`Translate.setDocument`, ([html, url, cookie]) => {
 			let doc = new DOMParser().parseFromString(html, 'text/html');
 			let baseElem = doc.querySelector('base[href]');
 			let baseUrl = url;
@@ -117,8 +117,12 @@ Zotero.TranslateSandbox = {
 			}
 			baseElem.setAttribute('href', baseUrl);
 			doc.querySelector('head').appendChild(baseElem);
-			// Provide a MutationObserver for translate.monitorDOMChanges
-			doc = Zotero.HTTP.wrapDocument(doc, url, { defaultView: { MutationObserver: UnsandboxedMutationObserver } });
+			doc = Zotero.HTTP.wrapDocument(doc, url, {
+				// To support translate.monitorDOMChanges
+				defaultView: { MutationObserver: UnsandboxedMutationObserver },
+				// Some translators require it
+				cookie
+			});
 			this.translate.setDocument(doc);
 			// Won't respond the message and translate initialization will hang in the main content script
 			// if this is removed, so don't!

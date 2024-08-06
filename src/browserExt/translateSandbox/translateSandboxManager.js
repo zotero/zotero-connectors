@@ -84,7 +84,7 @@ Zotero.SandboxedTranslateManager = {
 						}
 					}
 				}
-				return this.frame.sendMessage('Translate.setDocument', [doc.documentElement.outerHTML, doc.location.href]);
+				return this.frame.sendMessage('Translate.setDocument', [doc.documentElement.outerHTML, doc.location.href, doc.cookie]);
 			},
 			getTranslators: async (...args) => {
 				let translators = await this.frame.sendMessage('Translate.getTranslators', args);

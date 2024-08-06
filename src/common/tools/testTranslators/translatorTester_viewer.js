@@ -40,7 +40,7 @@ Zotero_TranslatorTester.prototype.runTests = function(callback) {
 	} else {
 		// other translators get passed right through, after we get schema and preferences
 		var me = this;
-		Zotero.Connector_Types.getSchema(function(schema) {
+		Zotero.Connector_Types.getSchema().then(function(schema) {
 			Zotero.Connector_Types.schema = schema;
 			Zotero.Connector_Types.init();
 			me._runTests(callback);

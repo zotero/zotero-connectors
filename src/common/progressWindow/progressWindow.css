@@ -1,7 +1,3 @@
-html {
-	overflow: hidden;
-}
-
 body {
 	/* Match tree.css */
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -108,6 +104,8 @@ button:active {
 	padding-left: 5px;
 	padding-right: 5px;
 	font-size: 12px;
+	/* Ensures the input can shrink to make space for the done btn if the user zooms into the iframe */
+	min-width: 0; 
 }
 
 .ProgressWindow-button {

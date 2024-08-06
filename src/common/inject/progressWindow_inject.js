@@ -244,7 +244,9 @@ if (isTopWindow) {
 			padding: "none",
 			margin: "initial",
 			zIndex: 2147483647,
-			display: 'none'
+			display: 'none',
+			// frame becomes scrollable if the user zooms in (wcag 1.4.10), or half of it will be inaccessible
+			maxHeight: '90vh' 
 		};
 		for (let i in style) iframe.style[i] = style[i];
 		window.top.document.body.appendChild(iframe);

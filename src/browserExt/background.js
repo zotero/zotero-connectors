@@ -877,7 +877,7 @@ Zotero.Connector_Browser = new function() {
 				title = Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			else {
-				icon = "images/zotero-z-16px-offline.png";
+				icon = "images/zotero-z-32px-offline.png";
 				title = Zotero.getString('browserAction_status_offline', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			if (typeof message === 'string') {
@@ -904,14 +904,22 @@ Zotero.Connector_Browser = new function() {
 		}
 		browser.action.enable(tabID);
 	}
+	
+	function getHiDPIImagePaths(imageSrc) {
+		return {
+			32: imageSrc,
+			16: imageSrc.replace('.png', '@16.png'),
+			48: imageSrc.replace('.png', '@48.png'),
+		}
+	}
 
 	function _showTranslatorIcon(tab, translator) {
 		var itemType = translator.itemType;
 
 		browser.action.setIcon({
-			tabId:tab.id,
-			path:(itemType === "multiple"
-				? "images/treesource-collection.png"
+			tabId: tab.id,
+			path: getHiDPIImagePaths(itemType === "multiple"
+				? "images/toolbar/collection.png"
 				: Zotero.ItemTypes.getImageSrc(itemType))
 		});
 
@@ -924,7 +932,7 @@ Zotero.Connector_Browser = new function() {
 	function _showWebpageIcon(tab) {
 		browser.action.setIcon({
 			tabId: tab.id,
-			path: Zotero.ItemTypes.getImageSrc("webpage-gray")
+			path: getHiDPIImagePaths(Zotero.ItemTypes.getImageSrc("webpage-gray"))
 		});
 		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.prefs.automaticSnapshots :
 			Zotero.Prefs.get('automaticSnapshots');
@@ -937,7 +945,7 @@ Zotero.Connector_Browser = new function() {
 	this._showPDFIcon = function(tab) {
 		browser.action.setIcon({
 			tabId: tab.id,
-			path: browser.runtime.getURL('images/pdf.png')
+			path: getHiDPIImagePaths('images/toolbar/attachment-pdf.png')
 		});
 		browser.action.setTitle({
 			tabId: tab.id,
@@ -1062,7 +1070,7 @@ Zotero.Connector_Browser = new function() {
 	
 
 	function _showMessageButton(tab) {
-		var icon = `${Zotero.platform}/zotero-z-32px-australis.png`;
+		var icon = `zotero-z-32px-offline.png`;
 		browser.action.setIcon({
 			tabId: tab.id,
 			path: `images/${icon}`

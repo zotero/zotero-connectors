@@ -321,6 +321,12 @@ Zotero.Proxies = new function() {
 	};
 	
 	this.notifyNewProxy = async function(proxy, tabId) {
+		// If empty or default scheme
+		var invalid = Zotero.Proxies.validate(proxy);
+		if (invalid) {
+			Zotero.debug(`Proxy  ${proxy.toProperScheme} : ${proxy.toProxyScheme} invalid with reason ${JSON.stringify(invalid)}`);
+			return Zotero.Proxies.remove(proxy);
+		}
 		let response = await _showNotification(
 			'New Zotero Proxy',
 			`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxy.toDisplayName()}?`,

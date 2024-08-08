@@ -79,9 +79,17 @@ Zotero.Connector_Types = new function() {
 			
 			this.getImageSrc = function(idOrName) {
 				var itemType = Zotero.Connector_Types["itemTypes"][idOrName];
-				var icon = itemType ? itemType[6]/* icon */ : "treeitem-"+idOrName+".png";
+				var icon = itemType ? itemType[6]/* icon */ : idOrName + '.svg';
+				icon = icon.replace('@2x', '');
+				if (Zotero.isBackground) {
+					// SVG not supported in toolbar
+					icon = 'images/toolbar/' + icon.replace('.svg', '.png');
+				}
+				else {
+					icon = 'images/' + icon;
+				}
 				
-				return Zotero.getExtensionURL("images/" + icon);
+				return Zotero.getExtensionURL(icon);
 			};
 		}
 		

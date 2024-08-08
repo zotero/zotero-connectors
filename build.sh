@@ -33,6 +33,11 @@ Options
  -p PLATFORMS        platform(s) (b=browserExt; the only platform)
  -v VERSION          use version VERSION
  -d                  build for debugging (enable translator tester, don't minify)
+
+rsvg-convert is required
+
+brew install librsvg
+sudo apt install librsvg2-bin
 DONE
 	exit 1
 }
@@ -103,14 +108,14 @@ EXTENSION_TRANSLATE_DIR="$SRCDIR/translate"
 EXTENSION_UTILITIES_DIR="$SRCDIR/utilities"
 EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 
-ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-new-z-16px.png  \
-    $SRCDIR/common/images/*"
+ITEM_IMAGES="$EXTENSION_SKIN_DIR/item-type/16/light/*[!2x].svg"
+COLLECTION_IMAGES="$EXTENSION_SKIN_DIR/collection-tree/16/light/collection.svg \
+		$EXTENSION_SKIN_DIR/collection-tree/16/light/library.svg"
+TOOLBAR_IMAGES=`ls $CWD/badged-icons/* | grep -v '@2x' | grep -v 'dark.svg'`
+CONNECTOR_COMMON_IMAGES="$SRCDIR/common/images/*"
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png \
 	$EXTENSION_SKIN_DIR/cross.png \
-	$EXTENSION_SKIN_DIR/tick.png $EXTENSION_SKIN_DIR/tick@2x.png \
-	$EXTENSION_SKIN_DIR/spinner-16px.png $EXTENSION_SKIN_DIR/spinner-16px@2x.png \
-	$EXTENSION_SKIN_DIR/treesource-library.png"
-PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png $EXTENSION_SKIN_DIR/prefs-proxies.png"
+	$EXTENSION_SKIN_DIR/tick.png $EXTENSION_SKIN_DIR/tick@2x.png"
 
 LIBS=()
 	
@@ -251,13 +256,36 @@ function copyResources {
 	fi
 }
 
+function makeToolbarIcons {
+	browser="$1"
+	icon_dir="$BUILD_DIR/$browser/images/toolbar"
+	mkdir -p "$icon_dir"
+	
+	# Check for rsvg-convert
+	if ! command -v rsvg-convert --version &> /dev/null ; then
+		echo ""
+		echo "rsvg-convert is not available"
+		usage
+	fi
+	
+	set -e
+	for f in $COLLECTION_IMAGES $TOOLBAR_IMAGES
+	do
+		rsvg-convert $f -w 32 -h 32 -o "$icon_dir/"`basename $f .svg`".png"
+		rsvg-convert $f -w 16 -h 16 -o "$icon_dir/"`basename $f .svg`"@16.png"
+		rsvg-convert $f -w 48 -h 48 -o "$icon_dir/"`basename $f .svg`"@48.png"
+	done
+	set +e
+}
+
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	# Copy images for Chrome
 	rm -rf "$BUILD_DIR/browserExt/images"
 	mkdir "$BUILD_DIR/browserExt/images"
-	cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/browserExt/images"
+	cp -r $ITEM_IMAGES $COLLECTION_IMAGES $CONNECTOR_COMMON_IMAGES $IMAGES "$BUILD_DIR/browserExt/images"
 	cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-64.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
 	
+	makeToolbarIcons 'browserExt'
 	copyResources 'browserExt'
 fi
 
@@ -304,17 +332,6 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	mv manifest.json-tmp manifest.json
 	popd > /dev/null
 	
-	# Firefox modifications
-	
-	# TEMP: Copy 2x icons to 1x until getImageSrc() is updated to detect HiDPI
-	for img in "$BUILD_DIR"/firefox/images/*2x.png; do
-		cp $img `echo $img | sed 's/@2x//'`
-	done
-	## 2.5x
-	for img in "$BUILD_DIR"/firefox/images/*48px.png; do
-		cp $img `echo $img | sed 's/@48px//'`
-	done
-
 	# Safari WebExtension modifications
 	#
 	# Safari is built from the MV2 (Firefox-style) manifest with a background page, since
@@ -333,15 +350,6 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	cat manifest.json | jq '. |= del(.applications) | .declarative_net_request = {"rule_resources":[{"id":"styleIntercept","enabled":false,"path":"styleInterceptRules.json"}]} | .permissions += ["declarativeNetRequestWithHostAccess"] | .browser_specific_settings = {"safari":{"strict_min_version":"18.4"}}' > manifest.json-tmp
 	mv manifest.json-tmp manifest.json
 	popd > /dev/null
-
-	# TEMP: Copy 2x icons to 1x until getImageSrc() is updated to detect HiDPI
-	for img in "$BUILD_DIR"/safari/images/*2x.png; do
-		cp $img `echo $img | sed 's/@2x//'`
-	done
-	## 2.5x
-	for img in "$BUILD_DIR"/safari/images/*48px.png; do
-		cp $img `echo $img | sed 's/@48px//'`
-	done
 
 	addUTF8BOMToSafariScripts
 fi

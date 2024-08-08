@@ -66,6 +66,20 @@ button:active {
 	vertical-align: -3px;
 }
 
+.ProgressWindow-targetIcon.library {
+	background-image: url("../images/library.svg");
+}
+.tree-node.focused .ProgressWindow-targetIcon.library {
+	background-image: url("../images/library-white.svg");
+}
+
+.ProgressWindow-targetIcon.collection {
+	background-image: url("../images/collection.svg");
+}
+.tree-node.focused .ProgressWindow-targetIcon.collection {
+	background-image: url("../images/collection-white.svg");
+}
+
 .ProgressWindow-disclosure {
 	border-radius: 3px;
 	margin-left: 6px;

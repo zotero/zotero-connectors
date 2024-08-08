@@ -957,13 +957,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 
 class TargetIcon extends React.Component {
 	render() {
-		var image = this.props.type == 'library'
-			? "treesource-library.png"
-			: "treesource-collection.png";
-		var style = {
-			backgroundImage: `url('${Zotero.UI.style.imageBase}${image}')`
-		};
-		return <div className="ProgressWindow-targetIcon" style={style} />;
+		var className = this.props.type == 'library'
+			? "library"
+			: "collection";
+		className += " ProgressWindow-targetIcon"
+		return <div className={className} />;
 	}
 }
 

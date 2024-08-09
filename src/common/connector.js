@@ -62,7 +62,20 @@ Zotero.Connector = new function() {
 		let response = await Zotero.Connector.callMethod("ping", payload);
 		if (response && 'prefs' in response) {
 			Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
-			Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
+			Zotero.Connector.automaticAttachmentTypes = response.prefs.automaticAttachmentTypes;
+			Zotero.Connector.automaticAttachmentTypesOrder = response.prefs.automaticAttachmentTypesOrder;
+			// Old client returns downloadAssociatedFiles and automaticSnapshots instead
+			if (!Zotero.Connector.automaticAttachmentTypes && !Zotero.Connector.automaticAttachmentTypesOrder) {
+				let types = [];
+				if (response.prefs.downloadAssociatedFiles) {
+					types.push('pdf', 'epub');
+				}
+				if (response.prefs.automaticSnapshots) {
+					types.push('html');
+				}
+				Zotero.Connector.automaticAttachmentTypes = types.join(',');
+				Zotero.Connector.automaticAttachmentTypesOrder = 'pdf,epub,html';
+			}
 			Zotero.Connector.googleDocsAddNoteEnabled = !!response.prefs.googleDocsAddNoteEnabled;
 			Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
 			if (response.prefs.translatorsHash) {
@@ -84,6 +97,19 @@ Zotero.Connector = new function() {
 		let isOnline = await this.checkIsOnline();
 		return isOnline && this.clientVersion;
 	}
+	
+	Object.defineProperty(this, 'automaticSnapshots', {
+		get() {
+			let pref;
+			if (this.isOnline) {
+				pref = Zotero.Connector.automaticAttachmentTypes;
+			}
+			else {
+				pref = Zotero.Prefs.get('automaticAttachmentTypes');
+			}
+			return pref.split(',').includes('html');
+		}
+	});
 	
 	/**
 	 * Sends the XHR to execute an RPC call.

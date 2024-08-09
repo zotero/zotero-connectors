@@ -102,6 +102,9 @@ Zotero.TranslateSandbox = {
 			return (await this.translate.getTranslators(...args))
 				.map(t => serializeTranslator(t, TRANSLATOR_PASSING_PROPERTIES));
 		});
+		this.messaging.addMessageListener(`Translate.setTranslator`, async ([translators]) => {
+			return await this.translate.setTranslator(translators.map(t => new Zotero.Translator(t)));
+		});
 		// Custom handler for setDocument()
 		this.messaging.addMessageListener(`Translate.setDocument`, ([html, url, cookie]) => {
 			let doc = new DOMParser().parseFromString(html, 'text/html');

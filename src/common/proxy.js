@@ -754,6 +754,8 @@ Zotero.Proxy = function (json={}) {
 	this.toProperScheme = json.toProperScheme || json.scheme;
 	// Proxy login URL with %u where the URL to-be-proxied should be inserted
 	this.toProxyScheme = json.toProxyScheme;
+	// MV3 proxy toJSON needs this
+	this.scheme = this.toProperScheme;
 	this.hosts = json.hosts || [];
 	this.dotsToHyphens = true;
 	if (this.toProperScheme) {

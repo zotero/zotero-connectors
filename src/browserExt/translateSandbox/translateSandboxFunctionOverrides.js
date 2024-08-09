@@ -25,9 +25,13 @@
 
 function serializeTranslator(translator, properties) {
 	let serializedTranslator = {};
-	for (let key in properties) {
-		var property = properties[key];
-		serializedTranslator[property] = translator[property];
+	for (let key of properties) {
+		if (key === 'proxy' && translator[key]?.toJSON) {
+			serializedTranslator[key] = translator[key].toJSON();
+		}
+		else {
+			serializedTranslator[key] = translator[key];
+		}
 	}
 	return serializedTranslator;
 }

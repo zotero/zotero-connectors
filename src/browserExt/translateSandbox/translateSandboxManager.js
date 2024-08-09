@@ -86,6 +86,13 @@ Zotero.SandboxedTranslateManager = {
 				}
 				return this.frame.sendMessage('Translate.setDocument', [doc.documentElement.outerHTML, doc.location.href, doc.cookie]);
 			},
+			setTranslator: async (translators) => {
+				if (!Array.isArray(translators)) {
+					translators = [translators];
+				}
+				translators = translators.map(t => t.serialize(Zotero.Translator.TRANSLATOR_PASSING_PROPERTIES));
+				return this.frame.sendMessage('Translate.setTranslator', [translators])
+			},
 			getTranslators: async (...args) => {
 				let translators = await this.frame.sendMessage('Translate.getTranslators', args);
 				return translators.map(translator => new Zotero.Translator(translator));

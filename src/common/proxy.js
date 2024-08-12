@@ -99,8 +99,8 @@ Zotero.Proxies = new function() {
 	
 	this.enable = function() {
 		if (Zotero.isBrowserExt) {
-			Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onWebRequest);
-			browser.webNavigation.onCommitted.addListener(Zotero.Proxies._checkForRedirectLoop)
+			Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onHeadersReceived);
+			browser.webNavigation.onCommitted.addListener(Zotero.Proxies.onNavigationCommited)
 		} else {
 			safari.application.addEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
@@ -109,8 +109,8 @@ Zotero.Proxies = new function() {
 	
 	this.disable = function() {
 		if (Zotero.isBrowserExt) {
-			Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onWebRequest);
-			browser.webNavigation.onCommitted.removeListener(Zotero.Proxies._checkForRedirectLoop)
+			Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onHeadersReceived);
+			browser.webNavigation.onCommitted.removeListener(Zotero.Proxies.onNavigationCommited)
 		} else {
 			safari.application.removeEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
@@ -164,6 +164,10 @@ Zotero.Proxies = new function() {
 		}, () => 0);
 	}
 
+	/**
+	 * Called by the `safari.application` event listener
+	 * @param e {Event}
+	 */
 	this.onBeforeNavigateSafari = function(e) {
 		// Safari calls onBeforeNavigate from default tab while typing the url
 		// so if you type a proxied url you immediatelly get redirected without pressing enter.
@@ -179,7 +183,11 @@ Zotero.Proxies = new function() {
 			e.target.url = redirect.redirectUrl;
 		}
 	};
-	
+
+	/**
+	 * Called from the Safari global page
+	 * @param tab
+	 */
 	this.onPageLoadSafari = function(tab) {
 		let details = {url: tab.url, type: 'main_frame', tabId: tab, statusCode: 200};
 	
@@ -187,11 +195,26 @@ Zotero.Proxies = new function() {
 	};
 
 	/**
-	 * Observe method to capture and redirect page loads if they're going through an existing proxy.
+	 * Called on webRequest headersReceived. Used to detect new proxies. Chrome and possibly
+	 * other browserExt browsers call this when typing in the url bar, performing a prefetch
+	 * for a faster page load, so we cannot issue a redirect here, as the prefetch may not get
+	 * commited as page navigation.
+	 * @param details
+	 */
+	this.onHeadersReceived = (details) => {
+		if (Zotero.Proxies.autoRecognize) {
+			Zotero.Proxies._recognizeProxy(details);
+		}
+	}
+
+	/**
+	 * Called on webNavigation onCommited. Used to redirect existing hosts and detect new hosts for
+	 * existing proxies. We cannot use this to detect new proxies because we need
+	 * response headers which are only available via webRequest APIs.
 	 *
 	 * @param {Object} details - webRequest details object
 	 */
-	this.onWebRequest = (details, meta) => {
+	this.onNavigationCommited = (details) => {
 		if (details.statusCode >= 400 || details.frameId != 0) {
 			return;
 		}
@@ -199,10 +222,6 @@ Zotero.Proxies = new function() {
 		Zotero.Proxies._checkForRedirectLoop(details);
 		
 		Zotero.Proxies._maybeAddHost(details);
-		
-		if (Zotero.Proxies.autoRecognize) {
-			Zotero.Proxies._recognizeProxy(details);
-		}
 
 		Zotero.Proxies.updateDisabledByDomain();
 		if (Zotero.Proxies.disabledByDomain) return;
@@ -238,7 +257,7 @@ Zotero.Proxies = new function() {
 		if (details.frameId != 0) return;
 		let redirectedTab = this._redirectedTabIDs[details.tabId];
 		if (redirectedTab) {
-			if (details.transitionQualifiers && details.transitionQualifiers.includes('forward_back')) {
+			if (details?.transitionQualifiers.includes('forward_back') || details?.transitionQualifiers.includes('from_address_bar') ) {
 				// History navigation (back button) may cause false-positives here, so we stop monitoring
 				delete this._redirectedTabIDs[details.tabId];
 			}
@@ -386,36 +405,7 @@ Zotero.Proxies = new function() {
 			|| details.url.substr(0, 5) == 'https' && proxied.substr(0, 5) != 'https') return;
 		
 		var proxiedURI = new URL(proxied);
-		if (details.requestHeadersObject['referer']) {
-			// If the referrer is a proxiable host, we already have access (e.g., we're
-			// on-campus) and shouldn't redirect
-			if (Zotero.Proxies.properToProxy(details.requestHeadersObject['referer'], true)) {
-				Zotero.debug("Proxies: skipping redirect; referrer was proxiable");
-				return;
-			}
-			// If the referrer is the same host as we're about to redirect to, we shouldn't
-			// or we risk a loop
-			if (new URL(details.requestHeadersObject['referer']).hostname == proxiedURI.hostname) {
-				Zotero.debug("Proxies: skipping redirect; redirect URI and referrer have same host");
-				return;
-			}
-		}
-
-		if (details.originUrl) {
-			// If the original URI was a proxied host, we also shouldn't redirect, since any
-			// links handed out by the proxy should already be proxied
-			if (Zotero.Proxies.proxyToProper(details.originUrl, true)) {
-				Zotero.debug("Proxies: skipping redirect; original URI was proxied");
-				return;
-			}
-			// Finally, if the original URI is the same as the host we're about to redirect
-			// to, then we also risk a loop
-			if (new URL(details.originUrl).hostname == proxiedURI.hostname) {
-				Zotero.debug("Proxies: skipping redirect; redirect URI and original URI have same host");
-				return;
-			}
-		}
-
+		
 		// parse the original request's URL so that we can extract host, etc.
 		let uri = new URL(details.url);
 

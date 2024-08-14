@@ -36,10 +36,8 @@ Zotero.SandboxedTranslateManager = {
 	},
 	
 	init: function () {
-		// If zoteroFrame._frame does not exist, it means something removed it from the DOM (like history navigation)
-		// so we need to reinsert and reinitialized it.
-		if (this.frame && !this.frame._frame) {
-			return;
+		if (this.frame) {
+			throw new Error("Attempting to initialize a SandboxedTranslateManager when a translate frame already exists");
 		}
 		this.frame = new ZoteroFrame(
 			{ src: browser.runtime.getURL('translateSandbox/translateSandbox.html') },
@@ -54,7 +52,9 @@ Zotero.SandboxedTranslateManager = {
 	
 	initVirtualTranslate: async function() {
 		let translateDoc;
-		this.init();
+		if (!this.frame) {
+			this.init();
+		}
 		await this.frame.initializedPromise;
 		this.frame.sendMessage('Translate.new');
 		this.virtualTranslate = {

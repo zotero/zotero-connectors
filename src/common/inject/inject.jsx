@@ -83,7 +83,7 @@ Zotero.Inject = new function() {
 			}
 			if(document.location == "about:blank") return;
 
-			if (!_translate || force) {
+			if (!_translate) {
 				_translate = await this.initTranslation(document);
 				_translate.setHandler("pageModified", function() {
 					Zotero.Connector_Browser.onPageLoad(document.location.href);

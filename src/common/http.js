@@ -25,7 +25,10 @@
 
 const MAX_BACKOFF = 64e3;
 
-const HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Referer'];
+let HEADERS_SPECIAL_HANDLING = ['User-Agent'];
+if (Zotero.isChromium) {
+	HEADERS_SPECIAL_HANDLING.push('Referer');
+}
 
 /**
  * Functions for performing HTTP requests, both via XMLHTTPRequest and using a hidden browser

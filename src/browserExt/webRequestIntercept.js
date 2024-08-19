@@ -156,6 +156,7 @@ Zotero.WebRequestIntercept = {
 				if (details.url === url) {
 					browser.webRequest.onBeforeSendHeaders.removeListener(headerReplacer);
 					Zotero.debug(`Replacing headers for ${url} to ${JSON.stringify(headers)}`);
+					headers = Object.assign(details.requestHeaders, headers);
 					return { requestHeaders: headers };
 				}
 			}

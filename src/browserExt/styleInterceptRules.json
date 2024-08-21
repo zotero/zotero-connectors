@@ -33,7 +33,7 @@
 		"action": {
 			"type": "redirect",
 			"redirect": {
-				"regexSubstitution": "https://gitee.com/\\1/blob/\\2"
+				"regexSubstitution": "https://gitee.com/\\1/blob/\\2#importConfirm"
 			}
 		},
 		"condition": {

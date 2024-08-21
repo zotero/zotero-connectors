@@ -26,5 +26,19 @@
 			"regexFilter": "^https://raw\\.githubusercontent\\.com/([^/]*/[^/]*)/([^/]*/[^#?]+.csl)$",
 			"resourceTypes": ["main_frame"]
 		}
+	},
+	{
+		"id": 3,
+		"priority": 1,
+		"action": {
+			"type": "redirect",
+			"redirect": {
+				"regexSubstitution": "https://gitee.com/\\1/blob/\\2#importConfirm"
+			}
+		},
+		"condition": {
+			"regexFilter": "^https://gitee\\.com/([^/]+/[^/]+)/raw/(.+\\.csl)$",
+			"resourceTypes": ["main_frame"]
+		}
 	}
 ]

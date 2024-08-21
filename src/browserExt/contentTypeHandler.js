@@ -48,6 +48,7 @@ Zotero.ContentTypeHandler = {
 	mv3CSLWhitelistRegexp: {
 		"https://www.zotero.org/styles/\\1": /https?:\/\/(?:www\.)zotero\.org\/styles\/?#importConfirm=(.*)$/,
 		"https://raw.githubusercontent.com/\\1/\\2": /https?:\/\/github\.com\/([^/]*\/[^/]*)\/[^/]*\/([^.]*.csl)#importConfirm$/,
+		"https://gitee.com/\\1/raw/\\2": /https?:\/\/gitee\.com\/([^/]+\/[^/]+)\/blob\/(.+\.csl)#importConfirm$/
 	},
 	ignoreURL: new Set(),
 	
@@ -137,15 +138,14 @@ Zotero.ContentTypeHandler = {
 	},
 
 	_isImportableStyle: function (url, contentType) {
-		const URI = new URL(url);
 		// Offer to install CSL by Content-Type
 		if (Zotero.ContentTypeHandler.cslContentTypes.has(contentType)) {
 			return true;
 		}
 		// Offer to install CSL if URL path ends with .csl and host is allowed
-		else if (URI.pathname.match(/\.csl$/)) {
+		else if (/\.csl$/i.test(url)) {
 			let hosts = Zotero.Prefs.get('allowedCSLExtensionHosts');
-			if (Array.isArray(hosts) && hosts.includes(URI.hostname)) {
+			if (Array.isArray(hosts) && hosts.some(host => new RegExp(host).test(url))) {
 				return true;
 			}
 		}

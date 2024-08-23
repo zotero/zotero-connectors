@@ -132,8 +132,8 @@ Zotero.TranslateSandbox = {
 			return true;
 		});
 
-		await this.messaging.sendMessage('frameReady');
 		await Zotero.initTranslateSandbox();
+		await this.messaging.sendMessage('frameReady');
 	},
 	
 	sendMessage: function() {

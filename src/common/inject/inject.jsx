@@ -831,7 +831,7 @@ if(!isHiddenIFrame) {
 		if(document.readyState !== "complete") {
 			window.addEventListener("pageshow", function(e) {
 				if(e.target !== document) return;
-				Zotero.Inject.init(true);
+				Zotero.Inject.init(e.persisted);
 			}, false);
 		} else {	
 			Zotero.Inject.init();

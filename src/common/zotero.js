@@ -157,7 +157,7 @@ var Zotero = global.Zotero = new function() {
 		// Botched dotsToHyphen pref migration to protocolless schemes in 5.0.32
 		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.35") < 0) {
 			for (let proxy of Zotero.Proxies.proxies) {
-				if (proxy.scheme.indexOf('%h') == 0) {
+				if (proxy.scheme?.indexOf('%h') == 0) {
 					proxy.dotsToHyphens = true;
 				}
 			}

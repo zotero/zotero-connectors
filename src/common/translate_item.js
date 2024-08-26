@@ -238,7 +238,7 @@ Zotero.Translate.ItemSaver.prototype = {
 	_processItems: async function(items) {
 		let saveOptions;
 		if (Zotero.isTranslateSandbox) {
-			saveOptions = await Zotero.TranslateSandbox.sendMessage('Inject.getSessionDetails');
+			saveOptions = (await Zotero.TranslateSandbox.sendMessage('Inject.getSessionDetails')).saveOptions;
 		}
 		else {
 			saveOptions = Zotero.Inject.sessionDetails.saveOptions;

@@ -86,8 +86,7 @@
 				li.parentNode.removeChild(li);
 			}
 
-			var withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-				Zotero.Prefs.get('automaticSnapshots');
+			var withSnapshot = Zotero.Connector.automaticSnapshots;
 			if (withSnapshot) {
 				document.getElementsByTagName('menu')[0]
 					.insertBefore(saveWithSnapshotElem, saveWithoutSnapshotElem);

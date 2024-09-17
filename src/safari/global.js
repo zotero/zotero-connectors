@@ -288,19 +288,19 @@ Zotero.Connector_Browser = new function() {
 		let isOnline = await Zotero.Connector.checkIsOnline();
 		let image, tooltip;
 		if (isOnline) {
-			image = "images/toolbar/zotero-new-z-16px.png";
+			image = "images/toolbar/zotero-z-32px.png";
 			tooltip = "Zotero is Online";
 		} else {
-			image = "images/toolbar/zotero-z-16px-offline.png";
+			image = "images/toolbar/zotero-z-32px-offline.png";
 			tooltip = "Zotero is Offline";
 		}
 		return [image, tooltip]
 	}
 
 	function _showTranslatorIcon(translator) {
-		let image = "images/toolbar/treesource-collection.png";
+		let image = "images/collection.png";
 		if (translator.itemType !== "multiple") {
-			image = Zotero.ItemTypes.getImageSrc(translator.itemType).replace('images/', 'images/toolbar/')
+			image = Zotero.ItemTypes.getImageSrc(translator.itemType)
 				.replace(`${safari.extension.baseURI}safari/`, '');
 			
 		}
@@ -311,14 +311,14 @@ Zotero.Connector_Browser = new function() {
 	function _showWebpageIcon() {
 		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
 			Zotero.Prefs.get('automaticSnapshots');
-		let image = Zotero.ItemTypes.getImageSrc("webpage-gray").replace('images/', 'images/toolbar/')
+		let image = Zotero.ItemTypes.getImageSrc("webpage-gray")
 			.replace(`${safari.extension.baseURI}safari/`, '');
 		let tooltip = `"Save to Zotero (Web Page with${withSnapshot ? "" : "out"} Snapshot)"`;
 		return [image, tooltip];
 	}
 
 	function _showPDFIcon() {
-		let image = "images/toolbar/pdf.png";
+		let image = "images/toolbar/attachment-pdf.png";
 		let tooltip = "Save to Zotero (PDF)";
 		return [image, tooltip]
 	}

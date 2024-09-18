@@ -92,6 +92,11 @@ Zotero.Translate.ItemSaver.prototype = {
 	 *     on failure or attachmentCallback(attachment, progressPercent) periodically during saving.
 	 */
 	saveItems: async function (items, attachmentCallback, itemsDoneCallback=()=>0) {
+		if (Zotero.Inject.sessionDetails.cancelled) {
+			Zotero.debug(`Translate: session ${Zotero.Inject.sessionDetails.id} was cancelled.`);
+			return;
+		}
+
 		items = await this._processItems(items);
 	
 		// first try to save items via connector
@@ -291,6 +296,9 @@ Zotero.Translate.ItemSaver.prototype = {
 				}
 				return;
 			}
+
+			// If the session was cancelled half-way through, just stop
+			if (Zotero.Inject.sessionDetails.cancelled) return;
 			
 			// Store last version of attachments so we can cancel them if a subsequent request fails
 			let newAttachments = [];

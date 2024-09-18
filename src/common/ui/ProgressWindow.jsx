@@ -64,6 +64,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.text = {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
+			cancel: Zotero.getString('general_cancel'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder'),
 			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder')
 		};
@@ -90,6 +91,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.onTagsFocus = this.onTagsFocus.bind(this);
 		this.onTagsBlur = this.onTagsBlur.bind(this);
 		this.handleDone = this.handleDone.bind(this);
+		this.handleCancel = this.handleCancel.bind(this);
 		this.setFilter = this.setFilter.bind(this);
 		this.clearFilter = this.clearFilter.bind(this);
 		this.expandToTarget = this.expandToTarget.bind(this);
@@ -584,6 +586,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		//this.headlineSelectNode.current.focus();
 		this.sendMessage('close');
 	}
+
+	handleCancel() {
+		this.sendMessage("cancel")
+	}
 	
 	//
 	// Render
@@ -772,6 +778,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						onFocus={this.onTagsFocus}
 						onBlur={this.onTagsBlur} />
 					<button className="ProgressWindow-button" onClick={this.handleDone}>{this.text.done}</button>
+					<button className="ProgressWindow-button" onClick={this.handleCancel}>{this.text.cancel}</button>
 				</div>
 			</div>
 			: ""

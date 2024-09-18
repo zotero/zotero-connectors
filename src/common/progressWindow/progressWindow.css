@@ -100,9 +100,8 @@ button:active {
 
 .ProgressWindow-tagsInput {
 	flex-grow: 1;
-	margin-right: 8px;
-	padding-left: 5px;
-	padding-right: 5px;
+	margin-right: 2px;
+	padding-inline: 1px;
 	font-size: 12px;
 	/* Ensures the input can shrink to make space for the done btn if the user zooms into the iframe */
 	min-width: 0; 
@@ -110,7 +109,8 @@ button:active {
 
 .ProgressWindow-button {
 	background-color: white;
-	padding: 3px 24px;
+	width: 60px;
+	margin-inline: 2px;
 	border-radius: 4px;
 	font-size: 11px;
 }

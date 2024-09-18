@@ -339,6 +339,18 @@ if (isTopWindow) {
 		
 		// Sent by the progress window when changes are made in the target selector
 		addMessageListener('progressWindowIframe.updated', handleUpdated);
+
+		// Stop saving and delete items that were added
+		addMessageListener('progressWindowIframe.cancel', async (_) => {
+			await Zotero.Connector.callMethod("cancel", { sessionID: currentSessionID });
+			Zotero.Inject.sessionDetails.cancelled = true;
+			
+			// Wait for a moment after click and reset + hide the progress window
+			setTimeout(() => {
+				addEvent('reset');
+				hideFrame();
+			}, 500);
+		});
 		
 		// Keep track of when the mouse is over the popup, for various purposes
 		addMessageListener('progressWindowIframe.mouseenter', handleMouseEnter);

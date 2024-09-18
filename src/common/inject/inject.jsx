@@ -477,7 +477,9 @@ Zotero.Inject = new function() {
 				// Not "Create Zotero Item and Note from Selection"
 				&& !options.note
 				// Not from the context menu, which always triggers a resave
-				&& !options.resave) {
+				&& !options.resave
+				// The last translate was not cancelled
+				&& !this.sessionDetails.cancelled) {
 			let sessionID = this.sessionDetails.id;
 			Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 			return;

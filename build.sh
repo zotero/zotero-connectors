@@ -226,6 +226,7 @@ function copyResources {
 	cp "$NODE_MODULES_DIR/react/umd/react.production.min.js" "$browser_builddir/lib/react.js"
 	cp "$NODE_MODULES_DIR/react-dom/umd/react-dom.production.min.js" "$browser_builddir/lib/react-dom.js"
 	cp "$NODE_MODULES_DIR/prop-types/prop-types.min.js" "$browser_builddir/lib/prop-types.js"
+	cp "$NODE_MODULES_DIR/dompurify/dist/purify.min.js" "$browser_builddir/lib/dompurify.js"
 	cp "$NODE_MODULES_DIR/react-dom-factories/index.js" "$browser_builddir/lib/react-dom-factories.js"
 	
 	# Remove .jsx files - we'll deal with those in gulp

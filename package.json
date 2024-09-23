@@ -12,6 +12,7 @@
     "chai": "^4.2.0",
     "chalk": "^2.4.1",
     "chromedriver": "^103.0.0",
+    "dompurify": "^3.1.6",
     "geckodriver": "^1.19.1",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",

@@ -132,6 +132,7 @@ Zotero.UI.ModalPrompt = class ModalPrompt extends React.Component {
 		
 		let message = this.props.children || this.props.message;
 		if (typeof message == "string") {
+			message = DOMPurify.sanitize(message);
 			message = <span dangerouslySetInnerHTML={{__html: message}}/>
 		}
 		return (<div className="ModalPrompt-overlay" onClick={onClickOutside}>

@@ -120,9 +120,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 		
-		// Preload other disclosure triangle state
-		(new Image()).src = 'disclosure-open.svg';
-		
 		this.sendMessage('registered');
 		
 		document.querySelector("#progress-window").setAttribute("aria-label", Zotero.getString('general_saveTo', 'Zotero'));
@@ -601,6 +598,18 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				{this.state.targets
 					? this.renderHeadlineSelect()
 					: (this.state.target ? this.renderHeadlineTarget() : "")}
+				<button className="ProgressWindow-button can-expand cancel"
+					onClick={this.handleCancel}
+					aria-label={this.text.cancel}>
+						<img class="icon" src="x-8.svg"/>
+						<span class="label">{this.text.cancel}</span>
+				</button>
+				<button className="ProgressWindow-button can-expand done"
+					onClick={this.handleDone}
+					aria-label={this.text.done}>
+						<img class="icon" src="checkmark.svg"/>
+						<span class="label">{this.text.done}</span>
+					</button>
 				<div id="messageAlert" role="alert" style={{ fontSize: 0 }}/>
 				<div id="messageLog" role="log" aria-relevant="additions" style={{ fontSize: 0 }}/>
 			</div>
@@ -637,12 +646,14 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						return <option {...props}>{row.name}</option>;
 					})}
 				</select>
-				<button className={"ProgressWindow-disclosure"
+				<button className={"ProgressWindow-button disclosure"
 							+ (this.state.targetSelectorShown ? " is-open" : "")}
 						onClick={this.onDisclosureChange}
 						onKeyPress={this.handleDisclosureKeyPress}
 						aria-expanded={this.state.targetSelectorShown}
-						aria-label={Zotero.getString(`progressWindow_detailsBtn${this.state.targetSelectorShown ? "Hide" : "View"}`)}/>
+						aria-label={Zotero.getString(`progressWindow_detailsBtn${this.state.targetSelectorShown ? "Hide" : "View"}`)}>
+						<img class="icon" src="chevron-8.svg"/>
+				</button>
 			</React.Fragment>
 		);
 	}
@@ -777,8 +788,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						onKeyPress={this.onTagsKeyPress}
 						onFocus={this.onTagsFocus}
 						onBlur={this.onTagsBlur} />
-					<button className="ProgressWindow-button" onClick={this.handleDone}>{this.text.done}</button>
-					<button className="ProgressWindow-button" onClick={this.handleCancel}>{this.text.cancel}</button>
 				</div>
 			</div>
 			: ""
@@ -832,10 +841,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		);
 		var iconStyle = Object.assign(
 			{},
-			// Indent child items
-			{
-				left: `${item.parentItem ? '22' : '12'}px`
-			},
 			item.failed && {
 				backgroundImage: `url('${Zotero.UI.style.imageBase}cross.png')`,
 				backgroundPosition: ""

@@ -237,9 +237,9 @@ if (isTopWindow) {
 			top: '15px',
 			left: 'unset',
 			right: '8px',
-			width: '351px',
+			width: '380px',
 			maxWidth: '95%',
-			height: '120px',
+			height: '100%', // frame tries to take as much height as possible
 			border: "none",
 			padding: "none",
 			margin: "initial",
@@ -276,10 +276,6 @@ if (isTopWindow) {
 			frameReadyDeferred.resolve(iframe);
 		});
 		
-		// Adjust iframe height when inner document is resized
-		addMessageListener('progressWindowIframe.resized', function(data) {
-			iframe.style.height = (data.height + 33) + "px";
-		});
 		
 		// Update the client or API with changes
 		var handleUpdated = async function (data) {

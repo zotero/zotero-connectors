@@ -103,7 +103,7 @@ body {
 	border: 1px solid lightgray;
 	height: 22px;
 	width: 22px;
-	margin-inline: 2px;
+	margin-inline-start: 4px;
 	border-radius: 4px;
 	font-size: 11px;
 	/* button will get wider on hover */
@@ -155,7 +155,6 @@ body {
 
 .ProgressWindow-button.disclosure {	
 	margin-inline-end: auto !important;
-	margin-inline-start: 4px !important;
 }
 
 /* chevron that flips up or down on each click */
@@ -171,6 +170,10 @@ body {
 .ProgressWindow-button.cancel:active,
 .ProgressWindow-button.disclosure:active {
 	background-color: #0000001a !important; /* fill-quarternary */
+}
+
+.ProgressWindow-button[hidden] {
+	display: none;
 }
 
 .ProgressWindow-filterWrapper {

@@ -606,10 +606,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				</button>
 				<button className="ProgressWindow-button can-expand done"
 					onClick={this.handleDone}
-					aria-label={this.text.done}>
+					aria-label={this.text.done}
+					hidden={!this.state.targetSelectorShown}
+					>
 						<img class="icon" src="checkmark.svg"/>
 						<span class="label">{this.text.done}</span>
-					</button>
+				</button>
 				<div id="messageAlert" role="alert" style={{ fontSize: 0 }}/>
 				<div id="messageLog" role="log" aria-relevant="additions" style={{ fontSize: 0 }}/>
 			</div>

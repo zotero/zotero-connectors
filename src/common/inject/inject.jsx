@@ -461,6 +461,9 @@ Zotero.Inject = new function() {
 		return false;
 	};
 	
+	// To unify async access in MV3
+	this.getSessionDetails = async () => this.sessionDetails;
+	
 	this.translate = async function(translatorID, options={}) {
 		let result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;

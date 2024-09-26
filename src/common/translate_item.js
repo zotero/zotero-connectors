@@ -92,8 +92,9 @@ Zotero.Translate.ItemSaver.prototype = {
 	 *     on failure or attachmentCallback(attachment, progressPercent) periodically during saving.
 	 */
 	saveItems: async function (items, attachmentCallback, itemsDoneCallback=()=>0) {
-		if (Zotero.Inject.sessionDetails.cancelled) {
-			Zotero.debug(`Translate: session ${Zotero.Inject.sessionDetails.id} was cancelled.`);
+		const sessionDetails = await Zotero.Inject.getSessionDetails();
+		if (sessionDetails.cancelled) {
+			Zotero.debug(`Translate: session ${sessionDetails.id} was cancelled.`);
 			return;
 		}
 
@@ -242,12 +243,7 @@ Zotero.Translate.ItemSaver.prototype = {
 
 	_processItems: async function(items) {
 		let saveOptions;
-		if (Zotero.isTranslateSandbox) {
-			saveOptions = (await Zotero.TranslateSandbox.sendMessage('Inject.getSessionDetails')).saveOptions;
-		}
-		else {
-			saveOptions = Zotero.Inject.sessionDetails.saveOptions;
-		}
+		saveOptions = (await Zotero.Inject.getSessionDetails()).saveOptions;
 		if (saveOptions && saveOptions.note && items.length == 1) {
 			if (items[0].notes) {
 				items[0].notes.push({note: saveOptions.note})
@@ -298,7 +294,7 @@ Zotero.Translate.ItemSaver.prototype = {
 			}
 
 			// If the session was cancelled half-way through, just stop
-			if (Zotero.Inject.sessionDetails.cancelled) return;
+			if ((await Zotero.Inject.getSessionDetails()).cancelled) return;
 			
 			// Store last version of attachments so we can cancel them if a subsequent request fails
 			let newAttachments = [];

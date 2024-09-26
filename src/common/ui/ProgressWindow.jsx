@@ -60,6 +60,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.announceAlerts = false;
 		this.alertTimeout = null;
 		this.done = false;
+		this.supportsSaveCancelling = false;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
@@ -123,6 +124,13 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.sendMessage('registered');
 		
 		document.querySelector("#progress-window").setAttribute("aria-label", Zotero.getString('general_saveTo', 'Zotero'));
+
+		// Check if the X button to cancel a saving process should be displayed
+		(async () => {
+			let notSavingToWebLibrary = await Zotero.Connector.getClientVersion();
+			let clientSupportsCancelation = await Zotero.Connector.getPref('supportsSaveCancelling');
+			this.supportsSaveCancelling = notSavingToWebLibrary && clientSupportsCancelation;
+		})()
 	}
 	
 	
@@ -600,15 +608,15 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					: (this.state.target ? this.renderHeadlineTarget() : "")}
 				<button className="ProgressWindow-button can-expand cancel"
 					onClick={this.handleCancel}
-					aria-label={this.text.cancel}>
+					aria-label={this.text.cancel}
+					hidden={!this.supportsSaveCancelling}>
 						<img class="icon" src="x-8.svg"/>
 						<span class="label">{this.text.cancel}</span>
 				</button>
 				<button className="ProgressWindow-button can-expand done"
 					onClick={this.handleDone}
 					aria-label={this.text.done}
-					hidden={!this.state.targetSelectorShown}
-					>
+					hidden={!this.state.targetSelectorShown}>
 						<img class="icon" src="checkmark.svg"/>
 						<span class="label">{this.text.done}</span>
 				</button>

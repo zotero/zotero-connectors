@@ -127,7 +127,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 
 		// Check if the X button to cancel a saving process should be displayed
 		(async () => {
-			let notSavingToWebLibrary = await Zotero.Connector.getClientVersion();
+			let notSavingToWebLibrary = await Zotero.Connector.checkIsOnline();
 			let clientSupportsCancelation = await Zotero.Connector.getPref('supportsSaveCancelling');
 			this.supportsSaveCancelling = notSavingToWebLibrary && clientSupportsCancelation;
 		})()

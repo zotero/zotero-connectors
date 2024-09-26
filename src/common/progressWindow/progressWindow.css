@@ -21,7 +21,7 @@ body {
 	/* Make progress box scrollable if there are too many items */
 	display: flex;
 	flex-direction: column;
-	overflow-y: scroll;
+	overflow-y: auto;
 
 	/* Prevent the popup from becoming scrollable unless we zoom in */
 	max-height: 95vh;

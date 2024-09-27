@@ -206,7 +206,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			state.targetSelectorShown = false;
 		}
 		// Alert that the item is being saved or has already been saved
-		let alert = this.done ? Zotero.getString("progressWindow_alreadySaved") : `${text} ${target.name}`;
+		let alert = this.done ? Zotero.getString("progressWindow_alreadySaved") : `${text} ${target?.name || ""}`;
 		document.getElementById("messageAlert").textContent = alert
 		this.setState(state, () => {
 			this.setFilter();
@@ -600,7 +600,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	//
 	renderHeadline() {
 		// Hide cancel button when saving to web library of if the client does not support it
-		let shouldShowCancelButton = this.state.targets && this.supportsSaveCancelling
+		let shouldShowCancelButton = this.state.targets && this.supportsSaveCancelling;
 		return (
 			<div className="ProgressWindow-headline">
 				{this.state.headlineText}
@@ -695,6 +695,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	setFilter() {
+		if (!this.state.targets) return;
 		let filter = document.querySelector('.ProgressWindow-filterInput')?.value || "";
 		let crossIcon = document.querySelector(".ProgressWindow-cross");
 		filter = filter.toLowerCase();

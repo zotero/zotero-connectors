@@ -461,6 +461,9 @@ Zotero.Inject = new function() {
 		return false;
 	};
 	
+	// To unify async access in MV3
+	this.getSessionDetails = async () => this.sessionDetails;
+	
 	this.translate = async function(translatorID, options={}) {
 		let result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
@@ -477,7 +480,9 @@ Zotero.Inject = new function() {
 				// Not "Create Zotero Item and Note from Selection"
 				&& !options.note
 				// Not from the context menu, which always triggers a resave
-				&& !options.resave) {
+				&& !options.resave
+				// The last translate was not cancelled
+				&& !this.sessionDetails.cancelled) {
 			let sessionID = this.sessionDetails.id;
 			Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
 			return;

@@ -32,7 +32,6 @@ Zotero.SandboxedTranslateManager = {
 	headAllowedTags: new Set(["BASE", "COMMAND", "LINK", "META", "NOSCRIPT", "SCRIPT", "STYLE", "TITLE"]),
 	handlers: {
 		'getVersion': () => Zotero.version,
-		'Inject.getSessionDetails': () => Zotero.Inject.sessionDetails,
 	},
 	
 	init: function () {

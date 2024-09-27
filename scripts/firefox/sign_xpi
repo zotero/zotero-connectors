@@ -12,4 +12,4 @@ rm -f "$BUILD_DIR"/*.xpi
 VERSION="$( cat "$BUILD_DIR/firefox/manifest.json" | jq -r .version )"
 echo "Signing $VERSION"
 sleep 3
-web-ext sign -s "$BUILD_DIR/firefox" -a $BUILD_DIR
+web-ext sign -s "$BUILD_DIR/firefox" -a $BUILD_DIR --channel unlisted

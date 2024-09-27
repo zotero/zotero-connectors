@@ -125,11 +125,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		document.querySelector("#progress-window").setAttribute("aria-label", Zotero.getString('general_saveTo', 'Zotero'));
 
-		// Check if the X button to cancel a saving process should be displayed
+		// Check if the client supports save process cancelation
 		(async () => {
-			let notSavingToWebLibrary = await Zotero.Connector.checkIsOnline();
 			let clientSupportsCancelation = await Zotero.Connector.getPref('supportsSaveCancelling');
-			this.supportsSaveCancelling = notSavingToWebLibrary && clientSupportsCancelation;
+			this.supportsSaveCancelling = clientSupportsCancelation;
 		})()
 	}
 	
@@ -600,6 +599,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	// Render
 	//
 	renderHeadline() {
+		// Hide cancel button when saving to web library of if the client does not support it
+		let shouldShowCancelButton = this.state.targets && this.supportsSaveCancelling
 		return (
 			<div className="ProgressWindow-headline">
 				{this.state.headlineText}
@@ -609,7 +610,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				<button className="ProgressWindow-button can-expand cancel"
 					onClick={this.handleCancel}
 					aria-label={this.text.cancel}
-					hidden={!this.supportsSaveCancelling}>
+					hidden={!shouldShowCancelButton}>
 						<img class="icon" src="x-8.svg"/>
 						<span class="label">{this.text.cancel}</span>
 				</button>

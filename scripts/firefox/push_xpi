@@ -17,7 +17,7 @@ fi
 
 XPI="`./get_xpi_path`"
 VERSION="$( cat "$BUILD_DIR/firefox/manifest.json" | jq -r .version )"
-HASH="$( shasum -a 256 "$XPI" | cut -d' ' -f1 )"
+HASH="$( sha256sum "$XPI" | cut -d' ' -f1 )"
 
 ./upload_signed_xpi $channel
 scp $DEPLOY_HOST:"$MANIFEST_DEPLOY_PATH/$channel/updates.json" "$BUILD_DIR/updates.json"

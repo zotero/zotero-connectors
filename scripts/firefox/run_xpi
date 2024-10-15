@@ -1,7 +1,0 @@
-#!/bin/bash -e
-
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$( cd "$DIR"/../.. && pwd )"
-
-cd $ROOT_DIR
-web-ext run -s build/firefox -a build $*

@@ -24,41 +24,11 @@ The connectors are built in `build/`.
 1. Go to about:debugging
 1. Click "Load Temporary Add-on" and select the `build/browserExt/manifest.json` file.
 
-OR
-
-1. Get and install the [Mozilla web-ext tool](https://github.com/mozilla/web-ext)
-1. `cd` to project root
-1. `./scripts/firefox/run_xpi`
-
 ### Safari
 
 See https://github.com/zotero/safari-app-extension 
 
-## Automatic rebuilding/reloading
-
-### Chrome on MacOS
-
-1. `brew install chrome-cli`
-1. `npm install -g gulp`
-1. `cd` to project root
-1. `npm install`
-1. `build.sh -d`
-1. `gulp watch-chrome`
-
-As files are changed, the connectors will be rebuilt automatically and Chrome will reload the extension.
-
-### Firefox
-
-1. Get and install the [Mozilla web-ext tool](https://github.com/mozilla/web-ext)
-1. `cd` to project root
-1. `npm install`
-1. `build.sh -d`
-1. `gulp watch`
-1. `./scripts/firefox/run_xpi` (in a different terminal window)
-
-As files are changed, the connectors will be rebuilt automatically and Firefox will reload the extension.
-
-### Others
+## Automatic rebuilding
 
 1. `cd` to project root
 1. `npm install`
@@ -71,32 +41,16 @@ in the browser being developed for.
 ## Requirements for packaging extensions from the command line
 
 * Copy `config.sh-sample` to `config.sh` and modify as necessary
-* Safari/Chrome extension certificates
-* [Google Chrome](https://www.google.com/intl/en/chrome/browser/) or [Chromium](http://www.chromium.org/)
-* xar with [patch for building Safari extensions](https://code.google.com/p/xar/issues/detail?id=76)
-
-# Tests
-
-To run tests locally, build the extension with the -d flag, and then run
-
-```$bash
-$ ./test/run_tests -p c
-```
-
-Test files are located at `src/common/test`. See `src/common/test/testSetup.js` for 
-test framework documentation
 
 # Developing
 
-Zotero Connectors are built with standard tools, such as browser extension APIs, but the architecture is quite complex. 
-This section is a short overview of some of the complexities, to make it more accessible for newcomers.
+An overview of the Zotero Connector architecture.
 
 ## Technologies
 
 ##### Chrome/Firefox Browser Extension Framework
 
-The functionality exposed on Chrome and Firefox is provided by the Chrome extension framework,
-which has also been adopted by Firefox. See [Chrome Extension docs](https://developer.chrome.com/extensions)
+The extension uses the WebExtension API cross-browser technology. See [Chrome Extension docs](https://developer.chrome.com/extensions)
 and [Firefox Extension docs](https://developer.mozilla.org/en-US/Add-ons/WebExtensions) for more information.
 
 ##### Safari Extension Framework
@@ -105,9 +59,8 @@ For Safari specifics see https://github.com/zotero/safari-app-extension
 
 ##### Zotero Translator Framework
 
-The Connectors share code with [Zotero desktop application](https://github.com/zotero/zotero), to support translation.
-A basic understanding of how translation works or at least the handlers it exposes in Zotero will be highly useful in
-understanding the codebase.
+The Connectors use the [Zotero translate architecture](https://github.com/zotero/translate), to support page translation.
+A basic understanding of how translation works is highly useful in understanding the codebase.
 
 ## Components
 
@@ -120,12 +73,12 @@ code running on the webpage and a background process.
 
 ##### a) Injected scripts for individual webpages
 
-Each webpage is injected ([Chrome](https://developer.chrome.com/extensions/content_scripts)/[Firefox](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts)/[Safari](https://developer.apple.com/library/content/documentation/Tools/Conceptual/SafariExtensionGuide/InjectingScripts/InjectingScripts.html))
+Each webpage is injected ([Chrome](https://developer.chrome.com/extensions/content_scripts)/[Firefox](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts)/[Safari](https://developer.apple.com/documentation/safariservices/injecting-a-script-into-a-webpage))
 with a full Zotero [translation framework](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/gulpfile.js#L45-L79).
 A [*Zotero.Translate.Web*](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/src/common/inject/inject.jsx#L314-L314) 
 instance orchestrates running individual translators for detection and translation.
 
-The translation framework shares some code with the Zotero codebase and provides custom classes concerning 
+The translation framework provides custom classes concerning 
 [translator retrieval](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/src/common/translators.js) 
 and [item saving](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/src/common/translate_item.js).
 These custom classes talk to the background process (b) of the Zotero Connector for functionality outside the translation
@@ -134,7 +87,7 @@ framework, such as retrieving translator code and sending translated items eithe
 ##### b) Background process
 
 The Connector runs a [background process](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/gulpfile.js#L95-L125) 
-([Chrome](https://developer.chrome.com/extensions/event_pages)/[Firefox](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Anatomy_of_a_WebExtension#Background_scripts)/[Safari](https://developer.apple.com/library/content/documentation/Tools/Conceptual/SafariExtensionGuide/AddingaGlobalHTMLPage/AddingaGlobalHTMLPage.html))
+([Chrome](https://developer.chrome.com/extensions/event_pages)/[Firefox](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Anatomy_of_a_WebExtension#Background_scripts)/[Safari](https://developer.apple.com/documentation/safariservices/building-a-safari-app-extension))
 which works as a middle-layer between the translation framework running in inject scripts (a) and Zotero (c) or zotero.org (d).
 
 The background process maintains a cache of translators and performs the initial [translator detection using URL matching](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/src/common/translators.js#L140-L196).
@@ -165,7 +118,7 @@ The interactions with zotero.org API are defined in [api.js](https://github.com/
 ## Message passing
 
 The only way for the background extension process and injected scripts to communicate is using the message passing
-protocol provided by the browsers ([Chrome](https://developer.chrome.com/extensions/messaging)/[Firefox](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#Communicating_with_background_scripts)/[Safari](https://developer.apple.com/library/content/documentation/Tools/Conceptual/SafariExtensionGuide/MessagesandProxies/MessagesandProxies.html)). 
+protocol provided by the browsers ([Chrome](https://developer.chrome.com/extensions/messaging)/[Firefox](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#Communicating_with_background_scripts)/[Safari](https://developer.apple.com/documentation/safariservices/passing-messages-between-safari-app-extensions-and-injected-scripts)). 
 Injected scripts often need to communicate to background scripts. To simplify
 these interactions, calls to functions in background scripts are monkey-patched in injected scripts. These calls are
 asynchronous and if a return value is required, it is provided either to a callback function as the last argument of
@@ -181,19 +134,6 @@ The background process registers message listeners in [*messaging.js*](https://g
 
 The injected scripts monkey-patch methods in *messaging_injected.js*([BrowserExt](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/src/browserExt/messaging_inject.js)/[Safari](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/src/safari/messaging_inject.js))
 `Zotero.Messaging` class also provides a way to send messages to the background process and add message listeners.
-
-
-## Build process
-
-The build process combines files from the Zotero codebase, common files to all connectors and specific files for
-Chrome/Firefox/Safari connectors. At the moment the build process is awkward and uses a SH script and gulp procedures.
-This will be reconciled in the future to only use gulp.
-
-1. `build.sh` [copies images](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/build.sh#L183-L223) 
-    and [extension files](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/build.sh#L226-L277)
-1. `gulp process-custom-files` [initiated by](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/build.sh#L281-L286) 
-   `build.sh` performs [post-processing](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/gulpfile.js#L157-L241)
-    on copied files
 
 ## Contact
 

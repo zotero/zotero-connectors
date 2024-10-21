@@ -46,7 +46,9 @@ Zotero.TranslateBlocklistManager = {
 		let xhr, blocklist = [];
 		try {
 			Zotero.Prefs.set('translateBlocklist.lastCheck', Date.now());
-			xhr = await Zotero.HTTP.request('GET', Zotero.Prefs.get('translateBlocklist.url'))
+			xhr = await Zotero.HTTP.request('GET', Zotero.Prefs.get('translateBlocklist.url'), {
+				headers: { "Cache-Control": "no-cache" }
+			});
 		} catch (e) {
 			Zotero.debug('Failed to fetch translate blocklist');
 			Zotero.logError(e);

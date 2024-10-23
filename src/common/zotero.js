@@ -415,7 +415,13 @@ Zotero.Prefs = new function() {
 			if (!(pref in this.syncStorage)) throw new Error(`Prefs.get: ${pref} not preloaded`);
 			return this.syncStorage[pref];
 		} catch (e) {
-			if (DEFAULTS.hasOwnProperty(pref)) return DEFAULTS[pref];
+			if (DEFAULTS.hasOwnProperty(pref)) {
+				if (Zotero.isInject) {
+					Zotero.logError(new Error(`Prefs.get(${pref}) in injected script is getting a default value. `
+						`This may be a bug. Either preload prefs or use getAsync()`));
+				}
+				return DEFAULTS[pref];
+			}
 			if (Zotero.isBackground) {
 				throw new Error("Zotero.Prefs: Invalid preference "+pref);
 			} else {

@@ -749,9 +749,9 @@ Zotero.Inject = new function() {
 		});
 	}
 	
-	this.isTranslateBlocklisted = function () {
+	this.isTranslateBlocklisted = async function () {
 		if (!Zotero.isManifestV3) return false;
-		let blocklist = Zotero.Prefs.get('translateBlocklist');
+		let blocklist = await Zotero.Prefs.getAsync('translateBlocklist');
 		for (let blockRe of blocklist) {
 			blockRe = new RegExp(blockRe);
 			if (blockRe.test(document.location.href.substring(document.location.protocol.length + 2))) {
@@ -782,7 +782,8 @@ if(!isHiddenIFrame) {
 		if (!isTopWindow && !shouldInjectFrame) return;
 		await Zotero.initInject();
 		
-		if (Zotero.Inject.isTranslateBlocklisted()) {
+		const isBlocklisted = await Zotero.Inject.isTranslateBlocklisted();
+		if (isBlocklisted) {
 			return;
 		}
 		

@@ -137,14 +137,7 @@ if ('TEST_FX' in process.env) {
 				.setFirefoxOptions(options)
 				.build();
 
-			await driver.setContext(firefox.Context.CHROME);
-			await driver.executeScript(`
-				var prefBranch = Services.prefs.getBranch("");
-				prefBranch.setBoolPref('xpinstall.signatures.required', false);
-			`);
-			await driver.setContext(firefox.Context.CONTENT);
-
-			let uuid = await driver.installAddon('/tmp/zoteroConnector.xpi');
+			let uuid = await driver.installAddon('/tmp/zoteroConnector.xpi', true);
 			// Doing some crazy xpath matching since extId cannot be retrieved by API
 			// Sigh. This is bound to break eventually
 			let extIdXPath = `//dd[text()="${uuid}"]/../following-sibling::div/dd`;

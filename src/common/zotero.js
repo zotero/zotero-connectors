@@ -380,7 +380,8 @@ Zotero.Prefs = new function() {
 		"firstSaveToServer": true,
 		"reportTranslationFailure": true,
 		"translatorMetadata": [],
-		"translateBlocklist": ["^lastpass.com/vault", "^help.rootsmagic.com/"],
+		"translateBlocklist": ["^lastpass.com/vault", "^help.rootsmagic.com/", "^mail.one.com/",
+			"^impr1.co/"],
 		"translateBlocklist.url": "https://repo.zotero.org/translate_blocklist",
 		"translateBlocklist.lastCheck": 0,
 		

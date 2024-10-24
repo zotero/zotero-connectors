@@ -3,14 +3,6 @@ ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 FIREFOX_UPDATE_URL="https://example.com/download/connector/firefox/CHANNEL/updates.json"
 
-# This must be xar from https://code.google.com/p/xar/issues/detail?id=76
-XAR_EXECUTABLE=/usr/local/bin/xar
-SAFARI_PRIVATE_KEY="$ROOT_DIR/cert/safari_extension.key"
-SAFARI_EXT_CERTIFICATE="$ROOT_DIR/cert/safari_extension.cer"
-SAFARI_AUX_CERTIFICATE1="$ROOT_DIR/cert/Apple Worldwide Developer Relations Certification Authority.cer"
-SAFARI_AUX_CERTIFICATE2="$ROOT_DIR/cert/Apple Root CA.cer"
-SAFARI_DEVELOPER_ID=""
-
 export WEB_EXT_API_KEY=""
 export WEB_EXT_API_SECRET=""
 export CHROME_EXTENSION_KEY=""

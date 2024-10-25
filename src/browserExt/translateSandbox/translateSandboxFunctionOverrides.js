@@ -129,6 +129,7 @@ const CONTENT_SCRIPT_FUNCTION_OVERRIDES = {
 	'debug': true,
 	'getExtensionURL': true,
 	'getExtensionVersion': true,
+	'Inject.getSessionDetails': true,
 	'Errors.log': true,
 	'Messaging.sendMessage': true,
 	'Connector.checkIsOnline': true,

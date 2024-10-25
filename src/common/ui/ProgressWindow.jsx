@@ -327,7 +327,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			}
 			for (let { text, id } of alertQueue) {
 				// Make sure a message is not appended twice
-				if (logNode.querySelector(`[value='${text}']`)) continue;
+				if (logNode.querySelector(`div[value="${CSS.escape(text)}"]`)) continue;
 
 				// Insert new log entry
 				let div = document.createElement("div");

@@ -256,8 +256,8 @@ var Zotero = global.Zotero = new function() {
 		Zotero.Connector_Types.init();
 		Zotero.Schema.init();
 		await this._initDateFormatsJSON();
-		Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
-			'reportTranslationFailure', 'capitalizeTitles']);
+		Zotero.Prefs.loadNamespace(['translators.', 'automaticAttachmentTypes',
+			'automaticAttachmentTypes.order', 'reportTranslationFailure', 'capitalizeTitles']);
 		await Zotero.Prefs.loadNamespace('debug');
 		
 		Zotero.Debug.init();
@@ -269,8 +269,8 @@ var Zotero = global.Zotero = new function() {
 		this.version = await Zotero.TranslateSandbox.sendMessage('getVersion');
 		Zotero.Schema.init();
 		await this._initDateFormatsJSON();
-		await Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
-			'reportTranslationFailure', 'capitalizeTitles']);
+		await Zotero.Prefs.loadNamespace(['translators.', 'automaticAttachmentTypes',
+			'automaticAttachmentTypes.order', 'reportTranslationFailure', 'capitalizeTitles']);
 	};
 
 	this._initDateFormatsJSON = async function() {
@@ -367,8 +367,8 @@ Zotero.Prefs = new function() {
 		"debug.level": 5,
 		"debug.time": false,
 		"lastVersion": "",
-		"downloadAssociatedFiles": true,
-		"automaticSnapshots": true, // only affects saves to zotero.org. saves to client governed by pref in the client
+		"automaticAttachmentTypes": "pdf,epub,html",
+		"automaticAttachmentTypes.order": "pdf,epub,html",
 		"connector.repo.lastCheck.localTime": 0,
 		"connector.repo.lastCheck.repoTime": 0,
 		"connector.url": 'http://127.0.0.1:23119/',

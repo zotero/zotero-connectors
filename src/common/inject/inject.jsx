@@ -227,7 +227,7 @@ Zotero.Inject = new function() {
 							{
 								sessionID,
 								id: null,
-								iconSrc: Zotero.getExtensionURL("images/treeitem-note.png"),
+								iconSrc: Zotero.getExtensionURL("images/note.svg"),
 								title: Zotero.Utilities.cleanTags(note.note),
 								parentItem: item.id,
 								progress: 100,
@@ -255,14 +255,20 @@ Zotero.Inject = new function() {
 		return translate;
 	};
 	
+	const CONTENT_TYPE_TO_ICON_NAME = {
+		"application/pdf": "attachment-pdf",
+		"application/epub+zip": "attachment-epub"
+	}
 	function determineAttachmentIcon(attachment) {
 		if(attachment.linkMode === "linked_url") {
 			return Zotero.ItemTypes.getImageSrc("attachment-web-link");
 		}
 		var contentType = attachment.contentType || attachment.mimeType;
-		return Zotero.ItemTypes.getImageSrc(
-			contentType === "application/pdf" ? "attachment-pdf" : "attachment-snapshot"
-		);
+		let iconName = "attachment-snapshot";
+		if (contentType in CONTENT_TYPE_TO_ICON_NAME) {
+			iconName = CONTENT_TYPE_TO_ICON_NAME[contentType];
+		}
+		return Zotero.ItemTypes.getImageSrc(iconName);
 	}
 
 	function determineAttachmentType(attachment) {

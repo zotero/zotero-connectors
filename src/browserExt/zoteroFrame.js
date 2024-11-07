@@ -35,39 +35,33 @@ class ZoteroFrame {
 	 */
 	constructor(attributes={}, style={}, messagingOptions) {
 		if (!attributes.src) throw new Error("Attempted to construct a Zotero frame with no src attribute");
+		this.initializedPromise = this._init(attributes, style, messagingOptions);
+	}
+	
+	async _init(attributes={}, style={}, messagingOptions) {
 		attributes = Object.assign({
 			id: Zotero.Utilities.randomString(),
 			frameborder: "0"
 		}, attributes);
-		this._frame = document.createElement("iframe");
-		
-		this._setFrameAttributes(attributes, style);
 
-		if (!messagingOptions) {
-			this.initializedPromise = Zotero.Promise.resolve();
-		}
-		else {
-			this._initializedDeferred = Zotero.Promise.defer();
-			this.initializedPromise = this._initializedDeferred.promise;
-			this._initMessaging(messagingOptions);
-		
-			this.addMessageListener('frameReady', () => {
-				this._initializedDeferred.resolve();
-				return true;
-			});
-		}
-		
-		document.body?.appendChild(this._frame);
-		
-		// Some websites (peda.net) run code that changes our iframe styling
-		// and in the case of the translation sandbox
-		// making it visible, so we need to be waiting for that and change it back.
-		let observer = new MutationObserver(() => {
-			observer.disconnect();
-			this._setFrameAttributes(attributes, style);
-			observer.observe(this._frame, { attributes: true })
+		// Making the frame invisible to website code via a closed shadow DOM
+		// See https://stackoverflow.com/a/68689866
+		const div = document.createElement('div');
+		const root = div.attachShadow({mode: 'closed'});
+
+		this._frame = document.createElement("iframe");
+		this._frame.hidden = true;
+		root.appendChild(this._frame);
+		this._setFrameAttributes(attributes, style);
+		await new Promise((resolve, reject) => {
+			this._frame.onload = resolve;
+			this._frame.onerror = reject;
+			(document.body || document.documentElement)?.appendChild(div);
 		});
-		observer.observe(this._frame, { attributes: true })
+
+		if (messagingOptions) {
+			await this._initMessaging(messagingOptions);
+		}
 	}
 	
 	_setFrameAttributes(attributes, style) {
@@ -87,17 +81,22 @@ class ZoteroFrame {
 		document.body?.removeChild(this._frame);
 	}
 	
-	_initMessaging(messagingOptions) {
+	async _initMessaging(messagingOptions) {
 		if (!messagingOptions.sendMessage) {
-			messagingOptions.sendMessage = (...args) => this._frame.contentWindow.postMessage(args, '*');
-		}
-		if (!messagingOptions.addMessageListener) {
-			messagingOptions.addMessageListener = (fn) => window.addEventListener('message', (messageEvent) => {
-				if (messageEvent.source !== this._frame.contentWindow) return;
-				if (messageEvent.data && Array.isArray(messageEvent.data)) {
-					fn(messageEvent.data);
-				}
-			});
+			const mc = new MessageChannel();
+			// The webpage can technically capture this and snoop messages
+			// but we're not sending any sensitive data anyway
+			this._frame.contentWindow.postMessage("zoteroChannel", '*', [mc.port2]);
+			await new Promise(cb => { mc.port1.onmessage = cb; });
+			mc.port1.onmessage = null;
+			// Established a 2-way secure messaging channel at this point
+			
+			messagingOptions.sendMessage = (...args) => {
+				mc.port1.postMessage(args)
+			};
+			messagingOptions.addMessageListener = (fn) => {
+				mc.port1.onmessage = (e) => fn(e.data);
+			};
 		}
 		this._messaging = new Zotero.MessagingGeneric(messagingOptions);
 		this.addMessageListener = this._messaging.addMessageListener.bind(this._messaging);

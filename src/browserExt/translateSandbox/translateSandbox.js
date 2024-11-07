@@ -36,15 +36,26 @@
  * via Zotero or from the Zotero translator repo and update it as needed without releasing new extension
  * code.
  */
+let port;
+
+window.onmessage = async (e) => {
+	if (e.data === "zoteroChannel") {
+		window.onmessage = null;
+		port = e.ports[0];
+		// Resolve ZoteroFrame._initMessaging()
+		await Zotero.TranslateSandbox.init();
+		port.postMessage(null);
+	}
+};
+
 Zotero.TranslateSandbox = {
 	translate: null,
 	selectCallbacks: {},
 	init: async function() {
-		// Messaging from low-privilege chrome sandbox page to high-privilege
-		// extension content-script.
+		// Silent messaging via a MessageChannel
 		this.messaging = new Zotero.MessagingGeneric({
-			sendMessage: 'frame',
-			addMessageListener: 'frame',
+			sendMessage: (...args) => port.postMessage(args),
+			addMessageListener: fn => port.onmessage = (e) => fn(e.data),
 			functionOverrides: CONTENT_SCRIPT_FUNCTION_OVERRIDES,
 		});
 
@@ -144,5 +155,3 @@ Zotero.TranslateSandbox = {
 		return this.messaging.addMessageListener(...arguments);
 	}
 };
-
-window.addEventListener("DOMContentLoaded", () => Zotero.TranslateSandbox.init());

@@ -35,7 +35,7 @@ Zotero.SandboxedTranslateManager = {
 		'Inject.getSessionDetails': () => Zotero.Inject.sessionDetails,
 	},
 	
-	init: function () {
+	init: async function () {
 		// If zoteroFrame._frame does not exist, it means something removed it from the DOM (like history navigation)
 		// so we need to reinsert and reinitialized it.
 		if (this.frame && !this.frame._frame) {
@@ -47,6 +47,8 @@ Zotero.SandboxedTranslateManager = {
 			{ handlerFunctionOverrides: CONTENT_SCRIPT_FUNCTION_OVERRIDES }
 		);
 		
+		await this.frame.initializedPromise;
+		
 		for (let name in this.handlers) {
 			this.frame.addMessageListener(name, this.handlers[name]);
 		}
@@ -54,8 +56,7 @@ Zotero.SandboxedTranslateManager = {
 	
 	initVirtualTranslate: async function() {
 		let translateDoc;
-		this.init();
-		await this.frame.initializedPromise;
+		await this.init();
 		this.frame.sendMessage('Translate.new');
 		this.virtualTranslate = {
 			setHandler: (name, callback) => {

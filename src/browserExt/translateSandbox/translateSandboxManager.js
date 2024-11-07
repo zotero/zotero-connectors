@@ -38,7 +38,7 @@ Zotero.SandboxedTranslateManager = {
 	init: async function () {
 		// If zoteroFrame._frame does not exist, it means something removed it from the DOM (like history navigation)
 		// so we need to reinsert and reinitialized it.
-		if (this.frame && !this.frame._frame) {
+		if (this.frame && this.frame._frame) {
 			return;
 		}
 		this.frame = new ZoteroFrame(

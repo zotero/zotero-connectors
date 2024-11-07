@@ -42,9 +42,7 @@ window.onmessage = async (e) => {
 	if (e.data === "zoteroChannel") {
 		window.onmessage = null;
 		port = e.ports[0];
-		// Resolve ZoteroFrame._initMessaging()
 		await Zotero.TranslateSandbox.init();
-		port.postMessage(null);
 	}
 };
 
@@ -55,9 +53,13 @@ Zotero.TranslateSandbox = {
 		// Silent messaging via a MessageChannel
 		this.messaging = new Zotero.MessagingGeneric({
 			sendMessage: (...args) => port.postMessage(args),
-			addMessageListener: fn => port.onmessage = (e) => fn(e.data),
+			addMessageListener: (fn) => {
+				port.onmessage = (e) => fn(e.data)
+			},
 			functionOverrides: CONTENT_SCRIPT_FUNCTION_OVERRIDES,
 		});
+		// Resolve ZoteroFrame._initMessaging()
+		this.messaging.sendMessage(null);
 
 		// Handling for translate.monitorDOMChanges
 		class UnsandboxedMutationObserver {
@@ -144,7 +146,6 @@ Zotero.TranslateSandbox = {
 		});
 
 		await Zotero.initTranslateSandbox();
-		await this.messaging.sendMessage('frameReady');
 	},
 	
 	sendMessage: function() {

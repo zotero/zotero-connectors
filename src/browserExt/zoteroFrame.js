@@ -46,8 +46,8 @@ class ZoteroFrame {
 
 		// Making the frame invisible to website code via a closed shadow DOM
 		// See https://stackoverflow.com/a/68689866
-		const div = document.createElement('div');
-		const root = div.attachShadow({mode: 'closed'});
+		this.parentDiv = document.createElement('div');
+		const root = this.parentDiv.attachShadow({mode: 'closed'});
 
 		this._frame = document.createElement("iframe");
 		this._frame.hidden = true;
@@ -56,7 +56,7 @@ class ZoteroFrame {
 		await new Promise((resolve, reject) => {
 			this._frame.onload = resolve;
 			this._frame.onerror = reject;
-			(document.body || document.documentElement)?.appendChild(div);
+			(document.body || document.documentElement)?.appendChild(this.parentDiv);
 		});
 
 		if (messagingOptions) {

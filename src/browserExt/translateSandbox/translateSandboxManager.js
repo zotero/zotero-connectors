@@ -36,10 +36,14 @@ Zotero.SandboxedTranslateManager = {
 	},
 	
 	init: async function () {
-		// If zoteroFrame._frame does not exist, it means something removed it from the DOM (like history navigation)
+		// If zoteroFrame.parentDiv does not exist, it means something removed it from the DOM (like history navigation)
 		// so we need to reinsert and reinitialized it.
-		if (this.frame && this.frame._frame) {
-			return;
+		if (this.frame && !this.frame.parentDiv.parentNode) {
+			await new Promise((resolve, reject) => {
+				this._frame.onload = resolve;
+				this._frame.onerror = reject;
+				(document.body || document.documentElement)?.appendChild(this.frame.parentDiv);
+			});
 		}
 		this.frame = new ZoteroFrame(
 			{ src: browser.runtime.getURL('translateSandbox/translateSandbox.html') },

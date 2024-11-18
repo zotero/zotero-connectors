@@ -172,6 +172,35 @@ Zotero_Preferences.General = {
 
 		Zotero.API.getUserInfo().then(Zotero_Preferences.General.updateAuthorization);
 
+		let automaticAttachmentTypes = new Set(Zotero.Prefs.get('automaticAttachmentTypes').split(','));
+		let checkboxAutomaticSnapshots = document.getElementById('general-checkbox-automatic-snapshots');
+		let checkboxDownloadAssociatedFiles = document.getElementById('general-checkbox-download-associated-files');
+		
+		checkboxAutomaticSnapshots.checked = automaticAttachmentTypes.has('html');
+		checkboxAutomaticSnapshots.onchange = () => {
+			if (checkboxAutomaticSnapshots.checked) {
+				automaticAttachmentTypes.add('html');
+			}
+			else {
+				automaticAttachmentTypes = automaticAttachmentTypes.remove('html');
+			}
+			Zotero.Prefs.set('automaticAttachmentTypes', Array.from(automaticAttachmentTypes).join(','));
+		};
+		
+		checkboxDownloadAssociatedFiles.checked = automaticAttachmentTypes.has('pdf')
+			&& automaticAttachmentTypes.has('epub');
+		checkboxDownloadAssociatedFiles.onchange = () => {
+			if (checkboxDownloadAssociatedFiles.checked) {
+				automaticAttachmentTypes.add('pdf');
+				automaticAttachmentTypes.add('epub');
+			}
+			else {
+				automaticAttachmentTypes = automaticAttachmentTypes.remove('pdf');
+				automaticAttachmentTypes = automaticAttachmentTypes.remove('epub');
+			}
+			Zotero.Prefs.set('automaticAttachmentTypes', Array.from(automaticAttachmentTypes).join(','));
+		};
+
 	},
 
 	/**

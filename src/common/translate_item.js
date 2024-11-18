@@ -404,7 +404,7 @@ Zotero.Translate.ItemSaver.prototype = {
 		}
 		
 		Zotero.debug("Translate: Save to server complete");
-		return Zotero.Prefs.getAsync(["downloadAssociatedFiles", "automaticSnapshots"])
+		return Zotero.Prefs.getAsync(["automaticAttachmentTypes", "automaticAttachmentTypes.order"])
 		.then(function (prefs) {
 			if (typedArraysSupported) {
 				for (var i=0; i<items.length; i++) {
@@ -426,7 +426,8 @@ Zotero.Translate.ItemSaver.prototype = {
 	 * @param {String} itemKey The key of the parent item
 	 * @param {String} baseName A string to use as the base name for attachments
 	 * @param {Object[]} attachments An array of attachment objects
-	 * @param {Object} prefs An object with the values of the downloadAssociatedFiles and automaticSnapshots preferences
+	 * @param {Object} prefs An object with the values of the automaticAttachmentTypes and
+	 *     automaticAttachmentTypes.order preferences
 	 * @param {Function} attachmentCallback A callback that receives information about attachment
 	 *     save progress. The callback will be called as attachmentCallback(attachment, false, error)
 	 *     on failure or attachmentCallback(attachment, progressPercent) periodically during saving.
@@ -435,6 +436,7 @@ Zotero.Translate.ItemSaver.prototype = {
 	 */
 	_saveAttachmentsToServer: function(itemKey, baseName, attachments, prefs, attachmentCallback=()=>0) {
 		var promises = [];
+		attachments = Zotero.Utilities.filterAttachmentsToSave(attachments);
 		for (let attachment of attachments) {
 			let isSnapshot = false;
 			if (attachment.mimeType) {
@@ -445,11 +447,6 @@ Zotero.Translate.ItemSaver.prototype = {
 				}
 			}
 
-			if ((isSnapshot && !prefs.automaticSnapshots) || (!isSnapshot && !prefs.downloadAssociatedFiles)) {
-				// Skip attachment due to prefs
-				continue;
-			}
-			
 			let deferredHeadersProcessed = Zotero.Promise.defer();
 			let itemKeyPromise = deferredHeadersProcessed.promise
 				.then(() => this._createAttachmentItem(itemKey, attachment));

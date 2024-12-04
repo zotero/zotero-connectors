@@ -61,7 +61,7 @@ const requestOverride = {
 			xhr.responseText = xhr.response;
 			if (xhr.responseType == 'document') {
 				let contentType = xhr.getResponseHeader("Content-Type");
-				if (contentType != 'application/xml' && contentType != 'text/xml') {
+				if (!Zotero.HTTP.VALID_DOM_PARSER_CONTENT_TYPES.has(contentType)) {
 					contentType = 'text/html';
 				}
 				let doc = new DOMParser().parseFromString(xhr.responseText, contentType);

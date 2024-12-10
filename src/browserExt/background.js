@@ -52,12 +52,13 @@ Zotero.Connector_Browser = new function() {
 	
 	this.init = async function() {
 		if (Zotero.isManifestV3) {
-			if (!Zotero.isFirefox) {
+			if (Zotero.isChromium) {
 				// Chrome recently stopped displaying context menus on button right-click
 				// with 'browser_action' as context. It's supposed to work, so maybe a bug
 				// in Chrome, but let's fix it on our side. Firefox, meanwhile, throws if 'action'
 				// is included in the context list.
 				buttonContext.push('action');
+				await Zotero.OffscreenManager.init();
 			}
 			this._tabInfo = _tabInfo = await Zotero.Utilities.Connector.createMV3PersistentObject('tabInfo');
 			setInterval(async () => {

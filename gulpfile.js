@@ -65,9 +65,9 @@ var injectInclude = [
 	'translate/rdf/identity.js',
 	'translate/rdf/rdfparser.js',
 	'translate/translation/translate.js',
+	'translate/translation/translate_item.js',
 	'translate/translator.js',
 	'translate/utilities_translate.js',
-	'translate_item.js',
 	'inject/http.js',
 	'inject/sandboxManager.js',
 	'integration/connectorIntegration.js',
@@ -101,7 +101,7 @@ var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(
 var injectIncludeManifestV3 = ['browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
-	['translateSandbox/translateSandboxFunctionOverrides.js', 'translateSandbox/translateSandboxManager.js'],
+	['inject/virtualOffscreenTranslate.js'],
 	injectIncludeLast);
 
 var backgroundInclude = [
@@ -149,7 +149,8 @@ var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclu
 	'webRequestIntercept.js',
 	'contentTypeHandler.js',
 	'saveWithoutProgressWindow.js',
-	'translateSandbox/translateBlocklistManager.js'
+	'messagingGeneric.js',
+	'offscreen/offscreenFunctionOverrides.js', 'background/offscreenManager.js',
 ]);
 
 function reloadChromeExtensionsTab(cb) {

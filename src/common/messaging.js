@@ -96,13 +96,16 @@ Zotero.Messaging = new function() {
 	/**
 	 * Sends a message to a tab
 	 */
-	this.sendMessage = async function(messageName, args, tab, frameId=0) {
+	this.sendMessage = async function(messageName, args, tab=null, frameId=0) {
 		var response;
 		// Use the promise or response callback in BrowserExt for advanced functionality
 		if(Zotero.isBrowserExt) {
 			// Get current tab if not provided
 			if (!tab) {
 				tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
+			}
+			if (typeof tab === 'number') {
+				tab = await browser.tabs.get(tab);
 			}
 			let options = {};
 			if (typeof frameId == 'number') options = {frameId};

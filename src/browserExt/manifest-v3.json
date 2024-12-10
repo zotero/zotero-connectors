@@ -13,7 +13,7 @@
 		"default_title": "Save to Zotero"
 	},
 	"host_permissions": ["http://*/*", "https://*/*"],
-	"permissions": ["tabs", "contextMenus", "cookies", "scripting",
+	"permissions": ["tabs", "contextMenus", "cookies", "scripting", "offscreen",
 		"webRequest", "declarativeNetRequest", "webNavigation", "storage"],
 	"declarative_net_request": {
 		"rule_resources": [{
@@ -51,16 +51,18 @@
 		}
 	],
 	"sandbox": {
-		"pages": ["translateSandbox/translateSandbox.html"]
+		"pages": ["offscreen/offscreenSandbox.html"]
 	},
 	"web_accessible_resources": [{
 		"resources": [
 			"images/*",
 			"progressWindow/progressWindow.html",
 			"modalPrompt/modalPrompt.html",
-			"translateSandbox/translateSandbox.html",
 			"test/data/journalArticle-single.html",
-			"lib/SingleFile/single-file-hooks-frames.js"
+			"lib/SingleFile/single-file-hooks-frames.js",
+			"inject/pageSaving.js",
+			"translateWeb.js",
+			"itemSaver.js"
 		],
 		"matches": ["http://*/*", "https://*/*"]
 	}],

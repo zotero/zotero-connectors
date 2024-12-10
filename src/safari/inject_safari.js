@@ -123,3 +123,18 @@ if (isTopWindow) {
 		Zotero.Inject._selectCallback(returnItems);
 	});
 }
+
+function onSafariPageLoad() {
+	if (isTopWindow) {
+		Zotero.Connector_Browser.onPageLoad(document.location.href);
+	}
+}
+
+if(document.readyState !== "complete") {
+	window.addEventListener("pageshow", function(e) {
+		if(e.target !== document) return;
+		onSafariPageLoad();
+	}, false);
+} else {
+	onSafariPageLoad();
+}

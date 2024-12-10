@@ -410,11 +410,7 @@ if (isTopWindow) {
 		// (e.g., when displaying the Select Items window) we can skip displaying it
 		frameIsHidden = false;
 		
-		var [sessionID, headline, readOnly, delay] = args;
-		
-		if (delay) {
-			await Zotero.Promise.delay(delay);
-		}
+		var [sessionID, headline, readOnly] = args;
 		
 		// Reopening existing popup
 		if (currentSessionID) {

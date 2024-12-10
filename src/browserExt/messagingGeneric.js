@@ -129,6 +129,17 @@ Zotero.MessagingGeneric = class {
 		this._initMessageListener();
 	}
 	
+	// Reinit messaging without resetting existing message listeners. Needed if the existing connection
+	// gets severed for some reason.
+	reinit(options) {
+		if (!options.sendMessage || !options.addMessageListener) {
+			throw new Error('Zotero.MessagingGeneric: mandatory reinit() options missing');
+		}
+		this._sendMessage = options.sendMessage;
+		this._addMessageListener = options.addMessageListener;
+		this._initMessageListener();
+	}
+	
 	// Initialize message handler
 	_initMessageListener() {
 		this._addMessageListener(async (args) => {
@@ -149,7 +160,7 @@ Zotero.MessagingGeneric = class {
 				if (this._options.supportsResponse) {
 					return result;
 				}
-				else if (result !== undefined) {
+				else {
 					this._sendMessage(`response`, result, messageId);
 				}
 			}

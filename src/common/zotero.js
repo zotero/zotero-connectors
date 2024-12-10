@@ -69,7 +69,7 @@ var Zotero = global.Zotero = new function() {
 				this.isChrome = true;
 			}
 		}
-		this.isTranslateSandbox = typeof document != 'undefined' && document.location.href.endsWith('translateSandbox.html');
+		this.isOffscreen = typeof document != 'undefined' && document.location.href.endsWith('offscreenSandbox.html');
 
 		this.isMac = (global.navigator.platform.substr(0, 3) == "Mac");
 		this.isWin = (global.navigator.platform.substr(0, 3) == "Win");
@@ -96,7 +96,7 @@ var Zotero = global.Zotero = new function() {
 	this.appName = `${ZOTERO_CONFIG.CLIENT_NAME} Connector for ${this.clientName}`;
 	
 	if (this.isBrowserExt) {
-		if (!this.isTranslateSandbox) {
+		if (!this.isOffscreen) {
 			this.version = browser.runtime.getManifest().version;
 		}
 	}
@@ -172,6 +172,14 @@ var Zotero = global.Zotero = new function() {
 		}
 		Zotero.Prefs.set('lastVersion', Zotero.version);
 	};
+
+	/**
+	 * Gets Connector version. Used in API restricted JS environments (offscreen, sandbox).
+	 * @returns {string|*}
+	 */
+	this.getVersion = function() {
+		return Zotero.version;
+	}
 	
 	/**
 	 * Initializes Zotero services for the global page in Chrome or Safari
@@ -235,9 +243,6 @@ var Zotero = global.Zotero = new function() {
 		if (Zotero.GoogleDocs.API.init) {
 			await Zotero.GoogleDocs.API.init();
 		}
-		if (Zotero.isManifestV3) {
-			await Zotero.TranslateBlocklistManager.init();
-		}
 		Zotero.initialized = true;
 
 		await Zotero.migrate();
@@ -265,8 +270,8 @@ var Zotero = global.Zotero = new function() {
 		Zotero.initialized = true;
 	};
 
-	this.initTranslateSandbox = async function() {
-		this.version = await Zotero.TranslateSandbox.sendMessage('getVersion');
+	this.initOffscreen = async function() {
+		this.version = await Zotero.getVersion();
 		Zotero.Schema.init();
 		await this._initDateFormatsJSON();
 		await Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
@@ -280,7 +285,7 @@ var Zotero = global.Zotero = new function() {
 		}
 		else {
 			let url = Zotero.getExtensionURL('utilities/resource/dateFormats.json');
-			if (Zotero.isTranslateSandbox) {
+			if (Zotero.isOffscreen) {
 				url = await url;
 			}
 			let xhr = await Zotero.HTTP.request('GET', url, {responseType: 'json'});
@@ -380,10 +385,6 @@ Zotero.Prefs = new function() {
 		"firstSaveToServer": true,
 		"reportTranslationFailure": true,
 		"translatorMetadata": [],
-		"translateBlocklist": ["^lastpass.com/vault", "^help.rootsmagic.com/", "^mail.one.com/",
-			"^impr1.co/"],
-		"translateBlocklist.url": "https://repo.zotero.org/translate_blocklist",
-		"translateBlocklist.lastCheck": 0,
 		
 		"proxies.transparent": true,
 		"proxies.autoRecognize": true,

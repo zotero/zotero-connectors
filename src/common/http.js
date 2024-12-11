@@ -35,6 +35,14 @@ if (Zotero.isChromium) {
  * @namespace
  */
 Zotero.HTTP = new function() {
+	this.VALID_DOM_PARSER_CONTENT_TYPES = new Set([
+		"text/html",
+		"text/xml",
+		"application/xml",
+		"application/xhtml+xml",
+		"image/svg+xml"
+	]);
+	
 	this.StatusError = function(xmlhttp, url, responseText) {
 		this.message = `HTTP request to ${url} rejected with status ${xmlhttp.status}`;
 		this.status = xmlhttp.status;
@@ -169,10 +177,7 @@ Zotero.HTTP = new function() {
 						Zotero.debug("Parsing cross-origin response for " + url);
 						let parser = new DOMParser();
 						let contentType = xmlhttp.getResponseHeader("Content-Type");
-						if (contentType != 'application/xml' && contentType != 'text/xml') {
-							contentType = 'text/html';
-						}
-						let doc = parser.parseFromString(xmlhttp.responseText, contentType);
+						let doc = parser.parseFromString(xmlhttp.responseText, Zotero.HTTP.determineDOMParserContentType(contentType));
 						
 						return new Proxy(xmlhttp, {
 							get: function (target, name) {
@@ -285,10 +290,7 @@ Zotero.HTTP = new function() {
 				Zotero.debug("Parsing cross-origin response for " + url);
 				let parser = new DOMParser();
 				let contentType = xmlhttp.getResponseHeader("Content-Type");
-				if (contentType != 'application/xml' && contentType != 'text/xml') {
-					contentType = 'text/html';
-				}
-				let doc = parser.parseFromString(xmlhttp.responseText, contentType);
+				let doc = parser.parseFromString(xmlhttp.responseText, Zotero.HTTP.determineDOMParserContentType(contentType));
 				
 				return new Proxy(xmlhttp, {
 					get: function (target, name) {
@@ -520,6 +522,24 @@ Zotero.HTTP = new function() {
 		});
 		return wrappedDoc;
 	};
+
+	/**
+	 * @param contentType {String}
+	 * @returns {DOMParserSupportedType}
+	 */
+	this.determineDOMParserContentType = function(contentType) {
+		if (Zotero.HTTP.VALID_DOM_PARSER_CONTENT_TYPES.has(contentType)) {
+			return contentType;
+		}
+		else {
+			if (contentType.includes('xml')) {
+				return "text/xml";
+			}
+			else {
+				return "text/html";
+			}
+		}
+	}
 	
 	/**
 	 * Adds request handlers to the XMLHttpRequest and returns a promise that resolves when

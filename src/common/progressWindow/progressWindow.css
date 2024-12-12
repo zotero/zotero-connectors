@@ -157,7 +157,8 @@ button:active {
 .ProgressWindow-item {
 	font-size: 11px;
 	margin-top: 8px;
-	margin-bottom: 4px
+	margin-bottom: 4px;
+	min-height: 16px;
 }
 
 .ProgressWindow-itemIcon {

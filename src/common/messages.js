@@ -208,7 +208,7 @@ var MESSAGES = {
 	GoogleDocs_API: {
 		onAuthComplete: false,
 		run: {
-			background: {minArgs: 4}
+			background: {minArgs: 3}
 		},
 		getDocument: true,
 		batchUpdateDocument: true

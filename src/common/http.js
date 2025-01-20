@@ -309,7 +309,7 @@ Zotero.HTTP = new function() {
 				if (options.body != null) {
 					throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
 				}
-			} else if(options.body) {
+			} else if (options.body && !(options.body instanceof ArrayBuffer)) {
 				if (options.headers["Content-Type"] !== 'multipart/form-data') {
 					options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
 

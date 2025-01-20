@@ -169,6 +169,10 @@ var MESSAGES = {
 		get: true,
 		count: true,
 	},
+	ItemSaver: {
+		saveAttachmentToZotero: true,
+		saveStandaloneAttachmentToZotero: true
+	},
 	Errors: {
 		log: false,
 		getErrors: true,

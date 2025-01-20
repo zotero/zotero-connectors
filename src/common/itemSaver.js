@@ -23,6 +23,11 @@
 	***** END LICENSE BLOCK *****
 */
 
+const PRIMARY_ATTACHMENT_TYPES = new Set([
+	'application/pdf',
+	'application/epub+zip',
+]);
+
 /**
  * Save translated items in JSON format
  *
@@ -37,6 +42,8 @@ let ItemSaver = function(options) {
 	this._sessionID = options.sessionID;
 	this._proxy = options.proxy;
 	this._baseURI = options.baseURI;
+	this._itemType = options.itemType;
+	this._items = [];
 	
 	// Add listener for callbacks, but only for Safari or the bookmarklet. In Chrome, we
 	// (have to) save attachments from the inject page.
@@ -80,42 +87,32 @@ ItemSaver.prototype = {
 	 * @param {Function} [attachmentCallback] A callback that receives information about attachment
 	 *     save progress. The callback will be called as attachmentCallback(attachment, false, error)
 	 *     on failure or attachmentCallback(attachment, progressPercent) periodically during saving.
+	 * @param {Function} [itemsDoneCallback] A callback that receives progress for top-item saving.
 	 */
 	saveItems: async function (items, attachmentCallback, itemsDoneCallback=()=>0) {
-		// first try to save items via connector
+		try {
+			return this._saveToZotero(items, attachmentCallback, itemsDoneCallback);
+		}
+		catch (e) {
+			if (e.status == 0) {
+				return this._saveToServer(items, attachmentCallback, itemsDoneCallback);
+			}
+  			throw e;
+		}
+	},
+	
+	_saveToZotero: async function (items, attachmentCallback, itemsDoneCallback=()=>0) {
+		this._items = items;
 		var payload = {
-			items,
 			sessionID: this._sessionID,
 			uri: this._baseURI,
 			singleFile: true
 		};
-		if (Zotero.isSafari) {
-			// This is the best in terms of cookies we can do in Safari
-			payload.cookie = document.cookie;
-		}
+		const isChromiumIncognito = Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()
+		const zoteroSupportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
+
 		payload.proxy = this._proxy && this._proxy.toJSON();
 
-		let singleFile = false;
-		// Saving with singlefile does not work in Incognito with Chromium, will fall back
-		// to saving via the client.
-		if (!Zotero.isChromium || !await Zotero.Connector_Browser.isIncognito()) {
-			// Add page data for snapshot
-			for (let item of items) {
-				for (let attachment of item.attachments) {
-					if (attachment.mimeType !== 'text/html'
-						|| attachment.snapshot === false) {
-						continue;
-					}
-					if (attachment.url && !this._urlMatchesLocation(attachment.url)) {
-						continue;
-					}
-
-					attachment.singleFile = true;
-					singleFile = true;
-				}
-			}
-		}
-		
 		// If saving via a translator on a pdf page, we add that page as an attachment
 		// At time of implementation this only happens for DOI translators
 		if (items.length === 1 && document.contentType === 'application/pdf') {
@@ -127,64 +124,183 @@ ItemSaver.prototype = {
 				mimeType: document.contentType,
 			})
 		}
-		
-		try {
-			var data = await Zotero.Connector.callMethodWithCookies("saveItems", payload)
+
+		let singleFile = false;
+
+		for (let item of items) {
+			item.id = item.id || Zotero.Utilities.randomString(8);
+			
+			// Prepare snapshot for saving
+			item.attachments = item.attachments.filter((attachment) => {
+				if (!attachment.title) attachment.title = attachment.mimeType + ' Attachment';
+				attachment.id = attachment.id || Zotero.Utilities.randomString(8);
+				attachment.parentItem = item.id;
+				
+				// Ignore non-snapshot text/html attachments (saved as link attachments)
+				// Don't save snapshots in Chromium incognito where it doesn't work
+				// Don't save snapshots from search results.
+				// TODO https://github.com/zotero/zotero-connectors/issues/481
+				if (attachment.mimeType === 'text/html' && attachment.snapshot !== false) {
+					if (this._itemType === "multiple" || isChromiumIncognito) {
+						return false;
+					}
+					this._snapshotAttachment = attachment;
+					singleFile = true;
+					attachmentCallback(attachment, 0);
+					// Filter the snapshot out of attachments since it will be saved via _executeSingleFile()
+					return false;
+				}
+				
+				// Otherwise translate removes attachments from items when you call
+				// itemsDoneCallback
+				attachmentCallback(attachment, 0);
+				return true;
+			});
 		}
-		catch (e) {
-			if (e.status == 0) {
-				return this._saveToServer(items, attachmentCallback, itemsDoneCallback);
+
+		if (Zotero.isSafari) {
+			// This is the best in terms of cookies we can do in Safari
+			payload.cookie = document.cookie;
+		}
+		
+		payload.items = Zotero.Utilities.deepCopy(items);
+
+		if (zoteroSupportsAttachmentUpload) {
+			// Zotero supports attachmentUpload so we don't tell it about
+			// any attachments since saving them is our concern.
+			for (let item of payload.items) {
+				item.attachments = [];
 			}
-			throw e;
 		}
 		
+		let data = await Zotero.Connector.callMethodWithCookies("saveItems", payload)
+		if (!zoteroSupportsAttachmentUpload) items = data.items;
+		// Update UI for top-level items
+		itemsDoneCallback(items);
+
 		Zotero.debug("Translate: Save via Zotero succeeded");
 		Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID: this._sessionID });
+
+		let promises = []
 		
-		if (data && data.items) {
-			itemsDoneCallback(data.items);
-			for (let i = 0; i < data.items.length; i++) {
-				const item = items[i];
-				const attachments = item.attachments = data.items[i].attachments;
-				for (let attachment of attachments) {
-					if (attachment.id) {
-						if (!attachment.title) attachment.title = 'Attachment';
+		if (!zoteroSupportsAttachmentUpload) {
+			// Poll for progress of attachments saved by Zotero
+			promises.push(this._pollForProgress(items, attachmentCallback));
+		}
+		else {
+			// Save PDFs and EPUBs via the connector (in the background page)
+			promises.push(this.saveAttachmentsToZotero(attachmentCallback))
+		}
+
+		// Save the snapshot if required
+		if (singleFile) {
+			promises.push(this._executeSingleFile(payload, attachmentCallback));
+		}
+		await Promise.all(promises);
+		return items;
+	},
+
+	_executeSingleFile: async function(payload, attachmentCallback) {
+		try {
+			let data = { items: payload.items, sessionID: payload.sessionID };
+			data.snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
+			data.url = data.items[0].url;
+			data.title = this._snapshotAttachment.title;
+			await Zotero.Connector.saveSingleFile({
+					method: "saveSingleFile",
+					headers: {"Content-Type": "application/json"}
+				},
+				data
+			);
+			attachmentCallback(this._snapshotAttachment, 100);
+		}
+		catch (e) {
+			attachmentCallback(this._snapshotAttachment, false, e.message)
+		}
+	},
+	
+	async saveAttachmentsToZotero(attachmentCallback) {
+		const shouldAttemptToDownloadOAAttachments = await Zotero.Connector.getPref('downloadAssociatedFiles')
+		for (let item of this._items) {
+			item.hasPrimaryAttachment = false;
+			for (let attachment of item.attachments) {
+				if (attachment.isOpenAccess) continue;
+				try {
+					if (PRIMARY_ATTACHMENT_TYPES.has(attachment.mimeType)) {
+						attachment.isPrimary = true;
+					}
+					await Zotero.ItemSaver.saveAttachmentToZotero(attachment, this._sessionID)
+					if (attachment.isPrimary) {
+						item.hasPrimaryAttachment = true;
+					}
+					attachmentCallback(attachment, 100);
+				}
+				catch (e) {
+					if (attachment.isPrimary && shouldAttemptToDownloadOAAttachments) {
 						attachmentCallback(attachment, 0);
+					}
+					else {
+						// Otherwise it's a failure
+						attachmentCallback(attachment, false, e);
+						Zotero.logError(e);
 					}
 				}
 			}
-			
+			if (!item.hasPrimaryAttachment) {
+				if (!shouldAttemptToDownloadOAAttachments) continue;
+				await this.saveOAAttachment(item, attachmentCallback);
+			}
 		}
-		let promises = [
-			this._pollForProgress(data.items, attachmentCallback)
-		]
-
-		// If we have a snapshot and the client supports SingleFile snapshots
-		if (singleFile && data && data.singleFile) {
-			// Do not wait for async function so we continue to update UI
-			promises.push(this._executeSingleFile(payload));
-		}
-		
-		await Promise.all(promises);
-
-		return data.items;
 	},
-
-	_executeSingleFile: async function(payload) {
+	
+	async saveOAAttachment(item, attachmentCallback) {
+		let attachment = item.attachments.find(a => a.isPrimary);
 		try {
-			payload.snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
-		}
-		catch (e) {
-			// We swallow this error and fall back to saving the
-			// page in the client
-		}
+			// Check if we can get an OA PDF from Zotero
+			if (typeof item.hasAlternativeAttachment === "undefined") {
+				// Change line for the primary attachment if we're going to look for OA alternatives
+				if (attachment) {
+					attachment.title = "Searching for Open Access files…";
+					attachmentCallback(attachment, 0);
+				}
+				item.hasAlternativeAttachment = await Zotero.Connector.callMethod('hasOAAttachments', {
+					sessionID: this._sessionID,
+					itemID: item.id
+				});
+			}
+			if (!item.hasAlternativeAttachment) {
+				if (attachment) {
+					attachment.title = "No Open Access PDFs found";
+					attachmentCallback(attachment, false)
+				}
+				return;
+			}
 
-		return Zotero.Connector.saveSingleFile({
-				method: "saveSingleFile",
-				headers: {"Content-Type": "application/json"}
-			},
-			payload
-		);
+			// Translator didn't provide a primary attachment, but we've found an OA one so add an attachment to the item
+			if (!attachment) {
+				attachment = {
+					id: Zotero.Utilities.randomString(),
+					parent: item.id,
+					title: "Open Access PDF",
+					mimeType: 'application/pdf',
+					isPrimary: true,
+					isOpenAccess: true,
+				};
+				item.attachments.push(attachment);
+			}
+			attachmentCallback(attachment, 0);
+			
+			attachment.title = await Zotero.Connector.callMethod('saveOAAttachment', {
+				sessionID: this._sessionID,
+				itemID: item.id,
+			});
+			attachmentCallback(attachment, 100);
+		} catch (e) {
+			if (attachment) {
+				attachment.title = "Failed to get Open Access PDF";
+				attachmentCallback(attachment, false, e);
+			}
+		}
 	},
 	
 	/**

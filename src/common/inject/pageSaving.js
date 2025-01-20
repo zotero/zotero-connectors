@@ -154,7 +154,12 @@ let PageSaving = {
 			// Not from the context menu, which always triggers a resave
 			&& !options.resave
 	},
-	
+
+	/**
+	 * Handles saving when highlighting text on the page and saving via right-click
+	 * option "Create Zotero Item and Note from Selection"
+	 * @param items
+	 */	
 	_processNote(items) {
 		const saveOptions = this.sessionDetails.saveOptions;
 		if (saveOptions && saveOptions.note && items.length == 1) {
@@ -305,9 +310,20 @@ let PageSaving = {
 	 * @param sessionID
 	 * @param title
 	 * @param saveSnapshot
+	 * @param resave
 	 * @returns {Promise<*>}
 	 */
-	async saveAsWebpage({ sessionID, title=document.title, snapshot: saveSnapshot=true } = {}) {
+	async saveAsWebpage({ sessionID, title=document.title, snapshot: saveSnapshot=true, resave=false } = {}) {
+		var result = await Zotero.Inject.checkActionToServer();
+		if (!result) return;
+
+		if (document.contentType !== 'text/html') {
+			return await this._saveAsStandaloneAttachment({sessionID, title, saveSnapshot});
+		}
+		return await this._saveAsWebpage({sessionID, title, saveSnapshot});
+	},
+	
+	async _saveAsWebpage({ sessionID, title, saveSnapshot } = {}) {
 		var translatorID = 'webpage' + (saveSnapshot ? 'WithSnapshot' : '');
 		if (!sessionID) {
 			throw new Error("Trying to save as webpage without session ID");
@@ -321,15 +337,8 @@ let PageSaving = {
 			referrer: document.referrer,
 			cookie,
 			title: title,
-			html: document.documentElement.innerHTML,
 			skipSnapshot: !saveSnapshot,
-			singleFile: true
 		};
-
-		// SingleFile does not work in Chromium incognito due to object passing via object URL not being available
-		if (Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()){
-			delete data.singleFile;
-		}
 
 		var image;
 		if (document.contentType == 'application/pdf') {
@@ -376,27 +385,31 @@ let PageSaving = {
 				itemType: Zotero.getString("itemType_snapshot"),
 				itemsLoaded: 1
 			};
+			let isSingleFileAvailable = true;
+			// SingleFile does not work in Chromium incognito due to object passing via object URL not being available
+			if (Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()){
+				isSingleFileAvailable = false;
+			}
 			// Once snapshot item is created, if requested, run SingleFile
-			if (!data.pdf && result && result.saveSingleFile) {
-
+			if (isSingleFileAvailable) {
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", progressItem);
 
 				try {
 					data.snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
+
+					result = await Zotero.Connector.saveSingleFile({
+							method: "saveSingleFile",
+							headers: {"Content-Type": "application/json"}
+						},
+						data
+					);
+
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
 				}
 				catch (e) {
 					// Swallow error, will fallback to save in client
 					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: false } });
 				}
-
-				result = await Zotero.Connector.saveSingleFile({
-						method: "saveSingleFile",
-						headers: {"Content-Type": "application/json"}
-					},
-					data
-				);
-
-				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
 			}
 
 			if (result && result.attachments) {
@@ -442,6 +455,81 @@ let PageSaving = {
 				// result in a save to the server, because it's possible the request
 			// will still be processed)
 			else if (!e.value || e.value.libraryEditable != false) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
+			}
+			throw e;
+		}
+	},
+
+	async _saveAsStandaloneAttachment({ sessionID, title=document.title } = {}) {
+		if (!sessionID) {
+			throw new Error("Trying to save as standalone attachment without session ID");
+		}
+		let itemType = "webpage";
+		if (document.contentType === 'application/pdf') {
+			itemType = "pdf"
+		}
+		else if (document.contentType === 'application/epub+zip') {
+			itemType = "epub";
+		}
+
+		let progressItem = {
+			sessionID,
+			id: 1,
+			iconSrc: Zotero.ItemTypes.getImageSrc(`attachment-${itemType}`),
+			title,
+			progress: 0,
+			// TODO passed to ProgressWindow for accessibility messages. Needs to be updated there
+			itemType: Zotero.getString(`itemType_${itemType}`),
+		};
+
+		Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
+		Zotero.Messaging.sendMessage(
+			"progressWindow.itemProgress",
+			progressItem
+		);
+
+		let standaloneAttachment = {
+			url: document.location.toString(),
+			mimeType: document.contentType,
+			title
+		}
+
+		try {
+			let { canRecognize } = await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(standaloneAttachment, sessionID)
+			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
+			progressItem.progress = 100;
+			Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+
+			if (canRecognize) {
+				let item = await Zotero.Connector.callMethod("getRecognizedItem", { sessionID: sessionID });
+				if (item) {
+					item.id = 2;
+					item.iconSrc = Zotero.ItemTypes.getImageSrc(item.itemType);
+					progressItem.parentItem = 2;
+					await Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...item, ...{ progress: 100 } });
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+				}
+			}
+
+			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+			Object.assign(this.sessionDetails, {
+				id: sessionID,
+				url: document.location.href,
+			});
+		} catch (e) {
+			// Client unavailable
+			if (e.status === 0) {
+				if (false) {
+					// TODO Attempt saving to server
+				} else {
+					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
+				}
+			}
+			else if (!e.value || e.value.libraryEditable != false) {
+				// Unexpected error, including a timeout (which we don't want to
+				// result in a save to the server, because it's possible the request
+				// will still be processed)
 				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
 			}
 			throw e;
@@ -538,7 +626,7 @@ let PageSaving = {
 		}
 		
 		var sessionID = this._initSession(translatorID, options);
-		return await this.saveAsWebpage({sessionID, title, snapshot: options.snapshot});
+		return await this.saveAsWebpage({sessionID, title, snapshot: options.snapshot, resave: options.resave});
 	}
 }
 

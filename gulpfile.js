@@ -128,6 +128,7 @@ var backgroundInclude = [
 	'translate/debug.js',
 	'translate/tlds.js',
 	'translate/translator.js',
+	'itemSaver_background.js',
 	'translators.js',
 	'cachedTypes.js',
 	'errors_webkit.js',

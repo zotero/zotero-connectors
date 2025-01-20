@@ -80,6 +80,23 @@ Zotero.Utilities.Connector = {
 		}
 	},
 	
+	getContentTypeFromXHR: function(xhr) {
+		var contentType = "application/octet-stream",
+			charset = null,
+			contentTypeHeader = xhr.getResponseHeader("Content-Type");
+		if (contentTypeHeader) {
+			// See RFC 2616 sec 3.7
+			var m = /^[^\x00-\x1F\x7F()<>@,;:\\"\/\[\]?={} ]+\/[^\x00-\x1F\x7F()<>@,;:\\"\/\[\]?={} ]+/.exec(contentTypeHeader);
+			if(m) contentType = m[0].toLowerCase();
+			m = /;\s*charset\s*=\s*("[^"]+"|[^\x00-\x1F\x7F()<>@,;:\\"\/\[\]?={} ]+)/.exec(contentTypeHeader);
+			if (m) {
+				charset = m[1];
+				if(charset[0] === '"') charset = charset.substring(1, charset.length-1);
+			}
+		}
+		return { contentType, charset };
+	},
+	
 	// Chrome has a limit of somewhere between 64 and 128 MB for messages.
 	// There's been an open bug on the chrome bugtracker to fix this since
 	// 2017: https://bugs.chromium.org/p/chromium/issues/detail?id=774158

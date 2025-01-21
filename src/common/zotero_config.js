@@ -34,7 +34,7 @@ const ZOTERO_CONFIG = {
 	WWW_BASE_URL: 'https://www.zotero.org/',
 	CLIENT_DOWNLOAD_URL: 'https://www.zotero.org/download',
 	API_URL: 'https://api.zotero.org/',
-	GOOGLE_DOCS_API_URL: "https://script.googleapis.com/v1/scripts/AKfycbyzxhAOmjfoUHjF6mjq0uaO-bIPiyh68hgEDhNAI3rA17A9SXNCVEBP-FE75BDg8eqNdw:run",
+	GOOGLE_DOCS_API_URL: "https://script.googleapis.com/v1/scripts/AKfycbzCBCyrm1hnQJDEckGkOJabbhv4SO7udII0SK5BoKbgJLxy5I6A5LiGZ_xAZ-eOYEIJuw:run",
 	OAUTH: {
 		ZOTERO: {
 			REQUEST_URL: 'https://www.zotero.org/oauth/request',

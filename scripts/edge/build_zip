@@ -7,7 +7,13 @@ BUILD_DIR="$( cd "$ROOT_DIR"/build && pwd )"
 
 rm -rf "$ROOT_DIR"/dist/Zotero_Connector*.zip
 
-cd "$BUILD_DIR/chrome/"
+cd "$BUILD_DIR"
+rsync -a --delete chrome/ edge/
+cd edge
+
+# Remove test file from web_accessibile_resources
+jq 'del(.web_accessible_resources[] | select(test("test/")))' manifest.json > manifest2.json
+mv manifest2.json manifest.json
 
 version=$(cat manifest.json | jq -r .version)
 filename="Zotero_Connector-$version.zip"

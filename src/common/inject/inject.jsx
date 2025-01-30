@@ -124,6 +124,9 @@ Zotero.Inject = {
 				return PageSaving.onSaveAsWebpage(data);
 			}
 		});
+		Zotero.Messaging.addMessageListener('updateSession', (data) => {
+			return PageSaving.onUpdateSession(data);
+		})
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", Zotero.Utilities.debounce(function() {
 			PageSaving.onPageLoad(true);

@@ -44,6 +44,7 @@ let ItemSaver = function(options) {
 	this._baseURI = options.baseURI;
 	this._itemType = options.itemType;
 	this._items = [];
+	this._singleFile = false;
 	
 	// Add listener for callbacks, but only for Safari or the bookmarklet. In Chrome, we
 	// (have to) save attachments from the inject page.
@@ -106,7 +107,6 @@ ItemSaver.prototype = {
 		var payload = {
 			sessionID: this._sessionID,
 			uri: this._baseURI,
-			singleFile: true
 		};
 		const isChromiumIncognito = Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()
 		const zoteroSupportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
@@ -125,7 +125,7 @@ ItemSaver.prototype = {
 			})
 		}
 
-		let singleFile = false;
+		this._singleFile = false;
 
 		for (let item of items) {
 			item.id = item.id || Zotero.Utilities.randomString(8);
@@ -145,15 +145,13 @@ ItemSaver.prototype = {
 						return false;
 					}
 					this._snapshotAttachment = attachment;
-					singleFile = true;
-					attachmentCallback(attachment, 0);
+					this._singleFile = true;
 					// Filter the snapshot out of attachments since it will be saved via _executeSingleFile()
 					return false;
 				}
 				
 				// Otherwise translate removes attachments from items when you call
 				// itemsDoneCallback
-				attachmentCallback(attachment, 0);
 				return true;
 			});
 		}
@@ -180,31 +178,40 @@ ItemSaver.prototype = {
 
 		Zotero.debug("Translate: Save via Zotero succeeded");
 		Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID: this._sessionID });
-
-		let promises = []
 		
 		if (!zoteroSupportsAttachmentUpload) {
 			// Poll for progress of attachments saved by Zotero
-			promises.push(this._pollForProgress(items, attachmentCallback));
+			await this._pollForProgress(items, attachmentCallback);
 		}
 		else {
-			// Save PDFs and EPUBs via the connector (in the background page)
-			promises.push(this.saveAttachmentsToZotero(attachmentCallback))
+			const response = await Zotero.Connector.callMethod("getSelectedCollection", {})
+			if (response.filesEditable) {
+				await this.saveAttachmentsToZotero(attachmentCallback);
+			}
 		}
 
-		// Save the snapshot if required
-		if (singleFile) {
-			promises.push(this._executeSingleFile(payload, attachmentCallback));
-		}
-		await Promise.all(promises);
 		return items;
 	},
-
-	_executeSingleFile: async function(payload, attachmentCallback) {
+	
+	async saveAttachmentsToZotero(attachmentCallback) {
+		let promises = []
+		
+		// Save PDFs and EPUBs via the connector (in the background page)
+		promises.push(this._saveAttachmentsToZotero(attachmentCallback))
+		
+		// Save the snapshot if required
+		if (this._singleFile) {
+			promises.push(this._executeSingleFile(attachmentCallback));
+		}
+		await Promise.all(promises);
+	},
+	
+	_executeSingleFile: async function(attachmentCallback) {
 		try {
-			let data = { items: payload.items, sessionID: payload.sessionID };
+			attachmentCallback(this._snapshotAttachment, 0);
+			let data = { items: this._items, sessionID: this._sessionID };
 			data.snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
-			data.url = data.items[0].url;
+			data.url = this._items[0].url;
 			data.title = this._snapshotAttachment.title;
 			await Zotero.Connector.saveSingleFile({
 					method: "saveSingleFile",
@@ -215,15 +222,17 @@ ItemSaver.prototype = {
 			attachmentCallback(this._snapshotAttachment, 100);
 		}
 		catch (e) {
+			Zotero.logError(e);
 			attachmentCallback(this._snapshotAttachment, false, e.message)
 		}
 	},
 	
-	async saveAttachmentsToZotero(attachmentCallback) {
+	async _saveAttachmentsToZotero(attachmentCallback) {
 		const shouldAttemptToDownloadOAAttachments = await Zotero.Connector.getPref('downloadAssociatedFiles')
 		for (let item of this._items) {
 			item.hasPrimaryAttachment = false;
 			for (let attachment of item.attachments) {
+				attachmentCallback(attachment, 0);
 				if (attachment.isOpenAccess) continue;
 				try {
 					if (PRIMARY_ATTACHMENT_TYPES.has(attachment.mimeType)) {

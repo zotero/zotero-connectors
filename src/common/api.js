@@ -140,7 +140,7 @@ Zotero.API = new function() {
 		}
 		data = _decodeFormData(xmlhttp.responseText);
 
-		let keysUrl = config.API_URL+"users/"+encodeURI(data['auth-userID']) + "/keys/current";
+		let keysUrl = config.API_URL + "users/" + data.userID + "/keys/current";
 		xmlhttp = await Zotero.HTTP.request("GET", keysUrl, {
 			headers: {
 				"Zotero-API-Key": data.oauth_token_secret,

@@ -118,8 +118,7 @@ Zotero.Connector_Browser = new function() {
 			Zotero.Connector_Browser.saveWithTranslator(tab,
 				tab.translators[0].translatorID, {fallbackOnFailure: true});
 		} else {
-			var withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-				Zotero.Prefs.get('automaticSnapshots');
+			var withSnapshot = Zotero.Connector.automaticSnapshots;
 			Zotero.Connector_Browser.saveAsWebpage(tab, { snapshot: withSnapshot });
 		}
 	}
@@ -309,8 +308,7 @@ Zotero.Connector_Browser = new function() {
 	}
 
 	function _showWebpageIcon() {
-		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
-			Zotero.Prefs.get('automaticSnapshots');
+		let withSnapshot = Zotero.Connector.automaticSnapshots;
 		let image = Zotero.ItemTypes.getImageSrc("webpage-gray").replace('images/', 'images/toolbar/')
 			.replace(`${safari.extension.baseURI}safari/`, '');
 		let tooltip = `"Save to Zotero (Web Page with${withSnapshot ? "" : "out"} Snapshot)"`;

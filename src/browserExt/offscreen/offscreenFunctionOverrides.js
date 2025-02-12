@@ -1,8 +1,8 @@
 /*
 	***** BEGIN LICENSE BLOCK *****
 	
-	Copyright © 2021 Corporation for Digital Scholarship
-                     Vienna, Virginia, USA
+	Copyright © 2024 Corporation for Digital Scholarship
+					Vienna, Virginia, USA
 					http://zotero.org
 	
 	This file is part of Zotero.
@@ -22,6 +22,7 @@
 	
 	***** END LICENSE BLOCK *****
 */
+
 
 function serializeTranslator(translator, properties) {
 	let serializedTranslator = {};
@@ -77,7 +78,7 @@ const requestOverride = {
 	}
 }
 
-const CONTENT_SCRIPT_FUNCTION_OVERRIDES = {
+const OFFSCREEN_BACKGROUND_OVERRIDES = {
 	'Translators.get': {
 		handler: {
 			preSend: async function(translator) {
@@ -125,26 +126,17 @@ const CONTENT_SCRIPT_FUNCTION_OVERRIDES = {
 			}
 		},
 	},
+	'getVersion': true,
+	'getExtensionURL': true,
 	'Debug.log': true,
 	'debug': true,
-	'getExtensionURL': true,
-	'getExtensionVersion': true,
 	'Errors.log': true,
 	'Messaging.sendMessage': true,
-	'Connector.checkIsOnline': true,
-	'Connector.callMethod': true,
-	'Connector.callMethodWithCookies': true,
-	'Connector.saveSingleFile': true,
+	// Translator error reporting
 	'Connector_Browser.isIncognito': true,
 	'Prefs.getAll': true,
 	'Prefs.getAsync': true,
-	'API.authorize': true,
-	'API.onAuthorizationComplete': false,
-	'API.clearCredentials': false,
-	'API.getUserInfo': true,
-	'API.run': true,
-	'API.uploadAttachment': true,
-	'SingleFile.retrievePageData': true,
+	// Translator HTTP requests
 	'COHTTP.request': requestOverride,
 	'HTTP.request': requestOverride,
 };

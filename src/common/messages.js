@@ -121,6 +121,9 @@ var MESSAGES = {
 			}
 		}
 	},
+	OffscreenManager: {
+		sendMessage: true
+	},
 	Debug: {
 		get: true,
 		bgInit: false,
@@ -145,7 +148,13 @@ var MESSAGES = {
 	Connector_Browser: {
 		onSelect: true,
 		onPageLoad: false,
-		onTranslators: false,
+		onTranslators: {
+			inject: {
+				preSend: async function([translators, ...args]) {
+					return [translators.map(t => t.serialize(TRANSLATOR_PASSING_PROPERTIES)), ...args]
+				},
+			}
+		},
 		injectScripts: true,
 		injectSingleFile: true,
 		isIncognito: true,

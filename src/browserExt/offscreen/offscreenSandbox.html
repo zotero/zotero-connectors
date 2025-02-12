@@ -2,9 +2,9 @@
 <!--
     ***** BEGIN LICENSE BLOCK *****
     
-    Copyright © 2021 Center for History and New Media
-                     George Mason University, Fairfax, Virginia, USA
-                     http://zotero.org
+    Copyright © 2024 Corporation for Digital Scholarship
+                     Vienna, Virginia, USA
+					http://zotero.org
     
     This file is part of Zotero.
     
@@ -26,10 +26,11 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Zotero - Translate Sandbox</title>
+	<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval';">	
+	<title>Zotero - Offscreen Translate Sandbox</title>
 </head>
 <body>
-
+<script src="../browser-polyfill.js"></script>
 <script src="../zotero_config.js"></script>
 <script src="../zotero.js"></script>
 <script src="../api.js"></script>
@@ -51,7 +52,7 @@
 <script src="../translate/repo.js"></script>
 <script src="../translate/translation/translate.js"></script>
 <script src="../translate/translation/sandboxManager.js"></script>
-<script src="../translate_item.js"></script>
+<script src="../translate/translation/translate_item.js"></script>
 <script src="../translate/tlds.js"></script>
 <script src="../translate/proxy.js"></script>
 <script src="../translate/rdf/init.js"></script>
@@ -66,7 +67,8 @@
 <script src="../http.js"></script>
 <script src="../inject/http.js"></script>
 <script src="../messagingGeneric.js"></script>
-<script src="translateSandboxFunctionOverrides.js"></script>
-<script src="translateSandbox.js"></script>
+<script src="./offscreenFunctionOverrides.js"></script>
+<script src="./offscreenSandbox.js"></script>
+<script src="./offscreenTranslate.js"></script>
 </body>
 </html>

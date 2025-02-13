@@ -161,7 +161,15 @@ if (isTopWindow) {
 			}
 		}
 		
-		changeHeadline(prefix, target, targets);
+		// Format tags for autocomplete
+		// Tags array contains objects {tag : ""} that may contain duplicate values due to different types
+		// Unwrap the tag objects and deduplicate tags values to keep this object format {libraryID: [tag1, tag2, ...]}
+		let tags = {};
+		Object.entries(response.tags || []).forEach(([libraryID, tagArr]) => {
+			tags[libraryID] = [...new Set(tagArr.map(item => item.tag))];
+		});
+
+		changeHeadline(prefix, target, targets, tags);
 	}
 	
 	async function addError() {

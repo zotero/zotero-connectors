@@ -82,20 +82,88 @@ button:active {
 	background-image: url('disclosure-open.svg');
 }
 
-.ProgressWindow-inputRow {
+.ProgressWindow-targetSelectorTagsRow {
 	display: flex;
 	margin-top: 6px;
+	flex-direction: column;
+}
+
+.ProgressWindow-targetSelectorTagsRow.with-autocomplete {
+	padding-bottom: 50px;
+}
+
+.ProgressWindow-autocomplete {
+	position: absolute;
+	background-color: white;
+	border: 1px solid lightgray;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+	z-index: 1000;
+	max-height: 80px;
+	overflow-y: auto;
+	width: 215px;
+	margin-top: 25px;
+}
+
+.ProgressWindow-autocompleteOption {
+	padding: 5px;
+	font-size: 11px;
+	cursor: default;
+	user-select: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.ProgressWindow-autocompleteOption.active {
+	background-color: var(--theme-selection-background, #0a84ff);
+}
+
+.ProgressWindow-inputRow {
+	display: flex;
 }
 
 .ProgressWindow-tagsRow {
-	font-size: 12px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+	margin-bottom: 6px;
+	flex-direction: row;
+}
+.ProgressWindow-tagsRow:focus-visible {
+	outline: none;
 }
 
-.ProgressWindow-tagsLabel {
-	margin-top: 3px;
-	margin-right: 6px;
-	font-weight: bold;
+.ProgressWindow-selectedTag {
+	display: flex;
+ 	align-items: center;
+	background-color: #e0e0e0;
+	border-radius: 5px;
+	font-size: 12px;
+	padding: 2px 6px;
+	white-space: nowrap;
+	border: 1px solid darkgray;
+}
+.ProgressWindow-tagsRow:focus-visible .ProgressWindow-selectedTag.active {
+	outline: 1px solid var(--theme-selection-background, #0a84ff);
+}
+
+.ProgressWindow-tagLabel {
+	max-width: 100px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 	user-select: none;
+}
+
+.ProgressWindow-removeTag {
+	width: 16px;
+	height: 16px;
+	background: url('x-8.svg') no-repeat center;
+	background-size: 14px;
+	border-radius: 5px;
+	margin-left: 3px;
+}
+.ProgressWindow-removeTag:active {
+	background-color: #d5d5d5;
 }
 
 .ProgressWindow-tagsInput {

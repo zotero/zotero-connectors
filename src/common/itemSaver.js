@@ -238,6 +238,7 @@ ItemSaver.prototype = {
 					if (PRIMARY_ATTACHMENT_TYPES.has(attachment.mimeType)) {
 						attachment.isPrimary = true;
 					}
+					Zotero.Messaging.addMessageListener("passJSBotDetectionViaHiddenIframe", this._passJSBotDetectionViaHiddenIframe);
 					await Zotero.ItemSaver.saveAttachmentToZotero(attachment, this._sessionID)
 					if (attachment.isPrimary) {
 						item.hasPrimaryAttachment = true;

@@ -608,6 +608,10 @@ let PageSaving = {
 	 * @param {String[]} data.tags - A list of tags
 	 */
 	async onUpdateSession(data) {
+		// This message is received in every frame from the progress window
+		// iframe due to how messaging is set up, and we need to ignore it
+		// on all but the frame that has sessionDetails.id - is translating.
+		if (!this.sessionDetails.id) return;
 		await Zotero.Connector.callMethod(
 			"updateSession",
 			{

@@ -151,6 +151,7 @@ var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclu
 	'contentTypeHandler.js',
 	'saveWithoutProgressWindow.js',
 	'messagingGeneric.js',
+	'browserAttachmentMonitor/browserAttachmentMonitor.js',
 	'offscreen/offscreenFunctionOverrides.js', 'background/offscreenManager.js',
 ]);
 

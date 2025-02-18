@@ -49,6 +49,7 @@
 		"images/*",
 		"progressWindow/progressWindow.html",
 		"modalPrompt/modalPrompt.html",
+		"browserAttachmentMonitor/browserAttachmentMonitor.html",
 		"test/data/journalArticle-single.html",
 		"lib/SingleFile/single-file-hooks-frames.js",
 		"inject/pageSaving.js",

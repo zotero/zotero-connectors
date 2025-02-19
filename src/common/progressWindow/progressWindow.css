@@ -94,7 +94,7 @@ button:active {
 	border: 1px solid lightgray;
 	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 	z-index: 1000;
-	max-height: 80px;
+	max-height: 100px;
 	overflow-y: auto;
 	width: 215px;
 	margin-top: 25px;
@@ -112,6 +112,7 @@ button:active {
 }
 .ProgressWindow-autocompleteOption.active {
 	background-color: var(--theme-selection-background, #0a84ff);
+	color: white;
 }
 
 .ProgressWindow-inputRow {

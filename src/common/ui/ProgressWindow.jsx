@@ -140,6 +140,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		Zotero.Connector.getPref('canUserAddNote').then(res => {
 			this.canUserAddNote = res;
 		});
+		// Present scrollbar from briefly appearing when tags are being added
+		document.documentElement.style.scrollbarWidth = 'none';
 	}
 	
 	
@@ -170,7 +172,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		window.requestAnimationFrame(() => {
 			// Height of the content + any extra height needed for the tags autocomplete popup
 			let requiredHeight = this.rootNode.scrollHeight + this.state.extraHeightForTagAutocomplete;
-			if (this.lastHeight != totalRequiredHeight
+			if (this.lastHeight != requiredHeight
 					// In Firefox this ends up being 0 when the pane closes
 					&& this.rootNode.scrollHeight != 0) {
 				this.lastHeight = this.rootNode.scrollHeight;

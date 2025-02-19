@@ -23,7 +23,6 @@ button:active {
 	padding: 6px 10px 6px;
 	min-height: 40px;
 	overflow: hidden;
-	position: relative
 }
 
 /* Hack to check whether the mouse is over the pane when switching back from another tab.
@@ -88,9 +87,6 @@ button:active {
 	flex-direction: column;
 }
 
-.ProgressWindow-targetSelectorTagsRow.with-autocomplete {
-	padding-bottom: 50px;
-}
 
 .ProgressWindow-autocomplete {
 	position: absolute;
@@ -127,6 +123,9 @@ button:active {
 	gap: 5px;
 	margin-bottom: 6px;
 	flex-direction: row;
+	max-height: 200px;
+	overflow-y: auto;
+	padding: 1px; /* Ensures the focus ring is visible on selected tags */
 }
 .ProgressWindow-tagsRow:focus-visible {
 	outline: none;
@@ -233,7 +232,8 @@ button:active {
 
 .ProgressWindow-progressBox {
 	margin-top: 10px;
-	margin-bottom: 4px
+	margin-bottom: 4px;
+	margin-left: 2px;
 }
 
 .ProgressWindow-item {

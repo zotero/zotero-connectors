@@ -102,7 +102,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.clearFilter = this.clearFilter.bind(this);
 		this.expandToTarget = this.expandToTarget.bind(this);
 		this.updateSelectedTags = this.updateSelectedTags.bind(this);
-		this.updateTagsPopupVisibility = this.updateTagsPopupVisibility.bind(this);
+		this.onTagAutocompleteShown = this.onTagAutocompleteShown.bind(this);
 		this.sendUpdate	= this.sendUpdate.bind(this);
 	}
 	
@@ -116,10 +116,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			errors: [],
 			note: "",
 			selectedTags: new Set(),
-			// keep tags autocompletion visibility in top-level
-			// state so that the window resizes in componentDidMount when
-			// when the popup appears/hides
-			showTagsAutocomplete: false
+			extraHeightForTagAutocomplete: 0
 		};
 	}
 	
@@ -171,11 +168,13 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		// Let the parent window know it has to resize the iframe
 		window.requestAnimationFrame(() => {
-			if (this.lastHeight != this.rootNode.scrollHeight
+			// Height of the content + any extra height needed for the tags autocomplete popup
+			let requiredHeight = this.rootNode.scrollHeight + this.state.extraHeightForTagAutocomplete;
+			if (this.lastHeight != totalRequiredHeight
 					// In Firefox this ends up being 0 when the pane closes
 					&& this.rootNode.scrollHeight != 0) {
 				this.lastHeight = this.rootNode.scrollHeight;
-				this.sendMessage('resized', { height: this.rootNode.scrollHeight });
+				this.sendMessage('resized', { height: requiredHeight });
 			}
 		});
 	}
@@ -819,10 +818,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 	}
 
-	updateTagsPopupVisibility(showTagsAutocomplete) {
-		this.setState({ showTagsAutocomplete });
+	// Set extra height required for tags autocomplete to fit in the iframe
+	onTagAutocompleteShown(extraHeight) {
+		this.setState({ extraHeightForTagAutocomplete: extraHeight });
 	}
-	
+
 	renderTargetSelector() {
 		if (!this.state.targetSelectorShown) return "";
 		const filterElement = (
@@ -868,11 +868,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					existingTags={this.existingTags[this.currentLibraryID] || []}
 					selectedTags={this.state.selectedTags}
 					updateSelectedTags={this.updateSelectedTags}
-					showTagsAutocomplete={this.state.showTagsAutocomplete}
-					updateTagsPopupVisibility={this.updateTagsPopupVisibility}
 					sendMessage={this.sendMessage}
 					sendUpdate={this.sendUpdate}
 					handleDone={this.handleDone}
+					setAutocompletePopupHeight={this.onTagAutocompleteShown}
 				/>
 		)
 		return (
@@ -955,10 +954,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		);
 		var iconStyle = Object.assign(
 			{},
-			// Indent child items
-			{
-				left: `${item.parentItem ? '22' : '12'}px`
-			},
+			{},
 			item.failed && {
 				backgroundImage: `url('${Zotero.UI.style.imageBase}cross.png')`,
 				backgroundPosition: ""
@@ -1287,6 +1283,7 @@ class TagsInput extends React.Component {
 		};
 		this.tagsInputNode = React.createRef();
 		this.autocompleteRefs = [];
+		this.autocompletePopupRef = React.createRef();
 		this.selectedTagActiveIndex = 0;
 		this.isClickingTag = false;
 		this.text = {
@@ -1301,6 +1298,18 @@ class TagsInput extends React.Component {
 			let refIndex =  this.state.currentTagIndex >=0 ? this.state.currentTagIndex : 0;
 			let autocompleteRefNode = this.autocompleteRefs[refIndex];
 			autocompleteRefNode?.scrollIntoView({ block: 'nearest' });
+		}
+		this.expandIframeIfNeeded();
+	}
+
+	expandIframeIfNeeded() {
+		if (!this.state.showTagsAutocomplete || !this.autocompletePopupRef.current) return;
+		let autocompleteRect = this.autocompletePopupRef.current.getBoundingClientRect();
+		let fullyVisible = autocompleteRect.bottom <= window.innerHeight;
+		// Tell ProgressWindow how much extra height is needed
+		if (!fullyVisible){
+			let extraHeightForPopup = autocompleteRect.bottom - window.innerHeight;
+			this.props.setAutocompletePopupHeight(extraHeightForPopup);
 		}
 	}
 
@@ -1356,8 +1365,8 @@ class TagsInput extends React.Component {
 			// On Enter, add the currently selected tag from autocomplete
 			// If there is no selected tag from autocomplete suggestions, add the currently typed tag
 			let newTag = tags[this.state.currentTagIndex] || this.state.tagsInput.trim();
-			// If this tag already exists, do nothing
-			if (this.props.selectedTags.has(newTag)) {
+			// If this tag already exists or the tag is empty, do nothing
+			if (!newTag || this.props.selectedTags.has(newTag)) {
 				this.setState({ tagsInput: "" });
 				event.preventDefault();
 				event.stopPropagation();
@@ -1368,7 +1377,7 @@ class TagsInput extends React.Component {
 			event.stopPropagation();
 		}
 		// ArrowUp/ArrowDown navigate through autocomplete suggestions
-		if (!this.props.showTagsAutocomplete || !["ArrowUp", "ArrowDown"].includes(event.key)) return;
+		if (!this.state.showTagsAutocomplete || !["ArrowUp", "ArrowDown"].includes(event.key)) return;
 		let nextIndex = event.key === "ArrowDown" ? this.state.currentTagIndex + 1 : this.state.currentTagIndex - 1;
 		if (nextIndex >= 0 && nextIndex < tags.length) {
 			this.setState({ currentTagIndex: nextIndex });
@@ -1409,7 +1418,7 @@ class TagsInput extends React.Component {
 	onTagsInputFocus = () => {
 		this.props.sendMessage('tagsfocus');
 		this.clickingTag = false;
-		this.props.updateTagsPopupVisibility(true);
+		this.setState({ showTagsAutocomplete: true });
 	}
 
 	onTagsInputBlur = () => {
@@ -1427,13 +1436,13 @@ class TagsInput extends React.Component {
 		}
 		this.props.sendMessage('tagsblur');
 		this.props.sendUpdate();
-		this.props.updateTagsPopupVisibility(false);
+		this.setState({ showTagsAutocomplete: false });
 	}
 
 	render() {
 		// Cap tags suggestions count at 100 to not create too many nodes
 		let tags = this.getAvailableTags().slice(0,100);
-		let willShowAutocomplete = this.props.showTagsAutocomplete && tags.length;
+		let willShowAutocomplete = this.state.showTagsAutocomplete && tags.length;
 		return (
 			<div className={`ProgressWindow-targetSelectorTagsRow ${willShowAutocomplete ? 'with-autocomplete' : ''}`}>
 				<div
@@ -1470,7 +1479,9 @@ class TagsInput extends React.Component {
 					/>
 					<button className="ProgressWindow-button" onClick={this.props.handleDone}>{this.text.done}</button>
 					{willShowAutocomplete ? (
-						<div className="ProgressWindow-autocomplete">
+						<div 
+							className="ProgressWindow-autocomplete" 
+							ref={this.autocompletePopupRef}>
 							{tags.map((tag, index) => (
 								<div
 									key={tag}

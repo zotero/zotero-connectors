@@ -135,6 +135,7 @@ Zotero.MessagingGeneric = class {
 		if (!options.sendMessage || !options.addMessageListener) {
 			throw new Error('Zotero.MessagingGeneric: mandatory reinit() options missing');
 		}
+		this._responseListeners = {};
 		this._sendMessage = options.sendMessage;
 		this._addMessageListener = options.addMessageListener;
 		this._initMessageListener();
@@ -166,6 +167,7 @@ Zotero.MessagingGeneric = class {
 			}
 			else if (this._responseListeners[messageId]) {
 				this._responseListeners[messageId](payload);
+				delete this._responseListeners[messageId];
 			}
 		});
 	}

@@ -1315,10 +1315,12 @@ class TagsInput extends React.Component {
 		}
 	}
 
-	// Add a tag to the selected tags and refocus empty input
-	addTag = (tag) => {
+	// Add tags to the selected tags and refocus empty input
+	addTags = (tags) => {
 		let selectedTags = new Set(this.props.selectedTags);
-		selectedTags.add(tag);
+		for (let tag of tags) {
+			selectedTags.add(tag.trim());
+		}
 		this.setState({ tagsInput: "", currentTagIndex: -1 });
 		this.props.updateSelectedTags(selectedTags, () => {
 			this.tagsInputNode.current.focus();
@@ -1357,7 +1359,7 @@ class TagsInput extends React.Component {
 	onTagAutocompleteMouseUp = (index) => {
 		this.isClickingTag = false;
 		let tags = this.getAvailableTags();
-		this.addTag(tags[index]);
+		this.addTags([tags[index]]);
 		this.setState({ currentTagIndex: -1 })
 	}
 
@@ -1374,7 +1376,7 @@ class TagsInput extends React.Component {
 				event.stopPropagation();
 				return;
 			}
-			this.addTag(newTag);
+			this.addTags(newTag.split(","));
 			event.preventDefault();
 			event.stopPropagation();
 		}
@@ -1430,11 +1432,11 @@ class TagsInput extends React.Component {
 		}
 		// If the library has no tags (likely because of the older version of Zotero that sends no tags),
 		// split the tags input by commas and add them to the selected tags
-		if (!this.props.existingTags.length) {
-			let legacySelectedTags = new Set(this.state.tagsInput.split(","));
-			if (legacySelectedTags.size) {
-				this.props.updateSelectedTags(legacySelectedTags);
-			}
+		if (!this.props.existingTags.length && this.state.tagsInput.length) {
+			let legacySelectedTags = this.state.tagsInput.split(",");
+			this.addTags(legacySelectedTags);
+			this.props.sendMessage('tagsblur');
+			return;
 		}
 		this.props.sendMessage('tagsblur');
 		this.props.sendUpdate();

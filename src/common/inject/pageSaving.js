@@ -320,7 +320,9 @@ let PageSaving = {
 		var result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
 
-		if (document.contentType !== 'text/html') {
+		const supportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
+
+		if (document.contentType !== 'text/html' && supportsAttachmentUpload) {
 			return await this._saveAsStandaloneAttachment({title, saveSnapshot});
 		}
 		return await this._saveAsWebpage({title, saveSnapshot});

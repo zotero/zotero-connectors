@@ -130,7 +130,7 @@ ItemSaver.prototype = {
 		for (let item of items) {
 			item.id = item.id || Zotero.Utilities.randomString(8);
 			
-			// Prepare snapshot for saving
+			// Prepare attachments for saving
 			item.attachments = item.attachments.filter((attachment) => {
 				if (!attachment.title) attachment.title = attachment.mimeType + ' Attachment';
 				attachment.id = attachment.id || Zotero.Utilities.randomString(8);
@@ -146,8 +146,9 @@ ItemSaver.prototype = {
 					}
 					this._snapshotAttachment = attachment;
 					this._singleFile = true;
-					// Filter the snapshot out of attachments since it will be saved via _executeSingleFile()
-					return false;
+					// If Zotero doesn't support attachment upload then we need to pass the snapshot
+					// as an attachment to Zotero via saveItems endpoint.
+					return !zoteroSupportsAttachmentUpload;
 				}
 				
 				// Otherwise translate removes attachments from items when you call
@@ -164,10 +165,11 @@ ItemSaver.prototype = {
 		payload.items = Zotero.Utilities.deepCopy(items);
 
 		if (zoteroSupportsAttachmentUpload) {
-			// Zotero supports attachmentUpload so we don't tell it about
-			// any attachments since saving them is our concern.
+			// Only pass attachments that are to be saved by linking
 			for (let item of payload.items) {
-				item.attachments = [];
+				item.attachments = item.attachments.filter((attachment) => {
+					return attachment.snapshot === false
+				});
 			}
 		}
 		
@@ -180,8 +182,7 @@ ItemSaver.prototype = {
 		Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID: this._sessionID });
 		
 		if (!zoteroSupportsAttachmentUpload) {
-			// Poll for progress of attachments saved by Zotero
-			await this._pollForProgress(items, attachmentCallback);
+			await this.saveAttachmentsViaZotero(items, attachmentCallback);
 		}
 		else {
 			const response = await Zotero.Connector.callMethod("getSelectedCollection", {})
@@ -191,6 +192,25 @@ ItemSaver.prototype = {
 		}
 
 		return items;
+	},
+
+	/**
+	 * Save attachments via Zotero (old workflow before Zotero supported attachment upload)
+	 * @param {Object[]} items
+	 * @param {Function} attachmentCallback
+	 * @returns {Promise}
+	 */
+	async saveAttachmentsViaZotero(items, attachmentCallback) {
+		let promises = []
+		// Save the snapshot if required
+		if (this._singleFile) {
+			// Attachment progress will be monitored via _pollForProgress()
+			// (Zotero is source of truth)
+			promises.push(this._executeSingleFile(() => 0));
+		}
+		// Poll for progress of attachments saved by Zotero
+		promises.push(this._pollForProgress(items, attachmentCallback));
+		await Promise.all(promises);
 	},
 	
 	async saveAttachmentsToZotero(attachmentCallback) {
@@ -232,6 +252,11 @@ ItemSaver.prototype = {
 		for (let item of this._items) {
 			item.hasPrimaryAttachment = false;
 			for (let attachment of item.attachments) {
+				if (attachment.snapshot === false) {
+					attachmentCallback(attachment, 100);
+					continue;
+				}
+
 				attachmentCallback(attachment, 0);
 				if (attachment.isOpenAccess) continue;
 				try {
@@ -286,24 +311,31 @@ ItemSaver.prototype = {
 				return;
 			}
 
+			if (attachment) {
+				attachment = {
+					title: "Open Access PDF",
+					isOpenAccess: true,
+				};
+				attachmentCallback(attachment, 0);
+			}
+			
+			let title = await Zotero.Connector.callMethod('saveOAAttachment', {
+				sessionID: this._sessionID,
+				itemID: item.id,
+			});
+
 			// Translator didn't provide a primary attachment, but we've found an OA one so add an attachment to the item
 			if (!attachment) {
 				attachment = {
 					id: Zotero.Utilities.randomString(),
-					parent: item.id,
-					title: "Open Access PDF",
+					parentItem: item.id,
+					title: title,
 					mimeType: 'application/pdf',
 					isPrimary: true,
 					isOpenAccess: true,
 				};
 				item.attachments.push(attachment);
 			}
-			attachmentCallback(attachment, 0);
-			
-			attachment.title = await Zotero.Connector.callMethod('saveOAAttachment', {
-				sessionID: this._sessionID,
-				itemID: item.id,
-			});
 			attachmentCallback(attachment, 100);
 		} catch (e) {
 			if (attachment) {

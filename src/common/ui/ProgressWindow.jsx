@@ -1294,14 +1294,19 @@ class TagsInput extends React.Component {
 		};
 	}
 
-	componentDidUpdate() {
+	componentDidUpdate(_, prevState) {
 		// Make sure that the selected tag is scrolled to during keyboard navigation
 		if (this.autocompleteRefs.length) {
 			let refIndex =  this.state.currentTagIndex >=0 ? this.state.currentTagIndex : 0;
 			let autocompleteRefNode = this.autocompleteRefs[refIndex];
 			autocompleteRefNode?.scrollIntoView({ block: 'nearest' });
 		}
-		this.expandIframeIfNeeded();
+		// If tags popup is shown, make sure it is fully visible
+		if (this.state.showTagsAutocomplete && !prevState.showTagsAutocomplete) {
+			window.requestAnimationFrame(() => {
+				this.expandIframeIfNeeded();
+			})
+		}
 	}
 
 	expandIframeIfNeeded() {

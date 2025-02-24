@@ -193,8 +193,7 @@ button:active {
 
 .ProgressWindow-button {
 	background-color: white;
-	width: 80px;
-	flex: 1;
+	width: 75px;
 	border-radius: 4px;
 	font-size: 13px;
 }

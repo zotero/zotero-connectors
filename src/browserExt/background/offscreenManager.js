@@ -40,7 +40,7 @@ Zotero.OffscreenManager = {
 			// Create offscreen document
 			await browser.offscreen.createDocument({
 				url: this.offscreenUrl,
-				reasons: ['DOM_SCRAPING', 'DOM_PARSER'],
+				reasons: ['DOM_PARSER'],
 				justification: 'Scraping the document with Zotero Translators',
 			});
 		}

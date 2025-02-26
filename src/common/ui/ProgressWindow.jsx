@@ -591,7 +591,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	onNoteChange(event) {
-		this.setState({ note: event.target.value});
+		let textarea = event.target;
+		this.setState({ note: textarea.value });
+		// auto-expand the textarea as the user types
+		textarea.style.height = 'auto';
+		textarea.style.height = textarea.scrollHeight + 'px';
 	}
 
 	onNoteFocus() {

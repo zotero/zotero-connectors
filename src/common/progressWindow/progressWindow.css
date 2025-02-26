@@ -111,6 +111,8 @@ button:active {
 .ProgressWindow-noteEditor {
 	width: 100%;
 	resize: none;
+	max-height: 6em; /* expand up to 5 lines of text */
+	height: 36px; /* initial height that may increase as user types */
 }
 
 .ProgressWindow-noteEditorRow {

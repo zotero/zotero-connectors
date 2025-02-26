@@ -65,6 +65,7 @@ Zotero.Connector = new function() {
 			Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
 			Zotero.Connector.googleDocsAddNoteEnabled = !!response.prefs.googleDocsAddNoteEnabled;
 			Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
+			Zotero.Connector.canUserAddNote = !!response.prefs.canUserAddNote;
 			if (response.prefs.translatorsHash) {
 				(async () => {
 					let sorted = !!response.prefs.sortedTranslatorHash;

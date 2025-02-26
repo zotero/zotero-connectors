@@ -171,7 +171,8 @@ var MESSAGES = {
 	},
 	ItemSaver: {
 		saveAttachmentToZotero: true,
-		saveStandaloneAttachmentToZotero: true
+		saveStandaloneAttachmentToZotero: true,
+		saveAttachmentToServer: true
 	},
 	Errors: {
 		log: false,

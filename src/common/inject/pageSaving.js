@@ -444,6 +444,10 @@ let PageSaving = {
 
 	async _saveAsStandaloneAttachment({ title=document.title } = {}) {
 		const sessionID = this.sessionDetails.id;
+		// document.title is empty on Safari
+		if (!title) {
+			title = new URL(document.location.href).pathname.split('/').pop();
+		}
 		let itemType = "webpage";
 		if (document.contentType === 'application/pdf') {
 			itemType = "pdf"
@@ -475,6 +479,7 @@ let PageSaving = {
 		}
 
 		try {
+			await ItemSaver.fetchAttachmentSafari(standaloneAttachment);
 			let { canRecognize } = await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(standaloneAttachment, sessionID)
 			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
 			progressItem.progress = 100;
@@ -486,8 +491,10 @@ let PageSaving = {
 					item.id = 2;
 					item.iconSrc = Zotero.ItemTypes.getImageSrc(item.itemType);
 					progressItem.parentItem = 2;
-					await Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...item, ...{ progress: 100 } });
-					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...item, ...{ progress: 100 } });
+					setTimeout(() => {
+						Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+					}, 50);
 				}
 			}
 

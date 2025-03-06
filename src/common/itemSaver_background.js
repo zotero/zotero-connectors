@@ -33,7 +33,14 @@ Zotero.ItemSaver = Zotero.ItemSaver || {};
  * @param sessionID 
  */
 Zotero.ItemSaver.saveAttachmentToZotero = async function(attachment, sessionID, tab) {
-	let arrayBuffer = await this._fetchAttachment(attachment, tab);
+	let arrayBuffer;
+	if (attachment.data) {
+		arrayBuffer = this._unpackSafariAttachmentData(attachment.data);
+		delete attachment.data;
+	}
+	if (!arrayBuffer) {
+		arrayBuffer = await this._fetchAttachment(attachment, tab);
+	}
 	
 	const metadata = {
 		id: attachment.id,
@@ -54,7 +61,14 @@ Zotero.ItemSaver.saveAttachmentToZotero = async function(attachment, sessionID, 
 }
 
 Zotero.ItemSaver.saveStandaloneAttachmentToZotero = async function(attachment, sessionID, tab) {
-	let arrayBuffer = await this._fetchAttachment(attachment, tab);
+	let arrayBuffer;
+	if (attachment.data) {
+		arrayBuffer = this._unpackSafariAttachmentData(attachment.data);
+		delete attachment.data;
+	}
+	if (!arrayBuffer) {
+		arrayBuffer = await this._fetchAttachment(attachment, tab);
+	}
 
 	const metadata = {
 		url: attachment.url,
@@ -78,11 +92,15 @@ Zotero.ItemSaver.saveAttachmentToServer = async function(attachment, tab) {
 	promises.push(this._createServerAttachmentItem(attachment));
 
 	// SingleFile snapshot
-	if (attachment.data) {
+	if (typeof attachment.data === 'string' && attachment.mimeType === 'text/html') {
 		let snapshotString = await Zotero.Utilities.Connector.unpackString(attachment.data);
 		attachment.data = new Uint8Array(Zotero.Utilities.getStringByteLength(snapshotString));
 		Zotero.Utilities.stringToUTF8Array(snapshotString, attachment.data);
 	}
+	else if (attachment.data) {
+		attachment.data = new Uint8Array(this._unpackSafariAttachmentData(attachment.data));
+	}
+
 	// Don't download if the attachment is supposed to be linked
 	if (!attachment.data || attachment.linkMode !== "imported_url") {
 		promises.push(this._fetchAttachment(attachment, tab));
@@ -139,7 +157,9 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 	if (attachment.mimeType.toLowerCase() === contentType.toLowerCase()) {
 		return xhr.response;
 	}
-	
+
+	// Bot bypass is not supported in Safari (cannot intercept file download popup)
+	attemptBotProtectionBypass = attemptBotProtectionBypass && !Zotero.isSafari;
 	// Only attempt fallback for attachments on whitelisted domains
 	if (!tab || !attemptBotProtectionBypass || !this._isIframeBotBypassWhitelistedDomain(attachment.url)) {
 		throw new Error("Attachment MIME type "+contentType+
@@ -161,6 +181,12 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 	}
 };
 
+Zotero.ItemSaver._unpackSafariAttachmentData = function(data) {
+	if (typeof data === 'string') {
+		return Zotero.Utilities.Connector.base64ToArrayBuffer(data);
+	}
+	return data;
+}
 
 Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe = async function(url, tab) {
 	const id = Math.random().toString(36).slice(2, 11);

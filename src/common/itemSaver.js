@@ -264,6 +264,9 @@ ItemSaver.prototype = {
 						attachment.isPrimary = true;
 					}
 					Zotero.Messaging.addMessageListener("passJSBotDetectionViaHiddenIframe", this._passJSBotDetectionViaHiddenIframe);
+					// Safari background page fetch doesn't send user's cookies, so we try to
+					// fetch the attachment in the content script
+					await ItemSaver.fetchAttachmentSafari(attachment);
 					await Zotero.ItemSaver.saveAttachmentToZotero(attachment, this._sessionID)
 					if (attachment.isPrimary) {
 						item.hasPrimaryAttachment = true;
@@ -543,7 +546,7 @@ ItemSaver.prototype = {
 
 			try {
 				attachmentCallback(attachment, 0);
-				promises.push(Zotero.ItemSaver.saveAttachmentToServer(attachment));
+				promises.push(ItemSaver.fetchAttachmentSafari(attachment).then(() => Zotero.ItemSaver.saveAttachmentToServer(attachment)));
 				attachmentCallback(attachment, 100);
 			}
 			catch (e) {
@@ -585,5 +588,31 @@ ItemSaver.prototype = {
 		return "Attachment";
 	},
 };
+
+/**
+ * Fetches an attachment in Safari content script.
+ * 
+ * Background page xhr on Safari doesn't send user's cookies, so we try to
+ * fetch the attachment in the content script.
+ * @param {Object} attachment
+ */
+ItemSaver.fetchAttachmentSafari = async function(attachment) {
+	if (!Zotero.isSafari) return;
+	let options = { responseType: "arraybuffer", timeout: 60000, forceInject: true };
+	let xhr;
+	try {
+		xhr = await Zotero.HTTP.request("GET", attachment.url, options);
+	}
+	catch (e) {
+		Zotero.debug(`Failed to fetch attachment in safari content script: ${attachment.url}`);
+		return;
+	}
+	let { contentType } = Zotero.Utilities.Connector.getContentTypeFromXHR(xhr);
+
+	if (attachment.mimeType.toLowerCase() === contentType.toLowerCase()) {
+		Zotero.debug(`Fetched an attachment in safari content script: ${attachment.url}`);
+		attachment.data = Zotero.Utilities.Connector.arrayBufferToBase64(xhr.response);
+	}
+}
 
 export default ItemSaver;

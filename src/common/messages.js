@@ -309,7 +309,11 @@ if (Zotero.isSafari) {
 // but there's a 64MB limit or Chrome literally crashes
 const MAX_CONTENT_SIZE = 8 * (1024 * 1024);
 function packArrayBuffer(arrayBuffer) {
-	if (!Zotero.isChromium) return arrayBuffer;
+	if (Zotero.isFirefox) return arrayBuffer;
+	if (Zotero.isSafari) {
+		// Base64 encode the arrayBuffer
+		return Zotero.Utilities.arrayBufferToBase64(arrayBuffer);
+	}
 	if (Zotero.isManifestV3) {
 		let array = Array.from(new Uint8Array(arrayBuffer));
 		if (array.length > MAX_CONTENT_SIZE) {
@@ -323,7 +327,10 @@ function packArrayBuffer(arrayBuffer) {
 }
 
 async function unpackArrayBuffer(packedBuffer) {
-	if (!Zotero.isChromium) return packedBuffer;
+	if (Zotero.isFirefox) return packedBuffer;
+	if (Zotero.isSafari) {
+		return Zotero.Utilities.base64ToArrayBuffer(packedBuffer);
+	}
 	if (Zotero.isManifestV3) {
 		return new Uint8Array(packedBuffer).buffer
 	}

@@ -788,12 +788,35 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		var childItems = items.filter(item => item.parentItem);
 		items = items.filter(item => !item.parentItem);
 		var newItems = [];
+		
+		// Create a map of parent IDs to their child items
+		var childrenByParent = {};
+		for (let child of childItems) {
+			if (!childrenByParent[child.parentItem]) {
+				childrenByParent[child.parentItem] = [];
+			}
+			childrenByParent[child.parentItem].push(child);
+		}
+		
+		// Add each parent followed by all its children
 		for (let item of items) {
 			newItems.push(item);
-			while (childItems.length && item.id == childItems[0].parentItem) {
-				newItems.push(childItems.shift());
+			if (childrenByParent[item.id]) {
+				// Sort children by order if needed
+				childrenByParent[item.id].sort((a, b) => a.order - b.order);
+				for (let child of childrenByParent[item.id]) {
+					newItems.push(child);
+				}
 			}
 		}
+		
+		// Add remaining children whose parents weren't found
+		for (let child of childItems) {
+			if (!newItems.includes(child)) {
+				newItems.push(child);
+			}
+		}
+		
 		items = newItems;
 		this.handleAlerts(items);
 		

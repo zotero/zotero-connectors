@@ -231,6 +231,9 @@
 	"integration_googleDocs_documentPermissionError": {
 		"message": "The Google account you selected does not have permission to edit this document. Please try again, and be sure to choose the account with editing access."
 	},
+	"integration_googleDocs_disabledTooltip": {
+		"message": "Citing with $1 is disabled in Suggesting mode. Switch to Editing mode to enable citing."
+	},
 	
 	"integration_googleDocs_orphanedCitations_buttonTooltip": {
 		"message": "Show unlinked $1 citations"

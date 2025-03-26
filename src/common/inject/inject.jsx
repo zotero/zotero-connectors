@@ -334,14 +334,18 @@ Zotero.Inject = {
 	
 	addKeyboardShortcut(eventDescriptor, fn, elem) {
 		elem = elem || document;
-		elem.addEventListener('keydown', function ZoteroKeyboardShortcut(event) {
+		let listener = (event) => {
 			for (let prop in eventDescriptor) {
 				if (event[prop] != eventDescriptor[prop]) return;
 			}
 			event.stopPropagation();
 			event.preventDefault();
 			fn();
-		});
+		};
+		elem.addEventListener('keydown', listener);
+		return () => {
+			elem.removeEventListener('keydown', listener);
+		};
 	}
 };
 

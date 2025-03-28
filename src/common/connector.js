@@ -25,7 +25,7 @@
 
 // TODO: refactor this class
 Zotero.Connector = new function() {
-	const CONNECTOR_API_VERSION = 2;
+	const CONNECTOR_API_VERSION = 3;
 	
 	var _ieStandaloneIframeTarget, _ieConnectorCallbacks;
 	this.isOnline = (Zotero.isSafari || Zotero.isFirefox) ? false : null;

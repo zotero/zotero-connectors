@@ -133,6 +133,17 @@
 	"progressWindow_error_upgradeClient_latestVersion": {
 		"message": "latest version"
 	},
+	"progressWindow_OA_searching": {
+		"message": "Searching for Open Access files…"
+	},
+	"progressWindow_OA_notFound": {
+		"message": "No Open Access PDFs found"
+	},
+	"progressWindow_OA_failed": {
+		"message": "Failed to get Open Access PDF"
+	},
+
+	
 	
 	"itemSelector_title": {
 		"message": "Select which items you’d like to add to your library:"

@@ -298,7 +298,7 @@ ItemSaver.prototype = {
 			if (typeof item.hasAttachmentResolvers === "undefined") {
 				// Change line for the primary attachment if we're going to look for OA alternatives
 				if (attachment) {
-					attachment.title = "Searching for Open Access files…";
+					attachment.title = Zotero.getString("progressWindow_OA_searching");
 					attachmentCallback(attachment, 0);
 				}
 				item.hasAttachmentResolvers = await Zotero.Connector.callMethod('hasAttachmentResolvers', {
@@ -308,7 +308,7 @@ ItemSaver.prototype = {
 			}
 			if (!item.hasAttachmentResolvers) {
 				if (attachment) {
-					attachment.title = "No Open Access PDFs found";
+					attachment.title = Zotero.getString("progressWindow_OA_notFound");
 					attachmentCallback(attachment, false)
 				}
 				return;
@@ -342,7 +342,7 @@ ItemSaver.prototype = {
 			attachmentCallback(attachment, 100);
 		} catch (e) {
 			if (attachment) {
-				attachment.title = "Failed to get Open Access PDF";
+				attachment.title = Zotero.getString("progressWindow_OA_failedToGetPdf")
 				attachmentCallback(attachment, false, e);
 			}
 		}

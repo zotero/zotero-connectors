@@ -187,7 +187,7 @@ var Zotero = global.Zotero = new function() {
 	this.initGlobal = async function() {
 		await Zotero.Errors.init();
 		if (Zotero.isManifestV3) {
-			Zotero.logError(`Service worker (re)started at ${Zotero.Date.dateToSQL(new Date())}`);
+			Zotero.Errors.logServiceWorkerStarts(Zotero.Date.dateToSQL(new Date()));
 		}
 		Zotero.isBackground = true;
 		

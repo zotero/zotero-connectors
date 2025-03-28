@@ -110,10 +110,6 @@ if (isTopWindow) {
 			Zotero.Connector.reportActiveURL(document.location.href);
 		}
 	}, true);
-
-	if (document.hasFocus()) {
-		Zotero.Connector.reportActiveURL(document.location.href);
-	}
 	
 	Zotero.Messaging.addMessageListener('buttonClick', function() {
 		Zotero.Connector_Browser.onPerformCommand();
@@ -122,6 +118,13 @@ if (isTopWindow) {
 	Zotero.Messaging.addMessageListener("selectDone", function(returnItems) {
 		Zotero.Inject._selectCallback(returnItems);
 	});
+
+	if (document.hasFocus()) {
+		(async () => {
+			await Zotero.initDeferred.promise;
+			Zotero.Connector.reportActiveURL(document.location.href);
+		})()
+	}
 }
 
 function onSafariPageLoad() {

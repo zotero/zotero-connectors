@@ -32,11 +32,11 @@ Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
 	
 	let isPDF = false;
 	let isCSPProtected = false;
+	const contentType = details.responseHeadersObject['content-type'];
 
 	// Firefox currently does not allow to inject scripts into pdf pages
 	// See https://bugzilla.mozilla.org/show_bug.cgi?id=1454760#c3
 	if (Zotero.isFirefox) {
-		const contentType = details.responseHeadersObject['content-type'];
 		if (contentType) {
 			if (contentType.includes("application/pdf")) {
 				isPDF = true;
@@ -66,6 +66,7 @@ Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
 		let tabInfo = Zotero.Connector_Browser.getTabInfo(tab.id);
 		tabInfo.uninjectable = true;
 		tabInfo.isPDF = isPDF;
+		tabInfo.contentType = contentType;
 		Zotero.Connector_Browser._updateExtensionUI(tab);
 	}, 100);
 });
@@ -81,7 +82,9 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 	
 	var data = {
 		url,
-		pdf
+		pdf,
+		mimeType: tabInfo.contentType,
+		sessionID: Zotero.Utilities.randomString()
 	};
 	if (!pdf) {
 		data.title = url;
@@ -99,7 +102,15 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 			title: "Saving…"
 		});
 		
-		await Zotero.Connector.callMethodWithCookies("saveSnapshot", data, tab);
+		// Make sure we have up to date prefs
+		await Zotero.Connector.ping();
+		const zoteroSupportsAttachmentUpload = Zotero.Connector.getPref('supportsAttachmentUpload');
+		if (zoteroSupportsAttachmentUpload) {
+			await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(data, data.sessionID);
+		}
+		else {
+			await Zotero.Connector.callMethodWithCookies("saveSnapshot", data, tab);
+		}
 		
 		browser.browserAction.setIcon({
 			tabId:tab.id,

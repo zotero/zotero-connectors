@@ -97,7 +97,7 @@ Zotero.MessagingGeneric = class {
 		}
 		// And handler function overrides towards us
 		for (let fnName in this._handlerFunctionOverrides) {
-			this.addMessageListener(fnName, async (args) => {
+			this.addMessageListener(fnName, async (args = []) => {
 				const fnPath = fnName.split('.');
 				const messageConfig = this._handlerFunctionOverrides[fnName];
 				let result;

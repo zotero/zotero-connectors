@@ -1024,7 +1024,7 @@ Zotero.Connector_Browser = new function() {
 		);
 	}
 	
-	this.saveAsWebpage = function(tab, frameId, options) {
+	this.saveAsWebpage = function(tab, frameId, options={}) {
 		let tabInfo = this.getTabInfo(tab.id);
 		if (tabInfo.uninjectable) {
 			return Zotero.Utilities.saveWithoutProgressWindow(tab, frameId);

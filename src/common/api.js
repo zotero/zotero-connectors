@@ -246,8 +246,7 @@ Zotero.API = new function() {
 	};
 	
 	/**
-	 * Uploads an attachment to the Zotero server. In Safari, this runs in the background
-	 * script. In Chrome, it runs in the injected script.
+	 * Uploads an attachment to the Zotero server.
 	 * @param {Object} attachment An attachment object. This object must have the following keys<br>
 	 *     id - a unique identifier for the attachment used to identifiy it in subsequent progress
 	 *          messages<br>
@@ -257,24 +256,16 @@ Zotero.API = new function() {
 	 *     md5 - the MD5 hash of the attachment contents<br>
 	 *     mimeType - the attachment MIME type
 	 */
-	this.uploadAttachment = function(attachment, callbackOrTab) {
-		var _dispatchAttachmentCallback = function(id, status, error) {
-			Zotero.Messaging.sendMessage("attachmentCallback",
-				(error ? [id, status, error.toString()] : [id, status]), callbackOrTab);
-		};
-		
+	this.uploadAttachment = async function(attachment) {
 		const REQUIRED_PROPERTIES = ["id", "data", "filename", "key", "md5", "mimeType"];
-		for(var i=0; i<REQUIRED_PROPERTIES.length; i++) {
-			if(!attachment[REQUIRED_PROPERTIES[i]]) {
-				_dispatchAttachmentCallback(attachment.id, false,
-					'Required property "'+REQUIRED_PROPERTIES[i]+'" not defined');
-				return;
+		for (const property of REQUIRED_PROPERTIES) {
+			if (!attachment[property]) {
+				throw new Error('Required property "' + property + '" not defined');
 			}
 		}
 		
-		if(/[^a-zA-Z0-9]/.test(attachment.key)) {
-			_dispatchAttachmentCallback(attachment.id, false, 'Attachment key is invalid');
-			return;
+		if (/[^a-zA-Z0-9]/.test(attachment.key)) {
+			throw new Error('Attachment key is invalid');
 		}
 		
 		var data = {
@@ -284,101 +275,77 @@ Zotero.API = new function() {
 			"mtime":(+new Date),
 			"contentType":attachment.mimeType
 		};
-		if(attachment.charset) data.charset = attachment.charset;
+		if (attachment.charset) data.charset = attachment.charset;
 		var dataString = [];
-		for(var i in data) {
-			dataString.push(i+"="+encodeURIComponent(data[i]));
+		for (const [key, value] of Object.entries(data)) {
+			dataString.push(`${key}=${encodeURIComponent(value)}`);
 		}
 		data = dataString.join("&");
 		
-		Zotero.API.getUserInfo().then(function(userInfo) {
-			if(!userInfo) {
-				// We should always have authorization credentials, since an item needs to
-				// be created before we can upload data. Thus, this code is probably
-				// unreachable, but it's here just in case.
-				_dispatchAttachmentCallback(attachment.id, false, "No authorization credentials available");
-				return;
+		const userInfo = await Zotero.API.getUserInfo()
+		if (!userInfo) {
+			// We should always have authorization credentials, since an item needs to
+			// be created before we can upload data. Thus, this code is probably
+			// unreachable, but it's here just in case.
+			throw new Error("No authorization credentials available");
+		}
+		
+		const url = config.API_URL + "users/" + userInfo['auth-userID'] + "/items/" + attachment.key + "/file";
+		let options = {
+			body: data,
+			headers: {
+				"Content-Type": "application/x-www-form-urlencoded",
+				"If-None-Match": "*",
+				"Zotero-API-Key": userInfo['auth-token_secret'],
+				"Zotero-API-Version": "3"
 			}
-			
-			var url = config.API_URL + "users/" + userInfo['auth-userID'] + "/items/" + attachment.key + "/file";
-			let options = {
-				body: data,
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-					"If-None-Match": "*",
-					"Zotero-API-Key": userInfo['auth-token_secret'],
-					"Zotero-API-Version": "3"
-				}
-			};
-			return Zotero.HTTP.request("POST", url, options).then(function(xmlhttp) {
-				try {
-					var response = JSON.parse(xmlhttp.responseText);
-				} catch(e) {
-					_dispatchAttachmentCallback(attachment.id, false, "Error parsing JSON from server");
-					return;
-				}
-				
-				// { "exists": 1 } implies no further action necessary
-				if(response.exists) {
-					Zotero.debug("OAuth: Attachment exists; no upload necessary");
-					_dispatchAttachmentCallback(attachment.id, 100);
-					return;
-				}
-				
-				Zotero.debug("OAuth: Upload authorized");
-				
-				// Append prefix and suffix to data array
-				var prefixLength = Zotero.Utilities.getStringByteLength(response.prefix),
-					suffixLength = Zotero.Utilities.getStringByteLength(response.suffix),
-					uploadData = new Uint8Array(attachment.data.byteLength + prefixLength
-						+ suffixLength);
-				Zotero.Utilities.stringToUTF8Array(response.prefix, uploadData, 0);
-				uploadData.set(new Uint8Array(attachment.data), prefixLength);
-				Zotero.Utilities.stringToUTF8Array(response.suffix, uploadData,
-					attachment.data.byteLength+prefixLength);
-				
-				var xhr = new XMLHttpRequest();
-				xhr.open("POST", response.url, true);
-				xhr.setRequestHeader("Zotero-API-Key", userInfo['auth-token_secret']);
-				xhr.setRequestHeader("Zotero-API-Version", 3);
-				xhr.onloadend = function() {
-					if(this.status !== 200 && this.status !== 201) {
-						var msg = this.status+" ("+this.responseText+")";
-						_dispatchAttachmentCallback(attachment.id, false, msg);
-						return;
-					}
-				
-					// Upload complete; register it
-					let options = {
-						body: "upload="+response.uploadKey,
-						headers: {
-							"Content-Type": "application/x-www-form-urlencoded",
-							"If-None-Match": "*",
-							"Zotero-API-Key": userInfo['auth-token_secret'],
-							"Zotero-API-Version": "3"
-						},
-						successCodes: false
-					};
-					return Zotero.HTTP.request("POST", url, options).then(function(xmlhttp) {
-						if (xmlhttp.status === 204) {
-							Zotero.debug("OAuth: Upload registered");
-							_dispatchAttachmentCallback(attachment.id, 100);
-						} else {
-							_dispatchAttachmentCallback(attachment.id, false, `${xmlhttp.status} (${xmlhttp.responseText})`);
-							throw new Zotero.HTTP.StatusError(xmlhttp, url);
-						}
-					});
-				};
-				xhr.onprogress = function(event) {
-					if(event.loaded == event.total) return;
-					_dispatchAttachmentCallback(attachment.id, event.loaded/event.total*100);
-				};
-				xhr.setRequestHeader("Content-Type", response.contentType);
-				xhr.send(uploadData.buffer);
-			}, function(e) {
-				_dispatchAttachmentCallback(attachment.id, false, `${e.status} (${e.responseText})`);
-				throw (e);
-			});
-		});
+		};
+		let xhr = await Zotero.HTTP.request("POST", url, options);
+		try {
+			var response = JSON.parse(xhr.responseText);
+		} catch(e) {
+			throw new Error("Error parsing JSON from server");
+		}
+		
+		// { "exists": 1 } implies no further action necessary
+		if (response.exists) {
+			Zotero.debug("OAuth: Attachment exists; no upload necessary");
+			return attachment;
+		}
+		
+		Zotero.debug("OAuth: Upload authorized");
+		
+		// Append prefix and suffix to data array
+		var prefixLength = Zotero.Utilities.getStringByteLength(response.prefix),
+			suffixLength = Zotero.Utilities.getStringByteLength(response.suffix),
+			uploadData = new Uint8Array(attachment.data.byteLength + prefixLength
+				+ suffixLength);
+		Zotero.Utilities.stringToUTF8Array(response.prefix, uploadData, 0);
+		uploadData.set(new Uint8Array(attachment.data), prefixLength);
+		Zotero.Utilities.stringToUTF8Array(response.suffix, uploadData,
+			attachment.data.byteLength+prefixLength);
+		
+		await Zotero.HTTP.request("POST", response.url, {
+			headers: {
+				"Zotero-API-Key": userInfo['auth-token_secret'],
+				"Zotero-API-Version": "3",
+				"Content-Type": response.contentType
+			},
+			body: uploadData.buffer
+		})
+		// Upload complete; register it
+		options = {
+			body: `upload=${response.uploadKey}`,
+			headers: {
+				"Content-Type": "application/x-www-form-urlencoded",
+				"If-None-Match": "*",
+				"Zotero-API-Key": userInfo['auth-token_secret'],
+				"Zotero-API-Version": "3"
+			},
+			successCodes: false
+		};
+		await Zotero.HTTP.request("POST", url, options);
+		Zotero.debug("Zotero API: Upload registered");
+		return attachment;
 	};
 }

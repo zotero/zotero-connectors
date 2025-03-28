@@ -30,7 +30,14 @@ Zotero.Errors = new function() {
 		if (Zotero.isManifestV3) {
 			let storedData = await browser.storage.session.get({'loggedErrors': []});
 			_output = storedData.loggedErrors.concat(_output);
+			if (!_output.length) {
+				_output.push('Info: Service worker starts: ');
+			}
 		}
+	}
+	
+	this.logServiceWorkerStarts = function(time) {
+		_output[0] = _output[0] += ` ${time}`
 	}
 	
 	/**
@@ -42,13 +49,7 @@ Zotero.Errors = new function() {
 	this.log = function(string, url, line) {
 		// Special case for MV3 service worker restart info logging
 		var err;
-		if (string.startsWith('Service worker')) {
-			err = [`[Info: ${string}`];
-			url = line = null;
-		}
-		else {
-			err = [`[JavaScript Error: "${string}"`];
-		}
+		err = [`[JavaScript Error: "${string}"`];
 		if(url || line) {
 			var info = [];
 			if(url) info.push('file: "'+url+'"');

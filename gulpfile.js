@@ -128,6 +128,7 @@ var backgroundInclude = [
 	'translate/debug.js',
 	'translate/tlds.js',
 	'translate/translator.js',
+	'itemSaver_background.js',
 	'translators.js',
 	'cachedTypes.js',
 	'errors_webkit.js',
@@ -150,6 +151,7 @@ var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclu
 	'contentTypeHandler.js',
 	'saveWithoutProgressWindow.js',
 	'messagingGeneric.js',
+	'browserAttachmentMonitor/browserAttachmentMonitor.js',
 	'offscreen/offscreenFunctionOverrides.js', 'background/offscreenManager.js',
 ]);
 

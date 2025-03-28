@@ -24,7 +24,6 @@
 */
 
 Zotero.HTTP.request = async function(method, url, options={}) {
-	let args = { method, url };
 	// Default options
 	options = Object.assign({
 		body: null,
@@ -37,24 +36,15 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 		successCodes: null
 	}, options);
 	options.method = method;
-	
-	let logBody = '';
+
 	if (['GET', 'HEAD'].includes(method)) {
 		if (!(typeof options.body == 'undefined' || options.body == null)) {
 			throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
 		}
-	} else if (options.body) {
-		options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
-		
-		if (!options.headers) options.headers = {};
-		if (!options.headers["Content-Type"]) {
-			options.headers["Content-Type"] = "application/x-www-form-urlencoded";
-		}
-		else if (options.headers["Content-Type"] == 'multipart/form-data') {
-			// Allow XHR to set Content-Type with boundary for multipart/form-data
-			delete options.headers["Content-Type"];
-		}
-				
+	}
+	
+	let logBody = '';
+	if (typeof options.body == 'string') {
 		logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
 			(options.body.length > options.logBodyLength ? '...' : '');
 		// TODO: make sure below does its job in every API call instance
@@ -62,34 +52,46 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 		logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
 		logBody = logBody.replace(/password=[^&]+/, 'password=********');
 	}
-	Zotero.debug(`HTTP ${method} ${url}${logBody}`);
-	args.options = options;
+	Zotero.debug(`HTTP ${method} ${url}:\n${logBody}`);
+
+	// Return a promise that will be resolved with the HTTP response
+    let result = await new Promise((resolve, reject) => {
+        // Call the Swift implementation through JSContext
+        _httpRequest(method, url, options, (result) => {
+            if (result[0] === "error") {
+				reject(new Zotero.HTTP.StatusError({ status: 0, responseText: result[1].message.trim() }, url));
+				return;
+            }
+            
+            resolve(result);
+        });
+    });
 	
-	try {
-		var response = await Zotero.Messaging.sendMessage('HTTP.request', args);
-		var [status, responseText, headers, responseURL] = response;
-	} catch (err) {
-		status = 0;
-		headers = {};
-		responseText = err.message;
-	}
+	const status = result.status;
 	let invalidDefaultStatus = options.successCodes === null &&
 		(status < 200 || status >= 300);
 	let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(status);
 	if (invalidDefaultStatus || invalidStatus) {
-		throw new Zotero.HTTP.StatusError({status, responseText}, url);
+		throw new Zotero.HTTP.StatusError({status, responseText: result.responseText}, url);
 	}
-	
-	let headerString = Object.keys(headers).map(key => `${key}: ${headers[key]}`).join("\n");
-	Object.keys(headers).forEach(key => headers[key.toLowerCase()] = headers[key]);
-	return {
-		status, responseText,
-		response: responseText,
-		responseHeaders: headerString,
-		responseURL,
-		getAllResponseHeaders: () => headerString,
-		getResponseHeader: name => headers[name.toLowerCase()]
+
+	let responseHeaders = {};
+	Object.entries(result.responseHeaders).forEach(([key, value]) => {
+		responseHeaders[key.toLowerCase()] = value;
+	});
+	result.getResponseHeader = name => responseHeaders[name.toLowerCase()];
+	if (result.getResponseHeader('Content-Type') === 'application/json') {
+		try {
+			result.response = JSON.parse(result.response);
+		}
+		catch (e) {
+			result.response = null;
+		}
+	}
+	result.getAllResponseHeaders = () => {
+		return Object.entries(responseHeaders).map(([key, value]) => `${key}: ${value}`).join('\n');
 	};
+	return result;
 }
 
 // Alias as COHTTP = Cross-origin HTTP; this is how we will call it from children

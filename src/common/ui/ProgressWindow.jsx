@@ -199,8 +199,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!targets) {
 			state.targetSelectorShown = false;
 		}
+		let targetName = target?.name || "zotero.org";
 		// Alert that the item is being saved or has already been saved
-		let alert = this.done ? Zotero.getString("progressWindow_alreadySaved") : `${text} ${target.name}`;
+		let alert = this.done ? Zotero.getString("progressWindow_alreadySaved") : `${text} ${targetName}`;
 		document.getElementById("messageAlert").textContent = alert
 		this.setState(state, () => {
 			this.setFilter();
@@ -667,6 +668,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	setFilter() {
+		let rows = this.state.targets;
+		if (!rows) return;
+
 		let filter = document.querySelector('.ProgressWindow-filterInput')?.value || "";
 		let crossIcon = document.querySelector(".ProgressWindow-cross");
 		filter = filter.toLowerCase();
@@ -682,7 +686,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		}
 		let passingIDs = {};
 		let passingParentIDs = {};
-		let rows = this.state.targets;
 		if (!isFilterEmpty && Object.keys(this.expandedRowsCache).length == 0) {
 			// Just started filtering - remember which rows were expanded
 			for (let row of rows) {

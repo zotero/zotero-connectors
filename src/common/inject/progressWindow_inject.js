@@ -56,6 +56,7 @@ if (isTopWindow) {
 	var nextSessionUpdateData;
 	
 	var isReadOnly = false;
+	var isFilesEditable = false;
 	var syncDelayIntervalID;
 	var insideIframe = false;
 	var insideTags = false;
@@ -141,13 +142,16 @@ if (isTopWindow) {
 		}
 		var target = {
 			id,
-			name: response.name
+			name: response.name,
+			filesEditable: response.filesEditable
 		};
 		
 		if (response.libraryEditable) {
 			lastSuccessfulTarget = target;
 		}
 		
+		let targets = response.targets.filter(t => !isFilesEditable || t.filesEditable);
+
 		// TEMP: Make sure libraries have levels (added to client in 5.0.46)
 		if (response.targets) {
 			for (let row of response.targets) {
@@ -157,7 +161,7 @@ if (isTopWindow) {
 			}
 		}
 		
-		changeHeadline(prefix, target, response.targets);
+		changeHeadline(prefix, target, targets);
 	}
 	
 	async function addError() {
@@ -296,14 +300,13 @@ if (isTopWindow) {
 			updatingSession = true;
 			
 			try {
-				await Zotero.Connector.callMethod(
+				await sendMessage(
 					"updateSession",
 					{
-						sessionID: currentSessionID,
 						target: data.target.id,
-						tags: data.tags
-							// TEMP: Avoid crash on leading/trailing comma pre-5.0.57
-							? data.tags.replace(/(^,|,$)/g, '') : data.tags
+						tags: data.tags,
+						resaveAttachments: !lastSuccessfulTarget.filesEditable && data.target.filesEditable,
+						removeAttachments: lastSuccessfulTarget.filesEditable && !data.target.filesEditable
 					}
 				);
 			}
@@ -410,7 +413,10 @@ if (isTopWindow) {
 		// (e.g., when displaying the Select Items window) we can skip displaying it
 		frameIsHidden = false;
 		
-		var [sessionID, headline, readOnly] = args;
+		var [sessionID, headline, readOnly, filesEditable] = args;
+		if (typeof filesEditable != "undefined") {
+			isFilesEditable = filesEditable;
+		}
 		
 		// Reopening existing popup
 		if (currentSessionID) {

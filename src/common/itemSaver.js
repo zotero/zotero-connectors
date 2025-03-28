@@ -286,27 +286,27 @@ ItemSaver.prototype = {
 			}
 			if (!item.hasPrimaryAttachment) {
 				if (!shouldAttemptToDownloadOAAttachments) continue;
-				await this.saveOAAttachment(item, attachmentCallback);
+				await this.saveAttachmentFromResolver(item, attachmentCallback);
 			}
 		}
 	},
 	
-	async saveOAAttachment(item, attachmentCallback) {
+	async saveAttachmentFromResolver(item, attachmentCallback) {
 		let attachment = item.attachments.find(a => a.isPrimary);
 		try {
 			// Check if we can get an OA PDF from Zotero
-			if (typeof item.hasAlternativeAttachment === "undefined") {
+			if (typeof item.hasAttachmentResolvers === "undefined") {
 				// Change line for the primary attachment if we're going to look for OA alternatives
 				if (attachment) {
 					attachment.title = "Searching for Open Access files…";
 					attachmentCallback(attachment, 0);
 				}
-				item.hasAlternativeAttachment = await Zotero.Connector.callMethod('hasOAAttachments', {
+				item.hasAttachmentResolvers = await Zotero.Connector.callMethod('hasAttachmentResolvers', {
 					sessionID: this._sessionID,
 					itemID: item.id
 				});
 			}
-			if (!item.hasAlternativeAttachment) {
+			if (!item.hasAttachmentResolvers) {
 				if (attachment) {
 					attachment.title = "No Open Access PDFs found";
 					attachmentCallback(attachment, false)
@@ -322,7 +322,7 @@ ItemSaver.prototype = {
 				attachmentCallback(attachment, 0);
 			}
 			
-			let title = await Zotero.Connector.callMethod('saveOAAttachment', {
+			let title = await Zotero.Connector.callMethod('saveAttachmentFromResolver', {
 				sessionID: this._sessionID,
 				itemID: item.id,
 			});

@@ -56,7 +56,7 @@ if (isTopWindow) {
 	var nextSessionUpdateData;
 	
 	var isReadOnly = false;
-	var isFiledEditableOnly = false;
+	var isFilesEditable = false;
 	var syncDelayIntervalID;
 	var insideIframe = false;
 	var insideTags = false;
@@ -150,7 +150,7 @@ if (isTopWindow) {
 			lastSuccessfulTarget = target;
 		}
 		
-		let targets = response.targets.filter(t => !isFiledEditableOnly || t.filesEditable);
+		let targets = response.targets.filter(t => !isFilesEditable || t.filesEditable);
 
 		// TEMP: Make sure libraries have levels (added to client in 5.0.46)
 		if (response.targets) {
@@ -413,9 +413,9 @@ if (isTopWindow) {
 		// (e.g., when displaying the Select Items window) we can skip displaying it
 		frameIsHidden = false;
 		
-		var [sessionID, headline, readOnly, filesEditableOnly] = args;
-		if (typeof filesEditableOnly != "undefined") {
-			isFiledEditableOnly = filesEditableOnly;
+		var [sessionID, headline, readOnly, filesEditable] = args;
+		if (typeof filesEditable != "undefined") {
+			isFilesEditable = filesEditable;
 		}
 		
 		// Reopening existing popup

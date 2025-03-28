@@ -613,7 +613,8 @@ let PageSaving = {
 	 * Updates the session with the given data.
 	 * @param {Object} data - The data to update the session with.
 	 * @param {String} data.targetId - The target ID
-	 * @param {Boolean} data.resaveFiles - Whether files should be resaved
+	 * @param {Boolean} data.resaveAttachments - Whether attachments should be resaved
+	 * @param {Boolean} data.removeAttachments - Whether attachments should be removed
 	 * @param {String[]} data.tags - A list of tags
 	 */
 	async onUpdateSession(data) {

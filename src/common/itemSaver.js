@@ -342,7 +342,7 @@ ItemSaver.prototype = {
 			attachmentCallback(attachment, 100);
 		} catch (e) {
 			if (attachment) {
-				attachment.title = Zotero.getString("progressWindow_OA_failedToGetPdf")
+				attachment.title = Zotero.getString("progressWindow_OA_failed")
 				attachmentCallback(attachment, false, e);
 			}
 		}

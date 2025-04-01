@@ -446,9 +446,6 @@ ItemSaver.prototype = {
 	 */
 	_saveToServer: async function (items, attachmentCallback, itemsDoneCallback=()=>0) {
 		var newItems = [], itemIndices = [];
-		try {
-			typedArraysSupported = !!(new Uint8Array(1) && new Blob());
-		} catch(e) {}
 		
 		for(var i=0, n=items.length; i<n; i++) {
 			var item = items[i];

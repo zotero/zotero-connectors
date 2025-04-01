@@ -134,13 +134,13 @@
 		"message": "latest version"
 	},
 	"progressWindow_OA_searching": {
-		"message": "Searching for Open Access files…"
+		"message": "Searching for open-access version…"
 	},
 	"progressWindow_OA_notFound": {
-		"message": "No Open Access PDFs found"
+		"message": "No open-access version found"
 	},
 	"progressWindow_OA_failed": {
-		"message": "Failed to get Open Access PDF"
+		"message": "Failed to download open-access version"
 	},
 
 	

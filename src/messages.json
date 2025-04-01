@@ -136,9 +136,6 @@
 	"progressWindow_OA_searching": {
 		"message": "Searching for open-access version…"
 	},
-	"progressWindow_OA_notFound": {
-		"message": "No open-access version found"
-	},
 	"progressWindow_OA_failed": {
 		"message": "Failed to download open-access version"
 	},

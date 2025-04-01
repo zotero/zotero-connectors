@@ -374,7 +374,7 @@ let PageSaving = {
 			}
 			// Once snapshot item is created, if requested, run SingleFile
 			if (isSingleFileAvailable) {
-				var snapshotItem = items[0].attachments = [{
+				items[0].attachments = [{
 					sessionID,
 					id: 2,
 					iconSrc: Zotero.ItemTypes.getImageSrc("attachment-snapshot"),
@@ -384,6 +384,7 @@ let PageSaving = {
 					itemType: Zotero.getString("itemType_snapshot"),
 					itemsLoaded: 1
 				}]
+				let snapshotItem = items[0].attachments[0];
 
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", snapshotItem);
 

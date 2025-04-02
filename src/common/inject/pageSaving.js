@@ -411,21 +411,10 @@ let PageSaving = {
 		} catch (e) {
 			// Client unavailable
 			if (e.status === 0) {
-				let itemSaver = new Zotero.Translate.ItemSaver({});
+				let itemSaver = new ItemSaver({});
 				this.sessionDetails.itemSaver = itemSaver;
-				let items = await itemSaver.saveAsWebpage();
-				if (items.length) {
-					Zotero.Messaging.sendMessage(
-						"progressWindow.itemProgress",
-						{
-							id: title,
-							iconSrc: Zotero.ItemTypes.getImageSrc(image),
-							title,
-							parentItem: false,
-							progress: 100
-						}
-					);
-				}
+				await itemSaver.saveAsWebpage();
+				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...items[0], progress: 100 });
 				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return;
 			}

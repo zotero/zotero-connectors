@@ -367,7 +367,7 @@ let PageSaving = {
 			items[0] = { ...items[0], progress: 100, itemsLoaded: 1 };
 			Zotero.Messaging.sendMessage("progressWindow.itemProgress", items[0]);
 
-			let isSingleFileAvailable = true;
+			let isSingleFileAvailable = document.contentType === "text/html";
 			// SingleFile does not work in Chromium incognito due to object passing via object URL not being available
 			if (Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()){
 				isSingleFileAvailable = false;

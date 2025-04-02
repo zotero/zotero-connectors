@@ -204,7 +204,8 @@ Zotero.Connector = new function() {
 	this.callMethodWithCookies = function(options, data, tab) {
 		if (Zotero.isBrowserExt) {
 			let cookieParams = {
-				url: tab.url
+				url: tab.url,
+				partitionKey: {} // fetch cookies from partitioned and unpartitioned storage
 			};
 			// When first-party isolation is enabled in Firefox, browser.cookies.getAll()
 			// will fail if firstPartyDomain isn't provided, causing all saves to fail. According

@@ -248,8 +248,6 @@ Zotero.API = new function() {
 	/**
 	 * Uploads an attachment to the Zotero server.
 	 * @param {Object} attachment An attachment object. This object must have the following keys<br>
-	 *     id - a unique identifier for the attachment used to identifiy it in subsequent progress
-	 *          messages<br>
 	 *     data - the attachment contents, as a typed array<br>
 	 *     filename - a filename for the attachment<br>
 	 *     key - the attachment item key<br>
@@ -257,7 +255,7 @@ Zotero.API = new function() {
 	 *     mimeType - the attachment MIME type
 	 */
 	this.uploadAttachment = async function(attachment) {
-		const REQUIRED_PROPERTIES = ["id", "data", "filename", "key", "md5", "mimeType"];
+		const REQUIRED_PROPERTIES = ["data", "key", "md5", "mimeType"];
 		for (const property of REQUIRED_PROPERTIES) {
 			if (!attachment[property]) {
 				throw new Error('Required property "' + property + '" not defined');

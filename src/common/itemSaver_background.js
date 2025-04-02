@@ -133,13 +133,15 @@ Zotero.ItemSaver.saveAttachmentToServer = async function(attachment, tab) {
 Zotero.ItemSaver._createServerAttachmentItem = async function(attachment) {
 	var item = [{
 		itemType: "attachment",
-		parentItem: attachment.parentKey,
 		linkMode: attachment.linkMode,
 		title: attachment.title ? attachment.title.toString() : "Untitled Attachment",
 		accessDate: "CURRENT_TIMESTAMP",
 		url: attachment.url,
 		tags: Array.isArray(attachment.tags) ? attachment.tags : []
 	}];
+	if (attachment.parentItem) {
+		item[0].parentItem = attachment.parentItem;
+	}
 	
 	let response = await Zotero.API.createItem(item);
 	try {

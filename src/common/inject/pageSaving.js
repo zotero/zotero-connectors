@@ -320,9 +320,10 @@ let PageSaving = {
 		var result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
 
+		const isOnline = await Zotero.Connector.checkIsOnline();
 		const supportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
 
-		if (document.contentType !== 'text/html' && supportsAttachmentUpload) {
+		if (document.contentType !== 'text/html' && (supportsAttachmentUpload || !isOnline)) {
 			return await this._saveAsStandaloneAttachment({title, saveSnapshot});
 		}
 		return await this._saveAsWebpage({title, saveSnapshot});
@@ -410,31 +411,26 @@ let PageSaving = {
 		} catch (e) {
 			// Client unavailable
 			if (e.status === 0) {
-				// Attempt saving to server if not pdf
-				if (document.contentType != 'application/pdf') {
-					let itemSaver = new Zotero.Translate.ItemSaver({});
-					this.sessionDetails.itemSaver = itemSaver;
-					let items = await itemSaver.saveAsWebpage();
-					if (items.length) {
-						Zotero.Messaging.sendMessage(
-							"progressWindow.itemProgress",
-							{
-								id: title,
-								iconSrc: Zotero.ItemTypes.getImageSrc(image),
-								title,
-								parentItem: false,
-								progress: 100
-							}
-						);
-					}
-					Zotero.Messaging.sendMessage("progressWindow.done", [true]);
-					return;
-				} else {
-					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
+				let itemSaver = new Zotero.Translate.ItemSaver({});
+				this.sessionDetails.itemSaver = itemSaver;
+				let items = await itemSaver.saveAsWebpage();
+				if (items.length) {
+					Zotero.Messaging.sendMessage(
+						"progressWindow.itemProgress",
+						{
+							id: title,
+							iconSrc: Zotero.ItemTypes.getImageSrc(image),
+							title,
+							parentItem: false,
+							progress: 100
+						}
+					);
 				}
+				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+				return;
 			}
-				// Unexpected error, including a timeout (which we don't want to
-				// result in a save to the server, because it's possible the request
+			// Unexpected error, including a timeout (which we don't want to
+			// result in a save to the server, because it's possible the request
 			// will still be processed)
 			else if (!e.value || e.value.libraryEditable != false) {
 				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
@@ -476,7 +472,8 @@ let PageSaving = {
 		let standaloneAttachment = {
 			url: document.location.toString(),
 			mimeType: document.contentType,
-			title
+			title,
+			linkMode: "imported_url"
 		}
 
 		try {
@@ -507,11 +504,11 @@ let PageSaving = {
 		} catch (e) {
 			// Client unavailable
 			if (e.status === 0) {
-				if (false) {
-					// TODO Attempt saving to server
-				} else {
-					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
-				}
+				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 0 } });
+				await Zotero.ItemSaver.saveAttachmentToServer(standaloneAttachment);
+				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+				return;
 			}
 			else if (!e.value || e.value.libraryEditable != false) {
 				// Unexpected error, including a timeout (which we don't want to

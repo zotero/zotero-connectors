@@ -31,6 +31,7 @@ Zotero.BrowserAttachmentMonitor = {
 		// browser.declarativeNetRequest.onRuleMatchedDebug.addListener((details) => {
 		// 	console.log("DNR rule matched:", details);
 		// });
+		this._webRequestListeners = new Map();
 	},
 
 	waitForAttachment: async function(tabId, timeoutMs=60000) {
@@ -67,7 +68,11 @@ Zotero.BrowserAttachmentMonitor = {
 
 		try {
 			// Add DNR rule and wait for success or timeout
-			await this._addDNRRule(tabId, ruleId);
+			if (Zotero.isFirefox) {
+				await this._addWebRequestRule(tabId, ruleId);
+			} else {
+				await this._addDNRRule(tabId, ruleId);
+			}
 			
 			return await Promise.race([
 				successPromise,
@@ -91,17 +96,63 @@ Zotero.BrowserAttachmentMonitor = {
 			browser.tabs.onRemoved.removeListener(tabRemovedListener);
 		}
 
-		// Remove DNR rule
+		// Remove web request listeners
 		if (ruleId) {
-			await chrome.declarativeNetRequest.updateSessionRules({
-				removeRuleIds: [ruleId]
-			});
+			if (Zotero.isFirefox) {
+				const listener = this._webRequestListeners.get(ruleId);
+				if (listener) {
+					browser.webRequest.onHeadersReceived.removeListener(listener);
+				}
+				this._webRequestListeners.delete(ruleId);
+			}
+			else {
+				await browser.declarativeNetRequest.updateSessionRules({
+					removeRuleIds: [ruleId]
+				});
+			}
 		}
+	},
+
+	// Firefox does not support responseHeaders condition, so we use webRequestBlocking instead
+	_addWebRequestRule: async function(tabId, ruleId) {
+		const redirectUrlBase = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html");
+	
+		const listener = (details) => {
+			let hasAttachmentDisposition = false;
+			let hasCorrectContentType = false;
+			
+			const contentType = details.responseHeaders.find(h => h.name.toLowerCase() === 'content-type')?.value;
+			const contentDisposition = details.responseHeaders.find(h => h.name.toLowerCase() === 'content-disposition')?.value;
+	
+			hasAttachmentDisposition = contentDisposition && contentDisposition.toLowerCase().includes('attachment');
+			hasCorrectContentType = contentType && (['application/pdf', 'application/epub+zip'].some(type => contentType.toLowerCase().includes(type)));
+	
+			if (hasAttachmentDisposition || hasCorrectContentType) {
+				const finalRedirectUrl = `${redirectUrlBase}#success=${details.url}`;
+				return { redirectUrl: finalRedirectUrl };
+			}
+	
+			// No redirect needed
+			return {}; 
+		};
+	
+		browser.webRequest.onHeadersReceived.addListener(
+			listener,
+			{ urls: ["<all_urls>"], 
+				tabId: tabId,
+				types: ["main_frame", "sub_frame"] 
+			},
+			["blocking", "responseHeaders"]
+		);
+		
+		// Store listener for removal
+		this._webRequestListeners.set(ruleId, listener);
+		Zotero.debug(`BrowserAttachmentMonitor: Added listener for tab ${tabId} with ruleId ${ruleId}`);
 	},
 	
 	_addDNRRule: async function(tabId, ruleId) {
 		const redirectUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html#success=\\0");
-		await chrome.declarativeNetRequest.updateSessionRules({
+		await browser.declarativeNetRequest.updateSessionRules({
 			removeRuleIds: [ruleId],
 			addRules: [{
 				id: ruleId,

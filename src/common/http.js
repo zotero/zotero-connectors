@@ -25,10 +25,7 @@
 
 const MAX_BACKOFF = 64e3;
 
-let HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Cookie'];
-if (Zotero.isChromium) {
-	HEADERS_SPECIAL_HANDLING.push('Referer');
-}
+const HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Cookie', 'Referer'];
 
 /**
  * Functions for performing HTTP requests, both via XMLHTTPRequest and using a hidden browser
@@ -220,6 +217,9 @@ Zotero.HTTP = new function() {
 		}	
 		
 		if (Zotero.isBackground) {
+			if (options.referrer) {
+				options.headers['Referer'] = options.referrer;
+			}
 			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
 				.map(header => {
 					const val = { name: header, value: options.headers[header] }

@@ -473,8 +473,21 @@ ItemSaver.prototype = {
 		
 		Zotero.debug("Translate: Save to server complete");
 		itemsDoneCallback(items);
-
+		
 		const prefs = await Zotero.Prefs.getAsync(["downloadAssociatedFiles", "automaticSnapshots"])
+
+		for (const item of items) {
+			for (const attachment of item.attachments) {
+				if (attachment.mimeType === 'text/html') {
+					if (prefs.automaticSnapshots) {
+						attachmentCallback(attachment, 0);
+					}
+				}
+				else if (prefs.downloadAssociatedFiles) {
+					attachmentCallback(attachment, 0);
+				}
+			}
+		}
 		for (var i=0; i<items.length; i++) {
 			var item = items[i], key = resp.success[itemIndices[i]];
 			if (item.attachments && item.attachments.length) {
@@ -533,7 +546,6 @@ ItemSaver.prototype = {
 			attachment.linkMode = attachment.snapshot === false ? "linked_url" : "imported_url";
 
 			try {
-				attachmentCallback(attachment, 0);
 				promises.push(ItemSaver.fetchAttachmentSafari(attachment).then(() => Zotero.ItemSaver.saveAttachmentToServer(attachment)));
 				attachmentCallback(attachment, 100);
 			}

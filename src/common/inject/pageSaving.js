@@ -481,7 +481,8 @@ let PageSaving = {
 			url: document.location.toString(),
 			mimeType: document.contentType,
 			title,
-			linkMode: "imported_url"
+			linkMode: "imported_url",
+			referrer: document.referrer
 		}
 
 		try {

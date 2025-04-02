@@ -115,7 +115,9 @@ Zotero.ItemSaver.saveAttachmentToServer = async function(attachment, tab) {
 	attachment.key = itemKey;
 	attachment.md5 = this.md5(attachment.data);
 
-	return Zotero.API.uploadAttachment(attachment);
+	// Do not return here or a message is attempted to pass back to injected page
+	// which causes a failure due to it sometimes exceeding max message length.
+	await Zotero.API.uploadAttachment(attachment);
 }
 
 

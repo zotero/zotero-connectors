@@ -25,7 +25,7 @@
 
 const MAX_BACKOFF = 64e3;
 
-let HEADERS_SPECIAL_HANDLING = ['User-Agent'];
+let HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Cookie'];
 if (Zotero.isChromium) {
 	HEADERS_SPECIAL_HANDLING.push('Referer');
 }
@@ -350,17 +350,16 @@ Zotero.HTTP = new function() {
 			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
 				.map(header => {
 					const val = { name: header, value: options.headers[header] }
-					delete options.headers['User-Agent'];
+					delete options.headers[header];
 					return val;
 				});
 			if (replaceHeaders.length) {
 				DNRRuleID = await Zotero.WebRequestIntercept.replaceHeaders(url, replaceHeaders);
 			}
-			let headers = new Headers(options.headers);
 			try {
 				let fetchOptions = {
 					method,
-					headers,
+					headers: options.headers,
 					body: options.body,
 					credentials: Zotero.isInject ? 'same-origin' : 'include',
 				}

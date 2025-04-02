@@ -34,13 +34,14 @@ Zotero.BrowserAttachmentMonitor = {
 	},
 
 	waitForAttachment: async function(tabId, timeoutMs=60000) {
-
 		const ruleId = this._nextRuleId++;
 
 		// Create promise that will resolve when attachment is found
 		let resolveSucceeded;
-		const successPromise = new Promise(resolve => {
+		let rejectFailed;	
+		const successPromise = new Promise((resolve, reject) => {
 			resolveSucceeded = resolve;
+			rejectFailed = reject;
 		});
 
 		// Setup message listener for success notification
@@ -58,6 +59,7 @@ Zotero.BrowserAttachmentMonitor = {
 		const tabRemovedListener = (removedTabId) => {
 			if (removedTabId === tabId) {
 				this._cleanup(ruleId, messageListener, tabRemovedListener);
+				rejectFailed(new Error(`Tab removed: ${tabId}`));
 			}
 		};
 		browser.runtime.onMessage.addListener(messageListener);
@@ -91,7 +93,7 @@ Zotero.BrowserAttachmentMonitor = {
 
 		// Remove DNR rule
 		if (ruleId) {
-			await chrome.declarativeNetRequest.updateDynamicRules({
+			await chrome.declarativeNetRequest.updateSessionRules({
 				removeRuleIds: [ruleId]
 			});
 		}
@@ -110,6 +112,8 @@ Zotero.BrowserAttachmentMonitor = {
 					}
 				},
 				condition: {
+					// Need to explicitly specify main_frame, otherwise it is excluded
+					resourceTypes: ['main_frame', 'sub_frame'],
 					regexFilter: '.*',
 					tabIds: [tabId],
 					responseHeaders: [

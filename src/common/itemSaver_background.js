@@ -155,6 +155,16 @@ Zotero.ItemSaver._createServerAttachmentItem = async function(attachment) {
 
 Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotProtectionBypass=true) {
 	let options = { responseType: "arraybuffer", timeout: 60000 };
+	if (!Zotero.isSafari) {
+		let cookies = await browser.cookies.getAll({
+			url: attachment.url,
+			partitionKey: {},
+		});
+		options.headers = {
+			"Cookie": cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
+		}
+		options.referrer = attachment.referrer;
+	}
 	let xhr = await Zotero.HTTP.request("GET", attachment.url, options);
 	let { contentType } = Zotero.Utilities.Connector.getContentTypeFromXHR(xhr);
 

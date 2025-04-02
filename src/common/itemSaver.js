@@ -122,6 +122,7 @@ ItemSaver.prototype = {
 				title: 'Full Text PDF',
 				url: document.location.href,
 				mimeType: document.contentType,
+				referrer: new URL(document.location.href).origin,
 			})
 		}
 
@@ -135,6 +136,7 @@ ItemSaver.prototype = {
 				if (!attachment.title) attachment.title = attachment.mimeType + ' Attachment';
 				attachment.id = attachment.id || Zotero.Utilities.randomString(8);
 				attachment.parentItem = item.id;
+				attachment.referrer = new URL(item.url).origin;
 				
 				// Ignore non-snapshot text/html attachments (saved as link attachments)
 				// Don't save snapshots in Chromium incognito where it doesn't work
@@ -478,6 +480,7 @@ ItemSaver.prototype = {
 
 		for (const item of items) {
 			for (const attachment of item.attachments) {
+				attachment.referrer = new URL(item.url).origin;
 				if (attachment.mimeType === 'text/html') {
 					if (prefs.automaticSnapshots) {
 						attachmentCallback(attachment, 0);
@@ -546,15 +549,17 @@ ItemSaver.prototype = {
 			// Don't download attachment if snapshot is specifically set to false
 			attachment.linkMode = attachment.snapshot === false ? "linked_url" : "imported_url";
 
-			try {
-				promises.push(ItemSaver.fetchAttachmentSafari(attachment).then(() => Zotero.ItemSaver.saveAttachmentToServer(attachment)));
-				attachmentCallback(attachment, 100);
-			}
-			catch (e) {
-				attachmentCallback(attachment, false, e);
-				Zotero.logError(e);
-				continue;
-			}
+			promises.push((async () => {
+				try {
+					await ItemSaver.fetchAttachmentSafari(attachment);
+					await Zotero.ItemSaver.saveAttachmentToServer(attachment);
+					attachmentCallback(attachment, 100);
+				}
+				catch (e) {
+					attachmentCallback(attachment, false, e);
+					Zotero.logError(e);
+				}
+			})());
 		}
 		await Promise.all(promises);
 	},

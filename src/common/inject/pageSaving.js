@@ -368,38 +368,7 @@ let PageSaving = {
 			items[0] = { ...items[0], progress: 100, itemsLoaded: 1 };
 			Zotero.Messaging.sendMessage("progressWindow.itemProgress", items[0]);
 
-			let isSingleFileAvailable = document.contentType === "text/html";
-			// SingleFile does not work in Chromium incognito due to object passing via object URL not being available
-			if (Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()){
-				isSingleFileAvailable = false;
-			}
-			// Once snapshot item is created, if requested, run SingleFile
-			if (isSingleFileAvailable) {
-				items[0].attachments = [{
-					sessionID,
-					id: 2,
-					iconSrc: Zotero.ItemTypes.getImageSrc("attachment-snapshot"),
-					title: "Snapshot",
-					parentItem: 1,
-					progress: 0,
-					itemType: Zotero.getString("itemType_snapshot"),
-					itemsLoaded: 1
-				}]
-				let snapshotItem = items[0].attachments[0];
-
-				Zotero.Messaging.sendMessage("progressWindow.itemProgress", snapshotItem);
-
-				data.snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
-
-				result = await Zotero.Connector.saveSingleFile({
-						method: "saveSingleFile",
-						headers: {"Content-Type": "application/json"}
-					},
-					data
-				);
-
-				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...snapshotItem, progress: 100 });
-			}
+			await this._saveSingleFile(items[0], data);
 
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			Object.assign(this.sessionDetails, {
@@ -413,8 +382,13 @@ let PageSaving = {
 			if (e.status === 0) {
 				let itemSaver = new ItemSaver({});
 				this.sessionDetails.itemSaver = itemSaver;
-				await itemSaver.saveAsWebpage();
+				let result = await itemSaver.saveAsWebpage();
+				items[0].key = result[0].key;
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...items[0], progress: 100 });
+				const automaticSnapshots = await Zotero.Prefs.getAsync("automaticSnapshots")
+				if (automaticSnapshots) {
+					await this._saveSingleFile(items[0], data, true);
+				}
 				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return;
 			}
@@ -425,6 +399,51 @@ let PageSaving = {
 				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
 			}
 			throw e;
+		}
+	},
+
+	async _saveSingleFile(item, data, toServer = false) {
+		let isSingleFileAvailable = document.contentType === "text/html";
+		// SingleFile does not work in Chromium incognito due to object passing via object URL not being available
+		if (Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()){
+			isSingleFileAvailable = false;
+		}
+		// Once snapshot item is created, if requested, run SingleFile
+		if (isSingleFileAvailable) {
+			item.attachments = [{
+				sessionID: data.sessionID,
+				id: 2,
+				iconSrc: Zotero.ItemTypes.getImageSrc("attachment-snapshot"),
+				title: "Snapshot",
+				parentItem: 1,
+				parentKey: item.key,
+				progress: 0,
+				itemType: Zotero.getString("itemType_snapshot"),
+				mimeType: "text/html",
+				linkMode: "imported_url",
+				itemsLoaded: 1
+			}]
+			let snapshotItem = item.attachments[0];
+
+			Zotero.Messaging.sendMessage("progressWindow.itemProgress", snapshotItem);
+
+			const snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
+
+			if (toServer) {
+				snapshotItem.data = snapshotContent;
+				await Zotero.ItemSaver.saveAttachmentToServer(snapshotItem);
+			}
+			else {
+				data.snapshotContent = snapshotContent;
+				await Zotero.Connector.saveSingleFile({
+						method: "saveSingleFile",
+						headers: {"Content-Type": "application/json"}
+					},
+					data
+				);
+			}
+
+			Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...snapshotItem, progress: 100 });
 		}
 	},
 

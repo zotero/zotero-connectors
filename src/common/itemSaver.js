@@ -490,6 +490,7 @@ ItemSaver.prototype = {
 		}
 		for (var i=0; i<items.length; i++) {
 			var item = items[i], key = resp.success[itemIndices[i]];
+			item.key = key;
 			if (item.attachments && item.attachments.length) {
 				await this._saveAttachmentsToServer(key, this._getFileBaseNameFromItem(item),
 					item.attachments, prefs, attachmentCallback);

@@ -80,6 +80,23 @@ Zotero.Utilities.Connector = {
 		}
 	},
 	
+	getContentTypeFromXHR: function(xhr) {
+		var contentType = "application/octet-stream",
+			charset = null,
+			contentTypeHeader = xhr.getResponseHeader("Content-Type");
+		if (contentTypeHeader) {
+			// See RFC 2616 sec 3.7
+			var m = /^[^\x00-\x1F\x7F()<>@,;:\\"\/\[\]?={} ]+\/[^\x00-\x1F\x7F()<>@,;:\\"\/\[\]?={} ]+/.exec(contentTypeHeader);
+			if(m) contentType = m[0].toLowerCase();
+			m = /;\s*charset\s*=\s*("[^"]+"|[^\x00-\x1F\x7F()<>@,;:\\"\/\[\]?={} ]+)/.exec(contentTypeHeader);
+			if (m) {
+				charset = m[1];
+				if(charset[0] === '"') charset = charset.substring(1, charset.length-1);
+			}
+		}
+		return { contentType, charset };
+	},
+	
 	// Chrome has a limit of somewhere between 64 and 128 MB for messages.
 	// There's been an open bug on the chrome bugtracker to fix this since
 	// 2017: https://bugs.chromium.org/p/chromium/issues/detail?id=774158
@@ -169,6 +186,47 @@ Zotero.Utilities.Connector = {
 			b=ii(b,c,d,a,x[i+ 9],21, -343485551);a=ad(a,olda);b=ad(b,oldb);c=ad(c,oldc);d=ad(d,oldd);
 		}
 		return rh(a)+rh(b)+rh(c)+rh(d);
+	},
+	
+	/**
+	 * Converts an ArrayBuffer to a base64 encoded string
+	 * 
+	 * @param {ArrayBuffer} buffer - The ArrayBuffer to convert
+	 * @return {string} - The base64 encoded string
+	 */
+	arrayBufferToBase64: function(buffer) {
+		// Create a Uint8Array view of the ArrayBuffer
+		const uint8Array = new Uint8Array(buffer);
+		
+		// Convert to a binary string
+		let binary = '';
+		const len = uint8Array.byteLength;
+		for (let i = 0; i < len; i++) {
+			binary += String.fromCharCode(uint8Array[i]);
+		}
+		
+		// Convert binary string to base64
+		return btoa(binary);
+	},
+	
+	/**
+	 * Converts a base64 encoded string back to an ArrayBuffer
+	 * 
+	 * @param {string} base64 - The base64 encoded string to convert
+	 * @return {ArrayBuffer} - The ArrayBuffer
+	 */
+	base64ToArrayBuffer: function(base64) {
+		// Convert base64 to binary string
+		const binaryString = atob(base64);
+		const len = binaryString.length;
+		
+		// Create a Uint8Array from the binary string
+		const uint8Array = new Uint8Array(len);
+		for (let i = 0; i < len; i++) {
+			uint8Array[i] = binaryString.charCodeAt(i);
+		}
+		
+		return uint8Array.buffer;
 	}
 };
 

@@ -43,7 +43,7 @@ Zotero.Messaging.receiveSwiftMessage = async function(messageName, id, data=[], 
 	try {
 		var result = await Zotero.Messaging.receiveMessage(messageName, data, Zotero.Connector_Browser.getTab(tabId));
 	} catch (err) {
-		Zotero.logError(err);
+		// Zotero.logError(err);
 		result = ["error", JSON.stringify(Object.assign({
 			name: err.name,
 			message: err.message,

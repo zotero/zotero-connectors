@@ -126,6 +126,9 @@ let PageSaving = {
 	},
 
 	_initSession(translatorID, saveOptions) {
+		if (!saveOptions.resave && this.sessionDetails.id) {
+			return this.sessionDetails.id;
+		}
 		const sessionID = Zotero.Utilities.randomString();
 		this.sessionDetails = {
 			id: sessionID,
@@ -154,7 +157,12 @@ let PageSaving = {
 			// Not from the context menu, which always triggers a resave
 			&& !options.resave
 	},
-	
+
+	/**
+	 * Handles saving when highlighting text on the page and saving via right-click
+	 * option "Create Zotero Item and Note from Selection"
+	 * @param items
+	 */	
 	_processNote(items) {
 		const saveOptions = this.sessionDetails.saveOptions;
 		if (saveOptions && saveOptions.note && items.length == 1) {
@@ -166,14 +174,30 @@ let PageSaving = {
 		}
 		return items;
 	},
+	
+	_onAttachmentProgress(attachment, progress) {
+		const sessionID = PageSaving.sessionDetails.id;
+		Zotero.Messaging.sendMessage(
+			"progressWindow.itemProgress",
+			{
+				sessionID,
+				id: attachment.id,
+				iconSrc: determineAttachmentIcon(attachment),
+				title: attachment.title,
+				parentItem: attachment.parentItem,
+				progress,
+				itemType: determineAttachmentType(attachment)
+			}
+		);
+	},
 
 	/**
 	 * Runs translation and attempts to save items to Zotero or Zotero account
-	 * @param sessionID {String}
 	 * @param translators {Array}
 	 * @returns {Promise<*>}
 	 */
-	async translateAndSave(sessionID, translators) {
+	async translateAndSave(translators) {
+		const sessionID = this.sessionDetails.id;
 		let itemsTotal = 0;
 		let itemsSaved = 0;
 		
@@ -185,19 +209,6 @@ let PageSaving = {
 			// If the handler returns a non-undefined value then it is passed
 			// back to the callback due to backwards compat code in translate.js
 			(async () => {
-				try {
-					let response = await Zotero.Connector.callMethod("getSelectedCollection", {});
-					if (response.libraryEditable === false) {
-						return callback([]);
-					}
-				} catch (e) {
-					// Zotero is online but an error occured anyway, so let's log it and display
-					// the dialog just in case
-					if (e.status != 0) {
-						Zotero.logError(e);
-					}
-				}
-
 				if (Zotero.isBrowserExt) {
 					var returnItems = await Zotero.Connector_Browser.onSelect(items);
 				} else {
@@ -232,6 +243,7 @@ let PageSaving = {
 			);
 		};
 		const onTranslatorFallback = (oldTranslator, newTranslator) => {
+			Zotero.debug(`Saving with ${oldTranslator.label} failed. Trying ${newTranslator.label}`);
 			Zotero.Messaging.sendMessage("progressWindow.error",
 				['fallback', oldTranslator.label, newTranslator.label]);
 		}
@@ -271,32 +283,29 @@ let PageSaving = {
 				}
 			}
 		}
-		const onAttachmentProgress = (attachment, progress) => {
-			Zotero.Messaging.sendMessage(
-				"progressWindow.itemProgress",
-				{
-					sessionID,
-					id: attachment.id,
-					iconSrc: determineAttachmentIcon(attachment),
-					title: attachment.title,
-					parentItem: attachment.parentItem,
-					progress,
-					itemType: determineAttachmentType(attachment)
-				}
-			);
-		}
 
 
 		let translate = await this._initTranslate();
 		let options = { translate, translators, onSelect, onItemSaving, onTranslatorFallback };
-		let { items, proxy } = await TranslateWeb.translate(options);
+		try {
+			var { items, proxy } = await TranslateWeb.translate(options);
+		} catch (e) {
+			let translator = translate.translator[0]
+			if (translator.itemType != 'multiple' && options.fallbackOnFailure) {
+				Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', this.translators.at(-1).label, "Save as Webpage"]);
+				Zotero.debug(`Saving with ${translator.label} failed. Falling back to saving as webpage`);
+				return this.saveAsWebpage({ snapshot: true });
+			}
+		}
 		if (Zotero.isManifestV3) {
 			proxy = await translate.getProxy();
 			if (proxy) proxy = new Zotero.Proxy(proxy);
 		}
 		items = this._processNote(items);
+		this.sessionDetails.items = items;
 		let itemSaver = new ItemSaver({sessionID, baseURI: document.location.href, proxy });
-		return itemSaver.saveItems(items, onAttachmentProgress, onItemsSaved)
+		this.sessionDetails.itemSaver = itemSaver;
+		return itemSaver.saveItems(items, PageSaving._onAttachmentProgress, onItemsSaved)
 	},
 
 	/**
@@ -307,11 +316,22 @@ let PageSaving = {
 	 * @param saveSnapshot
 	 * @returns {Promise<*>}
 	 */
-	async saveAsWebpage({ sessionID, title=document.title, snapshot: saveSnapshot=true } = {}) {
-		var translatorID = 'webpage' + (saveSnapshot ? 'WithSnapshot' : '');
-		if (!sessionID) {
-			throw new Error("Trying to save as webpage without session ID");
+	async saveAsWebpage({ title=document.title, snapshot: saveSnapshot=true } = {}) {
+		var result = await Zotero.Inject.checkActionToServer();
+		if (!result) return;
+
+		const isOnline = await Zotero.Connector.checkIsOnline();
+		const supportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
+
+		if (document.contentType !== 'text/html' && (supportsAttachmentUpload || !isOnline)) {
+			return await this._saveAsStandaloneAttachment({title, saveSnapshot});
 		}
+		return await this._saveAsWebpage({title, saveSnapshot});
+	},
+	
+	async _saveAsWebpage({ title, saveSnapshot } = {}) {
+		const sessionID = this.sessionDetails.id;
+		var translatorID = 'webpage' + (saveSnapshot ? 'WithSnapshot' : '');
 		try {
 			var cookie = document.cookie;
 		} catch (e) {}
@@ -321,15 +341,8 @@ let PageSaving = {
 			referrer: document.referrer,
 			cookie,
 			title: title,
-			html: document.documentElement.innerHTML,
 			skipSnapshot: !saveSnapshot,
-			singleFile: true
 		};
-
-		// SingleFile does not work in Chromium incognito due to object passing via object URL not being available
-		if (Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()){
-			delete data.singleFile;
-		}
 
 		var image;
 		if (document.contentType == 'application/pdf') {
@@ -340,71 +353,22 @@ let PageSaving = {
 		}
 
 		Zotero.Messaging.sendMessage("progressWindow.show", [sessionID]);
-		Zotero.Messaging.sendMessage(
-			"progressWindow.itemProgress",
-			{
-				sessionID,
-				id: 1,
-				iconSrc: Zotero.ItemTypes.getImageSrc(image),
-				title: title
-			}
-		);
+		let items = [{
+			sessionID,
+			id: 1,
+			iconSrc: Zotero.ItemTypes.getImageSrc(image),
+			title: title
+		}];
+		this.sessionDetails.items = items;
+		Zotero.Messaging.sendMessage("progressWindow.itemProgress", items[0]);
 
 		try {
 			var result = await Zotero.Connector.callMethodWithCookies("saveSnapshot", data);
 			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
-			Zotero.Messaging.sendMessage(
-				"progressWindow.itemProgress",
-				{
-					sessionID,
-					id: 1,
-					iconSrc: Zotero.ItemTypes.getImageSrc(image),
-					title,
-					parentItem: false,
-					progress: 100,
-					itemsLoaded: 1
-				}
-			);
+			items[0] = { ...items[0], progress: 100, itemsLoaded: 1 };
+			Zotero.Messaging.sendMessage("progressWindow.itemProgress", items[0]);
 
-			let progressItem = {
-				sessionID,
-				id: 2,
-				iconSrc: Zotero.ItemTypes.getImageSrc("attachment-snapshot"),
-				title: "Snapshot",
-				parentItem: 1,
-				progress: 0,
-				itemType: Zotero.getString("itemType_snapshot"),
-				itemsLoaded: 1
-			};
-			// Once snapshot item is created, if requested, run SingleFile
-			if (!data.pdf && result && result.saveSingleFile) {
-
-				Zotero.Messaging.sendMessage("progressWindow.itemProgress", progressItem);
-
-				try {
-					data.snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
-				}
-				catch (e) {
-					// Swallow error, will fallback to save in client
-					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: false } });
-				}
-
-				result = await Zotero.Connector.saveSingleFile({
-						method: "saveSingleFile",
-						headers: {"Content-Type": "application/json"}
-					},
-					data
-				);
-
-				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
-			}
-
-			if (result && result.attachments) {
-				for (let attachment of result.attachments) {
-					progressItem.title = attachment.title;
-					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
-				}
-			}
+			await this._saveSingleFile(items[0], data);
 
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			Object.assign(this.sessionDetails, {
@@ -416,32 +380,149 @@ let PageSaving = {
 		} catch (e) {
 			// Client unavailable
 			if (e.status === 0) {
-				// Attempt saving to server if not pdf
-				if (document.contentType != 'application/pdf') {
-					let itemSaver = new Zotero.Translate.ItemSaver({});
-					let items = await itemSaver.saveAsWebpage();
-					if (items.length) {
-						Zotero.Messaging.sendMessage(
-							"progressWindow.itemProgress",
-							{
-								id: title,
-								iconSrc: Zotero.ItemTypes.getImageSrc(image),
-								title,
-								parentItem: false,
-								progress: 100
-							}
-						);
-					}
-					Zotero.Messaging.sendMessage("progressWindow.done", [true]);
-					return;
-				} else {
-					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'clientRequired']);
+				let itemSaver = new ItemSaver({});
+				this.sessionDetails.itemSaver = itemSaver;
+				let result = await itemSaver.saveAsWebpage();
+				items[0].key = result[0].key;
+				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...items[0], progress: 100 });
+				const automaticSnapshots = await Zotero.Prefs.getAsync("automaticSnapshots")
+				if (automaticSnapshots) {
+					await this._saveSingleFile(items[0], data, true);
 				}
+				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+				return;
 			}
-				// Unexpected error, including a timeout (which we don't want to
-				// result in a save to the server, because it's possible the request
+			// Unexpected error, including a timeout (which we don't want to
+			// result in a save to the server, because it's possible the request
 			// will still be processed)
 			else if (!e.value || e.value.libraryEditable != false) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
+			}
+			throw e;
+		}
+	},
+
+	async _saveSingleFile(item, data, toServer = false) {
+		let isSingleFileAvailable = document.contentType === "text/html";
+		// SingleFile does not work in Chromium incognito due to object passing via object URL not being available
+		if (Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()){
+			isSingleFileAvailable = false;
+		}
+		// Once snapshot item is created, if requested, run SingleFile
+		if (isSingleFileAvailable) {
+			item.attachments = [{
+				sessionID: data.sessionID,
+				id: 2,
+				iconSrc: Zotero.ItemTypes.getImageSrc("attachment-snapshot"),
+				title: "Snapshot",
+				parentItem: 1,
+				parentKey: item.key,
+				progress: 0,
+				itemType: Zotero.getString("itemType_snapshot"),
+				mimeType: "text/html",
+				linkMode: "imported_url",
+				itemsLoaded: 1
+			}]
+			let snapshotItem = item.attachments[0];
+
+			Zotero.Messaging.sendMessage("progressWindow.itemProgress", snapshotItem);
+
+			const snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
+
+			if (toServer) {
+				snapshotItem.data = snapshotContent;
+				await Zotero.ItemSaver.saveAttachmentToServer(snapshotItem);
+			}
+			else {
+				data.snapshotContent = snapshotContent;
+				await Zotero.Connector.saveSingleFile({
+						method: "saveSingleFile",
+						headers: {"Content-Type": "application/json"}
+					},
+					data
+				);
+			}
+
+			Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...snapshotItem, progress: 100 });
+		}
+	},
+
+	async _saveAsStandaloneAttachment({ title=document.title } = {}) {
+		const sessionID = this.sessionDetails.id;
+		// document.title is empty on Safari
+		if (!title) {
+			title = new URL(document.location.href).pathname.split('/').pop();
+		}
+		let itemType = "webpage";
+		if (document.contentType === 'application/pdf') {
+			itemType = "pdf"
+		}
+		else if (document.contentType === 'application/epub+zip') {
+			itemType = "epub";
+		}
+
+		let progressItem = {
+			sessionID,
+			id: 1,
+			iconSrc: Zotero.ItemTypes.getImageSrc(`attachment-${itemType}`),
+			title,
+			progress: 0,
+			// TODO passed to ProgressWindow for accessibility messages. Needs to be updated there
+			itemType: Zotero.getString(`itemType_${itemType}`),
+		};
+
+		Zotero.Messaging.sendMessage("progressWindow.show", [sessionID, null, false, true]);
+		Zotero.Messaging.sendMessage(
+			"progressWindow.itemProgress",
+			progressItem
+		);
+
+		let standaloneAttachment = {
+			url: document.location.toString(),
+			mimeType: document.contentType,
+			title,
+			linkMode: "imported_url",
+			referrer: document.referrer
+		}
+
+		try {
+			await ItemSaver.fetchAttachmentSafari(standaloneAttachment);
+			let { canRecognize } = await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(standaloneAttachment, sessionID)
+			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
+			progressItem.progress = 100;
+			Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+
+			if (canRecognize) {
+				let item = await Zotero.Connector.callMethod("getRecognizedItem", { sessionID: sessionID });
+				if (item) {
+					item.id = 2;
+					item.iconSrc = Zotero.ItemTypes.getImageSrc(item.itemType);
+					progressItem.parentItem = 2;
+					Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...item, ...{ progress: 100 } });
+					setTimeout(() => {
+						Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+					}, 50);
+				}
+			}
+
+			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+			Object.assign(this.sessionDetails, {
+				id: sessionID,
+				url: document.location.href,
+			});
+		} catch (e) {
+			// Client unavailable
+			if (e.status === 0) {
+				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 0 } });
+				await Zotero.ItemSaver.saveAttachmentToServer(standaloneAttachment);
+				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
+				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+				return;
+			}
+			else if (!e.value || e.value.libraryEditable != false) {
+				// Unexpected error, including a timeout (which we don't want to
+				// result in a save to the server, because it's possible the request
+				// will still be processed)
 				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'unexpectedError']);
 			}
 			throw e;
@@ -487,39 +568,33 @@ let PageSaving = {
 			if (!options.fallbackOnFailure) {
 				translators = translators.slice(0, 1)
 			}
-			let items = await this.translateAndSave(sessionID, translators);
+			let items = await this.translateAndSave(translators);
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			return items;
 		} catch (e) {
 			Zotero.logError(e);
-			let errorMessage = e.toString();
-			if (translator.itemType != 'multiple' && options.fallbackOnFailure) {
-				Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', this.translators.at(-1).label, "Save as Webpage"]);
-				return this.saveAsWebpage({ sessionID, snapshot: true });
+			// Clear session details on failure, so another save click tries again
+			this._clearSession();
+			// We delay opening the progressWindow for multiple items so we don't have to flash it
+			// for the select dialog. But it comes back to bite us in the butt if a translation
+			// error occurs immediately since the below command will execute before the progressWindow show,
+			// and then the delayed progressWindow.show will pop up another empty progress window.
+			// Cannot have that!
+			await Zotero.Promise.delay(500);
+			const isAccessLimitingTranslator = SITE_ACCESS_LIMIT_TRANSLATORS.has(translator.translatorID);
+			const errorMessage = e.toString();
+			let statusCode = '';
+			try {
+				statusCode = errorMessage.match(/status code ([0-9]{3})/)[1];
+			} catch (e) {}
+			const isHTTPErrorForbidden = statusCode == '403';
+			const isHTTPErrorTooManyRequests = statusCode == '429';
+			if ((isAccessLimitingTranslator && isHTTPErrorForbidden) || isHTTPErrorTooManyRequests) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'siteAccessLimits', translator.label]);
 			}
 			else {
-				// Clear session details on failure, so another save click tries again
-				this._clearSession();
-				// We delay opening the progressWindow for multiple items so we don't have to flash it
-				// for the select dialog. But it comes back to bite us in the butt if a translation
-				// error occurs immediately since the below command will execute before the progressWindow show,
-				// and then the delayed progressWindow.show will pop up another empty progress window.
-				// Cannot have that!
-				await Zotero.Promise.delay(500);
-				const isAccessLimitingTranslator = SITE_ACCESS_LIMIT_TRANSLATORS.has(translator.translatorID);
-				let statusCode = '';
-				try {
-					statusCode = errorMessage.match(/status code ([0-9]{3})/)[1];
-				} catch (e) {}
-				const isHTTPErrorForbidden = statusCode == '403';
-				const isHTTPErrorTooManyRequests = statusCode == '429';
-				if ((isAccessLimitingTranslator && isHTTPErrorForbidden) || isHTTPErrorTooManyRequests) {
-					Zotero.Messaging.sendMessage("progressWindow.done", [false, 'siteAccessLimits', translator.label]);
-				}
-				else {
-					Zotero.Messaging.sendMessage("progressWindow.done", [false]);
-				}
-			}	
+				Zotero.Messaging.sendMessage("progressWindow.done", [false]);
+			}
 		}
 	},
 
@@ -538,7 +613,52 @@ let PageSaving = {
 		}
 		
 		var sessionID = this._initSession(translatorID, options);
-		return await this.saveAsWebpage({sessionID, title, snapshot: options.snapshot});
+		return await this.saveAsWebpage({sessionID, title, snapshot: options.snapshot, resave: options.resave});
+	},
+
+	/**
+	 * Updates the session with the given data.
+	 * @param {Object} data - The data to update the session with.
+	 * @param {String} data.targetId - The target ID
+	 * @param {Boolean} data.resaveAttachments - Whether attachments should be resaved
+	 * @param {Boolean} data.removeAttachments - Whether attachments should be removed
+	 * @param {String[]} data.tags - A list of tags
+	 */
+	async onUpdateSession(data) {
+		// This message is received in every frame from the progress window
+		// iframe due to how messaging is set up, and we need to ignore it
+		// on all but the frame that has sessionDetails.id - is translating.
+		if (!this.sessionDetails.id) return;
+		await Zotero.Connector.callMethod(
+			"updateSession",
+			{
+				sessionID: this.sessionDetails.id,
+				target: data.target,
+				tags: data.tags
+			}
+		);
+
+		if (data.resaveAttachments && this.sessionDetails.itemSaver) {
+			Zotero.Messaging.sendMessage("progressWindow.show", [this.sessionDetails.id]);
+			await this.sessionDetails.itemSaver.saveAttachmentsToZotero(
+				PageSaving._onAttachmentProgress
+			);
+			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+		}
+		else if (data.removeAttachments) {
+			for (let item of this.sessionDetails.items) {
+				for (let attachment of item.attachments) {
+					Zotero.Messaging.sendMessage(
+						"progressWindow.itemProgress",
+						{
+							sessionID: this.sessionDetails.id,
+							id: attachment.id,
+							progress: -1,
+						}
+					);
+				}
+			}
+		}
 	}
 }
 

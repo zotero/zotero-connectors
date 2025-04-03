@@ -25,7 +25,7 @@
 
 // TODO: refactor this class
 Zotero.Connector = new function() {
-	const CONNECTOR_API_VERSION = 2;
+	const CONNECTOR_API_VERSION = 3;
 	
 	var _ieStandaloneIframeTarget, _ieConnectorCallbacks;
 	this.isOnline = (Zotero.isSafari || Zotero.isFirefox) ? false : null;
@@ -61,10 +61,13 @@ Zotero.Connector = new function() {
 	this.ping = async function(payload={}) {
 		let response = await Zotero.Connector.callMethod("ping", payload);
 		if (response && 'prefs' in response) {
+			// TODO refactor this because it's stupid
+			Zotero.Connector.downloadAssociatedFiles = !!response.prefs.downloadAssociatedFiles;
 			Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
 			Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
 			Zotero.Connector.googleDocsAddNoteEnabled = !!response.prefs.googleDocsAddNoteEnabled;
 			Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
+			Zotero.Connector.supportsAttachmentUpload = !!response.prefs.supportsAttachmentUpload;
 			if (response.prefs.translatorsHash) {
 				(async () => {
 					let sorted = !!response.prefs.sortedTranslatorHash;

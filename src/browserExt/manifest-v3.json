@@ -59,6 +59,7 @@
 			"progressWindow/progressWindow.html",
 			"modalPrompt/modalPrompt.html",
 			"test/data/journalArticle-single.html",
+			"browserAttachmentMonitor/browserAttachmentMonitor.html",
 			"lib/SingleFile/single-file-hooks-frames.js",
 			"inject/pageSaving.js",
 			"translateWeb.js",

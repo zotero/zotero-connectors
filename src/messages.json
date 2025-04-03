@@ -133,6 +133,14 @@
 	"progressWindow_error_upgradeClient_latestVersion": {
 		"message": "latest version"
 	},
+	"progressWindow_OA_searching": {
+		"message": "Searching for open-access version…"
+	},
+	"progressWindow_OA_failed": {
+		"message": "Failed to download open-access version"
+	},
+
+	
 	
 	"itemSelector_title": {
 		"message": "Select which items you’d like to add to your library:"

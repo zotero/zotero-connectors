@@ -151,16 +151,7 @@ Zotero.WebRequestIntercept = {
 	
 	replaceHeaders: async function(url, headers) {
 		if (!Zotero.isBrowserExt) return;
-		if (Zotero.isManifestV3 && Zotero.isChromium) return this.replaceHeadersDNR(url, headers);
-			function headerReplacer(details) {
-				if (details.url === url) {
-					browser.webRequest.onBeforeSendHeaders.removeListener(headerReplacer);
-					Zotero.debug(`Replacing headers for ${url} to ${JSON.stringify(headers)}`);
-					headers = Object.assign(details.requestHeaders, headers);
-					return { requestHeaders: headers };
-				}
-			}
-		browser.webRequest.onBeforeSendHeaders.addListener(headerReplacer, {urls: ['<all_urls>'], types: ['xmlhttprequest']}, ['blocking', 'requestHeaders']);
+		return this.replaceHeadersDNR(url, headers);
 	},
 	
 	replaceHeadersDNR: async function(url, headers) {
@@ -176,7 +167,7 @@ Zotero.WebRequestIntercept = {
 			},
 			condition: {
 				resourceTypes: ['xmlhttprequest'],
-				initiatorDomains: [chrome.runtime.id],
+				initiatorDomains: [new URL(browser.runtime.getURL('')).hostname],
 			}
 		}];
 		try {

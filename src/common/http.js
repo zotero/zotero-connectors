@@ -25,10 +25,7 @@
 
 const MAX_BACKOFF = 64e3;
 
-let HEADERS_SPECIAL_HANDLING = ['User-Agent'];
-if (Zotero.isChromium) {
-	HEADERS_SPECIAL_HANDLING.push('Referer');
-}
+const HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Cookie', 'Referer'];
 
 /**
  * Functions for performing HTTP requests, both via XMLHTTPRequest and using a hidden browser
@@ -76,6 +73,8 @@ Zotero.HTTP = new function() {
 	 *         <li>successCodes - HTTP status codes that are considered successful, or FALSE to allow all</li>
 	 *         <li>maxBackoff - how many times should a HTTP 429 backoff be attempted before the request fails
 	 *         		[default 0]</li>
+	 *         <li>forceInject - force the request to be sent via the inject script, even if it's not a same-origin request
+	 *         		[default false]</li>
 	 *     </ul>
 	 * @return {Promise<XMLHttpRequest>} A promise resolved with the XMLHttpRequest object if the
 	 *     request succeeds, or rejected if the browser is offline or a non-2XX status response
@@ -94,6 +93,7 @@ Zotero.HTTP = new function() {
 			successCodes: null,
 			maxBackoff: 10,
 			backoff: 0,
+			forceInject: false,
 		}, options);
 		let originalOptions = Zotero.Utilities.deepCopy(options);
 		
@@ -142,7 +142,7 @@ Zotero.HTTP = new function() {
 		// the background page since we're unable to replace user-agent via an on-page xhr and
 		// since user-agent option is explicitly set, it takes priority.
 		let sameOriginRequestViaSafari = Zotero.isSafari && Zotero.HTTP.isSameOrigin(url) && !options.headers['User-Agent'];
-		if (Zotero.isInject && !sameOriginRequestViaSafari) {
+		if (Zotero.isInject && !options.forceInject && !sameOriginRequestViaSafari) {
 			// The privileged XHR that Firefox makes available to content scripts so that they
 			// can make cross-domain requests doesn't include the Referer header in requests [1],
 			// so sites that check for it don't work properly. As long as we're not making a
@@ -194,7 +194,7 @@ Zotero.HTTP = new function() {
 			if (options.body != null) {
 				throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
 			}
-		} else if(options.body) {
+		} else if(options.body && !(options.body instanceof ArrayBuffer)) {
 			if (options.headers["Content-Type"] !== 'multipart/form-data') {
 				options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
 
@@ -217,6 +217,9 @@ Zotero.HTTP = new function() {
 		}	
 		
 		if (Zotero.isBackground) {
+			if (options.referrer) {
+				options.headers['Referer'] = options.referrer;
+			}
 			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
 				.map(header => {
 					const val = { name: header, value: options.headers[header] }
@@ -309,7 +312,7 @@ Zotero.HTTP = new function() {
 				if (options.body != null) {
 					throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
 				}
-			} else if(options.body) {
+			} else if (options.body && !(options.body instanceof ArrayBuffer)) {
 				if (options.headers["Content-Type"] !== 'multipart/form-data') {
 					options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
 
@@ -347,17 +350,16 @@ Zotero.HTTP = new function() {
 			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
 				.map(header => {
 					const val = { name: header, value: options.headers[header] }
-					delete options.headers['User-Agent'];
+					delete options.headers[header];
 					return val;
 				});
 			if (replaceHeaders.length) {
 				DNRRuleID = await Zotero.WebRequestIntercept.replaceHeaders(url, replaceHeaders);
 			}
-			let headers = new Headers(options.headers);
 			try {
 				let fetchOptions = {
 					method,
-					headers,
+					headers: options.headers,
 					body: options.body,
 					credentials: Zotero.isInject ? 'same-origin' : 'include',
 				}

@@ -146,6 +146,10 @@ ItemSaver.prototype = {
 					if (this._itemType === "multiple" || isChromiumIncognito) {
 						return false;
 					}
+					if (!zoteroSupportsAttachmentUpload) {
+						payload.singleFile = true;
+						attachment.singleFile = true;
+					}
 					this._snapshotAttachment = attachment;
 					this._singleFile = true;
 					// If Zotero doesn't support attachment upload then we need to pass the snapshot

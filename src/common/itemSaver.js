@@ -136,7 +136,18 @@ ItemSaver.prototype = {
 				if (!attachment.title) attachment.title = attachment.mimeType + ' Attachment';
 				attachment.id = attachment.id || Zotero.Utilities.randomString(8);
 				attachment.parentItem = item.id;
-				attachment.referrer = new URL(item.url || document.location.href).origin;
+				// Keep in sync with _saveToServer()
+				if (item.url) {
+					try {
+						attachment.referrer = new URL(item.url).origin;
+					}
+					catch (e) {
+						Zotero.debug(e);
+					}
+				}
+				if (!attachment.referrer) {
+					attachment.referrer = new URL(document.location.href).origin;
+				}
 				
 				// Ignore non-snapshot text/html attachments (saved as link attachments)
 				// Don't save snapshots in Chromium incognito where it doesn't work
@@ -484,7 +495,19 @@ ItemSaver.prototype = {
 
 		for (const item of items) {
 			for (const attachment of item.attachments) {
-				attachment.referrer = new URL(item.url || document.location.href).origin;
+				// Keep in sync with _saveToZotero()
+				if (item.url) {
+					try {
+						attachment.referrer = new URL(item.url).origin;
+					}
+					catch (e) {
+						Zotero.debug(e);
+					}
+				}
+				if (!attachment.referrer) {
+					attachment.referrer = new URL(document.location.href).origin;
+				}
+				
 				if (attachment.mimeType === 'text/html') {
 					if (prefs.automaticSnapshots) {
 						attachmentCallback(attachment, 0);

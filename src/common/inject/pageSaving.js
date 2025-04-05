@@ -368,7 +368,9 @@ let PageSaving = {
 			items[0] = { ...items[0], progress: 100, itemsLoaded: 1 };
 			Zotero.Messaging.sendMessage("progressWindow.itemProgress", items[0]);
 
-			await this._saveSingleFile(items[0], data);
+			if (saveSnapshot) {
+				await this._saveSingleFile(items[0], data);
+			}
 
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			Object.assign(this.sessionDetails, {
@@ -606,6 +608,7 @@ let PageSaving = {
 		if (!result) return;
 		
 		var translatorID = 'webpage' + (options.snapshot ? 'WithSnapshot' : '');
+		options.snapshot = !!options.snapshot;
 		
 		// In some cases, we just reopen the popup instead of saving again
 		if (this._shouldReopenProgressWindow(translatorID, options)) {

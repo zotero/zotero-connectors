@@ -542,6 +542,11 @@ let PageSaving = {
 		let translatorIndex = this.translators.findIndex(t => t.translatorID === translatorID);
 		let translator = this.translators[translatorIndex];
 		
+		// Always resave if a different translator/mode
+		if (this.sessionDetails.translatorID && translatorID != this.sessionDetails.translatorID) {
+			options.resave = true;
+		}
+		
 		// In some cases, we just reopen the popup instead of saving again
 		if (this._shouldReopenProgressWindow(translatorID, options, translator.itemType)) {
 			return Zotero.Messaging.sendMessage("progressWindow.show", [this.sessionDetails.id]);
@@ -609,6 +614,10 @@ let PageSaving = {
 		
 		var translatorID = 'webpage' + (options.snapshot ? 'WithSnapshot' : '');
 		options.snapshot = !!options.snapshot;
+		// Always resave if a different translator/mode
+		if (this.sessionDetails.translatorID && translatorID != this.sessionDetails.translatorID) {
+			options.resave = true;
+		}
 		
 		// In some cases, we just reopen the popup instead of saving again
 		if (this._shouldReopenProgressWindow(translatorID, options)) {

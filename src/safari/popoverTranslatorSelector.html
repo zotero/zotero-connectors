@@ -52,8 +52,7 @@
 			Zotero_Connector_Browser.saveAsWebpage(
 				Zotero_Connector_Browser.activeTab,
 				{
-					snapshot,
-					resave: true
+					snapshot
 				}
 			);
 			safari.self.hide();
@@ -118,10 +117,7 @@
 				li.onclick = function () {
 					Zotero.Connector_Browser.saveWithTranslator(
 						tab,
-						i,
-						{
-							resave: true
-						}
+						i
 					);
 					safari.self.hide();
 				};

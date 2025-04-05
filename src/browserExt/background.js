@@ -716,7 +716,7 @@ Zotero.Connector_Browser = new function() {
 		const parts = id.split('-');
 		if (id.startsWith("zotero-context-menu-translator-save-")) {
 			const translatorIdx = parts[parts.length-1];
-			return Zotero.Connector_Browser.saveWithTranslator(tab, translatorIdx, { resave: true });
+			return Zotero.Connector_Browser.saveWithTranslator(tab, translatorIdx);
 		}
 		else if(id.startsWith("zotero-context-menu-proxy-reload-")) {
 			const proxyIdx = parts[parts.length-1];

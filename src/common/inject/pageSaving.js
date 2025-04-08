@@ -329,6 +329,7 @@ let PageSaving = {
 	},
 	
 	async _saveAsWebpage({ title, saveSnapshot } = {}) {
+		const supportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
 		const sessionID = this.sessionDetails.id;
 		var translatorID = 'webpage' + (saveSnapshot ? 'WithSnapshot' : '');
 		try {
@@ -340,8 +341,11 @@ let PageSaving = {
 			referrer: document.referrer,
 			cookie,
 			title: title,
-			skipSnapshot: !saveSnapshot,
 		};
+		if (!supportsAttachmentUpload) {
+			data.skipSnapshot = !saveSnapshot;
+			data.singleFile = true;
+		}
 
 		var image;
 		if (document.contentType == 'application/pdf') {

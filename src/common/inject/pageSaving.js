@@ -196,7 +196,7 @@ let PageSaving = {
 	 * @param translators {Array}
 	 * @returns {Promise<*>}
 	 */
-	async translateAndSave(translators) {
+	async translateAndSave(translators, fallbackOnFailure = false) {
 		const sessionID = this.sessionDetails.id;
 		let itemsTotal = 0;
 		let itemsSaved = 0;
@@ -286,14 +286,13 @@ let PageSaving = {
 
 
 		let translate = await this._initTranslate();
-		let options = { translate, translators, onSelect, onItemSaving, onTranslatorFallback };
+		let options = { translate, translators: translators.slice(), onSelect, onItemSaving, onTranslatorFallback };
 		try {
 			var { items, proxy } = await TranslateWeb.translate(options);
 		} catch (e) {
-			let translator = translate.translator[0]
-			if (translator.itemType != 'multiple' && options.fallbackOnFailure) {
+			if (translators[0].itemType != 'multiple' && fallbackOnFailure) {
 				Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', this.translators.at(-1).label, "Save as Webpage"]);
-				Zotero.debug(`Saving with ${translator.label} failed. Falling back to saving as webpage`);
+				Zotero.debug(`Saving with ${translators[0].label} failed. Falling back to saving as webpage`);
 				return this.saveAsWebpage({ snapshot: true });
 			}
 		}

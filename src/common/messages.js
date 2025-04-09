@@ -140,7 +140,7 @@ var MESSAGES = {
 		checkIsOnline: true,
 		callMethod: true,
 		callMethodWithCookies: true,
-		saveSingleFile: true,
+		saveSingleFile: { largePayload: true },
 		getClientVersion: true,
 		reportActiveURL: false,
 		getPref: true
@@ -170,7 +170,7 @@ var MESSAGES = {
 		count: true,
 	},
 	ItemSaver: {
-		saveAttachmentToZotero: true,
+		saveAttachmentToZotero: { largePayload: true },
 		saveStandaloneAttachmentToZotero: true,
 		saveAttachmentToServer: true
 	},

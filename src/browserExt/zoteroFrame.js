@@ -28,14 +28,20 @@
  */
 class ZoteroFrame {
 	/**
-	 * @property initializedPromise {Promise} resolves when the frame messaging is initialized
 	 * @param attributes {Object} frame attributes.
 	 * @param style {Object} CSSStyleDeclaration type style for the frame.
 	 * @param messagingOptions {Object} If provided will set up frame messaging. See messagingGeneric.js
 	 */
 	constructor(attributes={}, style={}, messagingOptions) {
 		if (!attributes.src) throw new Error("Attempted to construct a Zotero frame with no src attribute");
-		this.initializedPromise = this._init(attributes, style, messagingOptions);
+		this._initializedPromise = this._init(attributes, style, messagingOptions);
+	}
+
+	/**
+	 * @returns {Promise} resolves when the frame messaging is initialized
+	 */
+	async init() {
+		return this._initializedPromise;
 	}
 	
 	async _init(attributes={}, style={}, messagingOptions) {
@@ -104,3 +110,5 @@ class ZoteroFrame {
 	}
 	
 }
+
+export default ZoteroFrame;

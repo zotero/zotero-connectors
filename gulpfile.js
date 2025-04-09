@@ -77,7 +77,6 @@ var injectInclude = [
 	'messaging_inject.js',
 	'inject/progressWindow_inject.js',
 	'inject/modalPrompt_inject.js',
-	'zoteroFrame.js',
 	'messagingGeneric.js',
 	'i18n.js',
 	'singlefile.js'

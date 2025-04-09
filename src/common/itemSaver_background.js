@@ -93,7 +93,7 @@ Zotero.ItemSaver.saveAttachmentToServer = async function(attachment, tab) {
 
 	// SingleFile snapshot
 	if (typeof attachment.data === 'string' && attachment.mimeType === 'text/html') {
-		let snapshotString = await Zotero.Utilities.Connector.unpackString(attachment.data);
+		let snapshotString = attachment.data;
 		attachment.data = new Uint8Array(Zotero.Utilities.getStringByteLength(snapshotString));
 		Zotero.Utilities.stringToUTF8Array(snapshotString, attachment.data);
 	}

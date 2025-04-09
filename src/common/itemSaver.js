@@ -247,7 +247,7 @@ ItemSaver.prototype = {
 		try {
 			attachmentCallback(this._snapshotAttachment, 0);
 			let data = { items: this._items, sessionID: this._sessionID };
-			data.snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
+			data.snapshotContent = await Zotero.SingleFile.retrievePageData();
 			data.url = this._items[0].url;
 			data.title = this._snapshotAttachment.title;
 			await Zotero.Connector.saveSingleFile({
@@ -567,7 +567,7 @@ ItemSaver.prototype = {
 			case "text/html":
 			case "application/xhtml+xml":
 				attachment.filename = baseName+".html";
-				attachment.data = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
+				attachment.data = await Zotero.SingleFile.retrievePageData();
 				break;
 			default:
 				attachment.filename = baseName;

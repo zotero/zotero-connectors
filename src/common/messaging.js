@@ -153,3 +153,26 @@ Zotero.Messaging = new function() {
 		Zotero.Messaging.initialized = true;
 	}
 }
+// Used to pass large data like blobs on Chrome
+if (Zotero.isChromium) {
+	// Cannot be added asynchronously
+	self.addEventListener('message', async (e) => {
+		if (!(e.data?.type === "inject-message")) return;
+		let { args } = e.data;
+		// Replace tabId with tab
+		if (args[2]) {
+			args[2] = await browser.tabs.get(args[2]);
+		}
+		let result, error;
+		try {
+			result = await Zotero.Messaging.receiveMessage(...args)
+		} catch (e) {
+			error = JSON.stringify(Object.assign({
+				name: e.name,
+				message: e.message,
+				stack: e.stack
+			}, e));
+		}
+		e.source.postMessage({ result, error });
+	});
+}

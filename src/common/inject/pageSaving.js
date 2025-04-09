@@ -432,7 +432,7 @@ let PageSaving = {
 
 			Zotero.Messaging.sendMessage("progressWindow.itemProgress", snapshotItem);
 
-			const snapshotContent = Zotero.Utilities.Connector.packString(await Zotero.SingleFile.retrievePageData());
+			const snapshotContent = await Zotero.SingleFile.retrievePageData();
 
 			if (toServer) {
 				snapshotItem.data = snapshotContent;
@@ -578,7 +578,7 @@ let PageSaving = {
 			if (!options.fallbackOnFailure) {
 				translators = translators.slice(0, 1)
 			}
-			let items = await this.translateAndSave(translators);
+			let items = await this.translateAndSave(translators, options.fallbackOnFailure);
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			return items;
 		} catch (e) {

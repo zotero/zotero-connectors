@@ -256,14 +256,11 @@ Zotero.Connector = new function() {
 	}
 
 	/**
-	 * This is callMethodWithCookies except that it unpacks the singlefile snapshot.
-	 * We need to pack the snapshot because Chrome limits IPC messages to 128MB.
+	 * Just calls callMethod, but we need a separate method for content script messaging
+	 * marked as largePayload in messages.js to use Messaging._sendViaIframeServiceWorkerPort()
 	 */
-	this.saveSingleFile = async function(options, data, tab) {
-		if (data.snapshotContent) {
-			data.snapshotContent = await Zotero.Utilities.Connector.unpackString(data.snapshotContent);
-		}
-		return this.callMethodWithCookies(options, data, tab);
+	this.saveSingleFile = async function(options, data) {
+		return this.callMethod(options, data);
 	}
 
 	/**

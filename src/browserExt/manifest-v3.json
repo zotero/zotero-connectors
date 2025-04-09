@@ -60,8 +60,10 @@
 			"modalPrompt/modalPrompt.html",
 			"test/data/journalArticle-single.html",
 			"browserAttachmentMonitor/browserAttachmentMonitor.html",
+			"chromeMessageIframe/messageIframe.html",
 			"lib/SingleFile/single-file-hooks-frames.js",
 			"inject/pageSaving.js",
+			"zoteroFrame.js",
 			"translateWeb.js",
 			"itemSaver.js"
 		],

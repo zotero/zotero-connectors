@@ -249,7 +249,7 @@
 		"message": "Citing with $1 is disabled in Suggesting mode. Switch to Editing mode to enable citing."
 	},
 	"integration_googleDocs_largeDoc": {
-		"message": "Your document is over $1 pages long. Citing with $2 in large Google Docs documents is not recommended due to performance issues and difficulty in troubleshooting citation issues. Consider moving your document to LibreOffice or Microsoft Word.<br/><br/>See <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Moving Documents Between Word Processors</a> for more information."
+		"message": "Your document is over $1 pages long. Citing with $2 in large Google Docs documents is not recommended due to performance issues and difficulty in troubleshooting citation problems. Consider moving your document to LibreOffice or Microsoft Word.<br/><br/>See <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Moving Documents Between Word Processors</a> for more information."
 	},
 	
 	"integration_googleDocs_orphanedCitations_buttonTooltip": {

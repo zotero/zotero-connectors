@@ -58,6 +58,7 @@
 			"images/*",
 			"progressWindow/progressWindow.html",
 			"modalPrompt/modalPrompt.html",
+			"confirm/confirm.html",
 			"test/data/journalArticle-single.html",
 			"browserAttachmentMonitor/browserAttachmentMonitor.html",
 			"chromeMessageIframe/messageIframe.html",

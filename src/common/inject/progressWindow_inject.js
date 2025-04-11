@@ -477,12 +477,11 @@ if (isTopWindow) {
 	
 	Zotero.Messaging.addMessageListener("progressWindow.done", (returnValue) => {
 		closeOnLeave = true;
-		if (document.location.href.startsWith(Zotero.getExtensionURL('confirm.html'))) {
-			setTimeout(function() {
-				window.close();
-			}, 3000);
+		if (document.location.href.startsWith(Zotero.getExtensionURL('confirm/confirm.html'))) {
+			// Handled in contentTypeHandler
+			return;
 		}
-		else if (returnValue[0]) {
+		if (returnValue[0]) {
 			startCloseTimer(3000);
 			addEvent("willHide");
 		}

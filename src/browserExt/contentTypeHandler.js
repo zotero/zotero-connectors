@@ -51,30 +51,29 @@ Zotero.ContentTypeHandler = {
 		"https://gitee.com/\\1/raw/\\2": /https?:\/\/gitee\.com\/([^/]+\/[^/]+)\/blob\/(.+\.csl)#importConfirm$/
 	},
 	ignoreURL: new Set(),
-	
+	_enabled: false,
+
 	init: function() {
 		if (Zotero.isManifestV3) {
-			chrome.declarativeNetRequest.updateEnabledRulesets({
-				disableRulesetIds: ['styleIntercept']
-			});
+			this._addDNRInterceptRules();
+			this._monitorInterceptConfirmation();
+			this._enabled = true;
 		}
 	},
 
 	enable: function() {
 		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
-		if (Zotero.isManifestV3) {
-			chrome.declarativeNetRequest.updateEnabledRulesets({
-				enableRulesetIds: ['styleIntercept']
-			});
+		if (!this._enabled && Zotero.isManifestV3) {
+			this._addDNRInterceptRules();
+			this._enabled = true;
 		}
 	},
 	
 	disable: function() {
 		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
-		if (Zotero.isManifestV3) {
-			chrome.declarativeNetRequest.updateEnabledRulesets({
-				disableRulesetIds: ['styleIntercept']
-			});
+		if (this._enabled && Zotero.isManifestV3) {
+			this._removeDNRInterceptRules();
+			this._enabled = false;
 		}
 	},
 
@@ -112,28 +111,42 @@ Zotero.ContentTypeHandler = {
 			return;
 		}
 		if (Zotero.ContentTypeHandler._isImportableStyle(details.url, contentType)) {
-			// We are in a blocking handler, and we need to return a navigation cancelling object,
-			// but we need to do more stuff afterwards
-			(async () => {
-				if (await Zotero.ContentTypeHandler._shouldImportStyle(details.tabId)) {
-					await Zotero.ContentTypeHandler.importFile(details.url, details.tabId, 'csl');
-				}
-				else {
-					await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, details.url);
-				}
-			})();
+			// No await, because we need to return a navigation cancelling object
+			Zotero.ContentTypeHandler.handleImportableStyle(details.url, details.tabId);
 			return Zotero.ContentTypeHandler._cancelWebNavigation();
 		}
 		else if (Zotero.ContentTypeHandler._isImportableContent(contentType)) {
-			(async () => {
-				if (await Zotero.ContentTypeHandler._shouldImportContent(details.url, details.tabId)) {
-					await Zotero.ContentTypeHandler.importFile(details.url, details.tabId, 'import');
-				}
-				else {
-					await Zotero.ContentTypeHandler._redirectToOriginal(details.tabId, details.url);
-				}
-			})();
+			// No await, because we need to return a navigation cancelling object
+			Zotero.ContentTypeHandler.handleImportableContent(details.url, details.tabId);
 			return Zotero.ContentTypeHandler._cancelWebNavigation();
+		}
+	},
+
+	async handleImportableStyle(url, tabId) {
+		if (await Zotero.ContentTypeHandler._shouldImportStyle(tabId)) {
+			await Zotero.ContentTypeHandler.importFile(url, tabId, 'csl');
+			if (Zotero.isManifestV3) {
+				setTimeout(() => {
+					browser.tabs.goBack(tabId);
+				}, 2000);
+			}
+		}
+		else {
+			await Zotero.ContentTypeHandler._redirectToOriginal(tabId, url);
+		}
+	},
+
+	async handleImportableContent(url, tabId) {
+		if (await Zotero.ContentTypeHandler._shouldImportContent(url, tabId)) {
+			await Zotero.ContentTypeHandler.importFile(url, tabId, 'import');
+			if (Zotero.isManifestV3) {
+				setTimeout(() => {
+					browser.tabs.goBack(tabId);
+				}, 2000);
+			}
+		}
+		else {
+			await Zotero.ContentTypeHandler._redirectToOriginal(tabId, url);
 		}
 	},
 
@@ -194,14 +207,10 @@ Zotero.ContentTypeHandler = {
 	
 	_redirectToOriginal: async function(tabId, url) {
 		if (Zotero.isManifestV3) {
-			await chrome.declarativeNetRequest.updateEnabledRulesets({
-				disableRulesetIds: ['styleIntercept']
-			});
+			await this._removeDNRInterceptRules();
 			(async () => {
 				await Zotero.Promise.delay(2000);
-				chrome.declarativeNetRequest.updateEnabledRulesets({
-					enableRulesetIds: ['styleIntercept']
-				});
+				await this._addDNRInterceptRules();
 			})();
 		}
 		Zotero.ContentTypeHandler.ignoreURL.add(url);
@@ -210,7 +219,7 @@ Zotero.ContentTypeHandler = {
 	},
 	
 	_sendMessageAndHandleBlankPage: async function(message, props, tab) {
-		const confirmURL = browser.runtime.getURL(`confirm.html`);
+		const confirmURL = Zotero.getExtensionURL('confirm/confirm.html');
 		try {
 			var response = await Zotero.Messaging.sendMessage(message, props, tab);
 		} catch (e) {}
@@ -295,7 +304,7 @@ Zotero.ContentTypeHandler = {
 					'progressWindow.itemProgress',
 					{
 						id: null,
-						iconSrc: browser.runtime.getURL('images/csl-style.png'),
+						iconSrc: Zotero.getExtensionURL('images/csl-style.png'),
 						title: result.name,
 						progress: 100
 					},
@@ -338,6 +347,110 @@ Zotero.ContentTypeHandler = {
 				return Zotero.Messaging.sendMessage('progressWindow.done', [false, err], tab);
 			}
 		}
+	},
+	
+	async _addDNRInterceptRules() {
+		if (!Zotero.isManifestV3) return;
+		
+		// Get base confirm URL
+		const confirmURL = Zotero.getExtensionURL('confirm/confirm.html');
+		
+		// Create a single rule for all CSL content types
+		const cslRule = {
+			id: 30000,
+			priority: 5,
+			action: {
+				type: 'redirect',
+				redirect: {
+					regexSubstitution: `${confirmURL}#importCsl=\\0`
+				}
+			},
+			condition: {
+				resourceTypes: ['main_frame'],
+				regexFilter: '.*',
+				responseHeaders: [
+					{
+						header: 'content-type',
+						values: Array.from(this.cslContentTypes).map(value => `${value}*`)
+					}
+				]
+			}
+		};
+	
+		// Create a single rule for all import content types
+		const importRule = {
+			id: 31000,
+			priority: 5,
+			action: {
+				type: 'redirect',
+				redirect: {
+					regexSubstitution: `${confirmURL}#importContent=\\0`
+				}
+			},
+			condition: {
+				resourceTypes: ['main_frame'],
+				regexFilter: '.*',
+				responseHeaders: [
+					{
+						header: 'content-type',
+						values: Array.from(this.importContentTypes).map(value => `${value}*`)
+					}
+				]
+			}
+		};
+		
+		// Dynamic rules for content type handling
+		const rules = [cslRule, importRule];
+		await chrome.declarativeNetRequest.updateDynamicRules({
+			removeRuleIds: rules.map(r => r.id),
+			addRules: rules
+		});
+
+		// Static ruleset for github/gitee installation handling
+		await chrome.declarativeNetRequest.updateEnabledRulesets({
+			enableRulesetIds: ['styleIntercept']
+		});
+	},
+
+	async _removeDNRInterceptRules() {
+		if (!Zotero.isManifestV3) return;
+		await chrome.declarativeNetRequest.updateDynamicRules({
+			removeRuleIds: [30000, 31000]
+		});
+		await chrome.declarativeNetRequest.updateEnabledRulesets({
+			disableRulesetIds: ['styleIntercept']
+		});
+	},
+
+	// Wait for navigation to confirm.html that will occur due to DNR redirect
+	// rules above and handle import
+	async _monitorInterceptConfirmation() {
+		if (!Zotero.isManifestV3) return;
+
+		// Listen for navigation to confirm.html
+		Zotero.Messaging.addMessageListener('confirmImport', async (_, tab, frameId) => {
+			// Only handle main frame navigation
+			if (frameId !== 0) return;
+			
+			// Get the URL hash
+			const url = new URL(tab.url);
+			const hash = url.hash;
+			
+			// Handle CSL import
+			if (hash.startsWith('#importCsl=')) {
+				const originalUrl = hash.substring('#importCsl='.length);
+				if (originalUrl) {
+					Zotero.ContentTypeHandler.handleImportableStyle(originalUrl, tab.id);
+				}
+			}
+			// Handle other content import
+			else if (hash.startsWith('#importContent=')) {
+				const originalUrl = hash.substring('#importContent='.length);
+				if (originalUrl) {
+					Zotero.ContentTypeHandler.handleImportableContent(originalUrl, tab.id);
+				}
+			}
+		});
 	}
 };
 })();

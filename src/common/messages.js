@@ -243,6 +243,10 @@ var MESSAGES = {
 	},
 	WebRequestIntercept: {
 		replaceUserAgent: true,
+	},
+	ContentTypeHandler: {
+		handleImportableStyle: true,
+		handleImportableContent: true,
 	}
 };
 

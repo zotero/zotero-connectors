@@ -383,7 +383,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/browserExt/background-worker.js',
 		'./src/browserExt/manifest.json',
 		'./src/browserExt/manifest-v3.json',
-		'./src/browserExt/confirm.html',
+		'./src/browserExt/confirm/confirm.html',
 		'./src/common/preferences/preferences.html',
 		'./src/common/progressWindow/progressWindow.html',
 		'./src/common/modalPrompt/modalPrompt.html',

@@ -45,6 +45,7 @@ Zotero.ContentTypeHandler = {
 		"text/ris", // Cell serves this
 		"ris" // Not even trying
 	]),
+	importContentDispositionExtensions: ["bib", "bibtex", "ris", "rdf"],
 	mv3CSLWhitelistRegexp: {
 		"https://www.zotero.org/styles/\\1": /https?:\/\/(?:www\.)zotero\.org\/styles\/?#importConfirm=(.*)$/,
 		"https://raw.githubusercontent.com/\\1/\\2": /https?:\/\/github\.com\/([^/]*\/[^/]*)\/[^/]*\/([^.]*.csl)#importConfirm$/,
@@ -88,6 +89,8 @@ Zotero.ContentTypeHandler = {
 		}
 
 		const contentType = details.responseHeadersObject['content-type'].split(';')[0];
+		const contentDisposition = details.responseHeadersObject['content-disposition'];
+		
 		if (Zotero.isManifestV3) {
 			for (let destination in Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp) {
 				const regexp = Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp[destination];
@@ -110,12 +113,12 @@ Zotero.ContentTypeHandler = {
 			}
 			return;
 		}
-		if (Zotero.ContentTypeHandler._isImportableStyle(details.url, contentType)) {
+		if (Zotero.ContentTypeHandler._isImportableStyle(details.url, contentType, contentDisposition)) {
 			// No await, because we need to return a navigation cancelling object
 			Zotero.ContentTypeHandler.handleImportableStyle(details.url, details.tabId);
 			return Zotero.ContentTypeHandler._cancelWebNavigation();
 		}
-		else if (Zotero.ContentTypeHandler._isImportableContent(contentType)) {
+		else if (Zotero.ContentTypeHandler._isImportableContent(contentType, contentDisposition)) {
 			// No await, because we need to return a navigation cancelling object
 			Zotero.ContentTypeHandler.handleImportableContent(details.url, details.tabId);
 			return Zotero.ContentTypeHandler._cancelWebNavigation();
@@ -150,7 +153,7 @@ Zotero.ContentTypeHandler = {
 		}
 	},
 
-	_isImportableStyle: function (url, contentType) {
+	_isImportableStyle: function (url, contentType, contentDisposition) {
 		// Offer to install CSL by Content-Type
 		if (Zotero.ContentTypeHandler.cslContentTypes.has(contentType)) {
 			return true;
@@ -159,6 +162,13 @@ Zotero.ContentTypeHandler = {
 		else if (/\.csl$/i.test(url)) {
 			let hosts = Zotero.Prefs.get('allowedCSLExtensionHosts');
 			if (Array.isArray(hosts) && hosts.some(host => new RegExp(host).test(url))) {
+				return true;
+			}
+		}
+		// Check Content-Disposition for .csl files
+		else if (contentDisposition) {
+			const filename = Zotero.ContentTypeHandler._getFilenameFromContentDisposition(contentDisposition);
+			if (filename && /\.csl$/i.test(filename)) {
 				return true;
 			}
 		}
@@ -171,8 +181,26 @@ Zotero.ContentTypeHandler = {
 		return response && response.button === 1;
 	},
 
-	_isImportableContent: function(contentType) {
-		return Zotero.Prefs.get('interceptKnownFileTypes') && Zotero.ContentTypeHandler.importContentTypes.has(contentType)
+	_isImportableContent: function(contentType, contentDisposition) {
+		// Check content type first
+		if (Zotero.Prefs.get('interceptKnownFileTypes') && Zotero.ContentTypeHandler.importContentTypes.has(contentType)) {
+			return true;
+		}
+		
+		// Check Content-Disposition for importable file extensions
+		if (contentDisposition && Zotero.Prefs.get('interceptKnownFileTypes')) {
+			const filename = Zotero.ContentTypeHandler._getFilenameFromContentDisposition(contentDisposition);
+			if (filename) {
+				// /\.(bib|bibtex|ris|rdf)$/i;
+				const extensionsPattern = Zotero.ContentTypeHandler.importContentDispositionExtensions.join('|');
+				const importFileExtRegex = new RegExp(`\\.(${extensionsPattern})$`, 'i');
+				if (importFileExtRegex.test(filename)) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
 	},
 
 	_shouldImportContent: async function(url, tabId) {
@@ -194,6 +222,33 @@ Zotero.ContentTypeHandler = {
 				return true;
 			}
 		}
+	},
+
+	/**
+	 * Extract filename from Content-Disposition header
+	 * @param {string} contentDisposition - The Content-Disposition header value
+	 * @return {string|null} The extracted filename or null if not found
+	 */
+	_getFilenameFromContentDisposition: function(contentDisposition) {
+		if (!contentDisposition) return null;
+		
+		// Try to extract filename from "filename=" parameter
+		const filenameMatch = contentDisposition.match(/filename\s*=\s*(['"]?)([^'";\s]+)\1/i);
+		if (filenameMatch && filenameMatch[2]) {
+			return filenameMatch[2];
+		}
+		
+		// Try to extract filename from "filename*=" parameter (RFC 5987)
+		const filenameStarMatch = contentDisposition.match(/filename\*\s*=\s*([^']+)'[^']*'([^;]+)/i);
+		if (filenameStarMatch && filenameStarMatch[2]) {
+			try {
+				return decodeURIComponent(filenameStarMatch[2]);
+			} catch (e) {
+				return filenameStarMatch[2];
+			}
+		}
+		
+		return null;
 	},
 	
 	// Return this for a blocked webNavigation when showing a confirmation dialog
@@ -372,6 +427,10 @@ Zotero.ContentTypeHandler = {
 					{
 						header: 'content-type',
 						values: Array.from(this.cslContentTypes).map(value => `${value}*`)
+					},
+					{
+						header: 'content-disposition',
+						values: ['*filename=*.csl*']
 					}
 				]
 			}
@@ -394,6 +453,10 @@ Zotero.ContentTypeHandler = {
 					{
 						header: 'content-type',
 						values: Array.from(this.importContentTypes).map(value => `${value}*`)
+					},
+					{
+						header: 'content-disposition',
+						values: this.importContentDispositionExtensions.map(ext => `*filename=*.${ext}*`)
 					}
 				]
 			}

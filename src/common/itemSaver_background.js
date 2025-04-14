@@ -156,10 +156,19 @@ Zotero.ItemSaver._createServerAttachmentItem = async function(attachment) {
 Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotProtectionBypass=true) {
 	let options = { responseType: "arraybuffer", timeout: 60000 };
 	if (!Zotero.isSafari) {
-		let cookies = await browser.cookies.getAll({
-			url: attachment.url,
-			partitionKey: {},
-		});
+		let cookies;
+		try {
+			cookies = await browser.cookies.getAll({
+				url: attachment.url,
+				partitionKey: {},
+			});
+		} catch (e) {
+			// Unavailable with Chrome 118 and below. Last supported version on Win 7/8 is Chrome 109.
+			Zotero.debug(`Error getting cookies for ${attachment.url} with partitionKey.`);
+			cookies = await browser.cookies.getAll({
+				url: attachment.url,
+			});
+		}
 		options.headers = {
 			"Cookie": cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
 		}

@@ -204,7 +204,7 @@ Zotero.Connector = new function() {
 	 * @param {String|Object} options. See documentation above
 	 * @param	{Object} data RPC data. See documentation above.
 	 */
-	this.callMethodWithCookies = function(options, data, tab) {
+	this.callMethodWithCookies = async function(options, data, tab) {
 		if (Zotero.isBrowserExt) {
 			let cookieParams = {
 				url: tab.url,
@@ -229,27 +229,34 @@ Zotero.Connector = new function() {
 			if (Zotero.isFirefox && Zotero.browserMajorVersion >= 59) {
 				cookieParams.firstPartyDomain = null;
 			}
-			return browser.cookies.getAll(cookieParams)
-			.then(function(cookies) {
-				var cookieHeader = '';
-				for(var i=0, n=cookies.length; i<n; i++) {
-					cookieHeader += '\n' + cookies[i].name + '=' + cookies[i].value
-						+ ';Domain=' + cookies[i].domain
-						+ (cookies[i].path ? ';Path=' + cookies[i].path : '')
-						+ (cookies[i].hostOnly ? ';hostOnly' : '') //not a legit flag, but we have to use it internally
-						+ (cookies[i].secure ? ';secure' : '');
-				}
-				
-				if(cookieHeader) {
-					data.detailedCookies = cookieHeader.substr(1);
-					delete data.cookie;
-				}
-				
-				// Cookie URI needed to set up the cookie sandbox on standalone
-				data.uri = tab.url;
-				
-				return this.callMethod(options, data, tab);
-			}.bind(this));
+			let cookies;
+			try {
+				cookies = await browser.cookies.getAll(cookieParams)
+			} catch {
+				// Unavailable with Chrome 118 and below. Last supported version on Win 7/8 is Chrome 109.
+				Zotero.debug(`Error getting cookies for ${tab.url} with partitionKey.`);
+				delete cookieParams.partitionKey;
+				cookies = await browser.cookies.getAll(cookieParams)
+			}
+			var cookieHeader = '';
+			for(var i=0, n=cookies.length; i<n; i++) {
+				cookieHeader += '\n' + cookies[i].name + '=' + cookies[i].value
+					+ ';Domain=' + cookies[i].domain
+					+ (cookies[i].path ? ';Path=' + cookies[i].path : '')
+					+ (cookies[i].hostOnly ? ';hostOnly' : '') //not a legit flag, but we have to use it internally
+					+ (cookies[i].secure ? ';secure' : '');
+			}
+			
+			if(cookieHeader) {
+				data.detailedCookies = cookieHeader.substr(1);
+				delete data.cookie;
+			}
+			
+			// Cookie URI needed to set up the cookie sandbox on standalone
+			data.uri = tab.url;
+			
+			return this.callMethod(options, data, tab);
+
 		}
 		
 		return this.callMethod(options, data, tab);

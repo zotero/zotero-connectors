@@ -150,11 +150,11 @@ Zotero.Messaging = new function() {
 	 * @returns {Promise<Any>}
 	 */
 	this._sendViaIframeServiceWorkerPort = async function(messageName, args) {
-		if (!ZoteroFrame) {
-			ZoteroFrame = (await import(Zotero.getExtensionURL("zoteroFrame.js"))).default;
-		}
 		if (!Zotero.isChromium) {
 			throw new Error("sendViaIframeServiceWorkerPort is only supported on Chromium");
+		}
+		if (!ZoteroFrame) {
+			ZoteroFrame = (await import(Zotero.getExtensionURL("zoteroFrame.js"))).default;
 		}
 		const frame = new ZoteroFrame({
 			src: Zotero.getExtensionURL("chromeMessageIframe/messageIframe.html"),
@@ -163,5 +163,16 @@ Zotero.Messaging = new function() {
 		let response = await frame.sendMessage('sendToBackground', [messageName, args])
 		// frame.remove();
 		return response;
+	}
+
+	this.sendAsChunks = async function(payload) {
+		if (!Zotero.isChromium) throw new Error("Messaging.sendAsChunks is only required on Chromium");
+		const MAX_CHUNK_SIZE = 8 * (1024 * 1024);
+		const id = Zotero.Utilities.randomString()
+		const numChunks = Math.ceil(payload.length / MAX_CHUNK_SIZE);
+		for (let i = 0; i < numChunks; i++) {
+			await Zotero.Messaging.receiveChunk(id, payload.slice(i * MAX_CHUNK_SIZE, (i + 1) * MAX_CHUNK_SIZE));
+		}
+		return id;
 	}
 }

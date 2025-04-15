@@ -140,7 +140,20 @@ var MESSAGES = {
 		checkIsOnline: true,
 		callMethod: true,
 		callMethodWithCookies: true,
-		saveSingleFile: { largePayload: true },
+		saveSingleFile: {
+			inject: {
+				preSend: async function(args) {
+					args[1].snapshotContent = await Zotero.Messaging.sendAsChunks(args[1].snapshotContent);
+					return args;
+				},
+			},
+			background: {
+				postReceive: async function(args) {
+					args[1].snapshotContent = Zotero.Messaging.getChunkedPayload(args[1].snapshotContent);
+					return args;
+				}
+			}
+		},
 		getClientVersion: true,
 		reportActiveURL: false,
 		getPref: true
@@ -196,7 +209,8 @@ var MESSAGES = {
 					return args;
 				}
 			},
-		}
+		},
+		receiveChunk: true
 	},
 	API: {
 		authorize: true,

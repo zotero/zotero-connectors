@@ -29,6 +29,7 @@
  */
 Zotero.Messaging = new function() {
 	var _messageListeners = {};
+	var _chunkedPayloads = {};
 	
 	/**
 	 * Add a message listener
@@ -151,6 +152,21 @@ Zotero.Messaging = new function() {
 			// Safari handled in safari/messaging_global.js
 		}
 		Zotero.Messaging.initialized = true;
+	}
+
+	this.receiveChunk = function(id, payload) {
+		_chunkedPayloads[id] = _chunkedPayloads[id] || "";
+		_chunkedPayloads[id] += payload;
+		// Shouldn't need to keep this for longer than 30s
+		setTimeout(() => {
+			delete _chunkedPayloads[id];
+		}, 30000);
+	}
+
+	this.getChunkedPayload = function(id) {
+		const payload = _chunkedPayloads[id];
+		delete _chunkedPayloads[id];
+		return payload;
 	}
 }
 // Used to pass large data like blobs on Chrome

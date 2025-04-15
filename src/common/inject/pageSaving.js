@@ -409,10 +409,6 @@ let PageSaving = {
 
 	async _saveSingleFile(item, data, toServer = false) {
 		let isSingleFileAvailable = document.contentType === "text/html";
-		// SingleFile does not work in Chromium incognito due to object passing via object URL not being available
-		if (Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()){
-			isSingleFileAvailable = false;
-		}
 		// Once snapshot item is created, if requested, run SingleFile
 		if (isSingleFileAvailable) {
 			item.attachments = [{

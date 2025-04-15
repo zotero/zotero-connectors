@@ -108,7 +108,6 @@ ItemSaver.prototype = {
 			sessionID: this._sessionID,
 			uri: this._baseURI,
 		};
-		const isChromiumIncognito = Zotero.isChromium && await Zotero.Connector_Browser.isIncognito()
 		const zoteroSupportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
 
 		payload.proxy = this._proxy && this._proxy.toJSON();
@@ -154,7 +153,7 @@ ItemSaver.prototype = {
 				// Don't save snapshots from search results.
 				// TODO https://github.com/zotero/zotero-connectors/issues/481
 				if (attachment.mimeType === 'text/html' && attachment.snapshot !== false) {
-					if (this._itemType === "multiple" || isChromiumIncognito) {
+					if (this._itemType === "multiple") {
 						return false;
 					}
 					if (!zoteroSupportsAttachmentUpload) {

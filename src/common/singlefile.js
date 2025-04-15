@@ -80,12 +80,6 @@ Zotero.SingleFile = {
 	
 	retrievePageData: async function() {
 		try {
-			if (Zotero.isChromium) {
-				const isIncognito = await Zotero.Connector_Browser.isIncognito();
-				if (isIncognito) {
-					throw new Error("SingleFile snapshots are not available in Incognito in Chromium");
-				}
-			}
 			if (typeof singlefile === 'undefined') {
 				if (Zotero.isSafari) {
 					await this._injectSingleFileSafari();

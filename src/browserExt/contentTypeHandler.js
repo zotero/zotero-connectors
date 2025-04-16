@@ -405,7 +405,9 @@ Zotero.ContentTypeHandler = {
 	},
 	
 	async _addDNRInterceptRules() {
-		if (!Zotero.isManifestV3) return;
+		// responseHeaders are available on Chromium 128+, but there's no way to feature-guard
+		// for it directly, but Promise.try was also added in the same version
+		if (!Zotero.isManifestV3 || typeof Promise.try === "undefined") return;
 		
 		// Get base confirm URL
 		const confirmURL = Zotero.getExtensionURL('confirm/confirm.html');

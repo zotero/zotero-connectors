@@ -151,6 +151,9 @@ Zotero.BrowserAttachmentMonitor = {
 	},
 	
 	_addDNRRule: async function(tabId, ruleId) {
+		// responseHeaders are available on Chromium 128+, but there's no way to feature-guard
+		// for it directly, but Promise.try was also added in the same version
+		if (typeof Promise.try === "undefined") return;
 		const redirectUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html#success=\\0");
 		await browser.declarativeNetRequest.updateSessionRules({
 			removeRuleIds: [ruleId],

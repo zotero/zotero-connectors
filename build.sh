@@ -179,10 +179,6 @@ function copyResources {
 	# Copy translation pieces
 	cp -r "$EXTENSION_TRANSLATE_DIR/src" "$browser_builddir/translate"
 	cp -r "$EXTENSION_UTILITIES_DIR" "$browser_builddir/utilities"
-	# Remove unnecessary files
-	for i in 'package.json' 'package-lock.json' 'COPYING' 'README.md' 'resource/schema/global/README.md' 'resource/schema/global/scripts'; do
-		rm -r "$browser_builddir/utilities/$i"
-	done
 	
 	# Make sure an empty browser-polyfill.js exists in Safari, since it's included in iframe
 	# HTML pages
@@ -243,6 +239,9 @@ function copyResources {
 	find "$browser_builddir" -type f -name ".git*" -delete
 	rm -rf "$browser_builddir/utilities/.github"
 	rm -rf "$browser_builddir/utilities/test"
+	for i in 'package.json' 'package-lock.json' 'COPYING' 'README.md' 'resource/schema/global/README.md' 'resource/schema/global/scripts' ; do
+		rm -r "$browser_builddir/utilities/$i"
+	done
 	
 	# Copy SingleFile submodule code
 	mkdir -p "$browser_builddir/lib/SingleFile/lib"

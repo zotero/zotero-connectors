@@ -309,6 +309,7 @@ ItemSaver.prototype = {
 	
 	async saveAttachmentFromResolver(item, attachmentCallback) {
 		let attachment = item.attachments.find(a => a.isPrimary);
+		let originalTitle;
 		try {
 			// Check if we can get an OA PDF from Zotero
 			if (typeof item.hasAttachmentResolvers === "undefined") {
@@ -322,10 +323,11 @@ ItemSaver.prototype = {
 			}
 
 			if (attachment) {
-				attachment = {
+				originalTitle = attachment.title;
+				attachment = Object.assign(attachment, {
 					title: Zotero.getString("progressWindow_OA_searching"),
 					isOpenAccess: true,
-				};
+				});
 				attachmentCallback(attachment, 0);
 			}
 			
@@ -349,7 +351,7 @@ ItemSaver.prototype = {
 			attachmentCallback(attachment, 100);
 		} catch (e) {
 			if (attachment) {
-				attachment.title = Zotero.getString("progressWindow_OA_failed")
+				attachment.title = originalTitle;
 				attachmentCallback(attachment, false, e);
 			}
 		}

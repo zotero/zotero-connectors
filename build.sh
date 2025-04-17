@@ -165,6 +165,8 @@ function copyResources {
 	fi
 	browser_srcdir="$SRCDIR/$browser"
 	
+	cp COPYING "$browser_builddir/"
+	
 	# Copy common files
 	rsync -r --exclude '.*' "$SRCDIR/common/" "$browser_builddir/"
 	

@@ -239,7 +239,7 @@ function copyResources {
 	find "$browser_builddir" -type f -name ".git*" -delete
 	rm -rf "$browser_builddir/utilities/.github"
 	rm -rf "$browser_builddir/utilities/test"
-	for i in 'package.json' 'package-lock.json' 'COPYING' 'README.md' 'resource/schema/global/README.md' 'resource/schema/global/scripts' ; do
+	for i in 'package.json' 'package-lock.json' 'COPYING' 'README.md' 'resource/README.md' 'resource/schema/'; do
 		rm -r "$browser_builddir/utilities/$i"
 	done
 	

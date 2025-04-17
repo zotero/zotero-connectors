@@ -143,13 +143,17 @@ var MESSAGES = {
 		saveSingleFile: {
 			inject: {
 				preSend: async function(args) {
-					args[1].snapshotContent = await Zotero.Messaging.sendAsChunks(args[1].snapshotContent);
+					if (Zotero.isChromium) {
+						args[1].snapshotContent = await Zotero.Messaging.sendAsChunks(args[1].snapshotContent);
+					}
 					return args;
 				},
 			},
 			background: {
 				postReceive: async function(args) {
-					args[1].snapshotContent = Zotero.Messaging.getChunkedPayload(args[1].snapshotContent);
+					if (Zotero.isChromium) {
+						args[1].snapshotContent = Zotero.Messaging.getChunkedPayload(args[1].snapshotContent);
+					}
 					return args;
 				}
 			}

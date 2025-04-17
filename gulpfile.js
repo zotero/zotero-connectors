@@ -287,7 +287,7 @@ function processFile() {
 				this.push(f);
 			}
 			else {
-				['chrome', 'firefox', 'manifestv3'].forEach((browser) => {
+				['manifestv3', 'firefox'].forEach((browser) => {
 					f = file.clone({contents: false});
 					if (['manifest.json', "manifest-v3.json", "background.js", "background-worker.js"].includes(basename)) {
 						let backgroundScripts = backgroundIncludeBrowserExt;
@@ -298,7 +298,7 @@ function processFile() {
 							.replace("/*INJECT SCRIPTS*/",
 								injectScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
 							.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"');
-						if (process.env.CHROME_EXTENSION_KEY && ['chrome', 'manifestv3'].includes(browser)) {
+						if (process.env.CHROME_EXTENSION_KEY && ['manifestv3'].includes(browser)) {
 							contents = contents.replace(/("name": "[^"]*")/, `$1,\n\t"key": "${process.env.CHROME_EXTENSION_KEY}"`);
 						}
 						if (typeof process.env.ZOTERO_BETA_BUILD_EXPIRATION != 'undefined') {
@@ -341,7 +341,7 @@ function processFile() {
 				+ parts.slice(i+3).join('/');
 			console.log(`-> ${f.path.slice(f.cwd.length)}`);
 			this.push(f);
-			['chrome', 'firefox', 'manifestv3'].forEach((browser) => {
+			['manifestv3', 'firefox'].forEach((browser) => {
 				f = file.clone({contents: false});
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/zotero-google-docs-integration/`
 					+ parts.slice(i+3).join('/');

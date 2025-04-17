@@ -137,11 +137,12 @@ fi
 rm -f "$LOG"
 
 # Remove old build directories
+# TODO: Remove 'chrome' line
 rm -rf "$BUILD_DIR/browserExt" \
 	"$BUILD_DIR/chrome" \
+	"$BUILD_DIR/manifestv3" \
 	"$BUILD_DIR/firefox" \
 	"$BUILD_DIR/safari" \
-	"$BUILD_DIR/manifestv3" \
 	"$BUILD_DIR/bookmarklet"
 
 # Make directories if they don't exist
@@ -298,9 +299,8 @@ if [[ $BUILD_SAFARI == 1 ]]; then
 	copyResources 'safari'
 fi
 
-# Make separate Chrome, Chrome Manifest v3 and Firefox directories
+# Make separate Manifest v3 and Firefox directories
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
-	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/chrome/
 	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/manifestv3/
 	mv $BUILD_DIR/browserExt $BUILD_DIR/firefox
 fi
@@ -318,7 +318,6 @@ fi
 
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	# Remove MV3 manifest file
-	rm "$BUILD_DIR/chrome/manifest-v3.json"
 	rm "$BUILD_DIR/manifestv3/manifest-v3.json"
 	rm "$BUILD_DIR/firefox/manifest-v3.json"
 	
@@ -326,23 +325,20 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	
 	# Use larger icons where available in Chrome, which actually wants 19px icons
 	# 2x
-	for img in "$BUILD_DIR"/chrome/images/*2x.png; do
+	for img in "$BUILD_DIR"/manifestv3/images/*2x.png; do
 		cp $img `echo $img | sed 's/@2x//'`
 	done
 	## 2.5x
-	for img in "$BUILD_DIR"/chrome/images/*48px.png; do
+	for img in "$BUILD_DIR"/manifestv3/images/*48px.png; do
 		cp $img `echo $img | sed 's/@48px//'`
 	done
 	
 	# Remove the 'applications' property used by Firefox from the manifest
-	pushd $BUILD_DIR/chrome > /dev/null
+	pushd $BUILD_DIR/manifestv3 > /dev/null
 	cat manifest.json | jq '. |= del(.applications)' > manifest.json-tmp
 	mv manifest.json-tmp manifest.json
 	popd > /dev/null
 	
-	# Chrome Manifest V3 modifications
-	rsync -a $BUILD_DIR/chrome/images/ $BUILD_DIR/manifestv3/images/
-
 	# Firefox modifications
 	
 	# TEMP: Copy 2x icons to 1x until getImageSrc() is updated to detect HiDPI
@@ -359,7 +355,6 @@ fi
 # TODO: Would be better to skip these in gulpfile.js for non-debug builds and remove them in
 # copyResources instead
 if [ -z $DEBUG ]; then
-	rm -rf "$BUILD_DIR/chrome/test"
 	rm -rf "$BUILD_DIR/manifestv3/test"
 	rm -rf "$BUILD_DIR/firefox/test"
 fi

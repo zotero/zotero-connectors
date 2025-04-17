@@ -97,7 +97,8 @@ Zotero.ItemSaver.saveAttachmentToServer = async function(attachment, tab) {
 		attachment.data = new Uint8Array(Zotero.Utilities.getStringByteLength(snapshotString));
 		Zotero.Utilities.stringToUTF8Array(snapshotString, attachment.data);
 	}
-	else if (attachment.data) {
+	else if (Zotero.isSafari && attachment.data) {
+		// Safari fetches binary attachments in content script when possible
 		attachment.data = new Uint8Array(this._unpackSafariAttachmentData(attachment.data));
 	}
 

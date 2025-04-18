@@ -432,7 +432,7 @@ Zotero.ContentTypeHandler = {
 					},
 					{
 						header: 'content-disposition',
-						values: ['*filename=*.csl*']
+						values: ['attachment;*filename=*.csl*']
 					}
 				]
 			}
@@ -458,7 +458,7 @@ Zotero.ContentTypeHandler = {
 					},
 					{
 						header: 'content-disposition',
-						values: this.importContentDispositionExtensions.map(ext => `*filename=*.${ext}*`)
+						values: this.importContentDispositionExtensions.map(ext => `attachment;*filename=*.${ext}*`)
 					}
 				]
 			}

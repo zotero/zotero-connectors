@@ -156,7 +156,7 @@ ItemSaver.prototype = {
 						return false;
 					}
 					else if (attachment.mimeType !== 'text/html' && !downloadAssociatedFiles) {
-						Zotero.debug("saveToZotero: Ignoring snapshot because downloadAssociatedFiles is disabled");
+						Zotero.debug(`saveToZotero: Ignoring attachment with type ${attachment.mimeType} because downloadAssociatedFiles is disabled`);
 						return false;
 					}
 				}

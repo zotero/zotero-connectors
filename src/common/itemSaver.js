@@ -109,6 +109,8 @@ ItemSaver.prototype = {
 			uri: this._baseURI,
 		};
 		const zoteroSupportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
+		const automaticSnapshots = await Zotero.Connector.getPref('automaticSnapshots');
+		const downloadAssociatedFiles = await Zotero.Connector.getPref('downloadAssociatedFiles');
 
 		payload.proxy = this._proxy && this._proxy.toJSON();
 
@@ -147,15 +149,27 @@ ItemSaver.prototype = {
 				if (!attachment.referrer) {
 					attachment.referrer = new URL(document.location.href).origin;
 				}
-				
+
+				if (zoteroSupportsAttachmentUpload) {
+					if (attachment.mimeType === 'text/html' && !automaticSnapshots) {
+						Zotero.debug("saveToZotero: Ignoring snapshot because automaticSnapshots is disabled");
+						return false;
+					}
+					else if (attachment.mimeType !== 'text/html' && !downloadAssociatedFiles) {
+						Zotero.debug("saveToZotero: Ignoring snapshot because downloadAssociatedFiles is disabled");
+						return false;
+					}
+				}
+			
 				// Ignore non-snapshot text/html attachments (saved as link attachments)
-				// Don't save snapshots in Chromium incognito where it doesn't work
 				// Don't save snapshots from search results.
 				// TODO https://github.com/zotero/zotero-connectors/issues/481
 				if (attachment.mimeType === 'text/html' && attachment.snapshot !== false) {
 					if (this._itemType === "multiple") {
+						Zotero.debug("saveToZotero: Ignoring snapshot of text/html attachment for multiple-item save");
 						return false;
 					}
+
 					if (!zoteroSupportsAttachmentUpload) {
 						payload.singleFile = true;
 						attachment.singleFile = true;

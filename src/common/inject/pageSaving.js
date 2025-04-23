@@ -77,6 +77,9 @@ let PageSaving = {
 		else {
 			translate = new Zotero.Translate.Web();
 		}
+		translate.setHandler('pageModified', () => {
+			Zotero.Messaging.sendMessage("pageModified", true);
+		});
 		// Async in MV3
 		if (Zotero.isManifestV3) {
 			await translate.setDocument(document, itemType === 'multiple');

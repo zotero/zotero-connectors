@@ -1138,11 +1138,12 @@ Zotero.Connector_Browser = new function() {
 	browser.tabs.onActivated.addListener(waitForInit(logListenerErrors(async function(details) {
 		var tab = await browser.tabs.get(details.tabId);
 		if (!tab) return;
+		const url = tab.url || tab.pendingUrl;
 		// Ignore item selector
-		if (tab.url.indexOf(browser.runtime.getURL("itemSelector/itemSelector.html")) === 0) return;
-		Zotero.debug("Connector_Browser: onActivated for " + tab.url);
+		if (url.indexOf(browser.runtime.getURL("itemSelector/itemSelector.html")) === 0) return;
+		Zotero.debug("Connector_Browser: onActivated for " + url);
 		Zotero.Connector_Browser.onTabActivated(tab);
-		Zotero.Connector.reportActiveURL(tab.url);
+		Zotero.Connector.reportActiveURL(url);
 	})));
 	
 	browser.webNavigation.onCommitted.addListener(waitForInit(logListenerErrors(onNavigation)));

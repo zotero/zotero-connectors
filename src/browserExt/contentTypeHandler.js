@@ -424,6 +424,7 @@ Zotero.ContentTypeHandler = {
 			},
 			condition: {
 				resourceTypes: ['main_frame'],
+				requestMethods: ['get'],
 				regexFilter: '.*',
 				responseHeaders: [
 					{
@@ -450,6 +451,7 @@ Zotero.ContentTypeHandler = {
 			},
 			condition: {
 				resourceTypes: ['main_frame'],
+				requestMethods: ['get'],
 				regexFilter: '.*',
 				responseHeaders: [
 					{

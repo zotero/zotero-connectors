@@ -287,8 +287,7 @@ let PageSaving = {
 			}
 		}
 
-
-		let translate = await this._initTranslate();
+		let translate = await this._initTranslate(translators[0].itemType);
 		let options = { translate, translators: translators.slice(), onSelect, onItemSaving, onTranslatorFallback };
 		try {
 			var { items, proxy } = await TranslateWeb.translate(options);

@@ -457,7 +457,7 @@ Zotero.Connector_Browser = new function() {
 	
 	this.openWindow = async function(url, options={}, tab=null) {
 		if (!tab) {
-			tab = (await browser.tabs.query({ lastFocusedWindow: true, active: true }))[0];
+			tab = await getCurrentTab();
 		}
 		options = Object.assign({
 			width: 800,
@@ -509,17 +509,16 @@ Zotero.Connector_Browser = new function() {
 		browser.windows.update(windowId, {drawAttention, focused: true});
 	}
 
-	this.openTab = function(url, tab) {
-		if (tab) {
-			let tabProps = { index: tab.index + 1 };
-			// Firefox doesn't support openerTabId
-			if (!Zotero.isFirefox) {
-				tabProps.openerTabId = tab.id;
-			}
-			browser.tabs.create(Object.assign({url}, tabProps));
-		} else {
-			browser.tabs.query({active: true, lastFocusedWindow: true}).then((tabs) => this.openTab(url, tabs[0]));
+	this.openTab = async function(url, tab) {
+		if (!tab) {
+			tab = await getCurrentTab();
 		}
+		let tabProps = { index: tab.index + 1 };
+		// Firefox doesn't support openerTabId
+		if (!Zotero.isFirefox) {
+			tabProps.openerTabId = tab.id;
+		}
+		browser.tabs.create(Object.assign({url}, tabProps));
 	};
 	
 	this.openPreferences = function(paneID, tab) {
@@ -572,10 +571,9 @@ Zotero.Connector_Browser = new function() {
 	this.notify = async function(text, buttons, seenTimeout=5000, tab=null) {
 		// Get current tab if not provided
 		if (!tab) {
-			return browser.tabs.query({active: true, lastFocusedWindow: true})
-			.then((tabs) => this.notify(text, buttons, seenTimeout, tabs[0]));
+			tab = await getCurrentTab();
 		} else if (typeof tab === 'number') {
-			return browser.tabs.get(tab).then((tab) => this.notify(text, buttons, seenTimeout, tab));
+			tab = await browser.tabs.get(tab);
 		}
 		let timedOut = false;
 		seenTimeout && setTimeout(() => timedOut = true, seenTimeout);
@@ -594,10 +592,9 @@ Zotero.Connector_Browser = new function() {
 	/**
 	 * Update status and tooltip of Zotero button
 	 */
-	this._updateExtensionUI = function (tab) {
+	this._updateExtensionUI = async function (tab) {
 		if (!tab) {
-			return chrome.tabs.query( { lastFocusedWindow: true, active: true },
-				(tabs) => tabs.length && this._updateExtensionUI(tabs[0]));
+			tab = await getCurrentTab();
 		}
 		if (Zotero.Prefs.get('firstUse') || _isBetaBuildBeyondExpiration) return _showMessageButton(tab);
 		if (!tab.active || tab.id < 0) return;
@@ -707,8 +704,14 @@ Zotero.Connector_Browser = new function() {
 		}
 	};
 	
-	function _handleContextMenuClick(info, tab) {
+	async function _handleContextMenuClick(info, tab) {
 		const id = info.menuItemId;
+		// The PDF viewer in Chromium is apparently implemented as a special extension.
+		// If you right-click on the pdf-reader UI and select a Zotero option, the handler
+		// here gets passed a tab that has id == -1 and an internal extension URL.y
+		if (Zotero.isChromium && tab.id === -1) {
+			tab = await getCurrentTab();
+		}
 		const handler = _contextMenuHandlers[id];
 		if (handler) {
 			return handler(info, tab);
@@ -1024,7 +1027,7 @@ Zotero.Connector_Browser = new function() {
 		);
 	}
 	
-	this.saveAsWebpage = function(tab, frameId, options={}) {
+	this.saveAsWebpage = async function(tab, frameId, options={}) {
 		let tabInfo = this.getTabInfo(tab.id);
 		if (tabInfo.uninjectable) {
 			return Zotero.Utilities.saveWithoutProgressWindow(tab, frameId);
@@ -1035,14 +1038,8 @@ Zotero.Connector_Browser = new function() {
 		}
 		// Handle right-click on PDF overlay, which exists in a weird non-tab state
 		else {
-			browser.tabs.query(
-				{
-					lastFocusedWindow: true,
-					active: true
-				}).then(function (tabs) {
-					Zotero.Messaging.sendMessage("saveAsWebpage", tabs[0].title, tabs[0]);
-				}
-			);
+			let tab = await getCurrentTab();
+			return Zotero.Messaging.sendMessage("saveAsWebpage", tab.title, tab);
 		}
 	}
 	
@@ -1055,6 +1052,15 @@ Zotero.Connector_Browser = new function() {
 		let tabInfo = Zotero.Connector_Browser.getTabInfo(data[0]);
 		tabInfo.selectCallback(data[1]);
 	});
+
+	async function getCurrentTab() {
+		let window = await browser.windows.getCurrent();
+		let tabs = await browser.tabs.query({ active: true, windowId: window.id });
+		if (tabs.length === 0) {
+			throw new Error("No active tab found");
+		}
+		return tabs[0];
+	}
 	
 	function logListenerErrors(listener) {
 		return function() {

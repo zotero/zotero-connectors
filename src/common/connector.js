@@ -100,7 +100,7 @@ Zotero.Connector = new function() {
 	 * @param {Object} data - RPC data to POST. If null or undefined, a GET request is sent.
 	 * @param {Function} callback - Function to be called when requests complete.
 	 */
-	this.callMethod = async function(options, data, tab) {
+	this.callMethod = async function(options, data = null, tab = null) {
 		if (typeof options == 'string') {
 			options = {method: options};
 		}
@@ -112,52 +112,6 @@ Zotero.Connector = new function() {
 			}, options.headers || {});
 		var timeout = "timeout" in options ? options.timeout : 15000;
 		var queryString = options.queryString ? ("?" + options.queryString) : "";
-		
-		var deferred = Zotero.Promise.defer();
-		var newCallback = function(req) {
-			try {
-				var isOnline = req.status !== 0 && req.status !== 403 && req.status !== 412;
-				
-				if (req.status != 0) {
-					Zotero.Connector.clientVersion = req.getResponseHeader('X-Zotero-Version');
-					if (Zotero.Connector.isOnline !== isOnline) {
-						Zotero.Connector.isOnline = isOnline;
-						if (Zotero.Connector_Browser && Zotero.Connector_Browser.onStateChange) {
-							Zotero.Connector_Browser.onStateChange(isOnline && Zotero.Connector.clientVersion);
-						}
-					}
-				}
-				var val = null;
-				if(req.responseText) {
-					let contentType = req.getResponseHeader("Content-Type") || ""
-					if (contentType.includes("application/json")) {
-						val = JSON.parse(req.responseText);
-					} else {
-						val = req.responseText;
-					}
-				}
-				if(req.status == 0 || req.status >= 400) {
-					// Check for incompatible version
-					if(req.status === 412) {
-						if(Zotero.Connector_Browser && Zotero.Connector_Browser.onIncompatibleStandaloneVersion) {
-							var standaloneVersion = req.getResponseHeader("X-Zotero-Version");
-							Zotero.Connector_Browser.onIncompatibleStandaloneVersion(Zotero.version, standaloneVersion);
-							deferred.reject("Connector: Version mismatch: Connector version "+Zotero.version
-								+", Standalone version "+(standaloneVersion ? standaloneVersion : "<unknown>", val));
-						}
-					}
-					
-					Zotero.debug("Connector: Method "+method+" failed with status "+req.status);
-					deferred.reject(new Zotero.Connector.CommunicationError(`Method ${method} failed`, req.status, val));
-				} else {
-					Zotero.debug("Connector: Method "+method+" succeeded");
-					deferred.resolve(val);
-				}
-			} catch(e) {
-				Zotero.logError(e);
-				deferred.reject(new Zotero.Connector.CommunicationError(e.message, 0));
-			}
-		};
 		
 		var uri = Zotero.Prefs.get('connector.url') + "connector/" + method + queryString;
 		if (headers["Content-Type"] == 'application/json') {
@@ -177,24 +131,67 @@ Zotero.Connector = new function() {
 			}
 			data = formData;
 		}
-		options = {body: data, headers, successCodes: false, timeout};
-		let httpMethod = data == null || data == undefined ? "GET" : "POST";
-		Zotero.HTTP.request(httpMethod, uri, options)
-		.then(newCallback)
-		// Unexpected error, including a timeout
-		.catch(function (e) {
-			// Don't log status 0 (Zotero offline) report, it's chatty and needless
+		options = { body: data, headers, successCodes: false, timeout };
+		let httpMethod = data === null ? "GET" : "POST";
+		try {
+			const xhr = await Zotero.HTTP.request(httpMethod, uri, options);
+			try {
+				Zotero.Connector.clientVersion = xhr.getResponseHeader('X-Zotero-Version');
+				if (Zotero.Connector.isOnline !== true) {
+					Zotero.Connector.isOnline = true;
+					if (Zotero.Connector_Browser?.onStateChange) {
+						Zotero.Connector_Browser.onStateChange(Zotero.Connector.clientVersion);
+					}
+				}
+				var val = xhr.response
+				if (xhr.responseText) {
+					let contentType = xhr.getResponseHeader("Content-Type") || ""
+					if (contentType.includes("application/json")) {
+						val = JSON.parse(xhr.responseText);
+					} else {
+						val = xhr.responseText;
+					}
+				}
+
+				if (xhr.status >= 400) {
+					// Check for incompatible version
+					if (xhr.status === 412) {
+						if (Zotero.Connector_Browser && Zotero.Connector_Browser.onIncompatibleStandaloneVersion) {
+							var standaloneVersion = xhr.getResponseHeader("X-Zotero-Version");
+							Zotero.Connector_Browser.onIncompatibleStandaloneVersion(Zotero.version, standaloneVersion);
+							throw new Zotero.Connector.CommunicationError(`Connector: Version mismatch: Connector version ${Zotero.version}, Standalone version ${standaloneVersion ? standaloneVersion : "<unknown>"}`, xhr.status, val);
+						}
+					}
+					
+					Zotero.debug("Connector: Method "+method+" failed with status "+xhr.status);
+					throw new Zotero.Connector.CommunicationError(`Method ${method} failed`, xhr.status, val);
+				} else {
+					Zotero.debug("Connector: Method "+method+" succeeded");
+					return val;
+				}
+			} catch (e) {
+				Zotero.logError(e);
+				throw new Zotero.Connector.CommunicationError(e.message, 0);
+			}
+		} catch (e) {
 			if (e instanceof Zotero.HTTP.StatusError && e.status === 0) {
+				if (Zotero.Connector.isOnline !== false) {
+					Zotero.Connector.isOnline = false;
+					if (Zotero.Connector_Browser?.onStateChange) {
+						Zotero.Connector_Browser.onStateChange(false);
+					}
+				}
 				Zotero.debug(e);
 			}
 			else {
+				// Unexpected error, including a timeout
 				Zotero.logError(e);
 			}
-			deferred.reject(e);
-		});
-		let result = await deferred.promise;
-		this._handleIntegrationTabClosed(method, tab);
-		return result;
+			throw e;
+		}
+		finally {
+			this._handleIntegrationTabClosed(method, tab);
+		}
 	},
 	
 	/**

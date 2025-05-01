@@ -56,9 +56,7 @@ Zotero.ContentTypeHandler = {
 
 	init: function() {
 		if (Zotero.isManifestV3) {
-			this._addDNRInterceptRules();
 			this._monitorInterceptConfirmation();
-			this._enabled = true;
 		}
 	},
 

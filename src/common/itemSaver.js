@@ -137,18 +137,7 @@ ItemSaver.prototype = {
 				if (!attachment.title) attachment.title = attachment.mimeType + ' Attachment';
 				attachment.id = attachment.id || Zotero.Utilities.randomString(8);
 				attachment.parentItem = item.id;
-				// Keep in sync with _saveToServer()
-				if (item.url) {
-					try {
-						attachment.referrer = new URL(item.url).origin;
-					}
-					catch (e) {
-						Zotero.debug(e);
-					}
-				}
-				if (!attachment.referrer) {
-					attachment.referrer = new URL(document.location.href).origin;
-				}
+				this._setAttachmentReferer(attachment);
 
 				if (zoteroSupportsAttachmentUpload) {
 					if (attachment.mimeType === 'text/html' && !automaticSnapshots) {
@@ -510,18 +499,7 @@ ItemSaver.prototype = {
 
 		for (const item of items) {
 			for (const attachment of item.attachments) {
-				// Keep in sync with _saveToZotero()
-				if (item.url) {
-					try {
-						attachment.referrer = new URL(item.url).origin;
-					}
-					catch (e) {
-						Zotero.debug(e);
-					}
-				}
-				if (!attachment.referrer) {
-					attachment.referrer = new URL(document.location.href).origin;
-				}
+				this._setAttachmentReferer(attachment);
 				
 				if (attachment.mimeType === 'text/html') {
 					if (prefs.automaticSnapshots) {
@@ -604,6 +582,10 @@ ItemSaver.prototype = {
 			})());
 		}
 		await Promise.all(promises);
+	},
+	
+	_setAttachmentReferer(attachment) {
+		attachment.referrer = new URL(document.location.href).origin;
 	},
 	
 	/**

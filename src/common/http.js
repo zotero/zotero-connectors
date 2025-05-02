@@ -253,14 +253,12 @@ Zotero.HTTP = new function() {
 		xmlhttp.send(options.body);
 		
 		return promise.then(function(xmlhttp) {
-			if (options.debug) {
-				if (xmlhttp.responseType === '' || xmlhttp.responseType === 'text') {
-					Zotero.debug(`HTTP ${xmlhttp.status} response: ${xmlhttp.responseText}`);
-				}
-				else {
-					Zotero.debug(`HTTP ${xmlhttp.status} response`);
-				}
-			}	
+			if (options.debug && (xmlhttp.responseType === '' || xmlhttp.responseType === 'text')) {
+				Zotero.debug(`HTTP ${xmlhttp.status} ${xmlhttp.responseURL} response: ${xmlhttp.responseText}`);
+			}
+			else {
+				Zotero.debug(`HTTP ${xmlhttp.status} ${xmlhttp.responseURL} response`);
+			}
 			
 			let invalidDefaultStatus = options.successCodes === null &&
 				(xmlhttp.status < 200 || xmlhttp.status >= 300);
@@ -399,15 +397,13 @@ Zotero.HTTP = new function() {
 			}
 			else {
 				responseData = await response.text();
-			} 
+			}
 
-			if (options.debug) {
-				if (options.responseType == '' || options.responseType == 'text') {
-					Zotero.debug(`HTTP ${response.status} response: ${responseData}`);
-				}
-				else {
-					Zotero.debug(`HTTP ${xmlhttp.status} response`);
-				}
+			if (options.debug && (options.responseType === 'json' || options.responseType === 'text')) {
+				Zotero.debug(`HTTP ${response.status} ${response.url} response: ${responseData}`);
+			}
+			else {
+				Zotero.debug(`HTTP ${response.status} ${response.url} response`);
 			}
 			
 			let responseHeaders = {};

@@ -231,6 +231,7 @@ ItemSaver.prototype = {
 	 * @returns {Promise}
 	 */
 	async saveAttachmentsViaZotero(items, attachmentCallback) {
+		Zotero.debug("ItemSaver.saveAttachmentsViaZotero: Awaiting for attachments to be saved by Zotero");
 		let promises = []
 		// Save the snapshot if required
 		if (this._singleFile) {
@@ -245,6 +246,8 @@ ItemSaver.prototype = {
 	
 	async saveAttachmentsToZotero(attachmentCallback) {
 		let promises = []
+
+		Zotero.debug(`ItemSaver.saveAttachmentsToZotero: Saving attachments directly to Zotero`);
 		
 		// Save PDFs and EPUBs via the connector (in the background page)
 		promises.push(this._saveAttachmentsToZotero(attachmentCallback))
@@ -290,6 +293,7 @@ ItemSaver.prototype = {
 				attachmentCallback(attachment, 0);
 				if (attachment.isOpenAccess) continue;
 				try {
+					Zotero.debug(`ItemSaver.saveAttachmentsToZotero: Saving attachment ${attachment.url} of mimeType ${attachment.mimeType}`);
 					if (PRIMARY_ATTACHMENT_TYPES.has(attachment.mimeType)) {
 						attachment.isPrimary = true;
 					}
@@ -362,6 +366,7 @@ ItemSaver.prototype = {
 		} catch (e) {
 			if (attachment) {
 				attachmentCallback(attachment, false, e);
+				Zotero.logError(e);
 			}
 		}
 	},

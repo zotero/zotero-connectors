@@ -542,6 +542,7 @@ let PageSaving = {
 		if (!result) return;
 		let translatorIndex = this.translators.findIndex(t => t.translatorID === translatorID);
 		let translator = this.translators[translatorIndex];
+		Zotero.debug(`PageSaving.onTranslate: Translating with ${translator.label}, ${JSON.stringify(options)}`);
 		
 		// Always resave if a different translator/mode
 		if (this.sessionDetails.translatorID && translatorID != this.sessionDetails.translatorID) {
@@ -550,6 +551,7 @@ let PageSaving = {
 		
 		// In some cases, we just reopen the popup instead of saving again
 		if (this._shouldReopenProgressWindow(translatorID, options, translator.itemType)) {
+			Zotero.debug(`PageSaving.onTranslate: Reopening popup`);
 			return Zotero.Messaging.sendMessage("progressWindow.show", [this.sessionDetails.id]);
 		}
 
@@ -612,7 +614,9 @@ let PageSaving = {
 	async onSaveAsWebpage([ title=document.title, options={} ]) {
 		var result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
-		
+
+		Zotero.debug(`PageSaving.onSaveAsWebpage: Saving webpage, ${JSON.stringify(options)}`);
+
 		var translatorID = 'webpage' + (options.snapshot ? 'WithSnapshot' : '');
 		options.snapshot = !!options.snapshot;
 		// Always resave if a different translator/mode

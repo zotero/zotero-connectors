@@ -254,7 +254,7 @@ Zotero.HTTP = new function() {
 		
 		return promise.then(function(xmlhttp) {
 			if (options.debug) {
-				if (xmlhttp.responseType == '' || xmlhttp.responseType == 'text') {
+				if (xmlhttp.responseType === '' || xmlhttp.responseType === 'text') {
 					Zotero.debug(`HTTP ${xmlhttp.status} response: ${xmlhttp.responseText}`);
 				}
 				else {

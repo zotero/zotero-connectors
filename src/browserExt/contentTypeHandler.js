@@ -61,6 +61,7 @@ Zotero.ContentTypeHandler = {
 	},
 
 	enable: function() {
+		if (!Zotero.Prefs.get('interceptKnownFileTypes')) return;
 		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
 		if (!this._enabled && Zotero.isManifestV3) {
 			this._addDNRInterceptRules();

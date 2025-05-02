@@ -289,6 +289,8 @@ var MESSAGES = {
 	ContentTypeHandler: {
 		handleImportableStyle: true,
 		handleImportableContent: true,
+		enable: false,
+		disable: false,
 	}
 };
 

@@ -157,7 +157,7 @@ var Zotero_Preferences = {
 Zotero_Preferences.General = {
 	init: function() {
 
-		if (Zotero.isBrowserExt && !Zotero.isManifestV3) {
+		if (Zotero.isBrowserExt) {
 			let elem = document.getElementById('intercept-and-import');
 			elem.style.display = null;
 			this.mimeTypeHandlingComponent = React.createElement(Zotero_Preferences.Components.MIMETypeHandling, null);
@@ -800,8 +800,14 @@ Zotero_Preferences.Components.MIMETypeHandling = class MIMETypeHandling extends 
 	}
 	
 	handleCheckboxChange(event) {
-		Zotero.Prefs.set('interceptKnownFileTypes', event.target.checked);
-		this.setState({enabled: event.target.checked});
+		const isEnabled = event.target.checked;
+		Zotero.Prefs.set('interceptKnownFileTypes', isEnabled);
+		this.setState({enabled: isEnabled});
+		if (isEnabled) {
+			Zotero.ContentTypeHandler.enable();
+		} else {
+			Zotero.ContentTypeHandler.disable();
+		}
 	}
 	
 	handleSelectChange(event) {

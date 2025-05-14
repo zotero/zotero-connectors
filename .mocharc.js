@@ -1,8 +1,8 @@
 /*
 	***** BEGIN LICENSE BLOCK *****
 	
-	Copyright © 2017 Center for History and New Media
-					George Mason University, Fairfax, Virginia, USA
+	Copyright © 2025 Corporation for Digital Scholarship
+					Vienna, Virginia, USA
 					http://zotero.org
 	
 	This file is part of Zotero.
@@ -23,6 +23,14 @@
 	***** END LICENSE BLOCK *****
 */
 
-MESSAGES.Background = {
-	run: true
-}
+// Mocha configuration for E2E tests
+
+module.exports = {
+	require: 'test/support/puppeteerSetup.mjs',
+	globalSetup: 'test/support/puppeteerSetup.mjs',
+	globalTeardown: 'test/support/puppeteerSetup.mjs',
+	spec: ['test/tests/**/*Test.mjs'],
+	timeout: '5000', // 5 seconds timeout for async operations
+	ui: 'bdd',
+	reporter: 'spec',
+}; 

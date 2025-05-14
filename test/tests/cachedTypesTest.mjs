@@ -22,6 +22,7 @@
 	
 	***** END LICENSE BLOCK *****
 */
+import { background } from '../support/utils.mjs';
 
 describe('CachedTypes', function() {
 	describe('ItemFields', function() {

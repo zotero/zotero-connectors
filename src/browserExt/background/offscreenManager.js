@@ -114,6 +114,7 @@ self.onmessage = async (e) => {
 		// Resolve _initMessaging() in offscreenSandbox.js
 		let messagingOptions = {
 			handlerFunctionOverrides: OFFSCREEN_BACKGROUND_OVERRIDES,
+			overrideTarget: Zotero,
 		}
 		messagingOptions.sendMessage = (...args) => {
 			e.ports[0].postMessage(args)

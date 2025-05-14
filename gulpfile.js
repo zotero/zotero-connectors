@@ -31,7 +31,7 @@ const through = require('through2');
 const gulp = require('gulp');
 const plumber = require('gulp-plumber');
 const babel = require('@babel/core');
-const schemaJSON = require('./src/zotero/resource/schema/global/schema.json');
+const schemaJSON = require('./src/zotero-schema/schema.json');
 const argv = require('yargs')
 	.boolean('p')
 	.alias('p', 'production')
@@ -141,9 +141,9 @@ if (!argv.p) {
 	backgroundInclude.push('tools/testTranslators/translatorTester_messages.js',
 		'tools/testTranslators/translatorTester.js',
 		'tools/testTranslators/translatorTester_global.js',
-		'test/messages.js',
-		'test/testSetup.js',
 		'lib/sinon.js');
+		
+	injectIncludeManifestV3.push('test/testInject.js');
 }
 var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclude, [
 	'webRequestIntercept.js',
@@ -246,7 +246,8 @@ function processFile() {
 			case 'zotero.js':
 				var contents = file.contents.toString();
 				if (!argv.p) {
-					contents = contents.replace('"debug.log": false', '"debug.log": true');
+					contents = contents.replace('"debug.log": false', '"debug.log": true')
+						.replace("this.isDebug = false", "this.isDebug = true");
 				}
 				contents = contents.replace(/\/\* this\.allowRepoTranslatorTester = SET IN BUILD SCRIPT \*\//,
 					`this.allowRepoTranslatorTester = ${!!process.env.ZOTERO_REPOSITORY_URL}`);
@@ -273,7 +274,7 @@ function processFile() {
 		if (type === 'common' || type === 'browserExt') {
 			if (file.path.includes('.html')) {
 				file.contents = Buffer.from(replaceScriptsHTML(
-					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
+					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeManifestV3.map(s => `../../${s}`)));
 			}
 			if (basename == 'manifest-v3.json') {
 				f = file.clone({contents: false});
@@ -394,9 +395,6 @@ gulp.task('process-custom-scripts', function() {
 		'./src/**/*.jsx',
 		'./src/zotero-google-docs-integration/src/connector/**',
 	];
-	if (!argv.p) {
-		sources.push('./src/common/test/**/*.js');	
-	}
 	return gulp.src(sources)
 		.pipe(plumber())
 		.pipe(processFile())

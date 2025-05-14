@@ -23,40 +23,39 @@
 	***** END LICENSE BLOCK *****
 */
 
+import { Tab, background, getExtensionURL, delay } from '../support/utils.mjs';
+
 describe('Preferences', function() {
 	var tab = new Tab();
 	
-	before(Promise.coroutine(function* () {
-		yield tab.init(getExtensionURL('preferences/preferences.html'));
-		if (Zotero.isFirefox) {
-			// Firefox is just very slow
-			yield Promise.delay(200);
-		}
-	}));
+	before(async function () {
+		await tab.init(getExtensionURL('preferences/preferences.html'));
+		await delay(200);
+	});
 	
-	after(Promise.coroutine(function* () {
-		yield tab.close();
-	}));
+	after(async function () {
+		await tab.close();
+	});
 	
 	describe('General', function() {
 		describe('Zotero Status', function() {
-			before(Promise.coroutine(function* () {
-				return background(function() {
+			before(async function () {
+				await background(function() {
 					sinon.stub(Zotero.Connector, 'checkIsOnline').resolves(true);
 				});
-			}));
+			});
 		
-			beforeEach(Promise.coroutine(function* () {
-				return background(function() {
+			beforeEach(async function () {
+				await background(function() {
 					Zotero.Connector.checkIsOnline.reset();
 				});	
-			}));
+			});
 			
-			after(Promise.coroutine(function* () {
-				return background(function() {
+			after(async function () {
+				await background(function() {
 					Zotero.Connector.checkIsOnline.restore();
 				});	
-			}));
+			});
 			
 			function clickAndReturnStatus() {
 				return tab.run(function() {
@@ -69,69 +68,65 @@ describe('Preferences', function() {
 				});	
 			}
 			
-			it('shows Zotero as available after clicking "Update Status" when Zotero is available', Promise.coroutine(function * () {
-				yield background(function() {
+			it('shows Zotero as available after clicking "Update Status" when Zotero is available', async function () {
+				await background(function() {
 					Zotero.Connector.checkIsOnline.resolves(true);
 				});	
-				let status = yield clickAndReturnStatus();
+				let status = await clickAndReturnStatus();
 				assert.include(status, 'currently available');
-			}));
+			});
 			
-			it('shows Zotero as unavailable after clicking "Update Status" when Zotero is not available', Promise.coroutine(function * () {
-				yield background(function() {
+			it('shows Zotero as unavailable after clicking "Update Status" when Zotero is not available', async function () {
+				await background(function() {
 					Zotero.Connector.checkIsOnline.resolves(false);
 				});	
-				let status = yield clickAndReturnStatus();
+				let status = await clickAndReturnStatus();
 				assert.include(status, 'currently unavailable');
-			}));
+			});
 		});
 	});
 	
 	describe('Advanced', function() {	
-		it('submits an error report to Zotero.org', Promise.coroutine(function* () {
+		it('submits an error report to Zotero.org', async function () {
 			var reportId = '1234567890';
-			yield background(function(reportId) {
-				sinon.stub(Zotero.HTTP, 'request').resolves(
-					{responseText: `<?xml version="1.0" encoding="UTF-8"?><xml><reported reportID="${reportId}"/></xml>`}
-				);
-			}, reportId);
-
-			try {
-				var message = yield tab.run(function() {
+			
+			var message = await tab.run(async function(reportId) {
+				try {
+					sinon.stub(Zotero.HTTP, 'request').resolves(
+						{responseText: `<?xml version="1.0" encoding="UTF-8"?><xml><reported reportID="${reportId}"/></xml>`}
+					);
 					var deferred = Zotero.Promise.defer();
 					sinon.stub(Zotero.ModalPrompt, 'confirm').callsFake((config) => {
 						deferred.resolve(config);
 						return {button: 0};
 					});
 					document.getElementById('advanced-button-report-errors').click();
-					return deferred.promise.then(function(config) {
+					return await deferred.promise.then(function(config) {
 						Zotero.ModalPrompt.confirm.restore();
 						return config.message;
 					});
-				});
-				
-				assert.include(message, reportId);
-			} finally {
-				yield background(() => Zotero.HTTP.request.restore());
-			}
-		}));
+				} finally {
+					Zotero.HTTP.request.restore();
+				}
+			}, reportId);
+			
+			assert.include(message, reportId);
+		});
 		
-		it('submits a debug log to Zotero.org', Promise.coroutine(function * () {
+		it('submits a debug log to Zotero.org', async function () {
 			var debugId = '1234567890';
 			var testDebugLine = 'testDebugLine';
-			yield background(function(debugId) {
-				sinon.stub(Zotero.HTTP, 'request').resolves(
-					{responseText: `<?xml version="1.0" encoding="UTF-8"?><xml><reported reportID="${debugId}"/></xml>`}
-				);
-			}, debugId);
 
-			try {
-				yield tab.run(function(testDebugLine) {
-					document.getElementById('advanced-checkbox-enable-logging').click();
-					Zotero.debug(testDebugLine);
-					return Zotero_Preferences.refreshData();
-				}, testDebugLine);
-				var message = yield tab.run(function() {
+			await tab.run(function(testDebugLine) {
+				document.getElementById('advanced-checkbox-enable-logging').click();
+				Zotero.debug(testDebugLine);
+				return Zotero_Preferences.refreshData();
+			}, testDebugLine);
+			var [message, debugLogBody] = await tab.run(async function(debugId) {
+				try {
+					sinon.stub(Zotero.HTTP, 'request').resolves(
+						{responseText: `<?xml version="1.0" encoding="UTF-8"?><xml><reported reportID="${debugId}"/></xml>`}
+					);
 					var deferred = Zotero.Promise.defer();
 					sinon.stub(Zotero.ModalPrompt, 'confirm').callsFake((config) => {
 						deferred.resolve(config);
@@ -139,21 +134,18 @@ describe('Preferences', function() {
 					});
 					document.getElementById('advanced-checkbox-enable-logging').click();
 					document.getElementById('advanced-button-submit-output').click();
-					return deferred.promise.then(function(config) {
+					return await deferred.promise.then(function(config) {
 						Zotero.ModalPrompt.confirm.restore();
 						document.getElementById('advanced-button-clear-output').click();
-						return config.message;
+						return [config.message, Zotero.HTTP.request.lastCall.args[2].body];
 					}).catch(e => ['error', e]);
-				});
-				
-				assert.include(message, `D${debugId}`);
-				var debugLogBody = yield background(function() {
-					return Zotero.HTTP.request.lastCall.args[2].body;
-				});
-				assert.include(debugLogBody, testDebugLine);
-			} finally {
-				yield background(() => Zotero.HTTP.request.restore());
-			}		
-		}));
+				} finally {
+					Zotero.HTTP.request.restore();
+				}
+			}, debugId);
+			
+			assert.include(message, `D${debugId}`);
+			assert.include(debugLogBody, testDebugLine);
+		});
 	});
 });

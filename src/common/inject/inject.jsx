@@ -57,13 +57,14 @@ try {
 // Update: Except for 'application/pdf', like on https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9919149
 const isAllowedIframeContentType = ['text/html', 'application/pdf'].includes(document.contentType);
 
-// Do not run on non-web pages (file://), test pages, safari extension pages (i.e. safari prefs)
+// Do not run on non-web pages (file://), safari extension pages (i.e. safari prefs)
 // or non-top Safari pages
 const isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
+// Run on test pages
 const isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.runtime.getURL('test'));
 
 // Not scraping on hidden iframes and only select frames
-const shouldInject = isWeb && !isTestPage && !isHiddenIFrame && (isTopWindow || isAllowedIframeContentType)
+const shouldInject = (isWeb || isTestPage) && !isHiddenIFrame && (isTopWindow || isAllowedIframeContentType)
 
 var instanceID = isTopWindow ? 0 : (new Date()).getTime();
 

@@ -23,41 +23,44 @@
 	***** END LICENSE BLOCK *****
 */
 
-describe("HTTP", function() {
+import { Tab } from '../support/utils.mjs';
+
+// Skips due to missing puppeteer ability to run scripts in extension content scripts
+describe.skip("HTTP", function() {
 	var tab = new Tab();
 	let url = 'https://zotero-static.s3.amazonaws.com/test.html';
 	
-	before(Promise.coroutine(function* () {
-		yield tab.init(url);
-	}));
+	before(async function () {
+		await tab.init(url);
+	});
 	
-	after(function() {
-		tab.close();
+	after(async function() {
+		await tab.close();
 	});
 	
 	describe("#processDocuments()", function() {
-		it('succeeds when loading a same-origin page', Promise.coroutine(function* () {
+		it('succeeds when loading a same-origin page', async function () {
 			let url = 'https://zotero-static.s3.amazonaws.com/test.html?t';
-			let [content, location] = yield tab.run(function(url) {
-				return Zotero.HTTP.processDocuments(
-					url,
-					function (doc) {
-						var content = doc.querySelector('.csl-entry').innerText;
-						var location = doc.location.href;
-						return [content, location];
-					}
-				)
-				// Get results of first process
-				.then(vals => vals[0]);
+			let [content, location] = await tab.run(async (url) => {
+				return new Promise((resolve) => {
+					(Zotero.HTTP.processDocuments(
+						url,
+						function (doc) {
+							var content = doc.querySelector('.csl-entry').innerText;
+							var location = doc.location.href;
+							resolve([content, location]);
+						}
+					));
+				});
 			}, url);
 			
 			assert.include(content, 'Rosenzweig');
 			assert.equal(location, url);
-		}));
+		});
 		
-		it('succeeds when loading a cross-origin page', Promise.coroutine(function* () {
+		it('succeeds when loading a cross-origin page', async function () {
 			let url = 'http://zotero-static.s3.amazonaws.com/test.html';
-			let [content, location] = yield tab.run(function(url) {
+			let [content, location] = await tab.run(function(url) {
 				return Zotero.HTTP.processDocuments(
 					url,
 					function (doc) {
@@ -71,47 +74,47 @@ describe("HTTP", function() {
 			
 			assert.include(content, 'Rosenzweig');
 			assert.equal(location, url);
-		}));
+		});
 	});
 	
 	describe('#request()', function() {
 		describe('POST', function() {
-			it('Adds a Content-Type header if not present', Promise.coroutine(function* () {
-				let args = yield background(function(url) {
-					let spy = sinon.spy(XMLHttpRequest.prototype, 'setRequestHeader');
-					return Zotero.HTTP.request("POST", url, {body: 'test=test'}).catch(() => undefined)
-					.then(function() {
-						let args = spy.args;
-						spy.restore();
-						return args;
-					});
+			it('Adds a Content-Type header if not present', async function () {
+				let args = await tab.run(async function(url) {
+					let spy = await sinon.spy(XMLHttpRequest.prototype, 'setRequestHeader');
+					try {
+						await Zotero.HTTP.request("POST", url, {body: 'test=test'})
+					} catch (e) {}
+					let args = await spy.getArgs();
+					spy.restore();
+					return args;
 				}, url);
 				let hasContentType = false;
 				for (let arg of args) {
 					hasContentType = hasContentType || arg[0] == 'Content-Type';
 				}
 				assert.isTrue(hasContentType);
-			}));
+			});
 		});
 	});
 	
 	describe("COHTTP", function() {
 		describe('#request()', function() {
-			it('responds with correct XHR signature', Promise.coroutine(function* () {
-				let xhr = yield tab.run(function(url) {
-					return Zotero.COHTTP.request('GET', url).then(function(xhr) {
-						return Object.keys(xhr);
-					})
+			it('responds with correct XHR signature', async function () {
+				let xhr = await tab.run(async function(url) {
+					let xhr = await Zotero.COHTTP.request('GET', url);
+					return Object.keys(xhr);
 				}, url);
 				assert.include(xhr, 'responseText');
 				assert.include(xhr, 'status');
-			}));
+			});
 		});
 	});
-	
+
+	// Skip due to missing puppeteer ability to run scripts in extension content scripts
 	describe("#wrapDocument()", function () {
-		it("should allow document itself to be passed to document.evaluate()", Promise.coroutine(function* () {
-			var content = yield background(function (url) {
+		it("should allow document itself to be passed to document.evaluate()", async function () {
+			var content = await tab.run(function (url) {
 				var url = "https://zotero-static.s3.amazonaws.com/test.html?t";
 				return Zotero.HTTP.request("GET", url, { responseType: 'document' })
 				.then(function (xmlhttp) {
@@ -121,6 +124,6 @@ describe("HTTP", function() {
 				});
 			});
 			assert.include(content, 'Rosenzweig');
-		}));
+		});
 	});
 });

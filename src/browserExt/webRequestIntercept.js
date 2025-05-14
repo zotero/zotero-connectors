@@ -58,15 +58,14 @@ Zotero.WebRequestIntercept = {
     },
 
 	offerSavingPDFInFrame: function(details) {
+		if (details.frameId === 0) return;
 		if (!details.responseHeadersObject['content-type']) return;
 		const contentType = details.responseHeadersObject['content-type'].split(';')[0];
 		
 		// If no translators are found for the top frame or the first child frame, and some frame
 		// contains a pdf, saving that PDF will be offered.
 		if (contentType == 'application/pdf') {
-			if (details.frameId != 0) {
-				setTimeout(() => Zotero.Connector_Browser.onPDFFrame(details.url, details.frameId, details.tabId));
-			}
+			setTimeout(() => Zotero.Connector_Browser.onPDFFrame(details.url, details.frameId, details.tabId));
 		}
 	},
 	

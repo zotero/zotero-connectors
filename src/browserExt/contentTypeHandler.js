@@ -204,6 +204,7 @@ Zotero.ContentTypeHandler = {
 
 	_shouldImportContent: async function(url, tabId) {
 		if (!(await Zotero.Connector.checkIsOnline())) return false;
+		Zotero.debug(`_shouldImportContent: ${url}`)
 		const URI = new URL(url);
 		const hosts = Zotero.Prefs.get('allowedInterceptHosts');
 		const isEnabledHost = hosts.indexOf(URI.host) != -1;

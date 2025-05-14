@@ -23,21 +23,32 @@
 	***** END LICENSE BLOCK *****
 */
 
-Zotero.MessagingGeneric = class {
+let MessagingGeneric = class {
 	/**
-	 * Set up messaging between two isolated JS contexts (frame to frame, frame to context script,
-	 * context script to background page or anything else).
+	 * Set up messaging between two isolated JS contexts (frames, context scripts, background pages,
+	 * web workers or anything else).
 	 * @param options {Object}
 	 * @param options.sendMessage {Function} [required]
 	 * 		A function that invokes the messageListeners on the remote JS context with arguments
+	 *
 	 * @param options.addMessageListener {Function} [required]
 	 * 		Add a handler for a sendMessage call from the remote JS context
+	 *
 	 * @param options.functionOverrides {Object}
 	 * 		An object specifying which local function calls should be created/overriden and invoked
 	 * 		as a function call at the remote JS context
+	 *
 	 * @param options.handlerFunctionOverrides {Object}
 	 * 		An object specifying which function calls the remote will try to call in our space.
-	 * 		Used to configure argument pre/post processing before and after running the function.	
+	 * 		Used to configure argument pre/post processing before and after running the function.
+	 *
+	 * @param options.overrideTarget {Object} [default=self]
+	 * 		The root object for which function overrides are applied. Defaults to `self`, which is the
+	 * 		root object of the context. Would generally be set to Zotero.
+	 *
+	 * @param options.supportsError {Boolean}
+	 * 		Whether the sendMessage function supports sending errors without serialization.
+	 *
 	 * @param options.supportsResponse {Boolean}
 	 * 		Whether the sendMessage function returns an async response and the message listeners
 	 * 		expect an async response to be returned to remote JS context.
@@ -45,7 +56,7 @@ Zotero.MessagingGeneric = class {
 	 
 	constructor(options={}) {
 		if (!options.sendMessage || !options.addMessageListener) {
-			throw new Error('Zotero.MessagingGeneric: mandatory constructor options missing');
+			throw new Error('MessagingGeneric: mandatory constructor options missing');
 		}
 		if (options.sendMessage == 'frame') {
 			options.sendMessage = (...args) => window.parent.postMessage(args, '*');
@@ -64,11 +75,12 @@ Zotero.MessagingGeneric = class {
 		this._handlerFunctionOverrides = options.handlerFunctionOverrides;
 		this._messageListeners = {};
 		this._responseListeners = {};
+		this._overrideTarget = options.overrideTarget || globalThis;
 
 		// Handle function overrides
 		for (const fnName in this._functionOverrides) {
 			const fnPath = fnName.split('.');
-			let fn = Zotero;
+			let fn = this._overrideTarget;
 			for (let name of fnPath.slice(0, fnPath.length - 1)) {
 				if (!(name in fn)) {
 					fn[name] = {};
@@ -97,12 +109,12 @@ Zotero.MessagingGeneric = class {
 		}
 		// And handler function overrides towards us
 		for (let fnName in this._handlerFunctionOverrides) {
-			this.addMessageListener(fnName, async (args = []) => {
+			this.addMessageListener(fnName, async (...args) => {
 				const fnPath = fnName.split('.');
 				const messageConfig = this._handlerFunctionOverrides[fnName];
 				let result;
 				try {
-					let fn = Zotero;
+					let fn = this._overrideTarget;
 					for (let name of fnPath) {
 						fn = fn[name];
 					}
@@ -133,7 +145,7 @@ Zotero.MessagingGeneric = class {
 	// gets severed for some reason.
 	reinit(options) {
 		if (!options.sendMessage || !options.addMessageListener) {
-			throw new Error('Zotero.MessagingGeneric: mandatory reinit() options missing');
+			throw new Error('MessagingGeneric: mandatory reinit() options missing');
 		}
 		this._responseListeners = {};
 		this._sendMessage = options.sendMessage;
@@ -147,9 +159,10 @@ Zotero.MessagingGeneric = class {
 			if (!Array.isArray(args) || args.length > 3) return;
 			let [message, payload, messageId] = args;
 			if (this._messageListeners[message]) {
+				payload = payload || [];
 				let result;
 				try {
-					result = this._messageListeners[message](payload);
+					result = this._messageListeners[message](...payload);
 					if (typeof result === 'object' && result.then) result = await result;
 				} catch (e) {
 					result = ['error', JSON.stringify(Object.assign({
@@ -172,7 +185,7 @@ Zotero.MessagingGeneric = class {
 		});
 	}
 	
-	async sendMessage(message, payload) {
+	async sendMessage(message, payload=[]) {
 		let response;
 		if (this._options.supportsResponse) {
 			 response = await this._sendMessage(message, payload)
@@ -197,3 +210,6 @@ Zotero.MessagingGeneric = class {
 		this._messageListeners[message] = listener;
 	}
 };
+
+if (typeof Zotero !== 'undefined') Zotero.MessagingGeneric = MessagingGeneric;
+if (typeof module !== 'undefined') module.exports = MessagingGeneric;

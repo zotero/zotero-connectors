@@ -91,6 +91,7 @@ ItemSaver.prototype = {
 	 * @param {Function} [itemsDoneCallback] A callback that receives progress for top-item saving.
 	 */
 	saveItems: async function (items, attachmentCallback, itemsDoneCallback=()=>0) {
+		Zotero.debug(`ItemSaver.saveItems: Saving ${items.length} items`);
 		try {
 			return await this._saveToZotero(items, attachmentCallback, itemsDoneCallback);
 		}
@@ -466,6 +467,7 @@ ItemSaver.prototype = {
 	 *     attachmentCallback() will be called with all attachments that will be saved
 	 */
 	_saveToServer: async function (items, attachmentCallback, itemsDoneCallback=()=>0) {
+		Zotero.debug(`ItemSaver._saveToServer: Saving ${items.length} items to server`);
 		var newItems = [], itemIndices = [];
 		
 		for(var i=0, n=items.length; i<n; i++) {
@@ -537,6 +539,7 @@ ItemSaver.prototype = {
 	_saveAttachmentsToServer: async function(itemKey, baseName, attachments, prefs, attachmentCallback=()=>0) {
 		let promises = []
 		for (let attachment of attachments) {
+			Zotero.debug(`ItemSaver._saveAttachmentsToServer: Saving attachment ${attachment.title} to server`);
 			let isSnapshot = false;
 			if (attachment.mimeType) {
 				switch (attachment.mimeType.toLowerCase()) {

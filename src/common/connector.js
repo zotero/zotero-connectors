@@ -37,13 +37,17 @@ Zotero.Connector = new function() {
 	 * @param {Function} callback
 	 */
 	this.checkIsOnline = async function() {
-		return this.ping({}).catch(function(e) {
+		try {
+			await this.ping({});
+			return true;
+		} catch (e) {
 			if (e.status != 0) {
 				Zotero.debug("Checking if Zotero is online returned a non-zero HTTP status.");
 				Zotero.logError(e);
+				return true;
 			}
 			return false;
-		});
+		}
 	};
 
 	this.reportActiveURL = function(url) {
@@ -135,43 +139,38 @@ Zotero.Connector = new function() {
 		let httpMethod = data === null ? "GET" : "POST";
 		try {
 			const xhr = await Zotero.HTTP.request(httpMethod, uri, options);
-			try {
-				Zotero.Connector.clientVersion = xhr.getResponseHeader('X-Zotero-Version');
-				if (Zotero.Connector.isOnline !== true) {
-					Zotero.Connector.isOnline = true;
-					if (Zotero.Connector_Browser?.onStateChange) {
-						Zotero.Connector_Browser.onStateChange(Zotero.Connector.clientVersion);
-					}
+			Zotero.Connector.clientVersion = xhr.getResponseHeader('X-Zotero-Version');
+			if (Zotero.Connector.isOnline !== true) {
+				Zotero.Connector.isOnline = true;
+				if (Zotero.Connector_Browser?.onStateChange) {
+					Zotero.Connector_Browser.onStateChange(Zotero.Connector.clientVersion);
 				}
-				var val = xhr.response
-				if (xhr.responseText) {
-					let contentType = xhr.getResponseHeader("Content-Type") || ""
-					if (contentType.includes("application/json")) {
-						val = JSON.parse(xhr.responseText);
-					} else {
-						val = xhr.responseText;
-					}
-				}
-
-				if (xhr.status >= 400) {
-					// Check for incompatible version
-					if (xhr.status === 412) {
-						if (Zotero.Connector_Browser && Zotero.Connector_Browser.onIncompatibleStandaloneVersion) {
-							var standaloneVersion = xhr.getResponseHeader("X-Zotero-Version");
-							Zotero.Connector_Browser.onIncompatibleStandaloneVersion(Zotero.version, standaloneVersion);
-							throw new Zotero.Connector.CommunicationError(`Connector: Version mismatch: Connector version ${Zotero.version}, Standalone version ${standaloneVersion ? standaloneVersion : "<unknown>"}`, xhr.status, val);
-						}
-					}
-					
-					Zotero.debug("Connector: Method "+method+" failed with status "+xhr.status);
-					throw new Zotero.Connector.CommunicationError(`Method ${method} failed`, xhr.status, val);
+			}
+			var val = xhr.response
+			if (xhr.responseText) {
+				let contentType = xhr.getResponseHeader("Content-Type") || ""
+				if (contentType.includes("application/json")) {
+					val = JSON.parse(xhr.responseText);
 				} else {
-					Zotero.debug("Connector: Method "+method+" succeeded");
-					return val;
+					val = xhr.responseText;
 				}
-			} catch (e) {
-				Zotero.logError(e);
-				throw new Zotero.Connector.CommunicationError(e.message, 0);
+			}
+
+			if (xhr.status >= 400) {
+				// Check for incompatible version
+				if (xhr.status === 412) {
+					if (Zotero.Connector_Browser && Zotero.Connector_Browser.onIncompatibleStandaloneVersion) {
+						var standaloneVersion = xhr.getResponseHeader("X-Zotero-Version");
+						Zotero.Connector_Browser.onIncompatibleStandaloneVersion(Zotero.version, standaloneVersion);
+						throw new Zotero.Connector.CommunicationError(`Connector: Version mismatch: Connector version ${Zotero.version}, Standalone version ${standaloneVersion ? standaloneVersion : "<unknown>"}`, xhr.status, val);
+					}
+				}
+				
+				Zotero.debug("Connector: Method "+method+" failed with status "+xhr.status);
+				throw new Zotero.Connector.CommunicationError(`Method ${method} failed`, xhr.status, val);
+			} else {
+				Zotero.debug("Connector: Method "+method+" succeeded");
+				return val;
 			}
 		} catch (e) {
 			if (e instanceof Zotero.HTTP.StatusError && e.status === 0) {
@@ -183,7 +182,7 @@ Zotero.Connector = new function() {
 				}
 				Zotero.debug(e);
 			}
-			else {
+			else if (!(e instanceof Zotero.Connector.CommunicationError) && !(e instanceof Zotero.HTTP.StatusError)){
 				// Unexpected error, including a timeout
 				Zotero.logError(e);
 			}

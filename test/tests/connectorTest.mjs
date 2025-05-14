@@ -23,6 +23,8 @@
 	***** END LICENSE BLOCK *****
 */
 
+import { background } from '../support/utils.mjs';
+
 describe('Connector', function() {
 	describe('#checkIsOnline()', function() {
 		before(function() {
@@ -37,32 +39,32 @@ describe('Connector', function() {
 			});
 		});
 	
-		it('responds with true when Zotero is online', Promise.coroutine(function*() {
-			let status = yield background(function() {
+		it('returns true when Zotero is online', async function() {
+			let status = await background(function() {
 				Zotero.HTTP.request.resolves({status: 200, getResponseHeader: () => 'application/json', responseText: '{}'});
 				return Zotero.Connector.checkIsOnline();
 			});
 			assert.isOk(status);
-		}));
+		});
 		
-		it('responds with false when Zotero is offline', Promise.coroutine(function*() {
-			let status = yield background(function() {
-				Zotero.HTTP.request.resolves({status: 0});
+		it('returns false when Zotero is offline', async function() {
+			let status = await background(function() {
+				Zotero.HTTP.request.throws(new Zotero.HTTP.StatusError({status: 0}));
 				return Zotero.Connector.checkIsOnline();
 			});
 			assert.isNotOk(status);
-		}));
+		});
 		
-		it('throws when Zotero responds with a non-200 status', Promise.coroutine(function* () {
-			try {
-				yield background(function() {
-					Zotero.HTTP.request.resolves({status: 500, getResponseHeader: () => '', responseText: 'Error'});
-					return Zotero.Connector.checkIsOnline();
-				});
-			} catch (e) {
-				return
-			}
-			throw new Error('Expected error not thrown');
-		}));
+		it('returns true if Zotero responds with a non-200 status', async function () {
+			let result = await background(async function() {
+				Zotero.HTTP.request.resolves({status: 500, getResponseHeader: () => '', responseText: 'Error'});
+				try {
+					return await Zotero.Connector.checkIsOnline();
+				} catch (e) {
+					return false;
+				}
+			});
+			assert.isTrue(result);
+		});
 	});
 });

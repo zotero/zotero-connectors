@@ -23,6 +23,8 @@
 	***** END LICENSE BLOCK *****
 */
 
+import { background } from '../support/utils.mjs';
+
 describe('Proxies', function() {
 	var originalProxies;
 	
@@ -46,27 +48,27 @@ describe('Proxies', function() {
 	
 	describe('#getPotentialProxies()', function() {
 		it('returns no proxies if link unproxied', async function() {
-			let url = 'http://www.zotero.org';
+			let url = 'http://www.zotero.org/';
 			let proxies = await background((url) => Zotero.Proxies.getPotentialProxies(url), url);
 			assert.equal(Object.keys(proxies).length, 1);
 			assert.isNull(proxies[url]);
 		});
 		
 		it('returns a simple proxy if link proxied', async function() {
-			let url = 'http://www.zotero.org.proxy.example.com';
+			let url = 'http://www.zotero.org.proxy.example.com/';
 			let proxies = await background((url) => Zotero.Proxies.getPotentialProxies(url), url);
 			assert.equal(Object.keys(proxies).length, 2);
 			assert.isNull(proxies[url]);
-			assert.equal(proxies['http://www.zotero.org'].scheme, '%h.proxy.example.com/%p');
+			assert.equal(proxies['http://www.zotero.org/'].scheme, '%h.proxy.example.com/%p');
 		});
 		
 		it('returns an unhyphenated proxy if link is proxied with https hyphenation', async function() {
-			let url = 'https://www-zotero-org.proxy.example.com';
+			let url = 'https://www-zotero-org.proxy.example.com/';
 			let proxies = await background((url) => Zotero.Proxies.getPotentialProxies(url), url);
 			assert.equal(Object.keys(proxies).length, 2);
 			assert.isNull(proxies[url]);
-			assert.equal(proxies['https://www.zotero.org'].scheme, '%h.proxy.example.com/%p');
-			assert.isTrue(proxies['https://www.zotero.org'].dotsToHyphens);
+			assert.equal(proxies['https://www.zotero.org/'].scheme, '%h.proxy.example.com/%p');
+			assert.isTrue(proxies['https://www.zotero.org/'].dotsToHyphens);
 		});
 	});
 	

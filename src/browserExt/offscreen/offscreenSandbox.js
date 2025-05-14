@@ -51,6 +51,7 @@ Zotero.OffscreenSandbox = {
 		Zotero.debug('OffscreenSandbox: initializing messaging');
 		let messagingOptions = {
 			functionOverrides: OFFSCREEN_BACKGROUND_OVERRIDES,
+			overrideTarget: Zotero
 		}
 		await new Promise((resolve) => {
 			// The service worker will send us a message to confirm established communication

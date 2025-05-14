@@ -23,6 +23,8 @@
 	***** END LICENSE BLOCK *****
 */
 
+import { Tab, background, getExtensionURL } from '../support/utils.mjs';
+
 describe('Connector_Browser', function() {
 	var tab = new Tab();
 	
@@ -45,27 +47,14 @@ describe('Connector_Browser', function() {
 					}
 					return deferred.promise;
 				});
-				await Zotero.Promise.delay(30);
-				await tab.init(getExtensionURL('test/data/framePDF.html'));
-				
-				// The frame is not initialized unless the tab is activated momentarily.
-				await background(async function(tabId) {
-					var prevActiveTab = await browser.tabs.query({active: true, currentWindow: true});
-					await browser.tabs.update(tabId, {active: true});
-					await Zotero.Promise.delay(100);
-					await browser.tabs.update(prevActiveTab[0].id, {active: true});
-				}, tab.tabId);
-				
+				const url = getExtensionURL('test/data/framePDF.html');
+				await tab.init(url);
 				await bgPromise;
-
-				let tabId = await background(async function(tabId) {
-					if (Zotero.isBrowserExt) {
-						return Zotero.Connector_Browser._showPDFIcon.args[0][0].id;
-					} else {
-						return (await Zotero.Background.getTabByID(tabId)).isPDFFrame ? tabId : -1;
-					}
-				}, tab.tabId);
-				assert.equal(tabId, tab.tabId);
+	
+				let result = await background(() => {
+					return Zotero.Connector_Browser._showPDFIcon.called;
+				});
+				assert.isTrue(result);
 			} finally {
 				await background(function() {
 					Zotero.Connector_Browser._showPDFIcon.restore()

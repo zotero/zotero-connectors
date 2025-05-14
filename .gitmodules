@@ -16,3 +16,6 @@
 [submodule "lib/SingleFile-Lite"]
 	path = lib/SingleFile-Lite
 	url = https://github.com/gildas-lormeau/SingleFile-Lite.git
+[submodule "src/zotero-schema"]
+	path = src/zotero-schema
+	url = https://github.com/zotero/zotero-schema

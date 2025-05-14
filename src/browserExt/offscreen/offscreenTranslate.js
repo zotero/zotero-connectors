@@ -136,7 +136,7 @@ Zotero.OffscreenTranslate = {
 	},
 
 	addMessageListener: function(message, handler) {
-		return Zotero.OffscreenSandbox.addMessageListener(message, (args) => {
+		return Zotero.OffscreenSandbox.addMessageListener(message, (...args) => {
 			if (message.startsWith('Translate')) {
 				// Last 2 args passed via background script are tabId and frameId so we can lifecycle-manage translates
 				let frameId = args.at(-1);

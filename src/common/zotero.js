@@ -31,6 +31,7 @@ var Zotero = global.Zotero = new function() {
 	this.isConnector = true;
 	// Old flag for 4.0 connector, probably not used anymore
 	this.isFx = false;
+	this.isDebug = false;
 	
 	// For autocomplete in IDEs
 	this.allowRepoTranslatorTester = this.isManifestV3

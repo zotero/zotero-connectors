@@ -234,7 +234,8 @@ describe("Translation", function() {
 							var tab = await browser.tabs.get(tabId);
 							Zotero.Connector_Browser.saveWithTranslator(tab, 0).then(deferred.resolve).catch(deferred.reject);
 						}, tab.tabId);
-						await delay(20);
+						// Wait for the modal prompt to appear
+						await delay(500);
 						var frameURL = getExtensionURL('modalPrompt/modalPrompt.html');
 						var message = await tab.runInFrame(frameURL, async function() {
 							// TODO: A more robust way to wait for the text to show up.

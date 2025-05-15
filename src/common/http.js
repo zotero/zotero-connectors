@@ -371,7 +371,19 @@ Zotero.HTTP = new function() {
 					err = new Zotero.HTTP.TimeoutError(url, options.timeout);
 				}
 				else {
-					err = new Zotero.HTTP.StatusError({status: 0}, url);
+					if (options.successCodes === false) {
+						return {
+							status: 0,
+							responseText: e.message,
+							response: e.message,
+							responseURL: url,
+							responseType: options.responseType,
+							statusText: e.message,
+							getAllResponseHeaders: () => "",
+							getResponseHeader: () => ""
+						}
+					}
+					err = new Zotero.HTTP.StatusError({ status: 0 }, url, e.message);
 				}
 				// Zotero.logError(err);
 				throw err;

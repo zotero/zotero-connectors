@@ -155,8 +155,16 @@ Zotero.Connector = new function() {
 					val = xhr.responseText;
 				}
 			}
-
-			if (xhr.status >= 400) {
+			if (xhr.status === 0) {
+				if (Zotero.Connector.isOnline !== false) {
+					Zotero.Connector.isOnline = false;
+					if (Zotero.Connector_Browser?.onStateChange) {
+						Zotero.Connector_Browser.onStateChange(false);
+					}
+				}
+				throw new Zotero.Connector.CommunicationError('Connector: Zotero is offline');
+			}
+			else if (xhr.status >= 400) {
 				// Check for incompatible version
 				if (xhr.status === 412) {
 					if (Zotero.Connector_Browser && Zotero.Connector_Browser.onIncompatibleStandaloneVersion) {
@@ -173,16 +181,7 @@ Zotero.Connector = new function() {
 				return val;
 			}
 		} catch (e) {
-			if (e instanceof Zotero.HTTP.StatusError && e.status === 0) {
-				if (Zotero.Connector.isOnline !== false) {
-					Zotero.Connector.isOnline = false;
-					if (Zotero.Connector_Browser?.onStateChange) {
-						Zotero.Connector_Browser.onStateChange(false);
-					}
-				}
-				Zotero.debug(e);
-			}
-			else if (!(e instanceof Zotero.Connector.CommunicationError) && !(e instanceof Zotero.HTTP.StatusError)){
+			if (!(e instanceof Zotero.Connector.CommunicationError) && !(e instanceof Zotero.HTTP.StatusError)){
 				// Unexpected error, including a timeout
 				Zotero.logError(e);
 			}

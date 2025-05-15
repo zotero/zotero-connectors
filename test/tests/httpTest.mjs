@@ -23,10 +23,10 @@
 	***** END LICENSE BLOCK *****
 */
 
-import { Tab } from '../support/utils.mjs';
+import { Tab, background } from '../support/utils.mjs';
 
 // Skips due to missing puppeteer ability to run scripts in extension content scripts
-describe.skip("HTTP", function() {
+describe("HTTP", function() {
 	var tab = new Tab();
 	let url = 'https://zotero-static.s3.amazonaws.com/test.html';
 	
@@ -38,7 +38,7 @@ describe.skip("HTTP", function() {
 		await tab.close();
 	});
 	
-	describe("#processDocuments()", function() {
+	describe.skip("#processDocuments()", function() {
 		it('succeeds when loading a same-origin page', async function () {
 			let url = 'https://zotero-static.s3.amazonaws.com/test.html?t';
 			let [content, location] = await tab.run(async (url) => {
@@ -78,7 +78,85 @@ describe.skip("HTTP", function() {
 	});
 	
 	describe('#request()', function() {
-		describe('POST', function() {
+		describe('With { successCodes: null } (default)', function() {
+			it('Throws when the target responds with a non-2xx or non-3xx status code', async function() {
+				const url = "https://zotero-static.s3.amazonaws.com/test.html";
+				let response = await background(async(url) => {
+					try {
+						sinon.stub(globalThis, 'fetch').resolves({
+							status: 404,
+							statusText: "Not Found",
+							text: async () => "Not Found",
+							url: url,
+							headers: new Headers()
+						});
+						await Zotero.HTTP.request("GET", url);
+					} catch (e) {
+						return e.message;
+					} finally {
+						globalThis.fetch.restore();
+					}
+				}, url);
+				assert.equal(response, `HTTP request to ${url} rejected with status 404`);
+			});
+
+			it('Throws when no path found to target/offline (status 0)', async function() {
+				const url = "https://zotero-static.s3.amazonaws.com/test.html";
+				let response = await background(async(url) => {
+					sinon.stub(globalThis, 'fetch').callsFake(async () => {
+						throw new Error('Request failed');
+					})
+					try {
+						await Zotero.HTTP.request("GET", url);
+					} catch (e) {
+						return e.message;
+					} finally {
+						globalThis.fetch.restore();
+					}
+				}, url);
+				assert.equal(response, `HTTP request to ${url} rejected with status 0`);
+			});
+		});
+
+		describe('With { successCodes: false }', function() {
+			it('Does not throw when the target responds with a non-2xx or non-3xx status code', async function() {
+				const url = "https://zotero-static.s3.amazonaws.com/test.html";
+				let response = await background(async(url) => {
+					sinon.stub(globalThis, 'fetch').resolves({
+						status: 404,
+						statusText: "Not Found",
+						text: async () => "Not Found",
+						url: url,
+						headers: new Headers()
+					});
+					try {
+						let response = await Zotero.HTTP.request("GET", url, {successCodes: false});
+						return response.status;
+					} finally {
+						globalThis.fetch.restore();
+					}
+				}, url);
+				assert.equal(response, 404);
+			});
+
+			it('Does not throw when no path found to target/offline (status 0)', async function() {
+				const url = "https://zotero-static.s3.amazonaws.com/test.html";
+				let response = await background(async(url) => {
+					sinon.stub(globalThis, 'fetch').callsFake(async () => {
+						throw new Error('Request failed');
+					})
+					try {
+						let response = await Zotero.HTTP.request("GET", url, {successCodes: false});
+						return response.status;
+					} finally {
+						globalThis.fetch.restore();
+					}
+				}, url);
+				assert.equal(response, 0);
+			});
+		});
+
+		describe.skip('POST', function() {
 			it('Adds a Content-Type header if not present', async function () {
 				let args = await tab.run(async function(url) {
 					let spy = await sinon.spy(XMLHttpRequest.prototype, 'setRequestHeader');
@@ -98,7 +176,7 @@ describe.skip("HTTP", function() {
 		});
 	});
 	
-	describe("COHTTP", function() {
+	describe.skip("COHTTP", function() {
 		describe('#request()', function() {
 			it('responds with correct XHR signature', async function () {
 				let xhr = await tab.run(async function(url) {
@@ -112,7 +190,7 @@ describe.skip("HTTP", function() {
 	});
 
 	// Skip due to missing puppeteer ability to run scripts in extension content scripts
-	describe("#wrapDocument()", function () {
+	describe.skip("#wrapDocument()", function () {
 		it("should allow document itself to be passed to document.evaluate()", async function () {
 			var content = await tab.run(function (url) {
 				var url = "https://zotero-static.s3.amazonaws.com/test.html?t";

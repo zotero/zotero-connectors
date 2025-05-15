@@ -30,7 +30,7 @@ ENV_VARS=""
 while getopts "icdfg:h" opt; do
 	case $opt in
 		i)
-			ENV_VARS+=" CI=true"
+			ENV_VARS+=" HEADLESS=true"
 			;;
 		c)
 			ENV_VARS+=" NO_QUIT=true"

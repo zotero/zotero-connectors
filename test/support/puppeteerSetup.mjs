@@ -39,7 +39,7 @@ export async function mochaGlobalSetup() {
 	console.log('Starting Puppeteer...');
 	
 	// Read environment variables passed from runtests.sh
-	const headlessMode = process.env.CI === 'true' ? 'new' : false;
+	const headlessMode = process.env.HEADLESS === 'true' ? 'new' : false;
 	
 	const launchOptions = {
 		headless: headlessMode,

@@ -78,7 +78,7 @@ Tab.prototype = {
 	},
 	
 	runInFrame: async function(frameUrl, fn, ...args) {
-		let frame = await this.page.frames().find(f => f.url() === frameUrl);
+		let frame = await this.page.waitForFrame(frameUrl, { timeout: 500 });
 		if (!frame) {
 			throw new Error(`Frame with URL ${frameUrl} not found`);
 		}

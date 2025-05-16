@@ -253,9 +253,7 @@ function copyResources {
 	cp "$SRCDIR/zotero/chrome/content/zotero/xpcom/singlefile.js" "$browser_builddir/singlefile-config.js"
 	
 	if [ ! -z $DEBUG ]; then
-		cp "$EXTENSION_TRANSLATE_DIR/testTranslators"/*.js \
-			"$EXTENSION_TRANSLATE_DIR/testTranslators"/*.css \
-			"$browser_builddir/tools/testTranslators"
+		cp "$EXTENSION_TRANSLATE_DIR/testTranslators/"*.mjs "$browser_builddir/tools/testTranslators"
 	else
 		rm -rf "$browser_builddir/tools"
 	fi

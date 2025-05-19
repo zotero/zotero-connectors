@@ -87,7 +87,6 @@ if (argv.p) {
 } else {
 	injectIncludeLast = [
 		'tools/testTranslators/translatorTester_messages.js',
-		'tools/testTranslators/translatorTester.js',
 		'inject/inject.js',
 		'tools/testTranslators/translatorTester_inject.js'
 	];
@@ -139,8 +138,7 @@ var backgroundInclude = [
 
 if (!argv.p) {
 	backgroundInclude.push('tools/testTranslators/translatorTester_messages.js',
-		'tools/testTranslators/translatorTester.js',
-		'tools/testTranslators/translatorTester_global.js',
+		'tools/testTranslators/translatorTester_background.js',
 		'lib/sinon.js');
 		
 	injectIncludeManifestV3.push('test/testInject.js');

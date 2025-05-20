@@ -297,6 +297,7 @@ let PageSaving = {
 				Zotero.debug(`Saving with ${translators[0].label} failed. Falling back to saving as webpage`);
 				return this.saveAsWebpage({ snapshot: true });
 			}
+			throw e;
 		}
 		if (Zotero.isManifestV3) {
 			proxy = await translate.getProxy();

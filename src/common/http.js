@@ -125,7 +125,7 @@ Zotero.HTTP = new function() {
 					await Zotero.Promise.delay(Math.min(Math.pow(2, options.backoff)*1000, MAX_BACKOFF) + Math.round(Math.random() * 1000));
 				}
 				originalOptions.backoff++;
-				return this.request(method, url, originalOptions);
+				return Zotero.HTTP.request(method, url, originalOptions);
 			}
 			throw e;
 		}

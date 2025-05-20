@@ -186,6 +186,7 @@ let MessagingGeneric = class {
 	}
 	
 	async sendMessage(message, payload=[]) {
+		if (!Array.isArray(payload)) throw new Error('MessagingGeneric.sendMessage: payload must be an array');
 		let response;
 		if (this._options.supportsResponse) {
 			 response = await this._sendMessage(message, payload)

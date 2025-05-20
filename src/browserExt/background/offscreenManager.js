@@ -57,7 +57,7 @@ Zotero.OffscreenManager = {
 
 		// Watch for browserext event of tab close and inform the offscreen page translate
 		browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
-			this.sendMessage('tabClosed', tabId);
+			this.sendMessage('tabClosed', [tabId]);
 		});
 		
 		// Run cleanup every 15min

@@ -128,7 +128,7 @@ let MessagingGeneric = class {
 				}
 				catch(e) {
 					console.log(`Zotero: Failed to invoke a function call from a handler destination ${fnName}`);
-					console.log(e);
+					console.log(e.message);
 					throw e;
 				}
 				if (messageConfig.handler && messageConfig.handler.preSend) {

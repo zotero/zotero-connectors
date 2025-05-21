@@ -55,20 +55,35 @@ export async function mochaGlobalSetup() {
 	globalThis.browser = browser;
 
 	console.log('Finding background service worker...');
+
+
+	
 	// Find the background service worker
 	const workerTarget = await browser.waitForTarget(
-		// Assumes the service worker script is named background.js
-		target =>
-			target.type() === 'service_worker' &&
-			target.url().endsWith('background-worker.js'),
+		(target) => {
+			return target.type() === 'service_worker' &&
+				target.url().endsWith('background-worker.js');
+		},
+		{ timeout: 5000 }
 	);
 
 	if (!workerTarget) {
 		throw new Error('Could not find background service worker.');
 	}
 
+	const offscreenPageTarget = await browser.waitForTarget(
+		target => target.url().endsWith('offscreen.html'),
+		{ timeout: 5000 }
+	);
+
+	if (!offscreenPageTarget) {
+		throw new Error('Could not find offscreen page.');
+	}
+
 	const worker = await workerTarget.worker();
 	globalThis.worker = worker;
+
+	globalThis.offscreenPage = await offscreenPageTarget.asPage();
 
 	// Forward worker console logs to Node console if DEBUG=true
 	if (process.env.DEBUG === 'true') {

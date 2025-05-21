@@ -23,7 +23,7 @@
 	***** END LICENSE BLOCK *****
 */
 
-import { Tab, background, getExtensionURL, delay } from '../support/utils.mjs';
+import { Tab, background, getExtensionURL, delay, offscreen } from '../support/utils.mjs';
 
 describe("Translation", function() {
 	var tab = new Tab();
@@ -80,8 +80,8 @@ describe("Translation", function() {
 		});
 		
 		describe("Saving", function() {
-			beforeEach(async function() {
-				const onTranslators = background(() => {
+			async function navigateAndWaitForTranslators(tab, url) {
+				let translatorsLoaded = background(() => {
 					return new Promise((resolve) => {
 						sinon.stub(Zotero.Connector_Browser, 'onTranslators').callsFake((...args) => {
 							resolve(args[0].map(t => t.label));
@@ -90,8 +90,12 @@ describe("Translation", function() {
 						});
 					});
 				});
-				await tab.page.reload();
-				await onTranslators;
+				await tab.navigate(url);
+				await translatorsLoaded;
+			}
+
+			beforeEach(async function() {
+				await navigateAndWaitForTranslators(tab, getExtensionURL('test/data/journalArticle-single.html'));
 			});
 			
 			describe("To Zotero", function() {
@@ -195,6 +199,34 @@ describe("Translation", function() {
 					var elem = await frame.waitForSelector('.ProgressWindow-error');
 					var message = await elem.evaluate(node => node.textContent);
 					assert.include(message, "An error occurred while saving this item.");
+				});
+				
+				it('should throw an error if multiple item translation fails during saving', async function() {
+					await navigateAndWaitForTranslators(tab, getExtensionURL('test/data/DOI-multiple.html'));
+					
+					try {
+						await offscreen(() => {
+							sinon.stub(Zotero.Translate.Web.prototype, 'translate').throws(new Error('Test error'));
+						})
+					
+						let result = await background(async function(tabId) {
+							// Try to save using DOI translator
+							let tab = await browser.tabs.get(tabId);
+							return await Zotero.Connector_Browser.saveWithTranslator(tab, 0);
+						}, tab.tabId);
+						
+						assert.isNotOk(result);
+						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
+						var frame = await tab.page.waitForFrame(frameURL);
+						var elem = await frame.waitForSelector('.ProgressWindow-error');
+						var message = await elem.evaluate(node => node.textContent);
+						assert.include(message, "An error occurred while saving this item.");
+					}
+					finally {
+						await offscreen(() => {
+							Zotero.Translate.Web.prototype.translate.restore();
+						});
+					}
 				});
 			});
 			

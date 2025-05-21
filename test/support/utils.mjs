@@ -7,6 +7,14 @@ var background = async function (func, ...args) {
 	return worker.evaluate(func, ...args);
 };
 
+var offscreen = async function (func, ...args) {
+	let frame = offscreenPage.frames().find(f => f.url().endsWith('offscreenSandbox.html'));
+	if (!frame) {
+		throw new Error('Could not find offscreen frame.');
+	}
+	return frame.evaluate(func, ...args);
+};
+
 var Tab = function() {};
 Tab.prototype = {
 	init: async function (url='http://zotero-static.s3.amazonaws.com/test.html') {
@@ -102,4 +110,4 @@ function getExtensionURL(path) {
 	return `${extensionURL}${path}`;
 }
 
-export { background, Tab, delay, getExtensionURL };
+export { background, Tab, delay, getExtensionURL, offscreen };

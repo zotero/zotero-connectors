@@ -274,7 +274,12 @@ function processFile() {
 				file.contents = Buffer.from(replaceScriptsHTML(
 					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeManifestV3.map(s => `../../${s}`)));
 			}
-			['manifestv3', 'firefox'].forEach((browser) => {
+			for (let browser of ['manifestv3', 'firefox']) {
+				if (basename === 'manifest.json' && browser === 'manifestv3'
+					|| basename === 'manifest-v3.json' && browser === 'firefox') {
+					continue;
+				}
+				
 				f = file.clone({contents: false});
 				if (['manifest.json', "manifest-v3.json", "background.js", "background-worker.js"].includes(basename)) {
 					let contents = f.contents.toString();
@@ -318,7 +323,7 @@ function processFile() {
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);
-			});
+			}
 		}
 		if (type === 'common' || type === 'safari') {
 			f = file.clone({contents: false});

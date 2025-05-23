@@ -274,52 +274,55 @@ function processFile() {
 				file.contents = Buffer.from(replaceScriptsHTML(
 					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeManifestV3.map(s => `../../${s}`)));
 			}
-			if (basename == 'manifest-v3.json') {
+			for (let browser of ['manifestv3', 'firefox']) {
+				if (basename === 'manifest.json' && browser === 'manifestv3'
+					|| basename === 'manifest-v3.json' && browser === 'firefox') {
+					continue;
+				}
+				
 				f = file.clone({contents: false});
-				f.path = (parts.slice(0, i-1).join('/') + `/build/manifestv3/` + parts.slice(i+1).join('/'))
-					.replace('manifest-v3.json', 'manifest.json');
-				console.log(`-> ${f.path.slice(f.cwd.length)}`);
-				f.contents = Buffer.from(f.contents.toString()
-					.replace("/*INJECT SCRIPTS*/",
-						injectIncludeManifestV3.map((s) => `"${s}"`).join(',\n\t\t\t'))
-					.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"'));
-				this.push(f);
-			}
-			else {
-				['manifestv3', 'firefox'].forEach((browser) => {
-					f = file.clone({contents: false});
-					if (['manifest.json', "manifest-v3.json", "background.js", "background-worker.js"].includes(basename)) {
+				if (['manifest.json', "manifest-v3.json", "background.js", "background-worker.js"].includes(basename)) {
+					let contents = f.contents.toString();
+					if (basename == 'manifest-v3.json') {
+						parts[parts.length - 1] = 'manifest.json';
+						contents = contents
+							.replace("/*INJECT SCRIPTS*/",
+								injectIncludeManifestV3.map((s) => `"${s}"`).join(',\n\t\t\t'));
+						if (process.env.CHROME_EXTENSION_KEY && ['manifestv3'].includes(browser)) {
+							contents = contents.replace(/("name": "[^"]*")/, `$1,\n\t"key": "${process.env.CHROME_EXTENSION_KEY}"`);
+						}
+					}
+					else {
 						let backgroundScripts = backgroundIncludeBrowserExt;
 						let injectScripts = browser == "manifestv3" ? injectIncludeManifestV3 : injectIncludeBrowserExt;
-						let contents = f.contents.toString()
+						contents = contents
 							.replace("/*BACKGROUND SCRIPTS*/",
 								backgroundScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
 							.replace("/*INJECT SCRIPTS*/",
 								injectScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
-							.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"');
-						if (process.env.CHROME_EXTENSION_KEY && ['manifestv3'].includes(browser)) {
-							contents = contents.replace(/("name": "[^"]*")/, `$1,\n\t"key": "${process.env.CHROME_EXTENSION_KEY}"`);
-						}
-						if (typeof process.env.ZOTERO_BETA_BUILD_EXPIRATION != 'undefined') {
-							contents = contents.replace('_betaBuildExpiration = new Date(2053, 0, 1, 0, 0, 0)',
-								`_betaBuildExpiration = new Date(${process.env.ZOTERO_BETA_BUILD_EXPIRATION})`);
-						}
-						f.contents = Buffer.from(contents);
 					}
-					if (basename == 'zotero.js') {
-						let contents = f.contents.toString()
-							.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
-						contents = replaceBrowser(contents, {
-							browserExt: true,
-							firefox: browser == 'firefox',
-							manifestV3: browser == 'manifestv3'
-						});
-						f.contents = Buffer.from(contents);
+					
+					contents = contents
+						.replace(/"version": "[^"]*"/, '"version": "' + argv.connectorVersion + '"');
+					if (typeof process.env.ZOTERO_BETA_BUILD_EXPIRATION != 'undefined') {
+						contents = contents.replace('_betaBuildExpiration = new Date(2053, 0, 1, 0, 0, 0)',
+							`_betaBuildExpiration = new Date(${process.env.ZOTERO_BETA_BUILD_EXPIRATION})`);
 					}
-					f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
-					console.log(`-> ${f.path.slice(f.cwd.length)}`);
-					this.push(f);
-				});
+					f.contents = Buffer.from(contents);
+				}
+				if (basename == 'zotero.js') {
+					let contents = f.contents.toString()
+						.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
+					contents = replaceBrowser(contents, {
+						browserExt: true,
+						firefox: browser == 'firefox',
+						manifestV3: browser == 'manifestv3'
+					});
+					f.contents = Buffer.from(contents);
+				}
+				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
+				console.log(`-> ${f.path.slice(f.cwd.length)}`);
+				this.push(f);
 			}
 		}
 		if (type === 'common' || type === 'safari') {

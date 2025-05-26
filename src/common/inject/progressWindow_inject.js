@@ -97,9 +97,9 @@ if (isTopWindow) {
 	/**
 	 * Get selected collection and collections list from client and update popup
 	 */
-	async function updateFromClient(prefix) {
+	async function updateFromClient(prefix, retryOnReadOnly = true) {
 		try {
-			var response = await Zotero.Connector.callMethod("getSelectedCollection", {})
+			var response = await Zotero.Connector.callMethod("getSelectedCollection", { switchToReadableLibrary: true })
 		}
 		catch (e) {
 			// TODO: Shouldn't this be coupled to the actual save process?
@@ -115,12 +115,12 @@ if (isTopWindow) {
 			response.libraryEditable = true;
 		}
 		
-		// Disable target selector for read-only library (which normally shouldn't happen,
-		// because the client switches automatically to My Library)
+		// The library will change to editable upon save to a read-only library,
+		// so the currently selected library information is wrong/irrelevant
 		if (response.libraryEditable === false) {
-			response.targets = undefined;
-			addError("collectionNotEditable");
-			startCloseTimer(8000);
+			if (retryOnReadOnly) {
+				setTimeout(() => updateFromClient(prefix, false), 250);
+			}
 			return;
 		}
 		

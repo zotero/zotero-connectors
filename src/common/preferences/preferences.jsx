@@ -166,8 +166,6 @@ Zotero_Preferences.General = {
 
 		ReactDOM.render(React.createElement(Zotero_Preferences.Components.ClientStatus, null),
 			document.getElementById("client-status"));
-		document.getElementById("general-button-authorize").onclick =
-			document.getElementById("general-button-reauthorize").onclick = Zotero_Preferences.General.authorize;
 		document.getElementById("general-button-clear-credentials").onclick = Zotero_Preferences.General.clearCredentials;
 
 		Zotero.API.getUserInfo().then(Zotero_Preferences.General.updateAuthorization);
@@ -183,18 +181,6 @@ Zotero_Preferences.General = {
 		if(userInfo) {
 			document.getElementById('general-span-authorization-username').textContent = userInfo.username;
 		}
-	},
-
-	/**
-	 * Authorizes the user
-	 */
-	authorize: function() {
-		Zotero.API.authorize().then(function(data) {
-			Zotero_Preferences.General.updateAuthorization(data);
-		}, function(e) {
-			if (e.message.includes('cancelled')) return;
-			alert("Authorization could not be completed.\n\n"+e.message)
-		});
 	},
 
 	/**

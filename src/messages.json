@@ -29,6 +29,9 @@
 	"general_continue": {
 		"message": "Continue"
 	},
+	"general_continueAnyway": {
+		"message": "Continue Anyway"
+	},
 	"general_dontWarnAgain": {
 		"message": "Don't Warn Again"
 	},
@@ -272,5 +275,15 @@
 	},
 	"reloadVia": {
 		"message": "Reload via $1"
+	},
+	
+	"permissions_siteAccess_title": {
+		"message": "Site Access Permissions Required"
+	},
+	"permissions_siteAccess_openPreferences": {
+		"message": "Open Extension Preferences"
+	},
+	"permissions_siteAccess_message": {
+		"message": "<p>Zotero Connector requires permission to run on all websites to function properly.</p><p>To enable this, change the \"Site Access\" setting to \"On all sites\" in the Extension Preferences page.</p>"
 	}
 }

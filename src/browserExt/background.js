@@ -705,6 +705,11 @@ Zotero.Connector_Browser = new function() {
 	};
 	
 	async function _handleContextMenuClick(info, tab) {
+		const shouldContinue = await _checkPermissions(tab);
+		if (!shouldContinue) {
+			return;
+		}
+
 		const id = info.menuItemId;
 		// The PDF viewer in Chromium is apparently implemented as a special extension.
 		// If you right-click on the pdf-reader UI and select a Zotero option, the handler
@@ -969,7 +974,56 @@ Zotero.Connector_Browser = new function() {
 		return false;
 	}
 	
-	function _browserAction(tab) {
+	/**
+	 * Check if we have permission to run on all sites.
+	 * Prompts the user if permissions are insufficient.
+	 * @param {Object} tab - The current tab object
+	 * @returns {Promise<boolean>} - Returns false if the action should not proceed 
+	 */
+	async function _checkPermissions(tab) {
+		// Firefox doesn't have per-site permissions in MV2.
+		if (!Zotero.isChromium) {
+			return true;
+		}
+
+		try {
+			const hasPermissions = await browser.permissions.contains({
+				origins: ["https://*/*"]
+			});
+
+			if (hasPermissions) {
+				return true;
+			}
+
+			const extensionId = browser.runtime.id;
+			const result = await Zotero.Messaging.sendMessage('confirm', {
+				title: Zotero.getString("permissions_siteAccess_title"),
+				button1Text: Zotero.getString("permissions_siteAccess_openPreferences"),
+				button2Text: Zotero.getString("general_cancel"), 
+				button3Text: Zotero.getString("general_continueAnyway"),
+				message: Zotero.getString("permissions_siteAccess_message")
+			}, tab);
+
+			if (result) {
+				if (result.button === 1) {
+					browser.tabs.create({
+						url: `about:extensions/?id=${extensionId}`
+					});
+				}
+				return result.button === 3;
+			}
+		} catch (e) {
+			Zotero.debug('Error checking permissions: ' + e.message);
+			return true;
+		}
+	}
+	
+	async function _browserAction(tab) {
+		const shouldContinue = await _checkPermissions(tab);
+		if (!shouldContinue) {
+			return;
+		}
+
 		let tabInfo = Zotero.Connector_Browser.getTabInfo(tab.id);
 		if (_isBetaBuildBeyondExpiration) {
 			Zotero.Messaging.sendMessage('expiredBetaBuild')

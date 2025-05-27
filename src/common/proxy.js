@@ -501,6 +501,9 @@ Zotero.Proxies = new function() {
 				|| proxy.toProxyScheme == 'proxy.example.com/login?qurl=%s'
 				// Host is at the end of the domain part of the scheme
 				|| proxy.toProperScheme.includes('%h/')
+				// No-op proxy schemes that don't actually proxy anything (see #492)
+				|| proxy.toProperScheme == '%h/%p'
+				|| proxy.toProperScheme == '%h%p'
 		) {
 			return ["scheme.invalid"];
 		}

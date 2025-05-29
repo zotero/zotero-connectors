@@ -175,17 +175,27 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 		}
 		options.referrer = attachment.referrer;
 	}
-	let xhr = await Zotero.HTTP.request("GET", attachment.url, options);
-	let { contentType } = Zotero.Utilities.Connector.getContentTypeFromXHR(xhr);
-
-	if (attachment.mimeType.toLowerCase() === contentType.toLowerCase()) {
-		return xhr.response;
-	}
 
 	// Bot bypass is not supported in Safari (cannot intercept file download popup)
 	attemptBotProtectionBypass = attemptBotProtectionBypass && !Zotero.isSafari;
+	var contentType;
+	try {
+		let xhr = await Zotero.HTTP.request("GET", attachment.url, options);
+		let result = Zotero.Utilities.Connector.getContentTypeFromXHR(xhr);
+		contentType = result.contentType;
+
+		if (attachment.mimeType.toLowerCase() === contentType.toLowerCase()) {
+			return xhr.response;
+		}
+	} catch (e) {
+		if (!attemptBotProtectionBypass || !tab || !this._isUrlBotBypassWhitelisted(attachment.url)) {
+			throw e;
+		}
+		Zotero.debug(`Error downloading attachment ${attachment.url} : ${e.message} \nattempting bot protection bypass`);
+	}
+
 	// Only attempt fallback for attachments on whitelisted domains
-	if (!tab || !attemptBotProtectionBypass || !this._isIframeBotBypassWhitelistedDomain(attachment.url)) {
+	if (!tab || !attemptBotProtectionBypass || !this._isUrlBotBypassWhitelisted(attachment.url)) {
 		throw new Error("Attachment MIME type "+contentType+
 			" does not match specified type "+attachment.mimeType);
 	}
@@ -315,7 +325,7 @@ Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt = async function(url, tab) {
 	}
 };
 
-Zotero.ItemSaver._isIframeBotBypassWhitelistedDomain = function(url) {
+Zotero.ItemSaver._isUrlBotBypassWhitelisted = function(url) {
 	const WHITELISTED_DOMAINS = [
 		'sciencedirect.com',
 	];

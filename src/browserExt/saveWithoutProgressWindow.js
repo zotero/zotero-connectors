@@ -32,7 +32,7 @@ Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
 	
 	let isPDF = false;
 	let isCSPProtected = false;
-	const contentType = details.responseHeadersObject['content-type'];
+	const contentType = details.responseHeadersObject['content-type']?.split(';')[0]?.trim();
 
 	// Firefox currently does not allow to inject scripts into pdf pages
 	// See https://bugzilla.mozilla.org/show_bug.cgi?id=1454760#c3

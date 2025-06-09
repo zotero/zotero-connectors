@@ -59,7 +59,7 @@ if (isTopWindow) {
 	var isFilesEditable = false;
 	var syncDelayIntervalID;
 	var insideIframe = false;
-	var insideTags = false;
+	var closeTimerDisabled = false;
 	var blurred = false;
 	var frameSrc;
 	var frameIsHidden = false;
@@ -216,7 +216,7 @@ if (isTopWindow) {
 	function startCloseTimer(delay) {
 		// Don't start the timer if the mouse is over the popup or the tags box has focus
 		if (insideIframe) return;
-		if (insideTags) return;
+		if (closeTimerDisabled) return;
 		
 		if (!delay) delay = 5000;
 		stopCloseTimer();
@@ -305,6 +305,7 @@ if (isTopWindow) {
 					{
 						target: data.target.id,
 						tags: data.tags,
+						note: data.note.replace(/\n/g, "<br>"), // replace newlines with <br> for note-editor
 						resaveAttachments: !lastSuccessfulTarget.filesEditable && data.target.filesEditable,
 						removeAttachments: lastSuccessfulTarget.filesEditable && !data.target.filesEditable
 					}
@@ -347,8 +348,8 @@ if (isTopWindow) {
 		addMessageListener('progressWindowIframe.mouseenter', handleMouseEnter);
 		addMessageListener('progressWindowIframe.mouseleave', handleMouseLeave);
 		
-		addMessageListener('progressWindowIframe.tagsfocus', () => insideTags = true);
-		addMessageListener('progressWindowIframe.tagsblur', () => insideTags = false);
+		addMessageListener('progressWindowIframe.disableCloseTimer', () => closeTimerDisabled = true);
+		addMessageListener('progressWindowIframe.enableCloseTimer', () => closeTimerDisabled = false);
 		
 		addMessageListener('progressWindowIframe.blurred', async function() {
 			blurred = true;

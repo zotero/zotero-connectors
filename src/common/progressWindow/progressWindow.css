@@ -108,6 +108,20 @@ button:active {
 	min-width: 0; 
 }
 
+.ProgressWindow-noteEditor {
+	width: 100%;
+	resize: none;
+	max-height: 6em; /* expand up to 5 lines of text */
+	height: 34px; /* initial height that may increase as user types */
+	font-family: inherit;
+	font-size: 12px;
+}
+
+.ProgressWindow-noteEditorRow {
+	margin-top: 6px;
+	display: flex;
+}
+
 .ProgressWindow-button {
 	background-color: white;
 	padding: 3px 24px;

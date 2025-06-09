@@ -118,6 +118,9 @@
 	"progressWindow_filterPlaceholder": {
 		"message": "Filter Collections"
 	},
+	"progressWindow_noteEditorPlaceholder": {
+		"message": "Add a note"
+	},
 	"progressWindow_error_translation": {
 		"message": "An error occurred while saving this item. See $1 for more information."
 	},

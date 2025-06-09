@@ -60,12 +60,14 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.announceAlerts = false;
 		this.alertTimeout = null;
 		this.done = false;
+		this.canUserAddNote = false;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder'),
-			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder')
+			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder'),
+			addNotePlaceholder: Zotero.getString('progressWindow_noteEditorPlaceholder')
 		};
 		
 		this.expandedRowsCache = {};
@@ -86,6 +88,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.handleKeyDown = this.handleKeyDown.bind(this);
 		this.handleKeyPress = this.handleKeyPress.bind(this);
 		this.onTagsChange = this.onTagsChange.bind(this);
+		this.onNoteChange = this.onNoteChange.bind(this);
+		this.onNoteFocus = this.onNoteFocus.bind(this);
+		this.onNoteBlur = this.onNoteBlur.bind(this);
+		this.onNoteKeyPress = this.onNoteKeyPress.bind(this);
 		this.onTagsKeyPress = this.onTagsKeyPress.bind(this);
 		this.onTagsFocus = this.onTagsFocus.bind(this);
 		this.onTagsBlur = this.onTagsBlur.bind(this);
@@ -103,7 +109,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			targetSelectorShown: false,
 			tags: "",
 			itemProgress: new Map(),
-			errors: []
+			errors: [],
+			note: ""
 		};
 	}
 	
@@ -124,6 +131,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.sendMessage('registered');
 		
 		document.querySelector("#progress-window").setAttribute("aria-label", Zotero.getString('general_saveTo', 'Zotero'));
+		Zotero.Connector.getPref('canUserAddNote').then(res => {
+			this.canUserAddNote = res;
+		});
 	}
 	
 	
@@ -352,7 +362,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	sendUpdate() {
-		this.sendMessage('updated', { target: this.target, tags: this.tags });
+		this.sendMessage('updated', { target: this.target, tags: this.tags, note: this.state.note });
 	}
 	
 	//
@@ -575,14 +585,38 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	onTagsFocus() {
-		this.sendMessage('tagsfocus');
+		this.sendMessage('disableCloseTimer');
 	}
 	
 	onTagsBlur() {
-		this.sendMessage('tagsblur');
+		this.sendMessage('enableCloseTimer');
 		this.sendUpdate();
 	}
 	
+	onNoteChange(event) {
+		let textarea = event.target;
+		this.setState({ note: textarea.value });
+		// auto-expand the textarea as the user types
+		textarea.style.height = 'auto';
+		textarea.style.height = textarea.scrollHeight + 'px';
+	}
+
+	onNoteFocus() {
+		this.sendMessage('disableCloseTimer');;
+	}
+
+	onNoteBlur() {
+		this.sendMessage('enableCloseTimer');
+		this.sendUpdate();
+	}
+
+	onNoteKeyPress(event) {
+		// Allow Enter to add new line. Shift-Enter will close the window
+		if (event.key == 'Enter' && !event.shiftKey) {
+			event.stopPropagation();
+		}
+	}
+
 	handleDone() {
 		//this.headlineSelectNode.current.focus();
 		this.sendMessage('close');
@@ -767,6 +801,18 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						onRowToggle={this.handleRowToggle}
 						onRowFocus={this.onTargetChange}/>
 				</div>
+				{ this.canUserAddNote ? 
+					<div className="ProgressWindow-noteEditorRow">
+						<textarea
+							className="ProgressWindow-noteEditor"
+							placeholder={this.text.addNotePlaceholder}
+							value={this.state.note}
+							onChange={this.onNoteChange}
+							onBlur={this.onNoteBlur}
+							onFocus={this.onNoteFocus}
+							onKeyPress={this.onNoteKeyPress}/>
+					</div>
+				: <></> }
 				<div className="ProgressWindow-inputRow ProgressWindow-targetSelectorTagsRow">
 					<input className="ProgressWindow-tagsInput"
 						type="text"

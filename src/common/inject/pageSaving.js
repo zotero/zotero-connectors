@@ -641,6 +641,7 @@ let PageSaving = {
 	 * @param {Boolean} data.resaveAttachments - Whether attachments should be resaved
 	 * @param {Boolean} data.removeAttachments - Whether attachments should be removed
 	 * @param {String[]} data.tags - A list of tags
+	 * @param {String[]} data.note - A child note to add to the items
 	 */
 	async onUpdateSession(data) {
 		// This message is received in every frame from the progress window
@@ -652,7 +653,8 @@ let PageSaving = {
 			{
 				sessionID: this.sessionDetails.id,
 				target: data.target,
-				tags: data.tags
+				tags: data.tags,
+				note: data.note
 			}
 		);
 

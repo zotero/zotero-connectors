@@ -1,32 +1,32 @@
 body {
 	font-family: Lucida Grande, Arial;
 	font-size: 11pt;
+	padding: 5px;
+	margin: 0;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
 }
 
 #label {
-	position: absolute;
-	top: 2pt;
-	left: 2pt;
-	right: 2pt;
-	height: 20.5pt;
+	flex-shrink: 0;
+	margin-bottom: 2pt;
 }
 
 #item-selector {
-	position: absolute;
-	top: 20.5pt;
-	left: 2pt;
-	right: 2pt;
-	bottom: 32pt;
+	flex: 1;
 	overflow: auto;
 	padding: 2pt 1.5pt;
 	border: 1pt solid black;
+	margin-bottom: 10pt;
 }
 
 #buttons {
-	position: absolute;
-	bottom: 7pt;
-	left: 2pt;
-	right: 2pt;
+	flex-shrink: 0;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
 #item-selector input {
@@ -42,10 +42,13 @@ body {
 }
 
 #select-deselect {
-	text-align: left;
-	float: left;
+	display: flex;
+	align-items: center;
+	gap: 5px;
 }
 
 #cancel-ok {
-	text-align: right;
+	display: flex;
+	align-items: center;
+	gap: 5px;
 }

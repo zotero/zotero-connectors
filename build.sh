@@ -37,8 +37,6 @@ DONE
 	exit 1
 }
 
-GULP=$CWD/node_modules/gulp/bin/gulp.js
-
 BUILD_BROWSER_EXT=0
 BUILD_SAFARI=0
 while getopts "hp:v:d" opt; do
@@ -309,13 +307,13 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 fi
 
 if [[ $BUILD_BROWSER_EXT == 1 ]] || [[ $BUILD_SAFARI == 1 ]]; then
-	"$GULP" -v >/dev/null 2>&1 || { echo >&2 "gulp not found -- aborting"; exit 1; }
+	npx gulp -v >/dev/null 2>&1 || { echo >&2 "gulp not found -- aborting"; exit 1; }
 
 	# Update scripts
 	if [ ! -z $DEBUG ]; then
-		"$GULP" process-custom-scripts --connector-version "$VERSION" > "$LOG" 2>&1
+		npx gulp process-custom-scripts --connector-version "$VERSION" > "$LOG" 2>&1
 	else
-		"$GULP" process-custom-scripts --connector-version "$VERSION" -p > "$LOG" 2>&1
+		npx gulp process-custom-scripts --connector-version "$VERSION" -p > "$LOG" 2>&1
 	fi
 fi
 

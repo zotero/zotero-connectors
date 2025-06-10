@@ -25,6 +25,7 @@
 
 'use strict';
 
+const path = require('path');
 const replaceBrowser = require('./scripts/replace_browser');
 const exec = require('child_process').exec;
 const through = require('through2');
@@ -180,8 +181,8 @@ function replaceScriptsHTML(string, match, scripts) {
 function processFile() {
 	return through.obj(async function(file, enc, cb) {
 		console.log(file.path.slice(file.cwd.length));
-		var offset = file.cwd.split('/').length;
-		var parts = file.path.split('/');
+		var offset = file.cwd.split(path.sep).length;
+		var parts = file.path.split(path.sep);
 		var basename = parts[parts.length-1];
 		var ext = basename.split('.')[1];
 		for (var i = offset; i < parts.length; i++) {

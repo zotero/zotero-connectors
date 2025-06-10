@@ -150,6 +150,9 @@
 	"itemSelector_title": {
 		"message": "Select which items you’d like to add to your library:"
 	},
+	"itemSelector_pattern": {
+		"message": "Pattern"
+	},
 	
 	"extensionIsDisabled": {
 		"message": "$1 Connector is not available on this page"

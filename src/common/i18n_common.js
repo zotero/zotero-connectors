@@ -30,6 +30,9 @@ Zotero.i18n.translateFragment = function (elem) {
 		if (elem.nodeName === 'INPUT' && elem.type === "submit") {
 			elem.value = str;
 		}
+		else if (elem.nodeName === 'INPUT' && elem.type === "text") {
+			elem.placeholder = str;
+		}
 		else {
 			elem.innerText = str;
 		}

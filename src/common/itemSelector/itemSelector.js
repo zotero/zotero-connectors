@@ -63,6 +63,10 @@ async function load() {
 		checkbox.setAttribute('type', 'checkbox');
 		checkbox.setAttribute('aria-labelledby', `item_${index}`);
 		if(checked) checkbox.setAttribute('checked', 1);
+		
+		// Add event listener to reapply filter when checkbox state changes
+		checkbox.addEventListener('change', setFilter);
+		
 		item.appendChild(checkbox);
 		checkboxes[i] = checkbox;
 		
@@ -128,17 +132,30 @@ function setAllCheckStates(state) {
 			checkboxes[i].checked = state;
 		}
 	}
+	// Reapply filter after changing checkbox states
+	setFilter();
 }
 /**
- * Hidden items that do not match `pattern`
+ * Hidden items that do not match `pattern`, except for checked items which are shown with grey text
  */
-function setFilter(pattern) {
+function setFilter() {
+	pattern = document.getElementById('pattern').value;
 	for(var i in item_divs) {
-		var matched = null;
-		if (pattern == "" || items[i].match(pattern) != null) {
+		var matched = pattern == "" || items[i].match(pattern) != null;
+		var isChecked = checkboxes[i].checked;
+		
+		if (matched || isChecked) {
 			item_divs[i].style.display = "";
+			if (matched) {
+				item_divs[i].classList.remove('filtered-out');
+			} else {
+				// Item is checked but doesn't match pattern - show with grey text
+				item_divs[i].classList.add('filtered-out');
+			}
 		} else {
+			// Item is not checked and doesn't match pattern - hide it
 			item_divs[i].style.display = "none";
+			item_divs[i].classList.remove('filtered-out');
 		}
 	}
 }
@@ -147,14 +164,15 @@ function setFilter(pattern) {
  * Makes a closure for attaching event listeners to text
  */
 function makeClickHandler(checkbox) {
-	return function() { checkbox.checked = !checkbox.checked };
+	return function() {
+		checkbox.checked = !checkbox.checked;
+		// Reapply filter when checkbox state changes
+		setFilter();
+	};
 }
 
 // "Inline JavaScript will not be executed." Thanks, Google, for this mess.
-document.getElementById("pattern").onkeyup = function() {
-	var pattern = document.getElementById('pattern').value;
-	setFilter(pattern);
-}
+document.getElementById("pattern").onkeyup = setFilter;
 document.getElementById("select").onclick = function() { setAllCheckStates(true) };
 document.getElementById("deselect").onclick = function() { setAllCheckStates(false) };
 document.getElementById("ok").onclick = ok;

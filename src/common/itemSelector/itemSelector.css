@@ -41,6 +41,10 @@ body {
 	cursor: default;
 }
 
+.item.filtered-out {
+	color: #999;
+}
+
 #select-deselect {
 	display: flex;
 	align-items: center;

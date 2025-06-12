@@ -144,7 +144,8 @@ button:active {
 	padding: 2px 3px 2px 4px;
 	white-space: nowrap;
 }
-.ProgressWindow-tagsRow:focus-visible .ProgressWindow-selectedTag.active {
+/* show outline on the X button when a tag is active, since Space on it will remove the tag */
+.ProgressWindow-tagsRow:focus-visible .ProgressWindow-selectedTag.active .ProgressWindow-removeTag {
 	outline: 1px solid #0a84ff;
 }
 
@@ -165,6 +166,7 @@ button:active {
 }
 .ProgressWindow-removeTag:hover {
 	background-color: #d5d5d5;
+	cursor: pointer;
 }
 
 .ProgressWindow-tagsInput {

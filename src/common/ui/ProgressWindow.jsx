@@ -61,6 +61,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.alertTimeout = null;
 		this.done = false;
 		this.canUserAddNote = false;
+		this.supportsTagsAutocomplete = false;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
@@ -139,6 +140,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		document.querySelector("#progress-window").setAttribute("aria-label", Zotero.getString('general_saveTo', 'Zotero'));
 		Zotero.Connector.getPref('canUserAddNote').then(res => {
 			this.canUserAddNote = res;
+		});
+		Zotero.Connector.getPref('supportsTagsAutocomplete').then(res => {
+			this.supportsTagsAutocomplete = res;
 		});
 		// Present scrollbar from briefly appearing when tags are being added
 		document.documentElement.style.scrollbarWidth = 'none';
@@ -373,9 +377,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	}
 	
 	sendUpdate() {
-		// send selected tags joined with a "," to maintain
-		// the same format as before autocomplete was added.
-		let tags = Array.from(this.state.selectedTags).join(",");
+		let tags = [...this.state.selectedTags];
+		// If Zotero version does not support tags autocomplete, it won't handle tags sent as an array.
+		// Then, send tags in the old format as a string.
+		if (!this.supportsTagsAutocomplete) {
+			tags = tags.join(",");
+		}
 		this.sendMessage('updated', { target: this.target, note: this.state.note, tags });
 	}
 	
@@ -869,6 +876,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			<TagsInput
 					existingTags={this.existingTags[this.currentLibraryID] || []}
 					selectedTags={this.state.selectedTags}
+					supportsTagsAutocomplete={this.supportsTagsAutocomplete}
 					updateSelectedTags={this.updateSelectedTags}
 					sendMessage={this.sendMessage}
 					sendUpdate={this.sendUpdate}
@@ -1321,10 +1329,22 @@ class TagsInput extends React.Component {
 	}
 
 	// Add tags to the selected tags and refocus empty input
-	addTags = (tags) => {
+	addTag = (tag) => {
 		let selectedTags = new Set(this.props.selectedTags);
+		let tags = tag;
+		// If autocomplete is not supported by the server, retain
+		// old behavior or splitting tags by the comma
+		if (this.props.supportsTagsAutocomplete) {
+			tags = [tag];
+		}
+		else {
+			tags = tag.split(",");
+		}
 		for (let tag of tags) {
-			selectedTags.add(tag.trim());
+			let trimmedTag = tag.trim();
+			if (trimmedTag) {
+				selectedTags.add(trimmedTag);
+			}
 		}
 		this.setState({ tagsInput: "", currentTagIndex: -1 });
 		this.props.updateSelectedTags(selectedTags, () => {
@@ -1364,7 +1384,7 @@ class TagsInput extends React.Component {
 	onTagAutocompleteMouseUp = (index) => {
 		this.isClickingTag = false;
 		let tags = this.getAvailableTags();
-		this.addTags([tags[index]]);
+		this.addTag(tags[index]);
 		this.setState({ currentTagIndex: -1 })
 	}
 
@@ -1374,14 +1394,9 @@ class TagsInput extends React.Component {
 			// On Enter, add the currently selected tag from autocomplete
 			// If there is no selected tag from autocomplete suggestions, add the currently typed tag
 			let newTag = tags[this.state.currentTagIndex] || this.state.tagsInput.trim();
-			// If this tag already exists or the tag is empty, do nothing
-			if (!newTag || this.props.selectedTags.has(newTag)) {
-				this.setState({ tagsInput: "" });
-				event.preventDefault();
-				event.stopPropagation();
-				return;
+			if (newTag) {
+				this.addTag(newTag);
 			}
-			this.addTags(newTag.split(","));
 			event.preventDefault();
 			event.stopPropagation();
 		}
@@ -1435,13 +1450,9 @@ class TagsInput extends React.Component {
 		if (this.isClickingTag) {
 			return;
 		}
-		// If the library has no tags (likely because of the older version of Zotero that sends no tags),
-		// split the tags input by commas and add them to the selected tags
-		if (!this.props.existingTags.length && this.state.tagsInput.length) {
-			let legacySelectedTags = this.state.tagsInput.split(",");
-			this.addTags(legacySelectedTags);
-			this.props.sendMessage('tagsblur');
-			return;
+		// On blur, add the current input as a tag if it is not empty
+		if (this.state.tagsInput.trim().length) {
+			this.addTag(this.state.tagsInput);
 		}
 		this.props.sendMessage('tagsblur');
 		this.props.sendUpdate();

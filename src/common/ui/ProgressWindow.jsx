@@ -1431,7 +1431,12 @@ class TagsInput extends React.Component {
 		else if (event.key === 'Tab') {
 			event.preventDefault();
 			if (event.shiftKey) {
-				document.querySelector('.tree').focus();
+				if (document.querySelector(".ProgressWindow-noteEditor")) {
+					document.querySelector(".ProgressWindow-noteEditor").focus();
+				}
+				else {
+					document.querySelector('.tree').focus();
+				}		
 			}
 			else {
 				this.tagsInputNode.current.focus();

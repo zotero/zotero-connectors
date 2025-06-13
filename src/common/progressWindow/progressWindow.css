@@ -241,10 +241,11 @@ button:active {
 }
 
 .ProgressWindow-item {
-	font-size: 13px;
 	margin-top: 8px;
 	margin-bottom: 4px;
 	min-height: 16px;
+	display: flex;
+	align-items: center;
 }
 
 .ProgressWindow-itemIcon {
@@ -257,10 +258,9 @@ button:active {
 }
 
 .ProgressWindow-itemText {
+	flex: 1;
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 	font-size: 13px;
-	vertical-align: middle;
-	line-height: 16px;
 	margin: 0 0 0 22px;
 	white-space: nowrap;
 	overflow-x: hidden;

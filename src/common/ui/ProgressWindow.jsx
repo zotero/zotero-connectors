@@ -62,10 +62,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.done = false;
 		this.canUserAddNote = false;
 		this.supportsTagsAutocomplete = false;
+		this.supportsSaveCancelling = false;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
+			cancel: Zotero.getString('general_cancel'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder'),
 			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder'),
 			addNotePlaceholder: Zotero.getString('progressWindow_noteEditorPlaceholder')
@@ -99,6 +101,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.onTagsFocus = this.onTagsFocus.bind(this);
 		this.onTagsBlur = this.onTagsBlur.bind(this);
 		this.handleDone = this.handleDone.bind(this);
+		this.handleCancel = this.handleCancel.bind(this);
 		this.setFilter = this.setFilter.bind(this);
 		this.clearFilter = this.clearFilter.bind(this);
 		this.expandToTarget = this.expandToTarget.bind(this);
@@ -132,9 +135,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 		
-		// Preload other disclosure triangle state
-		(new Image()).src = 'disclosure-open.svg';
-		
 		this.sendMessage('registered');
 		
 		document.querySelector("#progress-window").setAttribute("aria-label", Zotero.getString('general_saveTo', 'Zotero'));
@@ -146,6 +146,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 		// Present scrollbar from briefly appearing when tags are being added
 		document.documentElement.style.scrollbarWidth = 'none';
+
+		Zotero.Connector.getPref('supportsSaveCancelling').then(res => {
+			this.supportsSaveCancelling = res;
+		});
 	}
 	
 	
@@ -663,17 +667,37 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		//this.headlineSelectNode.current.focus();
 		this.sendMessage('close');
 	}
+
+	handleCancel() {
+		this.sendMessage("cancel")
+	}
 	
 	//
 	// Render
 	//
 	renderHeadline() {
+		// Hide cancel button when saving to web library or if the client does not support it
+		let shouldShowCancelButton = this.state.targets && this.supportsSaveCancelling;
 		return (
 			<div className="ProgressWindow-headline">
 				{this.state.headlineText}
 				{this.state.targets
 					? this.renderHeadlineSelect()
 					: (this.state.target ? this.renderHeadlineTarget() : "")}
+				<button className="ProgressWindow-button can-expand cancel"
+					onClick={this.handleCancel}
+					aria-label={this.text.cancel}
+					hidden={!shouldShowCancelButton}>
+						<img class="icon" src="x-8.svg"/>
+						<span class="label">{this.text.cancel}</span>
+				</button>
+				<button className="ProgressWindow-button can-expand done"
+					onClick={this.handleDone}
+					aria-label={this.text.done}
+					hidden={!this.state.targetSelectorShown}>
+						<img class="icon" src="checkmark.svg"/>
+						<span class="label">{this.text.done}</span>
+				</button>
 				<div id="messageAlert" role="alert" style={{ fontSize: 0 }}/>
 				<div id="messageLog" role="log" aria-relevant="additions" style={{ fontSize: 0 }}/>
 			</div>
@@ -710,12 +734,14 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						return <option {...props}>{row.name}</option>;
 					})}
 				</select>
-				<button className={"ProgressWindow-disclosure"
+				<button className={"ProgressWindow-button disclosure"
 							+ (this.state.targetSelectorShown ? " is-open" : "")}
 						onClick={this.onDisclosureChange}
 						onKeyPress={this.handleDisclosureKeyPress}
 						aria-expanded={this.state.targetSelectorShown}
-						aria-label={Zotero.getString(`progressWindow_detailsBtn${this.state.targetSelectorShown ? "Hide" : "View"}`)}/>
+						aria-label={Zotero.getString(`progressWindow_detailsBtn${this.state.targetSelectorShown ? "Hide" : "View"}`)}>
+						<img class="icon" src="chevron-8.svg"/>
+				</button>
 			</React.Fragment>
 		);
 	}
@@ -1505,7 +1531,6 @@ class TagsInput extends React.Component {
 						onFocus={this.onTagsInputFocus}
 						onBlur={this.onTagsInputBlur}
 					/>
-					<button className="ProgressWindow-button" onClick={this.props.handleDone}>{this.text.done}</button>
 					{willShowAutocomplete ? (
 						<div 
 							className="ProgressWindow-autocomplete" 

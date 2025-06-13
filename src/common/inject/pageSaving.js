@@ -435,7 +435,7 @@ let PageSaving = {
 
 			if (toServer) {
 				snapshotItem.data = snapshotContent;
-				await Zotero.ItemSaver.saveAttachmentToServer(snapshotItem);
+				await Zotero.ItemSaver.saveAttachmentToServer(snapshotItem, null, this.sessionDetails.id);
 			}
 			else {
 				data.snapshotContent = snapshotContent;
@@ -518,7 +518,7 @@ let PageSaving = {
 			// Client unavailable
 			if (e.status === 0) {
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 0 } });
-				await Zotero.ItemSaver.saveAttachmentToServer(standaloneAttachment);
+				await Zotero.ItemSaver.saveAttachmentToServer(standaloneAttachment, null, this.sessionDetails.id);
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
 				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return;
@@ -547,6 +547,10 @@ let PageSaving = {
 		
 		// Always resave if a different translator/mode
 		if (this.sessionDetails.translatorID && translatorID != this.sessionDetails.translatorID) {
+			options.resave = true;
+		}
+		// If a save session was cancelled before, re-initiate a new session if the popup is reopened
+		if (this.sessionDetails.itemSaver?.cancelled) {
 			options.resave = true;
 		}
 		
@@ -679,6 +683,17 @@ let PageSaving = {
 				}
 			}
 		}
+	},
+
+	async onCancel() {
+		if (this.sessionDetails.itemSaver) {
+			this.sessionDetails.itemSaver.cancelled = true;
+		}
+		// Cancel any pending cancellable HTTP requests from the content page
+		// and from the background script
+		Zotero.HTTP.cancelPending();
+		Zotero.ItemSaver.cancel(this.sessionDetails.id);
+		await Zotero.Connector.callMethod("cancelSession", { sessionID: this.sessionDetails.id });
 	}
 }
 

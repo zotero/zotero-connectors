@@ -32,6 +32,9 @@ const HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Cookie', 'Referer'];
  * @namespace
  */
 Zotero.HTTP = new function() {
+	// Record abort controllers for cancellable unfinished requests
+	this.abortControllers = {};
+	
 	this.VALID_DOM_PARSER_CONTENT_TYPES = new Set([
 		"text/html",
 		"text/xml",
@@ -75,6 +78,8 @@ Zotero.HTTP = new function() {
 	 *         		[default 0]</li>
 	 *         <li>forceInject - force the request to be sent via the inject script, even if it's not a same-origin request
 	 *         		[default false]</li>
+	 *         <li>cancellable - create an abort controller so that a pending request can be cancelled on demand
+	 * 				[default false]</li>
 	 *     </ul>
 	 * @return {Promise<XMLHttpRequest>} A promise resolved with the XMLHttpRequest object if the
 	 *     request succeeds, or rejected if the browser is offline or a non-2XX status response
@@ -94,17 +99,30 @@ Zotero.HTTP = new function() {
 			maxBackoff: 10,
 			backoff: 0,
 			forceInject: false,
+			cancellable: false,
 		}, options);
 		let originalOptions = Zotero.Utilities.deepCopy(options);
 		
+		let requestKey = `${method}_${url}`;
+		if (options.cancellable) {
+			let abortController = new AbortController();
+			this.abortControllers[requestKey] = abortController;
+		}
+		
 		try {
+			let result;
 			if (Zotero.isManifestV3) {
-				return await Zotero.HTTP._requestFetch(method, url, options);
+				result = await Zotero.HTTP._requestFetch(method, url, options);
 			}
 			else {
-				return await Zotero.HTTP._requestXHR(method, url, options);
+				result = await Zotero.HTTP._requestXHR(method, url, options);
 			}
-
+			// Remove abort controllers of a cancelable request when it is finished
+			if (options.cancellable) {
+				delete this.abortControllers[requestKey];
+			}
+			
+			return result;
 		}
 		catch (e) {
 			if ((e.status === 429 || e.retryAfter) && options.backoff < options.maxBackoff) {
@@ -126,6 +144,10 @@ Zotero.HTTP = new function() {
 				}
 				originalOptions.backoff++;
 				return Zotero.HTTP.request(method, url, originalOptions);
+			}
+			// Remove abort controller of a cancelable request that failed
+			if (options.cancellable) {
+				delete this.abortControllers[requestKey];
 			}
 			throw e;
 		}
@@ -237,6 +259,13 @@ Zotero.HTTP = new function() {
 		xmlhttp.timeout = options.timeout;
 		var promise = Zotero.HTTP._attachHandlers(url, xmlhttp, options);
 		
+		// Pass aborted signal to xmlhttp, which does not support AbortController
+		if (options.cancellable) {
+			this.abortControllers[`${method}_${url}`].signal.addEventListener('abort', () => {
+				xmlhttp.abort();
+			});
+		}
+		
 		xmlhttp.open(method, url, true);
 
 		for (let header in options.headers) {
@@ -345,8 +374,12 @@ Zotero.HTTP = new function() {
 				options.responseType = 'text';
 			}
 			
+			let requestKey = `${method}_${url}`;
+			let abortController = this.abortControllers[requestKey];
 			if (options.timeout) {
-				var abortController = new AbortController();
+				if (!abortController) {
+					abortController = new AbortController();
+				}
 				setTimeout(abortController.abort.bind(abortController), options.timeout);
 			}
 			if (options.referrer) {
@@ -455,6 +488,15 @@ Zotero.HTTP = new function() {
 		finally {
 			Zotero.Connector_Browser.setKeepServiceWorkerAlive(false);
 		}
+	};
+
+	// Cancel all pending cancellable requests
+	this.cancelPending = function () {
+		for (let requestKey in this.abortControllers) {
+			this.abortControllers[requestKey].abort();
+			delete this.abortControllers[requestKey];
+		}
+		return true;
 	};
 	
 	/**

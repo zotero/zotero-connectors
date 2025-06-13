@@ -45,6 +45,7 @@ let ItemSaver = function(options) {
 	this._itemType = options.itemType;
 	this._items = [];
 	this._singleFile = false;
+	this.cancelled = false;
 	
 	// Add listener for callbacks, but only for Safari or the bookmarklet. In Chrome, we
 	// (have to) save attachments from the inject page.
@@ -92,6 +93,9 @@ ItemSaver.prototype = {
 	 */
 	saveItems: async function (items, attachmentCallback, itemsDoneCallback=()=>0) {
 		Zotero.debug(`ItemSaver.saveItems: Saving ${items.length} items`);
+		if (this.cancelled) {
+			throw new Error("session_cancelled");
+		}
 		try {
 			return await this._saveToZotero(items, attachmentCallback, itemsDoneCallback);
 		}
@@ -256,6 +260,9 @@ ItemSaver.prototype = {
 			data.snapshotContent = await Zotero.SingleFile.retrievePageData();
 			data.url = this._items[0].url || document.location.href;
 			data.title = this._snapshotAttachment.title;
+			if (this.cancelled) {
+				throw new Error("session_cancelled");
+			}
 			await Zotero.Connector.saveSingleFile({
 					method: "saveSingleFile",
 					headers: {"Content-Type": "application/json"}
@@ -298,7 +305,7 @@ ItemSaver.prototype = {
 					attachmentCallback(attachment, 100);
 				}
 				catch (e) {
-					if (attachment.isPrimary && shouldAttemptToDownloadOAAttachments) {
+					if (attachment.isPrimary && shouldAttemptToDownloadOAAttachments && !this.cancelled) {
 						attachmentCallback(attachment, 0);
 					}
 					else {
@@ -575,7 +582,7 @@ ItemSaver.prototype = {
 			promises.push((async () => {
 				try {
 					await ItemSaver.fetchAttachmentSafari(attachment);
-					await Zotero.ItemSaver.saveAttachmentToServer(attachment);
+					await Zotero.ItemSaver.saveAttachmentToServer(attachment, null, this._sessionID);
 					attachmentCallback(attachment, 100);
 				}
 				catch (e) {
@@ -631,7 +638,7 @@ ItemSaver.prototype = {
  */
 ItemSaver.fetchAttachmentSafari = async function(attachment) {
 	if (!Zotero.isSafari) return;
-	let options = { responseType: "arraybuffer", timeout: 60000, forceInject: true };
+	let options = { responseType: "arraybuffer", timeout: 60000, forceInject: true, cancellable: true };
 	let xhr;
 	try {
 		xhr = await Zotero.HTTP.request("GET", attachment.url, options);

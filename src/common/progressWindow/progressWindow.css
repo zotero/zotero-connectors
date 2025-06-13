@@ -1,18 +1,11 @@
 body {
 	/* Match tree.css */
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-}
 
-button {
-	border: 1px solid darkgray;
-}
-
-button:active {
-	background-color: #d5d5d5;
 }
 
 .ProgressWindow-box {
-	width: 300px;
+	width: 360px;
 	max-width: 92%;
 	border-color: #adadad #9a9a9a #ababab;
 	border-width: 1px;
@@ -23,6 +16,18 @@ button:active {
 	padding: 6px 10px 6px;
 	min-height: 40px;
 	overflow: hidden;
+	position: relative;
+	
+	/* Make progress box scrollable if there are too many items */
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+
+	/* Prevent the popup from becoming scrollable unless we zoom in */
+	max-height: 95vh;
+
+	/* scrollbar should be never visible (macOS) */
+	scrollbar-width: none;
 }
 
 /* Hack to check whether the mouse is over the pane when switching back from another tab.
@@ -47,11 +52,13 @@ button:active {
 .ProgressWindow-headlineSelect {
 	margin-left: 5px;
 	height: 22px;
-	width: 100%;
+	width: 150px;
 	font-size: 13px;
-	flex-grow: 1;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	background-color: white;
+	border-radius: 5px;
+	border: 1px solid lightgray;
 }
 
 .ProgressWindow-targetIcon {
@@ -65,29 +72,14 @@ button:active {
 	vertical-align: -3px;
 }
 
-.ProgressWindow-disclosure {
-	border-radius: 3px;
-	margin-left: 6px;
-	background: url('disclosure-closed.svg') no-repeat center/40% transparent;
-	width: 26px;
-	font-size: 20px;
-	height: 20px;
-	line-height: 17px;
-	cursor: default;
-	user-select: none
-}
-
-.ProgressWindow-disclosure.is-open {
-	background-image: url('disclosure-open.svg');
-}
-
-.ProgressWindow-targetSelectorTagsRow {
+.ProgressWindow-inputRow {
 	display: flex;
 	flex-direction: column;
 }
 
 .ProgressWindow-targetSelectorTagsRow.hasTags {
 	margin-top: 6px;
+	margin-bottom: 10px;
 }
 
 .ProgressWindow-autocomplete {
@@ -173,9 +165,8 @@ button:active {
 
 .ProgressWindow-tagsInput {
 	flex-grow: 1;
-	margin-right: 8px;
-	padding-left: 5px;
-	padding-right: 5px;
+	margin-right: 2px;
+	padding-inline: 1px;
 	font-size: 13px;
 	/* Ensures the input can shrink to make space for the done btn if the user zooms into the iframe */
 	min-width: 0; 
@@ -197,9 +188,80 @@ button:active {
 
 .ProgressWindow-button {
 	background-color: white;
-	width: 75px;
+	border: 1px solid lightgray;
+	height: 22px;
+	width: 22px;
+	margin-inline-start: 4px;
 	border-radius: 4px;
-	font-size: 13px;
+	font-size: 11px;
+	/* button will get wider on hover */
+	transition: width 0.3s ease, background-color 0.1s ease;
+
+	/* center the icon */
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	overflow: hidden;
+}
+/* initially, the icon is visible */
+.ProgressWindow-button > .icon {
+	opacity: 1;
+}
+/* and the label is hidden */
+.ProgressWindow-button .label {
+	opacity: 0;
+	width: 0;
+	overflow: hidden;
+}
+
+/* on hover, the button will become wider */
+.ProgressWindow-button.can-expand:hover {
+	width: 60px;
+}
+
+/* the icon will fade out */
+.ProgressWindow-button.can-expand:hover .icon {
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+/* the label will fade-in a moment after the button expands */
+.ProgressWindow-button.can-expand:hover .label {
+	opacity: 1;
+	width: auto;
+	transition: opacity 0.2s ease 0.1s, width 0.3s ease;
+	margin-left: -16px;
+}
+
+.ProgressWindow-button.done {
+	color: white;
+	background-color: #4072e5; /* --accent-blue */
+}
+
+.ProgressWindow-button.cancel {
+	color: red;
+}
+
+.ProgressWindow-button.disclosure {	
+	margin-inline-end: auto !important;
+}
+
+/* chevron that flips up or down on each click */
+.ProgressWindow-button.disclosure > .icon {
+	transition: transform .2s ease-in-out;
+	transform-origin: center;
+}
+
+.ProgressWindow-button.disclosure.is-open > .icon {
+	transform: rotate(-180deg);
+}
+
+.ProgressWindow-button.cancel:active,
+.ProgressWindow-button.disclosure:active {
+	background-color: #0000001a !important; /* fill-quarternary */
+}
+
+.ProgressWindow-button[hidden] {
+	display: none;
 }
 
 .ProgressWindow-filterWrapper {
@@ -237,33 +299,44 @@ button:active {
 }
 
 .ProgressWindow-progressBox {
-	margin-top: 10px;
-	margin-bottom: 4px;
-	margin-left: 2px;
+	/* Will become scrollable when too many items */
+	overflow-y: auto;
+	flex-grow: 1;
+}
+
+/* Make sure that if we zoom-in very closely, the progress-box is not completely shrunk */
+.ProgressWindow-progressBox:not(:empty) {
+	min-height: 40px;
 }
 
 .ProgressWindow-item {
+	font-size: 11px;
+	display: flex;
+	height: 16px;
+}
+
+/* default margin between top-level items (first one is skipped as there's margin between sections) */
+.ProgressWindow-item:not(:first-child) {
 	margin-top: 8px;
-	margin-bottom: 4px;
 	min-height: 16px;
 	display: flex;
 	align-items: center;
 }
 
 .ProgressWindow-itemIcon {
-	position: absolute;
 	width: 16px;
 	height: 16px;
 	background-size: contain;
 	background-position: 0;
-	background-repeat: no-repeat
+	background-repeat: no-repeat;
+	flex-shrink: 0;
 }
 
 .ProgressWindow-itemText {
 	flex: 1;
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 	font-size: 13px;
-	margin: 0 0 0 22px;
+	margin: 0 0 0 6px;
 	white-space: nowrap;
 	overflow-x: hidden;
 	text-overflow: ellipsis

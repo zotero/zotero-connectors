@@ -72,6 +72,7 @@ Zotero.Connector = new function() {
 			Zotero.Connector.googleDocsAddNoteEnabled = !!response.prefs.googleDocsAddNoteEnabled;
 			Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
 			Zotero.Connector.supportsAttachmentUpload = !!response.prefs.supportsAttachmentUpload;
+			Zotero.Connector.supportsTagsAutocomplete = !!response.prefs.supportsTagsAutocomplete;
 			Zotero.Connector.canUserAddNote = !!response.prefs.canUserAddNote;
 			if (response.prefs.translatorsHash) {
 				(async () => {

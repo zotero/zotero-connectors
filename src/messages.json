@@ -113,7 +113,10 @@
 		"message": "Items from this webpage have already been saved."
 	},
 	"progressWindow_tagPlaceholder": {
-		"message": "Tags (separated by commas)"
+		"message": "Tags"
+	},
+	"progressWindow_removeTag": {
+		"message": "Click to remove tag"
 	},
 	"progressWindow_filterPlaceholder": {
 		"message": "Filter Collections"

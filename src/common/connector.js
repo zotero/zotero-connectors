@@ -73,6 +73,7 @@ Zotero.Connector = new function() {
 			Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
 			Zotero.Connector.supportsAttachmentUpload = !!response.prefs.supportsAttachmentUpload;
 			Zotero.Connector.canUserAddNote = !!response.prefs.canUserAddNote;
+			Zotero.Connector.supportsSaveCancelling = !!response.prefs.supportsSaveCancelling;
 			if (response.prefs.translatorsHash) {
 				(async () => {
 					let sorted = !!response.prefs.sortedTranslatorHash;

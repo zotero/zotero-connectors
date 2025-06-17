@@ -153,6 +153,7 @@ Zotero.ContentTypeHandler = {
 	},
 
 	_isImportableStyle: function (url, contentType, contentDisposition) {
+		const attachmentContentDisposition = contentDisposition && contentDisposition.trim().toLowerCase().startsWith('attachment');
 		// Offer to install CSL by Content-Type
 		if (Zotero.ContentTypeHandler.cslContentTypes.has(contentType)) {
 			return true;
@@ -165,7 +166,7 @@ Zotero.ContentTypeHandler = {
 			}
 		}
 		// Check Content-Disposition for .csl files
-		else if (contentDisposition) {
+		else if (attachmentContentDisposition) {
 			const filename = Zotero.ContentTypeHandler._getFilenameFromContentDisposition(contentDisposition);
 			if (filename && /\.csl$/i.test(filename)) {
 				return true;
@@ -181,13 +182,14 @@ Zotero.ContentTypeHandler = {
 	},
 
 	_isImportableContent: function(contentType, contentDisposition) {
+		const attachmentContentDisposition = contentDisposition && contentDisposition.trim().toLowerCase().startsWith('attachment');
 		// Check content type first
 		if (Zotero.Prefs.get('interceptKnownFileTypes') && Zotero.ContentTypeHandler.importContentTypes.has(contentType)) {
 			return true;
 		}
 		
 		// Check Content-Disposition for importable file extensions
-		if (contentDisposition && Zotero.Prefs.get('interceptKnownFileTypes')) {
+		if (Zotero.Prefs.get('interceptKnownFileTypes') && attachmentContentDisposition) {
 			const filename = Zotero.ContentTypeHandler._getFilenameFromContentDisposition(contentDisposition);
 			if (filename) {
 				// /\.(bib|bibtex|ris|rdf)$/i;

@@ -1,5 +1,7 @@
-browser.runtime.onMessage.addListener(async (url) => {
-	window.location.href = url;
+browser.runtime.onMessage.addListener(async (message) => {
+	if (message?.type === 'redirect-attachment-monitor' && message.url) {
+		window.location.href = message.url;
+	}
 });
 
 window.addEventListener('load', async () => {

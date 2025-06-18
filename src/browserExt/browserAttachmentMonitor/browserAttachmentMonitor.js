@@ -46,10 +46,17 @@ Zotero.BrowserAttachmentMonitor = {
 		});
 
 		// Setup message listener for success notification
+		let hasRedirected = false
 		const messageListener = (message, sender) => {
 			if (sender.tab.id === tabId && message.type === 'attachment-monitor-loaded') {
 				if (!message.success) {
-					browser.tabs.sendMessage(tabId, url);
+					if (!hasRedirected) {
+						browser.tabs.sendMessage(tabId, { type: 'redirect-attachment-monitor', url } );
+						hasRedirected = true;
+					}
+					else {
+						rejectFailed(new Error('Redirected back to browserAttachmentMonitor.html with no `success` hash param'));
+					}
 				}
 				else {
 					Zotero.debug(`BrowserAttachmentMonitor: Attachment successfully loaded for tab: ${tabId}`);

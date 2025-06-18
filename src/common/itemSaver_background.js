@@ -23,6 +23,15 @@
 	***** END LICENSE BLOCK *****
 */
 
+let BOT_BYPASS_WHITELISTED_DOMAINS = [
+	'sciencedirect.com',
+	'ncbi.nlm.nih.gov', // PubMed
+];
+// Add proxied versions of domains (i.e. sciencedirect-com.proxy.edu)
+BOT_BYPASS_WHITELISTED_DOMAINS.slice().forEach(domain => {
+	BOT_BYPASS_WHITELISTED_DOMAINS.push(domain.replaceAll('.', '-'));
+})
+
 Zotero.ItemSaver = Zotero.ItemSaver || {};
 /**
  * Saves binary attachments to Zotero by fetching them as ArrayBuffer and passing to Zotero.
@@ -224,7 +233,7 @@ Zotero.ItemSaver._unpackSafariAttachmentData = function(data) {
 
 Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe = async function(url, tab) {
 	const id = Math.random().toString(36).slice(2, 11);
-	const iframeUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html") + `#url=${encodeURIComponent(url)}`;
+	const iframeUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html");
 
 	Zotero.debug(`Attempting to pass JS bot detection via hidden iframe for URL: ${url}`);
 
@@ -236,7 +245,7 @@ Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe = async function(url, tab) {
 				Zotero.debug(`Iframe loaded for ${url}`);
 				browser.runtime.onMessage.removeListener(messageListener);
 				// Wait for 5s. Any longer means we've probably hit a Captcha page
-				resolve(Zotero.BrowserAttachmentMonitor.waitForAttachment(tab.id, 5000))
+				resolve(Zotero.BrowserAttachmentMonitor.waitForAttachment(tab.id, url, 5000))
 			}
 		};
 		browser.runtime.onMessage.addListener(messageListener);
@@ -245,7 +254,7 @@ Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe = async function(url, tab) {
 	await browser.scripting.executeScript({
 		target: { tabId: tab.id },
 		func: (url, id) => {
-			return new Promise((resolve) => {
+			return new Promise((resolve, reject) => {
 				let iframe = document.createElement('iframe');
 				iframe.style.display = 'none';
 				iframe.src = url;
@@ -303,7 +312,7 @@ Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt = async function(url, tab) {
 	const top = screen.top + Math.floor((screen.height - height) / 2);
 	
 	// Create window for CAPTCHA solving
-	const monitorUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html") + `#url=${encodeURIComponent(url)}`;
+	const monitorUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html");
 	const window = await browser.windows.create({
 		url: monitorUrl,
 		type: 'popup',
@@ -315,7 +324,7 @@ Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt = async function(url, tab) {
 	
 	try {
 		// Wait for successful PDF URL capture
-		const pdfURL = await Zotero.BrowserAttachmentMonitor.waitForAttachment(window.tabs[0].id);
+		const pdfURL = await Zotero.BrowserAttachmentMonitor.waitForAttachment(window.tabs[0].id, url);
 		Zotero.debug(`Successfully passed JS bot detection for URL: ${url}`);
 		return pdfURL;
 	}
@@ -326,12 +335,8 @@ Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt = async function(url, tab) {
 };
 
 Zotero.ItemSaver._isUrlBotBypassWhitelisted = function(url) {
-	const WHITELISTED_DOMAINS = [
-		'sciencedirect.com',
-	];
-	
 	const hostname = new URL(url).hostname;
-	return WHITELISTED_DOMAINS.some(domain => hostname.endsWith(domain));
+	return BOT_BYPASS_WHITELISTED_DOMAINS.some(domain => hostname.endsWith(domain));
 };
 
 Zotero.ItemSaver.md5 = function(uint8Array) {

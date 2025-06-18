@@ -34,7 +34,7 @@ Zotero.BrowserAttachmentMonitor = {
 		this._webRequestListeners = new Map();
 	},
 
-	waitForAttachment: async function(tabId, timeoutMs=60000) {
+	waitForAttachment: async function(tabId, url, timeoutMs=60000) {
 		const ruleId = this._nextRuleId++;
 
 		// Create promise that will resolve when attachment is found
@@ -47,12 +47,15 @@ Zotero.BrowserAttachmentMonitor = {
 
 		// Setup message listener for success notification
 		const messageListener = (message, sender) => {
-			if (sender.tab.id === tabId 
-				&& message.type === 'attachment-monitor-loaded'
-				&& message.success) {
+			if (sender.tab.id === tabId && message.type === 'attachment-monitor-loaded') {
+				if (!message.success) {
+					browser.tabs.sendMessage(tabId, url);
+				}
+				else {
 					Zotero.debug(`BrowserAttachmentMonitor: Attachment successfully loaded for tab: ${tabId}`);
 					resolveSucceeded(message.success);
 					this._cleanup(ruleId, messageListener, tabRemovedListener);
+				}
 			}
 		};
 
@@ -154,6 +157,7 @@ Zotero.BrowserAttachmentMonitor = {
 		// responseHeaders are available on Chromium 128+, but there's no way to feature-guard
 		// for it directly, but Promise.try was also added in the same version
 		if (typeof Promise.try === "undefined") return;
+		Zotero.debug(`BrowserAttachmentMonitor: Adding DNR rule for tab ${tabId} with ruleId ${ruleId}`);
 		const redirectUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html#success=\\0");
 		await browser.declarativeNetRequest.updateSessionRules({
 			removeRuleIds: [ruleId],
@@ -177,7 +181,7 @@ Zotero.BrowserAttachmentMonitor = {
 						},
 						{
 							header: 'content-type',
-							values: ['application/pdf', 'application/epub+zip']
+							values: ['application/pdf*', 'application/epub+zip*']
 						}
 					]
 				}

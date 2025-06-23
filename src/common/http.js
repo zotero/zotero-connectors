@@ -133,6 +133,7 @@ Zotero.HTTP = new function() {
 	
 	this._requestXHR = async function(method, url, options) {
 		var useContentXHR = false;
+		let DNRRuleID;
 		
 		// There is no reason to run xhr not from background page for web extensions since those
 		// requests send full browser cookies.
@@ -227,7 +228,7 @@ Zotero.HTTP = new function() {
 					return val;
 				});
 			if (replaceHeaders.length) {
-				await Zotero.WebRequestIntercept.replaceHeaders(url, replaceHeaders);
+				DNRRuleID = await Zotero.WebRequestIntercept.replaceHeaders(url, replaceHeaders);
 			}
 		}
 		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
@@ -252,7 +253,8 @@ Zotero.HTTP = new function() {
 		
 		xmlhttp.send(options.body);
 		
-		return promise.then(function(xmlhttp) {
+		try {
+			xmlhttp = await promise;
 			if (options.debug && (xmlhttp.responseType === '' || xmlhttp.responseType === 'text')) {
 				Zotero.debug(`HTTP ${xmlhttp.status} ${xmlhttp.responseURL} response: ${xmlhttp.responseText}`);
 			}
@@ -267,7 +269,12 @@ Zotero.HTTP = new function() {
 				throw new Zotero.HTTP.StatusError(xmlhttp, url, typeof xmlhttp.responseText == 'string' ? xmlhttp.responseText : undefined);
 			}
 			return xmlhttp;
-		});
+		}
+		finally {
+			if (DNRRuleID) {
+				await Zotero.WebRequestIntercept.removeRuleDNR(DNRRuleID);
+			}
+		}
 	}
 	
 	this._requestFetch = async function(method, url, options) {

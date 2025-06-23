@@ -111,65 +111,27 @@ var Zotero = global.Zotero = new function() {
 	
 	this.migrate = async function() {
 		let lastVersion = Zotero.Prefs.get('lastVersion') || Zotero.version;
-		// If coming from a version before 5.0.24, reset the
-		// auto-associate setting for all existing proxies, since it wasn't being set properly for
-		// proxies imported from the client
-		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.24") < 0 && Zotero.Prefs.get('proxies.clientChecked')) {
-			for (let proxy of Zotero.Proxies.proxies) {
-				proxy.autoAssociate = true;
-			}
-			Zotero.Proxies.storeProxies();
-		}
-		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.32") < 0 && Zotero.Proxies.proxies.length > 1) {
-			let pairs = [];
-			// merge pairs of proxies with http and https protocols
-			for (let i = 0; i < Zotero.Proxies.proxies.length; i++) {
-				if (Zotero.Proxies.length == i+1) break;
-				let proxy1 = Zotero.Proxies.proxies[i];
-				let scheme = proxy1.scheme.replace('https', '').replace('http', '');
-				for (let j = i+1; j < Zotero.Proxies.proxies.length; j++) {
-					let proxy2 = Zotero.Proxies.proxies[j];
-					if (scheme == proxy2.scheme.replace('https', '').replace('http', '')) {
-						pairs.push([proxy1, proxy2]);
-						break;
-					}
-				}
-			}
-			for (let [proxy1, proxy2] of pairs) {
-				let json = proxy1.toJSON();
-				delete json.id;
-				let proxy = new Zotero.Proxy(json);
-				proxy.dotsToHyphens = true;
-				proxy.hosts = proxy1.hosts.concat(proxy2.hosts);
-				proxy.scheme = proxy.scheme.replace('http://', '').replace('https://', '');
-				Zotero.Proxies.remove(proxy1);
-				Zotero.Proxies.remove(proxy2);
-				Zotero.Proxies.save(proxy);
-			}
-			// remove protocols of single protocolless
-			for (let proxy of Zotero.Proxies.proxies) {
-				if (proxy.scheme.includes('://')) {
-					proxy.scheme = proxy.scheme.substr(proxy.scheme.indexOf('://')+3);
-					proxy.compileRegexp();
-					Zotero.Proxies.save(proxy);
-				}
-			}
-		}
-		// Botched dotsToHyphen pref migration to protocolless schemes in 5.0.32
-		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.35") < 0) {
-			for (let proxy of Zotero.Proxies.proxies) {
-				if (proxy.scheme?.indexOf('%h') == 0) {
-					proxy.dotsToHyphens = true;
-				}
-			}
-			Zotero.Proxies.storeProxies();
-		}
 		// Skip first-use dialog for existing users when enabled for non-Firefox browsers
 		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.87") < 0 && !this.isFirefox) {
 			Zotero.Prefs.set('firstUse', false);
 		}
 		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.110") < 0) {
 			Zotero.Prefs.set('integration.googleDocs.useGoogleDocsAPI', false)
+		}
+		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.168") < 0 && Zotero.isFirefox) {
+			// We were setting DNR header replacement rules on Firefox http.js without
+			// removing them, and this breaks translation sometimes
+			// See https://github.com/zotero/translate/issues/41
+			const rules = await browser.declarativeNetRequest.getDynamicRules({});
+			let ruleIDs = [];
+			for (const rule of rules) {
+				if (rule.action.type === 'modifyHeaders') {
+					ruleIDs.push(rule.id);
+				}
+			}
+			if (ruleIDs.length) {
+				await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ruleIDs });
+			}
 		}
 		Zotero.Prefs.set('lastVersion', Zotero.version);
 	};

@@ -169,11 +169,21 @@ Zotero.WebRequestIntercept = {
 				initiatorDomains: [new URL(browser.runtime.getURL('')).hostname],
 			}
 		}];
+		// Keep the service worker alive while the rule is active
+		Zotero.Connector_Browser.setKeepServiceWorkerAlive(true);
 		try {
-			await browser.declarativeNetRequest.updateDynamicRules({
+			await browser.declarativeNetRequest.updateSessionRules({
 				removeRuleIds: rules.map(r => r.id),
 				addRules: rules,
 			});
+			// Automatically clean up the rule after 60 seconds in case the caller does not
+			setTimeout(async () => {
+				try {
+					await Zotero.WebRequestIntercept.removeRuleDNR(ruleID);
+				} catch (e) {
+					Zotero.logError(e);
+				}
+			}, 60000);
 			Zotero.debug(`HTTP: Added a DNR rule to change headers for ${url} to ${JSON.stringify(headers)}`);
 		}
 		catch (e) {
@@ -183,7 +193,8 @@ Zotero.WebRequestIntercept = {
 	},
 	
 	removeRuleDNR: async function(ruleId) {
-		return browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [ruleId] });
+		Zotero.Connector_Browser.setKeepServiceWorkerAlive(false);
+		return browser.declarativeNetRequest.updateSessionRules({ removeRuleIds: [ruleId] });
 	}
 }
 

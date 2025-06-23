@@ -44,13 +44,16 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 	}
 	
 	let logBody = '';
-	if (typeof options.body == 'string') {
-		logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
-			(options.body.length > options.logBodyLength ? '...' : '');
-		// TODO: make sure below does its job in every API call instance
-		// Don't display password or session id in console
-		logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
-		logBody = logBody.replace(/password=[^&]+/, 'password=********');
+	if (options.body && !(options.body instanceof ArrayBuffer)) {
+		if (options.headers["Content-Type"] !== 'multipart/form-data') {
+			options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
+			logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
+				(options.body.length > options.logBodyLength ? '...' : '');
+			// TODO: make sure below does its job in every API call instance
+			// Don't display password or session id in console
+			logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
+			logBody = logBody.replace(/password=[^&]+/, 'password=********');
+		}
 	}
 	Zotero.debug(`HTTP ${method} ${url}:\n${logBody}`);
 

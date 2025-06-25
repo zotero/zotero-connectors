@@ -73,7 +73,7 @@ Zotero.Connector = new function() {
 			'downloadAssociatedFiles',
 			'reportActiveURL',
 			'automaticSnapshots',
-			'googleDocsAddNoteEnabled',
+			'googleDocsAddAnnotationEnabled',
 			'googleDocsCitationExplorerEnabled',
 			'supportsAttachmentUpload',
 			'supportsTagsAutocomplete',

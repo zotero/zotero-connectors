@@ -29,12 +29,13 @@ Zotero.Connector = new function() {
 	
 	var _ieStandaloneIframeTarget, _ieConnectorCallbacks;
 	this.isOnline = (Zotero.isSafari || Zotero.isFirefox) ? false : null;
-	this.shouldReportActiveURL = true;
 	this.clientVersion = '';
+	this.prefs = {
+		reportActiveURL: true
+	};
 	
 	/**
 	 * Checks if Zotero is online and passes current status to callback
-	 * @param {Function} callback
 	 */
 	this.checkIsOnline = async function() {
 		try {
@@ -51,7 +52,7 @@ Zotero.Connector = new function() {
 	};
 
 	this.reportActiveURL = function(url) {
-		if (!this.isOnline || !this.shouldReportActiveURL) return;
+		if (!this.isOnline || !this.prefs.reportActiveURL) return;
 		
 		let payload = { activeURL: url };
 		this.ping(payload);
@@ -59,32 +60,54 @@ Zotero.Connector = new function() {
 	
 	// For use in injected pages
 	this.getPref = function(pref) {
-		return Zotero.Connector[pref];
+		return Zotero.Connector.prefs[pref];
+	}
+	
+	/**
+	 * Process preferences from ping response
+	 * @param {Object} prefs - Preferences object from server response
+	 */
+	this._processPreferences = function(prefs) {
+		// Populate preference container and legacy top-level fields
+		const PREF_KEYS = [
+			'downloadAssociatedFiles',
+			'reportActiveURL',
+			'automaticSnapshots',
+			'googleDocsAddNoteEnabled',
+			'googleDocsCitationExplorerEnabled',
+			'supportsAttachmentUpload',
+			'supportsTagsAutocomplete',
+			'canUserAddNote'
+		];
+		for (const key of PREF_KEYS) {
+			const val = !!prefs[key];
+			Zotero.Connector.prefs[key] = val;
+		}
+	}
+	
+	/**
+	 * Process translator hash from ping response and update if needed
+	 * @param {Object} prefs - Preferences object from server response
+	 */
+	this._processTranslatorHash = function(prefs) {
+		if (prefs.translatorsHash) {
+			(async () => {
+				let sorted = !!prefs.sortedTranslatorHash;
+				let remoteHash = sorted ? prefs.sortedTranslatorHash : prefs.translatorsHash;
+				let translatorsHash = await Zotero.Translators.getTranslatorsHash(sorted);
+				if (remoteHash != translatorsHash) {
+					Zotero.debug("Zotero Ping: Translator hash mismatch detected. Updating translators from Zotero")
+					return Zotero.Translators.updateFromRemote();
+				}
+			})()
+		}
 	}
 	
 	this.ping = async function(payload={}) {
 		let response = await Zotero.Connector.callMethod("ping", payload);
 		if (response && 'prefs' in response) {
-			// TODO refactor this because it's stupid
-			Zotero.Connector.downloadAssociatedFiles = !!response.prefs.downloadAssociatedFiles;
-			Zotero.Connector.shouldReportActiveURL = !!response.prefs.reportActiveURL;
-			Zotero.Connector.automaticSnapshots = !!response.prefs.automaticSnapshots;
-			Zotero.Connector.googleDocsAddNoteEnabled = !!response.prefs.googleDocsAddNoteEnabled;
-			Zotero.Connector.googleDocsCitationExplorerEnabled = !!response.prefs.googleDocsCitationExplorerEnabled;
-			Zotero.Connector.supportsAttachmentUpload = !!response.prefs.supportsAttachmentUpload;
-			Zotero.Connector.supportsTagsAutocomplete = !!response.prefs.supportsTagsAutocomplete;
-			Zotero.Connector.canUserAddNote = !!response.prefs.canUserAddNote;
-			if (response.prefs.translatorsHash) {
-				(async () => {
-					let sorted = !!response.prefs.sortedTranslatorHash;
-					let remoteHash = sorted ? response.prefs.sortedTranslatorHash : response.prefs.translatorsHash;
-					let translatorsHash = await Zotero.Translators.getTranslatorsHash(sorted);
-					if (remoteHash != translatorsHash) {
-						Zotero.debug("Zotero Ping: Translator hash mismatch detected. Updating translators from Zotero")
-						return Zotero.Translators.updateFromRemote();
-					}
-				})()
-			}
+			this._processPreferences(response.prefs);
+			this._processTranslatorHash(response.prefs);
 		}
 		return response || {};
 	}

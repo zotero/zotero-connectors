@@ -793,7 +793,7 @@ Zotero.Connector_Browser = new function() {
 			tabId: tab.id,
 			path: Zotero.ItemTypes.getImageSrc("webpage-gray")
 		});
-		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
+		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.prefs.automaticSnapshots :
 			Zotero.Prefs.get('automaticSnapshots');
 		let title = `Save to Zotero (Web Page ${withSnapshot ? 'with' : 'without'} Snapshot)`;
 		browser.action.setTitle({tabId: tab.id, title});
@@ -846,7 +846,7 @@ Zotero.Connector_Browser = new function() {
 			contexts: ['page', ...buttonContext]
 		}));
 		// Swap order if automatic snapshots disabled
-		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
+		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.prefs.automaticSnapshots :
 			Zotero.Prefs.get('automaticSnapshots');
 		if (!withSnapshot) {
 			fns = [fns[1], fns[0]];
@@ -1048,7 +1048,7 @@ Zotero.Connector_Browser = new function() {
 					}
 				);
 			} else {
-				let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.automaticSnapshots :
+				let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.prefs.automaticSnapshots :
 					Zotero.Prefs.get('automaticSnapshots');
 				Zotero.Connector_Browser.saveAsWebpage(tab, 0, { snapshot: withSnapshot });
 			}

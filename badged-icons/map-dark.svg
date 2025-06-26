@@ -1,0 +1,21 @@
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path opacity="0.9" d="M16 9.865L15.582 9H10.137V10.4V10.4605H13.4795L9.71301 15.1165L10.137 16H16V14.571V14.5105H12.2925L16 9.865Z" fill="#DB2C3A"/>
+<path opacity="0.17" fill-rule="evenodd" clip-rule="evenodd" d="M13 8H9V13H11.4252L13 11.0533V10.4605H10.137V10.4V9H13V8Z" fill="#66ADFF"/>
+<mask id="mask0_654_948" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+<path d="M0 0H16V8H9V16H0V0Z" fill="#D9D9D9"/>
+</mask>
+<g mask="url(#mask0_654_948)">
+<path opacity="0.85" d="M1 1V14H14V1H1ZM9 2V5H6V2H9ZM9 6V9H6V6H9ZM2 2H5V5H2V2ZM2 6H5V9H2V6ZM2 13V10H5V13H2ZM6 13V10H9V13H6ZM13 13H10V10H13V13ZM13 9H10V6H13V9ZM13 5H10V2H13V5Z" fill="#66ADFF"/>
+<g opacity="0.17">
+<path d="M9 5V2H6V5H9Z" fill="#66ADFF"/>
+<path d="M5 2H2V5H5V2Z" fill="#66ADFF"/>
+<path d="M2 6V9H5V6H2Z" fill="#66ADFF"/>
+<path d="M2 10V13H5V10H2Z" fill="#66ADFF"/>
+<path d="M6 13H9V10H6V13Z" fill="#66ADFF"/>
+<path d="M10 13H13V10H10V13Z" fill="#66ADFF"/>
+<path d="M13 9V6H10V9H13Z" fill="#66ADFF"/>
+<path d="M13 5V2H10V5H13Z" fill="#66ADFF"/>
+<path d="M9 9V6H6V9H9Z" fill="#66ADFF"/>
+</g>
+</g>
+</svg>

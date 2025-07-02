@@ -1397,6 +1397,9 @@ class TagsInput extends React.Component {
 			if (newTag) {
 				this.addTag(newTag);
 			}
+			else {
+				this.handleDone();
+			}
 			event.preventDefault();
 			event.stopPropagation();
 		}

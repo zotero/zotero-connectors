@@ -83,10 +83,12 @@ button:active {
 
 .ProgressWindow-targetSelectorTagsRow {
 	display: flex;
-	margin-top: 6px;
 	flex-direction: column;
 }
 
+.ProgressWindow-targetSelectorTagsRow.hasTags {
+	margin-top: 6px;
+}
 
 .ProgressWindow-autocomplete {
 	position: absolute;

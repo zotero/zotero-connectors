@@ -1472,7 +1472,7 @@ class TagsInput extends React.Component {
 		let tags = this.getAvailableTags().slice(0,100);
 		let willShowAutocomplete = this.state.showTagsAutocomplete && tags.length;
 		return (
-			<div className={`ProgressWindow-targetSelectorTagsRow ${willShowAutocomplete ? 'with-autocomplete' : ''}`}>
+			<div className={`ProgressWindow-targetSelectorTagsRow ${willShowAutocomplete ? 'with-autocomplete' : ''} ${this.props.selectedTags.size ? 'hasTags' : ''}`}>
 				<div
 					className="ProgressWindow-tagsRow"
 					tabIndex={this.props.selectedTags.size ? 0 : -1}

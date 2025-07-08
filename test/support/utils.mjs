@@ -3,11 +3,11 @@
  * @params {Object} ... parameters to be passed into the function to be run
  * @returns {Promise} return value of the function
  */
-var background = async function (func, ...args) {
+export var background = async function (func, ...args) {
 	return worker.evaluate(func, ...args);
 };
 
-var offscreen = async function (func, ...args) {
+export var offscreen = async function (func, ...args) {
 	let frame = offscreenPage.frames().find(f => f.url().endsWith('offscreenSandbox.html'));
 	if (!frame) {
 		throw new Error('Could not find offscreen frame.');
@@ -15,7 +15,7 @@ var offscreen = async function (func, ...args) {
 	return frame.evaluate(func, ...args);
 };
 
-var Tab = function() {};
+export var Tab = function() {};
 Tab.prototype = {
 	init: async function (url='http://zotero-static.s3.amazonaws.com/test.html') {
 		this.page = await browser.newPage();
@@ -102,12 +102,39 @@ Tab.prototype = {
 	}
 };
 
-function delay(ms) {	
+export function delay(ms) {	
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getExtensionURL(path) {
+export function getExtensionURL(path) {
 	return `${extensionURL}${path}`;
 }
 
-export { background, Tab, delay, getExtensionURL, offscreen };
+export function stubHTTPRequest(requests) {
+	background((requests) => {
+		const stub = sinon.stub(Zotero.HTTP, 'request').callsFake(async (method, url, options) => {
+			for (const [urlPattern, stubbedResponse] of Object.entries(requests)) {
+				if (url.includes(urlPattern)) {
+					Zotero.debug(`Stubbing HTTP request to ${url} with response ${JSON.stringify(stubbedResponse)}`);
+					let response = {
+						response: JSON.stringify(stubbedResponse),
+						responseText: JSON.stringify(stubbedResponse),
+						responseURL: url,
+						responseType: 'text',
+						status: 200,
+						statusText: 'OK',
+						getAllResponseHeaders: () => '',
+						getResponseHeader: () => null,
+						responseHeaders: ''
+					};
+					if (options.responseType === 'json') {
+						response.response = stubbedResponse;
+					}
+					return response;
+				}
+			}
+			return stub.wrappedMethod.apply(Zotero.HTTP, [method, url, options]);
+		});
+	}, requests);
+	return () => background(() => Zotero.HTTP.request.restore());
+}

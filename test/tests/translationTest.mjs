@@ -23,7 +23,7 @@
 	***** END LICENSE BLOCK *****
 */
 
-import { Tab, background, getExtensionURL, delay, offscreen } from '../support/utils.mjs';
+import { Tab, background, getExtensionURL, delay, offscreen, stubHTTPRequest } from '../support/utils.mjs';
 
 describe("Translation", function() {
 	var tab = new Tab();
@@ -134,29 +134,56 @@ describe("Translation", function() {
 				});
 				
 				it('saves with a translator that uses the select dialog', async function () {
-					var items = await background(async function(tabId) {
-						var stub1 = sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async function(_, payload){
-							return payload;
+					let restoreStub;
+					try {
+						restoreStub = await stubHTTPRequest({
+							'doi.org': [ { "DOI": "10.1086/529596", "RA": "Crossref" } ],
+							'crossref.org': { "message": {
+								"items": [ {
+									"DOI": "10.1086\/529596",
+									"type": "journal-article",
+									"created": {
+										"date-parts": [ [ 2008, 1, 24 ] ],
+										"date-time": "2008-01-24T16:33:58Z",
+										"timestamp": 1201192438000
+									},
+									"page": "735-762",
+									"source": "Crossref",
+									"title": [ "Scarcity or Abundance? Preserving the Past in a Digital Era" ],
+									"author": [ { "given": "Roy", "family": "Rosenzweig", "sequence": "first", "affiliation": [] } ],
+									"URL": "https:\/\/doi.org\/10.1086\/529596",
+									"ISSN": [ "0002-8762", "1937-5239" ]
+								} ]
+							} }
 						});
-						var stub2 = sinon.stub(Zotero.Connector_Browser, "onSelect").callsFake(function(items) {
+						var items = await background(async function(tabId) {
+							var stub1 = sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async function(_, payload){
+								return payload;
+							});
+							var stub2 = sinon.stub(Zotero.Connector_Browser, "onSelect").callsFake(function(items) {
+								return items;
+							});
+							
+							try {
+								var tab = await browser.tabs.get(tabId);
+								var items = await Zotero.Connector_Browser.saveWithTranslator(tab, 1);
+							} finally {
+								stub1.restore();
+								stub2.restore();
+							}
 							return items;
-						});
-						try {
-							var tab = await browser.tabs.get(tabId);
-							var items = await Zotero.Connector_Browser.saveWithTranslator(tab, 1);
-						} finally {
-							stub1.restore();
-							stub2.restore();
-						}
-						return items;
-					}, tab.tabId);
-					assert.equal(items.length, 1);
-					assert.equal(items[0].itemType, 'journalArticle');
-					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-					var frame = await tab.page.waitForFrame(frameURL);
-					var elem = await frame.waitForSelector('.ProgressWindow-progressBox');
-					var message = await elem.evaluate(node => node.textContent);
-					assert.include(message, items[0].title);
+						}, tab.tabId);
+						assert.equal(items.length, 1);
+						assert.equal(items[0].itemType, 'journalArticle');
+						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
+						var frame = await tab.page.waitForFrame(frameURL);
+						var elem = await frame.waitForSelector('.ProgressWindow-progressBox');
+						var message = await elem.evaluate(node => node.textContent);
+						assert.include(message, items[0].title);
+					}
+					finally {
+						await restoreStub();
+					}
 				});
 			
 				it('saves as snapshot', async function () {

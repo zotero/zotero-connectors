@@ -182,4 +182,41 @@ describe("ItemSaver Background", function() {
 			});
 		});
 	});
+
+	describe('_isUrlBotBypassWhitelisted', function() {
+		it('should return true for a whitelisted domain', async function() {
+			const result = await background(function(url) {
+				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
+			}, 'https://www.sciencedirect.com/science/article/pii/S0000000000000000');
+			assert.isTrue(result);
+		});
+
+		it('should return true for a subdomain of a whitelisted domain', async function() {
+			const result = await background(function(url) {
+				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
+			}, 'https://foo.sciencedirect.com/science/article/pii/S0000000000000000');
+			assert.isTrue(result);
+		});
+
+		it('should return false for a non-whitelisted domain', async function() {
+			const result = await background(function(url) {
+				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
+			}, 'https://www.example.com/test.pdf');
+			assert.isFalse(result);
+		});
+
+		it('should return true for a proxied whitelisted domain', async function() {
+			const result = await background(function(url) {
+				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
+			}, 'https://www-sciencedirect-com.proxy.uni.edu/science/article/pii/S0000000000000000');
+			assert.isTrue(result);
+		});
+
+		it('should return false for a proxied non-whitelisted domain', async function() {
+			const result = await background(function(url) {
+				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
+			}, 'https://www-example-com.proxy.uni.edu/test.pdf');
+			assert.isFalse(result);
+		});
+	});
 }); 

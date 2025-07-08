@@ -27,10 +27,6 @@ let BOT_BYPASS_WHITELISTED_DOMAINS = [
 	'sciencedirect.com',
 	'ncbi.nlm.nih.gov', // PubMed
 ];
-// Add proxied versions of domains (i.e. sciencedirect-com.proxy.edu)
-BOT_BYPASS_WHITELISTED_DOMAINS.slice().forEach(domain => {
-	BOT_BYPASS_WHITELISTED_DOMAINS.push(domain.replaceAll('.', '-'));
-})
 
 Zotero.ItemSaver = Zotero.ItemSaver || {};
 /**
@@ -335,8 +331,14 @@ Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt = async function(url, tab) {
 };
 
 Zotero.ItemSaver._isUrlBotBypassWhitelisted = function(url) {
-	const hostname = new URL(url).hostname;
-	return BOT_BYPASS_WHITELISTED_DOMAINS.some(domain => hostname.endsWith(domain));
+	let proxies = Object.entries(Zotero.Proxies.getPotentialProxies(url));
+	for (let [url, _] of proxies) {
+		const hostname = new URL(url).hostname;
+		if (BOT_BYPASS_WHITELISTED_DOMAINS.some(domain => hostname.endsWith(domain))) {
+			return true;
+		}
+	}
+	return false;
 };
 
 Zotero.ItemSaver.md5 = function(uint8Array) {

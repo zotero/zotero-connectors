@@ -254,7 +254,7 @@ ItemSaver.prototype = {
 			attachmentCallback(this._snapshotAttachment, 0);
 			let data = { items: this._items, sessionID: this._sessionID };
 			data.snapshotContent = await Zotero.SingleFile.retrievePageData();
-			data.url = this._items[0].url;
+			data.url = this._items[0].url || document.location.href;
 			data.title = this._snapshotAttachment.title;
 			await Zotero.Connector.saveSingleFile({
 					method: "saveSingleFile",

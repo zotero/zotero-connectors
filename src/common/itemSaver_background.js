@@ -247,6 +247,14 @@ Zotero.ItemSaver.cancel = function (sessionID) {
 	}, 1000 * 60);
 };
 
+/**
+ * Assert that the save session was not cancelled by the user
+ * via Zotero.ItemSaver.cancel() above.
+ * If it was, an error will be thrown to stop the saving process.
+ * Noop if the session was not cancelled.
+ * @param sessionID - id of the session to check
+ * @throws {Error} if the session was cancelled
+ */
 Zotero.ItemSaver.assertNotCancelled = function (sessionID) {
 	if (Zotero.ItemSaver.cancelledSessions.has(sessionID)) {
 		Zotero.debug(`Session ${sessionID} cancelled.`);

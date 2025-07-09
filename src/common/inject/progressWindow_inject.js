@@ -251,7 +251,7 @@ if (isTopWindow) {
 			right: '8px',
 			width: '380px',
 			maxWidth: '95%',
-			height: '100%', // frame tries to take as much height as possible
+			height: '120px',
 			border: "none",
 			padding: "none",
 			margin: "initial",
@@ -286,6 +286,12 @@ if (isTopWindow) {
 		//
 		addMessageListener('progressWindowIframe.registered', function() {
 			frameReadyDeferred.resolve(iframe);
+		});
+
+		// Adjust iframe height when inner document is resized
+		addMessageListener('progressWindowIframe.resized', function(data) {
+			console.log("Resized ", data);
+			iframe.style.height = (data.height + 33) + "px";
 		});
 		
 		

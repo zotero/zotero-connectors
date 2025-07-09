@@ -16,7 +16,6 @@ body {
 	padding: 6px 10px 6px;
 	min-height: 40px;
 	overflow: hidden;
-	position: relative;
 	
 	/* Make progress box scrollable if there are too many items */
 	display: flex;
@@ -93,7 +92,7 @@ body {
 	z-index: 1000;
 	max-height: 100px;
 	overflow-y: auto;
-	width: 215px;
+	width: 330px;
 	margin-top: 25px;
 }
 

@@ -117,10 +117,6 @@ Zotero.HTTP = new function() {
 			else {
 				result = await Zotero.HTTP._requestXHR(method, url, options);
 			}
-			// Remove abort controllers of a cancelable request when it is finished
-			if (options.cancellable) {
-				delete this.abortControllers[requestKey];
-			}
 			
 			return result;
 		}
@@ -145,11 +141,13 @@ Zotero.HTTP = new function() {
 				originalOptions.backoff++;
 				return Zotero.HTTP.request(method, url, originalOptions);
 			}
-			// Remove abort controller of a cancelable request that failed
+			throw e;
+		}
+		finally {
+			// Remove abort controller of a cancelable request
 			if (options.cancellable) {
 				delete this.abortControllers[requestKey];
 			}
-			throw e;
 		}
 	};
 	

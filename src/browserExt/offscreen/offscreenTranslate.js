@@ -100,6 +100,16 @@ Zotero.OffscreenTranslate = {
 		});
 		// Custom handler for setDocument()
 		this.addMessageListener(`Translate.setDocument`, (translate, [html, url, cookie], tabId, frameId) => {
+			// <video> elements leak memory in DOMParser, see
+			// https://issues.chromium.org/issues/254330164
+			if (Zotero.isChromium) {
+				// This may break with malformed html, or some very complex
+				// contents of video tags in theory. In practice, they should not
+				// exist, and 99% of the cases is going to be youtube, where
+				// the tag is well formed and content is simple.
+				html = html.replace(/<video(?:\s[^>]*)?(?:\/>|>.*?<\/video>)/gis, '');
+			}
+			
 			let doc = new DOMParser().parseFromString(html, 'text/html');
 			let baseElem = doc.querySelector('base[href]');
 			let baseUrl = url;

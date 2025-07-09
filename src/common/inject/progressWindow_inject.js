@@ -290,7 +290,6 @@ if (isTopWindow) {
 
 		// Adjust iframe height when inner document is resized
 		addMessageListener('progressWindowIframe.resized', function(data) {
-			console.log("Resized ", data);
 			iframe.style.height = (data.height + 33) + "px";
 		});
 		

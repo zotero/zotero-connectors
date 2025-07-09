@@ -77,9 +77,12 @@ body {
 	flex-direction: column;
 }
 
+.ProgressWindow-targetSelectorTagsRow {
+	margin-bottom: 10px;
+}
+
 .ProgressWindow-targetSelectorTagsRow.hasTags {
 	margin-top: 6px;
-	margin-bottom: 10px;
 }
 
 .ProgressWindow-autocomplete {

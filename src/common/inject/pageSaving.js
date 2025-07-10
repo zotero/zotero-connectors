@@ -177,21 +177,30 @@ let PageSaving = {
 		}
 		return items;
 	},
-	
-	_onAttachmentProgress(attachment, progress) {
-		const sessionID = PageSaving.sessionDetails.id;
-		Zotero.Messaging.sendMessage(
-			"progressWindow.itemProgress",
-			{
-				sessionID,
-				id: attachment.id,
-				iconSrc: determineAttachmentIcon(attachment),
-				title: attachment.title,
-				parentItem: attachment.parentItem,
-				progress,
-				itemType: determineAttachmentType(attachment)
-			}
-		);
+
+
+	/**
+	 * Create and return a handler of attachment progress.
+	 * capturing the sessionID in the closure.
+	 * Otherwise, sessionID would be lost if the session is cancelled
+	 * and a new one is started.
+	 */
+	_makeAttachmentProgressHandler() {
+		let sessionID = this.sessionDetails.id;
+		return (attachment, progress) => {
+			Zotero.Messaging.sendMessage(
+				"progressWindow.itemProgress",
+				{
+					sessionID,
+					id: attachment.id,
+					iconSrc: determineAttachmentIcon(attachment),
+					title: attachment.title,
+					parentItem: attachment.parentItem,
+					progress,
+					itemType: determineAttachmentType(attachment)
+				}
+			);
+		};
 	},
 
 	/**
@@ -307,7 +316,7 @@ let PageSaving = {
 		this.sessionDetails.items = items;
 		let itemSaver = new ItemSaver({sessionID, baseURI: document.location.href, proxy });
 		this.sessionDetails.itemSaver = itemSaver;
-		return itemSaver.saveItems(items, PageSaving._onAttachmentProgress, onItemsSaved)
+		return itemSaver.saveItems(items, this._makeAttachmentProgressHandler(), onItemsSaved);
 	},
 
 	/**
@@ -607,6 +616,10 @@ let PageSaving = {
 			if ((isAccessLimitingTranslator && isHTTPErrorForbidden) || isHTTPErrorTooManyRequests) {
 				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'siteAccessLimits', translator.label]);
 			}
+			else if (e.message === "session_cancelled") {
+				// Session is cancelled by the user
+				Zotero.Messaging.sendMessage("progressWindow.done", [false, "session_cancelled"]);
+			}
 			else {
 				Zotero.Messaging.sendMessage("progressWindow.done", [false]);
 			}
@@ -665,7 +678,7 @@ let PageSaving = {
 		if (data.resaveAttachments && this.sessionDetails.itemSaver) {
 			Zotero.Messaging.sendMessage("progressWindow.show", [this.sessionDetails.id]);
 			await this.sessionDetails.itemSaver.saveAttachmentsToZotero(
-				PageSaving._onAttachmentProgress
+				this._makeAttachmentProgressHandler()
 			);
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 		}
@@ -686,6 +699,7 @@ let PageSaving = {
 	},
 
 	async onCancel() {
+		if (!this.sessionDetails.id) return;
 		if (this.sessionDetails.itemSaver) {
 			this.sessionDetails.itemSaver.cancelled = true;
 		}

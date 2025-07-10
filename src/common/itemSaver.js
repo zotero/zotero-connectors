@@ -310,7 +310,7 @@ ItemSaver.prototype = {
 					}
 					else {
 						// Otherwise it's a failure
-						attachmentCallback(attachment, false, e);
+						attachmentCallback(attachment, false, e.message);
 						Zotero.logError(e);
 					}
 				}

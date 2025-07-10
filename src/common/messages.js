@@ -360,7 +360,7 @@ function packArrayBuffer(arrayBuffer) {
 	if (Zotero.isFirefox) return arrayBuffer;
 	if (Zotero.isSafari) {
 		// Base64 encode the arrayBuffer
-		return Zotero.Utilities.arrayBufferToBase64(arrayBuffer);
+		return Zotero.Utilities.Connector.arrayBufferToBase64(arrayBuffer);
 	}
 	if (Zotero.isManifestV3) {
 		let array = Array.from(new Uint8Array(arrayBuffer));
@@ -377,7 +377,7 @@ function packArrayBuffer(arrayBuffer) {
 async function unpackArrayBuffer(packedBuffer) {
 	if (Zotero.isFirefox) return packedBuffer;
 	if (Zotero.isSafari) {
-		return Zotero.Utilities.base64ToArrayBuffer(packedBuffer);
+		return Zotero.Utilities.Connector.base64ToArrayBuffer(packedBuffer);
 	}
 	if (Zotero.isManifestV3) {
 		return new Uint8Array(packedBuffer).buffer

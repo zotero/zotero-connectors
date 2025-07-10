@@ -409,6 +409,11 @@ let PageSaving = {
 				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return;
 			}
+			else if (e.message === "session_cancelled" || e.value?.error === "SESSION_CANCELLED") {
+				// User canceled the session. Errors can come from itemSaver or rejected API call.
+				// progressWindow.done is not hit - popup is closed by progressWindowIframe.cancel
+				return;
+			}
 			// Unexpected error, including a timeout (which we don't want to
 			// result in a save to the server, because it's possible the request
 			// will still be processed)
@@ -441,6 +446,10 @@ let PageSaving = {
 			Zotero.Messaging.sendMessage("progressWindow.itemProgress", snapshotItem);
 
 			const snapshotContent = await Zotero.SingleFile.retrievePageData();
+
+			if (this.sessionDetails.itemSaver.cancelled) {
+				throw new Error("session_cancelled");
+			}
 
 			if (toServer) {
 				snapshotItem.data = snapshotContent;
@@ -593,7 +602,9 @@ let PageSaving = {
 				translators = translators.slice(0, 1)
 			}
 			let items = await this.translateAndSave(translators, options.fallbackOnFailure);
-			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+			if (!this.sessionDetails.itemSaver.cancelled) {
+				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
+			}
 			return items;
 		} catch (e) {
 			Zotero.logError(e);
@@ -616,9 +627,10 @@ let PageSaving = {
 			if ((isAccessLimitingTranslator && isHTTPErrorForbidden) || isHTTPErrorTooManyRequests) {
 				Zotero.Messaging.sendMessage("progressWindow.done", [false, 'siteAccessLimits', translator.label]);
 			}
-			else if (e.message === "session_cancelled") {
-				// Session is cancelled by the user
-				Zotero.Messaging.sendMessage("progressWindow.done", [false, "session_cancelled"]);
+			else if (e.message === "session_cancelled" || e.value?.error === "SESSION_CANCELLED") {
+				// User canceled the session. Errors can come from itemSaver or rejected API call.
+				// progressWindow.done is not hit - popup is closed by progressWindowIframe.cancel
+				return;
 			}
 			else {
 				Zotero.Messaging.sendMessage("progressWindow.done", [false]);

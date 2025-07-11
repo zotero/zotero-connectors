@@ -582,7 +582,7 @@ ItemSaver.prototype = {
 			promises.push((async () => {
 				try {
 					await ItemSaver.fetchAttachmentSafari(attachment);
-					await Zotero.ItemSaver.saveAttachmentToServer(attachment, null, this._sessionID);
+					await Zotero.ItemSaver.saveAttachmentToServer(attachment);
 					attachmentCallback(attachment, 100);
 				}
 				catch (e) {

@@ -180,7 +180,7 @@ let PageSaving = {
 
 
 	/**
-	 * Create and return a handler of attachment progress.
+	 * Create and return a handler of attachment progress,
 	 * capturing the sessionID in the closure.
 	 * Otherwise, sessionID would be lost if the session is cancelled
 	 * and a new one is started.
@@ -453,7 +453,7 @@ let PageSaving = {
 
 			if (toServer) {
 				snapshotItem.data = snapshotContent;
-				await Zotero.ItemSaver.saveAttachmentToServer(snapshotItem, null, this.sessionDetails.id);
+				await Zotero.ItemSaver.saveAttachmentToServer(snapshotItem);
 			}
 			else {
 				data.snapshotContent = snapshotContent;
@@ -536,7 +536,7 @@ let PageSaving = {
 			// Client unavailable
 			if (e.status === 0) {
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 0 } });
-				await Zotero.ItemSaver.saveAttachmentToServer(standaloneAttachment, null, this.sessionDetails.id);
+				await Zotero.ItemSaver.saveAttachmentToServer(standaloneAttachment);
 				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...progressItem, ...{ progress: 100 } });
 				Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 				return;

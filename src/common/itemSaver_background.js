@@ -69,7 +69,6 @@ Zotero.ItemSaver.saveAttachmentToZotero = async function(attachment, sessionID, 
 }
 
 Zotero.ItemSaver.saveStandaloneAttachmentToZotero = async function(attachment, sessionID, tab) {
-	Zotero.ItemSaver.assertNotCancelled(sessionID);
 	let arrayBuffer;
 	if (attachment.data) {
 		arrayBuffer = this._unpackSafariAttachmentData(attachment.data);
@@ -84,7 +83,6 @@ Zotero.ItemSaver.saveStandaloneAttachmentToZotero = async function(attachment, s
 		contentType: attachment.mimeType,
 		title: attachment.title,
 	}
-	Zotero.ItemSaver.assertNotCancelled(sessionID);
 
 	return Zotero.Connector.callMethod({
 		method: "saveStandaloneAttachment",
@@ -97,8 +95,7 @@ Zotero.ItemSaver.saveStandaloneAttachmentToZotero = async function(attachment, s
 	}, arrayBuffer);
 }
 
-Zotero.ItemSaver.saveAttachmentToServer = async function(attachment, tab, sessionID) {
-	Zotero.ItemSaver.assertNotCancelled(sessionID);
+Zotero.ItemSaver.saveAttachmentToServer = async function(attachment, tab) {
 	let promises = []
 	promises.push(this._createServerAttachmentItem(attachment));
 
@@ -127,7 +124,6 @@ Zotero.ItemSaver.saveAttachmentToServer = async function(attachment, tab, sessio
 	attachment.key = itemKey;
 	attachment.md5 = this.md5(attachment.data);
 
-	Zotero.ItemSaver.assertNotCancelled(sessionID);
 	// Do not return here or a message is attempted to pass back to injected page
 	// which causes a failure due to it sometimes exceeding max message length.
 	await Zotero.API.uploadAttachment(attachment);

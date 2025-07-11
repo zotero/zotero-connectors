@@ -378,7 +378,10 @@ Zotero.HTTP = new function() {
 				if (!abortController) {
 					abortController = new AbortController();
 				}
-				setTimeout(abortController.abort.bind(abortController), options.timeout);
+				setTimeout(() => {
+					abortController.abort();
+					options.timeoutAbort = true;
+				}, options.timeout);
 			}
 			if (options.referrer) {
 				options.headers['Referer'] = options.referrer;
@@ -405,7 +408,7 @@ Zotero.HTTP = new function() {
 				var response = await fetch(url, fetchOptions);
 			} catch (e) {
 				var err;
-				if (e.name == 'AbortError') {
+				if (e.name == 'AbortError' && options.timeoutAbort) {
 					err = new Zotero.HTTP.TimeoutError(url, options.timeout);
 				}
 				else {

@@ -156,6 +156,38 @@ describe("HTTP", function() {
 			});
 		});
 
+		describe('With { cancellable: true }', function () {
+			it("should abort a cancellable request on demand", async () => {
+				const url = 'https://zotero-static.s3.amazonaws.com/test.html';
+				let response = await background(async (url) => {
+					try {
+						// A few moments after the request starts, cancel it
+						setTimeout(() => {
+							Zotero.HTTP.cancelPending();
+						}, 10);
+
+						// Start the request.
+						// It should be cancelled and throw an error before 50ms timeout
+						return await Promise.race([
+							Zotero.HTTP.request("GET", url, { cancellable: true }),
+							new Promise((_, reject) => {
+								setTimeout(() => {
+									reject({ message: 'Request was not cancelled' });
+								}, 50);
+							})
+						]);
+					}
+					catch (e) {
+						return { status: e.status, message: e.message };
+					}
+				}, url);
+
+				// The request should have been aborted, NOT timed out due to our 50ms race
+				assert.notEqual(response.message, 'Request was not cancelled');
+				assert.equal(response.status, 0);
+			});
+		});
+
 		describe.skip('POST', function() {
 			it('Adds a Content-Type header if not present', async function () {
 				let args = await tab.run(async function(url) {

@@ -249,7 +249,7 @@ if (isTopWindow) {
 			top: '15px',
 			left: 'unset',
 			right: '8px',
-			width: '351px',
+			width: '380px',
 			maxWidth: '95%',
 			height: '120px',
 			border: "none",
@@ -287,11 +287,12 @@ if (isTopWindow) {
 		addMessageListener('progressWindowIframe.registered', function() {
 			frameReadyDeferred.resolve(iframe);
 		});
-		
+
 		// Adjust iframe height when inner document is resized
 		addMessageListener('progressWindowIframe.resized', function(data) {
 			iframe.style.height = (data.height + 33) + "px";
 		});
+		
 		
 		// Update the client or API with changes
 		var handleUpdated = async function (data) {
@@ -351,6 +352,17 @@ if (isTopWindow) {
 		
 		// Sent by the progress window when changes are made in the target selector
 		addMessageListener('progressWindowIframe.updated', handleUpdated);
+
+		// Stop saving and delete items that were added
+		addMessageListener('progressWindowIframe.cancel', async (_) => {
+			await sendMessage('cancel', { sessionID: currentSessionID });
+			
+			// Wait for a moment after click and hide the progress window
+			setTimeout(() => {
+				addEvent('reset');
+				hideFrame();
+			}, 500);
+		});
 		
 		// Keep track of when the mouse is over the popup, for various purposes
 		addMessageListener('progressWindowIframe.mouseenter', handleMouseEnter);

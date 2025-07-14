@@ -902,11 +902,7 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
 		if (param == "%h") {
 			value = (uri.protocol == 'https:') ? uri.hostname.replace(/\./g, '-') : uri.hostname;
 		} else if (param == "%p") {
-			value = uri.pathname.substr(1);
-		} else if (param == "%d") {
-			value = uri.pathname.substr(0, uri.path.lastIndexOf("/"));
-		} else if (param == "%f") {
-			value = uri.pathname.substr(uri.path.lastIndexOf("/")+1)
+			value = uri.pathname.substr(1) + uri.search;
 		}
 
 		proxyURL = proxyURL.substr(0, this.indices[param])+value+proxyURL.substr(this.indices[param]+2);

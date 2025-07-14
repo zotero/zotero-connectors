@@ -676,28 +676,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	// Render
 	//
 	renderHeadline() {
-		// Hide cancel button when saving to web library or if the client does not support it
-		let shouldShowCancelButton = this.state.targets && this.supportsSaveCancelling;
 		return (
 			<div className="ProgressWindow-headline">
 				{this.state.headlineText}
 				{this.state.targets
 					? this.renderHeadlineSelect()
 					: (this.state.target ? this.renderHeadlineTarget() : "")}
-				<button className="ProgressWindow-button can-expand cancel"
-					onClick={this.handleCancel}
-					aria-label={this.text.cancel}
-					hidden={!shouldShowCancelButton}>
-						<img class="icon" src="x-8.svg"/>
-						<span class="label">{this.text.cancel}</span>
-				</button>
-				<button className="ProgressWindow-button can-expand done"
-					onClick={this.handleDone}
-					aria-label={this.text.done}
-					hidden={!this.state.targetSelectorShown}>
-						<img class="icon" src="checkmark.svg"/>
-						<span class="label">{this.text.done}</span>
-				</button>
 				<div id="messageAlert" role="alert" style={{ fontSize: 0 }}/>
 				<div id="messageLog" role="log" aria-relevant="additions" style={{ fontSize: 0 }}/>
 			</div>
@@ -757,6 +741,22 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		</React.Fragment>;
 	}
 
+	/**
+	 * Render "Done" and "Cancel" buttons at the bottom of the popup.
+	 */
+	renderBottomButtons() {
+		return (
+			<div className="ProgressWindow-buttons">
+				<button className={`ProgressWindow-button cancel ${this.supportsSaveCancelling ? "" : " hidden"}`}
+					onClick={this.handleCancel}>
+						{this.text.cancel}
+				</button>
+				<button className="ProgressWindow-button done" onClick={this.handleDone}>
+					{this.text.done}
+				</button>
+			</div>
+		);
+	}
 
 	/**
 	 * Clear the value of the collections filter and display all rows
@@ -1109,6 +1109,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					onKeyPress={this.handleKeyPress}>
 				{this.renderHeadline()}
 				{this.renderTargetSelector()}
+				{this.renderBottomButtons()}
 				{this.renderProgress()}
 				{this.renderErrors()}
 			</div>
@@ -1534,6 +1535,7 @@ class TagsInput extends React.Component {
 					{willShowAutocomplete ? (
 						<div 
 							className="ProgressWindow-autocomplete" 
+							tabIndex={-1} // necessary so that Tab from tags input does not focus this popup that will then disappear
 							ref={this.autocompletePopupRef}>
 							{tags.map((tag, index) => (
 								<div

@@ -51,7 +51,6 @@ body {
 .ProgressWindow-headlineSelect {
 	margin-left: 5px;
 	height: 22px;
-	width: 150px;
 	font-size: 13px;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -192,59 +191,28 @@ body {
 	background-color: white;
 	border: 1px solid lightgray;
 	height: 22px;
-	width: 22px;
-	margin-inline-start: 4px;
 	border-radius: 4px;
-	font-size: 11px;
-	/* button will get wider on hover */
-	transition: width 0.3s ease, background-color 0.1s ease;
-
-	/* center the icon */
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	overflow: hidden;
-}
-/* initially, the icon is visible */
-.ProgressWindow-button > .icon {
-	opacity: 1;
-}
-/* and the label is hidden */
-.ProgressWindow-button .label {
-	opacity: 0;
-	width: 0;
-	overflow: hidden;
-}
-
-/* on hover, the button will become wider */
-.ProgressWindow-button.can-expand:hover {
-	width: 60px;
-}
-
-/* the icon will fade out */
-.ProgressWindow-button.can-expand:hover .icon {
-	opacity: 0;
-	transition: opacity 0.2s ease;
-}
-/* the label will fade-in a moment after the button expands */
-.ProgressWindow-button.can-expand:hover .label {
-	opacity: 1;
-	width: auto;
-	transition: opacity 0.2s ease 0.1s, width 0.3s ease;
-	margin-left: -16px;
+	font-size: 12px;
 }
 
 .ProgressWindow-button.done {
+	padding-inline: 10px;
 	color: white;
 	background-color: #4072e5; /* --accent-blue */
 }
 
 .ProgressWindow-button.cancel {
+	padding-inline: 10px;
 	color: red;
 }
 
-.ProgressWindow-button.disclosure {	
-	margin-inline-end: auto !important;
+.ProgressWindow-button.cancel.hidden {
+	visibility: hidden;
+}
+
+.ProgressWindow-button.disclosure {
+	min-width: 22px;
+	margin-inline-start: auto !important;
 }
 
 /* chevron that flips up or down on each click */
@@ -262,8 +230,8 @@ body {
 	background-color: #0000001a !important; /* fill-quarternary */
 }
 
-.ProgressWindow-button[hidden] {
-	display: none;
+.ProgressWindow-button.done:active {
+	background-color: #234aa5;
 }
 
 .ProgressWindow-filterWrapper {
@@ -300,9 +268,15 @@ body {
 	opacity: 0.6;
 }
 
+.ProgressWindow-buttons {
+	display: flex;
+	justify-content: space-between;
+	padding-bottom: 5px;
+	margin-bottom: 5px;
+	border-bottom: 1px solid #d0d0d0;
+}
+
 .ProgressWindow-progressBox {
-	/* Will become scrollable when too many items */
-	overflow-y: auto;
 	flex-grow: 1;
 }
 

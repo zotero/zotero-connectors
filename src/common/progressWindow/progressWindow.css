@@ -39,7 +39,7 @@ body {
 	font-size: 13px;
 	font-weight: bold;
 	margin-top: 2px;
-	margin-bottom: 7px;
+	margin-bottom: 8px;
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	display: flex;
@@ -81,15 +81,11 @@ body {
 
 .ProgressWindow-inputRow {
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
 }
 
 .ProgressWindow-targetSelectorTagsRow {
-	margin-bottom: 10px;
-}
-
-.ProgressWindow-targetSelectorTagsRow.hasTags {
-	margin-top: 6px;
+	margin-bottom: 4px;
 }
 
 .ProgressWindow-autocomplete {
@@ -100,7 +96,7 @@ body {
 	z-index: 1000;
 	max-height: 100px;
 	overflow-y: auto;
-	width: 330px;
+	width: 250px;
 	margin-top: 25px;
 }
 
@@ -119,10 +115,6 @@ body {
 .ProgressWindow-autocompleteOption.active {
 	background-color: var(--theme-selection-background, #0a84ff);
 	color: white;
-}
-
-.ProgressWindow-inputRow {
-	display: flex;
 }
 
 .ProgressWindow-tagsRow {
@@ -190,7 +182,7 @@ body {
 }
 
 .ProgressWindow-noteEditorRow {
-	margin-top: 6px;
+	margin-bottom: 8px;
 	display: flex;
 }
 
@@ -204,16 +196,17 @@ body {
 }
 
 .ProgressWindow-button.done {
-	padding-inline: 10px;
+	width: 70px;
+	margin-inline-start: 10px;
 	color: white;
 	background-color: #4072e5; /* --accent-blue */
 }
 
 .ProgressWindow-button.cancel {
 	padding-inline: 3px;
-	padding-top: 3px;
+	padding-top: 2px;
 	color: red;
-	margin-inline-start: 10px;
+	margin-inline-start: 32px;
 }
 
 .ProgressWindow-button.cancel.hidden {
@@ -246,7 +239,7 @@ body {
 
 .ProgressWindow-filterWrapper {
 	display: flex;
-	margin-bottom: 6px;
+	margin-bottom: 8px;
 }
 .ProgressWindow-filterInput {
 	width: 100%;
@@ -283,20 +276,13 @@ input::placeholder, textarea::placeholder {
 	background: white;
 	border-radius: 5px;
 	border: none;
-	padding-bottom: 2px;
+	padding: 2px 0;
 	box-shadow: 0px 0px 0px 0.5px #0000000D, 0px 0.5px 2.5px 0px #0000004D;
+	margin-bottom: 8px;
 }
 
 .ProgressWindow-targetSelector .context-row .tree-item-label {
 	opacity: 0.6;
-}
-
-.ProgressWindow-bottom {
-	display: flex;
-	justify-content: end;
-	padding-bottom: 5px;
-	margin-bottom: 5px;
-	border-bottom: 1px solid #d0d0d0;
 }
 
 .ProgressWindow-progressBox {
@@ -306,6 +292,13 @@ input::placeholder, textarea::placeholder {
 /* Make sure that if we zoom-in very closely, the progress-box is not completely shrunk */
 .ProgressWindow-progressBox:not(:empty) {
 	min-height: 40px;
+}
+
+.ProgressWindow-progressBox-separator {
+	border-top: 1px solid #0000001A;
+	margin-inline: -10px;
+	margin-bottom: 12px;
+	margin-top: 8px;
 }
 
 .ProgressWindow-item {

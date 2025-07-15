@@ -747,22 +747,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		return (
 			<button className={`ProgressWindow-button cancel ${this.supportsSaveCancelling ? "" : " hidden"}`}
 				onClick={this.handleCancel} title={this.text.cancel}>
-					<img className="icon" src="cancel.svg"/>
+					<img src="trash.svg"/>
 			</button>
 		)
-	}
-
-	/**
-	 * Render "Done" button at the bottom of the popup.
-	 */
-	renderBottomSection() {
-		return (
-			<div className="ProgressWindow-bottom">
-				<button className="ProgressWindow-button done" onClick={this.handleDone}>
-					{this.text.done}
-				</button>
-			</div>
-		);
 	}
 
 	/**
@@ -917,14 +904,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					setAutocompletePopupHeight={this.onTagAutocompleteShown}
 				/>
 		)
-		const bottomSection = this.renderBottomSection();
 		return (
 			<div>
 				{filterElement}
 				{targetSelectorElement}
 				{noteEditorElement}
 				{tagsInputElement}
-				{bottomSection}
 			</div>
 		);
 	}
@@ -973,6 +958,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		return (
 			<div className="ProgressWindow-progressBox">
+				{items.length > 0 ? <div className="ProgressWindow-progressBox-separator"/> : ""}
 				{items.map(item => this.renderItem(item))}
 			</div>
 		);
@@ -1447,7 +1433,7 @@ class TagsInput extends React.Component {
 				this.addTag(newTag);
 			}
 			else {
-				this.handleDone();
+				this.props.handleDone();
 			}
 			event.preventDefault();
 			event.stopPropagation();
@@ -1520,28 +1506,31 @@ class TagsInput extends React.Component {
 		// Cap tags suggestions count at 100 to not create too many nodes
 		let tags = this.getAvailableTags().slice(0,100);
 		let willShowAutocomplete = this.state.showTagsAutocomplete && tags.length;
+		let willShowSelectedTags = !!this.props.selectedTags.size;
 		return (
-			<div className={`ProgressWindow-targetSelectorTagsRow ${willShowAutocomplete ? 'with-autocomplete' : ''} ${this.props.selectedTags.size ? 'hasTags' : ''}`}>
-				<div
-					className="ProgressWindow-tagsRow"
-					tabIndex={this.props.selectedTags.size ? 0 : -1}
-					role="group"
-					aria-activedescendant={`tag_${this.selectedTagActiveIndex}`}
-					onKeyDown={this.onSelectedTagsKeyDown}>
-					{ Array.from(this.props.selectedTags).map((tag, index) => (
-						<div key={tag}
-							id={`tag_${index}`}
-							className={`ProgressWindow-selectedTag ${this.selectedTagActiveIndex === index ? 'active' : ''}`}
-							aria-label={tag}
-							aria-description={Zotero.getString('progressWindow_removeTag')}>
-							<span className="ProgressWindow-tagLabel" aria-hidden="true"> {tag} </span>
-							<span
-								className="ProgressWindow-removeTag"
-								onClick={() => this.removeTag(tag)}>
-							</span>
-						</div>
-					))}
-				</div>
+			<div className={`ProgressWindow-targetSelectorTagsRow ${willShowAutocomplete ? 'with-autocomplete' : ''}`}>
+				{willShowSelectedTags ? (
+					<div
+						className="ProgressWindow-tagsRow"
+						tabIndex={0}
+						role="group"
+						aria-activedescendant={`tag_${this.selectedTagActiveIndex}`}
+						onKeyDown={this.onSelectedTagsKeyDown}>
+						{ Array.from(this.props.selectedTags).map((tag, index) => (
+							<div key={tag}
+								id={`tag_${index}`}
+								className={`ProgressWindow-selectedTag ${this.selectedTagActiveIndex === index ? 'active' : ''}`}
+								aria-label={tag}
+								aria-description={Zotero.getString('progressWindow_removeTag')}>
+								<span className="ProgressWindow-tagLabel" aria-hidden="true"> {tag} </span>
+								<span
+									className="ProgressWindow-removeTag"
+									onClick={() => this.removeTag(tag)}>
+								</span>
+							</div>
+						))}
+					</div>
+				) : ""}
 				<div className="ProgressWindow-inputRow">
 					<input
 						ref={this.tagsInputNode}
@@ -1554,6 +1543,9 @@ class TagsInput extends React.Component {
 						onFocus={this.onTagsInputFocus}
 						onBlur={this.onTagsInputBlur}
 					/>
+					<button className="ProgressWindow-button done" onClick={this.props.handleDone}>
+						{this.text.done}
+					</button>
 					{willShowAutocomplete ? (
 						<div 
 							className="ProgressWindow-autocomplete" 

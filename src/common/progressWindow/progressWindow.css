@@ -7,11 +7,10 @@ body {
 .ProgressWindow-box {
 	width: 360px;
 	max-width: 92%;
-	border-color: #adadad #9a9a9a #ababab;
-	border-width: 1px;
-	border-style: solid;
-	background-color: #ededed;
-	box-shadow: rgba(0, 0, 0, 0.25) 0px 5px 20px -2px;
+	border-radius: 5px;
+	border: none;
+	background-color: #F2F2F2;
+	box-shadow: 0px 0px 3px 0px #0000008C, 0px 6px 10px 0px #00000040;
 	margin-left: 4px;
 	padding: 6px 10px 6px;
 	min-height: 40px;
@@ -56,7 +55,8 @@ body {
 	text-overflow: ellipsis;
 	background-color: white;
 	border-radius: 5px;
-	border: 1px solid lightgray;
+	border: none;
+	box-shadow: 0px 0px 0px 0.5px #0000000D, 0px 0.5px 2.5px 0px #0000004D;
 }
 
 .ProgressWindow-targetIcon {
@@ -68,6 +68,15 @@ body {
 	margin-left: 4px;
 	margin-right: 3px;
 	vertical-align: -3px;
+	fill: currentColor;
+}
+
+.ProgressWindow-targetIcon.library,
+.ProgressWindow-targetIcon.collection{
+	color: #4072E5;
+}
+.ProgressWindow-targetIcon.group {
+	color: #59ADC4;
 }
 
 .ProgressWindow-inputRow {
@@ -166,20 +175,18 @@ body {
 
 .ProgressWindow-tagsInput {
 	flex-grow: 1;
-	margin-right: 2px;
-	padding-inline: 1px;
 	font-size: 13px;
-	/* Ensures the input can shrink to make space for the done btn if the user zooms into the iframe */
-	min-width: 0; 
+	padding: 3px;
 }
 
 .ProgressWindow-noteEditor {
 	width: 100%;
 	resize: none;
 	max-height: 6em; /* expand up to 5 lines of text */
-	height: 34px; /* initial height that may increase as user types */
+	height: 38px; /* initial height that may increase as user types */
 	font-family: inherit;
-	font-size: 12px;
+	font-size: 13px;
+	padding: 3px;
 }
 
 .ProgressWindow-noteEditorRow {
@@ -189,10 +196,11 @@ body {
 
 .ProgressWindow-button {
 	background-color: white;
-	border: 1px solid lightgray;
 	height: 22px;
-	border-radius: 4px;
-	font-size: 12px;
+	border-radius: 5px;
+	font-size: 13px;
+	border: none;
+	box-shadow: 0px 0px 0px 0.5px #0000000D, 0px 0.5px 2.5px 0px #0000004D;
 }
 
 .ProgressWindow-button.done {
@@ -241,9 +249,20 @@ body {
 .ProgressWindow-filterInput {
 	width: 100%;
 	box-sizing: border-box;
-	padding: 2px 20px 2px 6px;
+	padding: 3px 20px 3px 6px;
 	font-size: 13px;
 }
+
+
+input, textarea {
+	border: none;
+	border-radius: 5px;
+	box-shadow: 0px 0.5px 1px 0px #0000001F, 0px 1px 2px 0px #0000001F, 0px 0.5px 3px 0px #0000001F;
+}
+input::placeholder, textarea::placeholder {
+	color: #00000040; /* fill-tertiary */
+}
+
 .ProgressWindow-cross {
 	width: 16px;
 	height: 16px;
@@ -260,8 +279,10 @@ body {
 	height: 218px;
 	overflow-y: scroll;
 	background: white;
-	border: 1px solid lightgray;
-	padding-bottom: 2px
+	border-radius: 5px;
+	border: none;
+	padding-bottom: 2px;
+	box-shadow: 0px 0px 0px 0.5px #0000000D, 0px 0.5px 2.5px 0px #0000004D;
 }
 
 .ProgressWindow-targetSelector .context-row .tree-item-label {
@@ -349,6 +370,7 @@ body {
 	padding-top: 2px;
 	padding-left: 7px;
 	padding-bottom: 2px;
+	border-radius: 5px;
 }
 
 .tree-indent {
@@ -384,21 +406,19 @@ body {
 
 .tree .tree-node.focused {
 	color: white;
-	background-color: var(--theme-selection-background, #0a84ff);
+	background-color: var(--theme-selection-background, #4072E5);
 }
 
-.tree-node.focused .arrow svg {
-	fill: currentColor;
-}
-
-.arrow {
+.tree .tree-node.focused svg
+{
+	color: #FFFFFF;
 }
 
 .arrow svg {
-	fill: var(--theme-splitter-color, #9B9B9B);
+	fill: currentColor;
+	color: #0000008C;
 	transition: transform 0.125s ease;
 	width: 10px;
-	margin-right: 5px;
 	transform: rotate(-90deg);
 	vertical-align: middle;
 	margin-top: -3px;
@@ -410,7 +430,7 @@ html[dir="rtl"] .arrow svg,
 	transform: rotate(90deg);
 }
 
-.arrow.expanded.expanded svg {
+.arrow.expanded svg {
 	transform: rotate(0deg);
 }
 

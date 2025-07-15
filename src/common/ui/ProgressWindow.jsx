@@ -29,8 +29,9 @@ Zotero.UI.style = Zotero.UI.style || {};
 
 Zotero.UI.style.imageBase = Zotero.getExtensionURL("images/");
 
-function getTargetType(id) {
-	return id.startsWith('L') ? 'library': 'collection';
+function getTargetType(target) {
+	if (target.isUserLibrary) return 'library';
+	return target.id.startsWith('L') ? 'group': 'collection';
 }
 
 function getParent(rows, id) {
@@ -203,7 +204,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			
 			// Auto-expand libraries
 			targets.forEach((t) => {
-				if (getTargetType(t.id) == 'library') {
+				if (getTargetType(t) == 'library') {
 					t.expanded = true;
 				}
 			});
@@ -736,7 +737,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	 */
 	renderHeadlineTarget() {
 		return <React.Fragment>
-			<TargetIcon type={getTargetType(this.state.target.id)}/>
+			<TargetIcon type={getTargetType(this.state.target)}/>
 			{" " + this.state.target.name + "…"}
 		</React.Fragment>;
 	}
@@ -1120,13 +1121,27 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 
 class TargetIcon extends React.Component {
 	render() {
-		var image = this.props.type == 'library'
-			? "treesource-library.png"
-			: "treesource-collection.png";
-		var style = {
-			backgroundImage: `url('${Zotero.UI.style.imageBase}${image}')`
-		};
-		return <div className="ProgressWindow-targetIcon" style={style} />;
+		if (this.props.type == "library" || this.props.type == "group") {
+			return (
+				// library.svg
+				 <div className={`ProgressWindow-targetIcon ${this.props.type}`}>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M16 15V16H1V15H16ZM15 14H2V13H3V5H2V3L8.5 0L15 3V5H14V13H15V14ZM3 4H14V3.64L8.5 1.1L3 3.64V4ZM5 5H4V13H5V5ZM7 5H6V13H7V5ZM9 5H8V13H9V5ZM11 5H10V13H11V5ZM13 5H12V13H13V5Z" fill="currentColor"/>
+					</svg>
+				</div>
+			);
+		}
+		if (this.props.type == "collection") {
+			return (
+				// collection.svg
+				<div className={`ProgressWindow-targetIcon ${this.props.type}`}>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M15 3H9L8.276 1.553C8.107 1.214 7.761 1 7.382 1H3.618C3.239 1 2.893 1.214 2.724 1.553L2 3H1C0.448 3 0 3.448 0 4V6V14C0 14.552 0.448 15 1 15H15C15.552 15 16 14.552 16 14V6V4C16 3.448 15.552 3 15 3ZM15 14H1V6H15V14ZM1 5V4H2C2.379 4 2.725 3.786 2.894 3.447L3.618 2H7.382L8.106 3.447C8.275 3.786 8.621 4 9 4H15V5H1Z" fill="currentColor"/>
+					</svg>
+				</div>
+			);
+		}
+		return <div className={`ProgressWindow-targetIcon ${this.props.type}`}/>;
 	}
 }
 
@@ -1207,7 +1222,7 @@ class TargetTree extends React.Component {
 		// First find the last row in the library
 		while (pos + 1 < this.props.rows.length) {
 			pos++;
-			let current = this.props.rows[pos].id;
+			let current = this.props.rows[pos];
 			// If we hit another library, go back one
 			if (getTargetType(current) == 'library') {
 				pos--;
@@ -1220,7 +1235,7 @@ class TargetTree extends React.Component {
 			let current = this.props.rows[pos];
 			collapse.push(current.id);
 			// When we reach a library, select it and stop
-			if (getTargetType(current.id) == 'library') {
+			if (getTargetType(current) == 'library') {
 				this.props.onRowFocus(current.id);
 				break;
 			}
@@ -1236,7 +1251,7 @@ class TargetTree extends React.Component {
 		var expand = [];
 		// First find the library row
 		while (pos >= 0) {
-			let current = this.props.rows[pos].id;
+			let current = this.props.rows[pos];
 			if (getTargetType(current) == 'library') {
 				break;
 			}
@@ -1248,12 +1263,12 @@ class TargetTree extends React.Component {
 			if (pos == this.props.rows.length) break;
 			let current = this.props.rows[pos];
 			// When we reach another library, select it and stop
-			if (getTargetType(current.id) == 'library' && current.id != libraryID) {
+			if (getTargetType(current) == 'library' && current.id != libraryID) {
 				break;
 			}
 			// If the next row exists, isn't a library, and is one level higher, expand this row
 			let next = this.props.rows[pos + 1];
-			if (next && getTargetType(next.id) != 'library' && next.level > current.level) {
+			if (next && getTargetType(next) != 'library' && next.level > current.level) {
 				expand.push(current.id);
 			}
 			pos++;
@@ -1291,7 +1306,7 @@ class TargetTree extends React.Component {
 							    clicking on the row itself. If the tree is updated to have less
 							    annoying behavior, this can be reverted. */}
 							<span onClick={() => this.props.onRowToggle(item.id)}>{arrow}</span>
-							<TargetIcon type={getTargetType(item.id)} />
+							<TargetIcon type={getTargetType(item)} />
 							<span className="tree-item-label">{item.name}</span>
 						</div>
 					);

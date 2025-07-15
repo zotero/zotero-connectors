@@ -244,15 +244,17 @@ body {
 .ProgressWindow-button.disclosure {
 	min-width: 22px;
 	margin-inline-start: 5px;
+	fill: currentColor;
+	color: var(--fill-primary);
 }
 
 /* chevron that flips up or down on each click */
-.ProgressWindow-button.disclosure > .icon {
+.ProgressWindow-button.disclosure > svg {
 	transition: transform .2s ease-in-out;
 	transform-origin: center;
 }
 
-.ProgressWindow-button.disclosure.is-open > .icon {
+.ProgressWindow-button.disclosure.is-open > svg {
 	transform: rotate(-180deg);
 }
 

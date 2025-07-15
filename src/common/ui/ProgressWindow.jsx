@@ -726,7 +726,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						onKeyPress={this.handleDisclosureKeyPress}
 						aria-expanded={this.state.targetSelectorShown}
 						aria-label={Zotero.getString(`progressWindow_detailsBtn${this.state.targetSelectorShown ? "Hide" : "View"}`)}>
-						<img class="icon" src="chevron-8.svg"/>
+						{/* chevron-8.svg */}
+						<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none">
+							<path d="M0 2.70711L4 6.70711L8 2.70711L7.29289 2L4 5.29289L0.707107 2L0 2.70711Z" fill="currentColor"/>
+						</svg>
 				</button>
 			</React.Fragment>
 		);

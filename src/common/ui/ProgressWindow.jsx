@@ -746,8 +746,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	renderCancelButton() {
 		return (
 			<button className={`ProgressWindow-button cancel ${this.supportsSaveCancelling ? "" : " hidden"}`}
-				onClick={this.handleCancel}>
-					{this.text.cancel}
+				onClick={this.handleCancel} title={this.text.cancel}>
+					<img className="icon" src="cancel.svg"/>
 			</button>
 		)
 	}

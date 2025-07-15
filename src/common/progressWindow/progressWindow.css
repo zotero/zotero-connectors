@@ -210,7 +210,8 @@ body {
 }
 
 .ProgressWindow-button.cancel {
-	padding-inline: 10px;
+	padding-inline: 3px;
+	padding-top: 3px;
 	color: red;
 	margin-inline-start: 10px;
 }

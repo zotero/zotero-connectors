@@ -2,6 +2,26 @@ body {
 	/* Match tree.css */
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 
+	--fill-quarternary: #0000001a;
+	--color-background: #FFFFFF;
+	--color-sidepane: #F2F2F2;
+
+	--fill-primary: #000000d9;
+	--fill-tertiary: #00000040;
+	--fill-quinary: #0000000d;
+
+	--accent-blue: #4072e5;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+		--color-background: #1e1e1e;
+        --color-sidepane: #303030;
+
+		--fill-primary: #ffffffe5;
+		--fill-tertiary: #ffffff4d;
+		--fill-quinary: #ffffff0f;
+    }
 }
 
 .ProgressWindow-box {
@@ -9,7 +29,7 @@ body {
 	max-width: 92%;
 	border-radius: 5px;
 	border: none;
-	background-color: #F2F2F2;
+	background-color: var(--color-sidepane);
 	box-shadow: 0px 0px 3px 0px #0000008C, 0px 6px 10px 0px #00000040;
 	margin-left: 4px;
 	padding: 6px 10px 6px;
@@ -26,6 +46,8 @@ body {
 
 	/* scrollbar should be never visible (macOS) */
 	scrollbar-width: none;
+
+	color: var(--fill-primary);
 }
 
 /* Hack to check whether the mouse is over the pane when switching back from another tab.
@@ -57,6 +79,8 @@ body {
 	border-radius: 5px;
 	border: none;
 	box-shadow: 0px 0px 0px 0.5px #0000000D, 0px 0.5px 2.5px 0px #0000004D;
+	background-color: var(--color-background);
+	color: inherit;
 }
 
 .ProgressWindow-targetIcon {
@@ -90,8 +114,8 @@ body {
 
 .ProgressWindow-autocomplete {
 	position: absolute;
-	background-color: white;
-	border: 1px solid lightgray;
+	background-color: var(--color-background);
+	border: 1px solid var(--fill-quinary);
 	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 	z-index: 1000;
 	max-height: 100px;
@@ -111,9 +135,10 @@ body {
 	display: flex;
 	align-items: center;
 	padding-inline-start: 5px;
+	color: inherit;
 }
 .ProgressWindow-autocompleteOption.active {
-	background-color: var(--theme-selection-background, #0a84ff);
+	background-color: var(--accent-blue);
 	color: white;
 }
 
@@ -134,7 +159,7 @@ body {
 .ProgressWindow-selectedTag {
 	display: flex;
  	align-items: center;
-	background-color: #0000000d; /* hardcoded fill-quinary from light theme */
+	background-color: var(--fill-quinary);
 	border-radius: 5px;
 	font-size: 12px;
 	padding: 2px 3px 2px 4px;
@@ -161,7 +186,7 @@ body {
 	margin-left: 2px;
 }
 .ProgressWindow-removeTag:hover {
-	background-color: #d5d5d5;
+	background-color: var(--fill-tertiary);
 	cursor: pointer;
 }
 
@@ -169,6 +194,7 @@ body {
 	flex-grow: 1;
 	font-size: 13px;
 	padding: 3px;
+	background-color: var(--color-background);
 }
 
 .ProgressWindow-noteEditor {
@@ -179,6 +205,7 @@ body {
 	font-family: inherit;
 	font-size: 13px;
 	padding: 3px;
+	background-color: var(--color-background);
 }
 
 .ProgressWindow-noteEditorRow {
@@ -193,13 +220,14 @@ body {
 	font-size: 13px;
 	border: none;
 	box-shadow: 0px 0px 0px 0.5px #0000000D, 0px 0.5px 2.5px 0px #0000004D;
+	background-color: var(--color-background);
 }
 
 .ProgressWindow-button.done {
 	width: 70px;
 	margin-inline-start: 10px;
 	color: white;
-	background-color: #4072e5; /* --accent-blue */
+	background-color: var(--accent-blue);
 }
 
 .ProgressWindow-button.cancel {
@@ -230,7 +258,7 @@ body {
 
 .ProgressWindow-button.cancel:active,
 .ProgressWindow-button.disclosure:active {
-	background-color: #0000001a !important; /* fill-quarternary */
+	background-color: var(--fill-quarternary) !important;
 }
 
 .ProgressWindow-button.done:active {
@@ -246,6 +274,7 @@ body {
 	box-sizing: border-box;
 	padding: 3px 20px 3px 6px;
 	font-size: 13px;
+	background-color: var(--color-background);
 }
 
 
@@ -253,9 +282,10 @@ input, textarea {
 	border: none;
 	border-radius: 5px;
 	box-shadow: 0px 0.5px 1px 0px #0000001F, 0px 1px 2px 0px #0000001F, 0px 0.5px 3px 0px #0000001F;
+	color: inherit;
 }
 input::placeholder, textarea::placeholder {
-	color: #00000040; /* fill-tertiary */
+	color: var(--fill-tertiary);
 }
 
 .ProgressWindow-cross {
@@ -279,6 +309,7 @@ input::placeholder, textarea::placeholder {
 	padding: 2px 0;
 	box-shadow: 0px 0px 0px 0.5px #0000000D, 0px 0.5px 2.5px 0px #0000004D;
 	margin-bottom: 8px;
+	background-color: var(--color-background);
 }
 
 .ProgressWindow-targetSelector .context-row .tree-item-label {
@@ -295,7 +326,7 @@ input::placeholder, textarea::placeholder {
 }
 
 .ProgressWindow-progressBox-separator {
-	border-top: 1px solid #0000001A;
+	border-top: 1px solid var(--fill-quarternary);
 	margin-inline: -10px;
 	margin-bottom: 12px;
 	margin-top: 8px;
@@ -396,12 +427,12 @@ input::placeholder, textarea::placeholder {
 }
 
 .tree .tree-node:not(.focused):hover {
-	background-color: #F0F9FE;
+	background-color: var(--fill-tertiary);
 }
 
 .tree .tree-node.focused {
 	color: white;
-	background-color: var(--theme-selection-background, #4072E5);
+	background-color: var(--accent-blue);
 }
 
 .tree .tree-node.focused svg
@@ -411,7 +442,7 @@ input::placeholder, textarea::placeholder {
 
 .arrow svg {
 	fill: currentColor;
-	color: #0000008C;
+	color: var(--fill-secondary);
 	transition: transform 0.125s ease;
 	width: 10px;
 	transform: rotate(-90deg);

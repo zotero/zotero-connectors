@@ -683,6 +683,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				{this.state.targets
 					? this.renderHeadlineSelect()
 					: (this.state.target ? this.renderHeadlineTarget() : "")}
+				{this.supportsSaveCancelling ? this.renderCancelButton() : "" }
 				<div id="messageAlert" role="alert" style={{ fontSize: 0 }}/>
 				<div id="messageLog" role="log" aria-relevant="additions" style={{ fontSize: 0 }}/>
 			</div>
@@ -742,16 +743,21 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		</React.Fragment>;
 	}
 
-	/**
-	 * Render "Done" and "Cancel" buttons at the bottom of the popup.
-	 */
-	renderBottomButtons() {
+	renderCancelButton() {
 		return (
-			<div className="ProgressWindow-buttons">
-				<button className={`ProgressWindow-button cancel ${this.supportsSaveCancelling ? "" : " hidden"}`}
-					onClick={this.handleCancel}>
-						{this.text.cancel}
-				</button>
+			<button className={`ProgressWindow-button cancel ${this.supportsSaveCancelling ? "" : " hidden"}`}
+				onClick={this.handleCancel}>
+					{this.text.cancel}
+			</button>
+		)
+	}
+
+	/**
+	 * Render "Done" button at the bottom of the popup.
+	 */
+	renderBottomSection() {
+		return (
+			<div className="ProgressWindow-bottom">
 				<button className="ProgressWindow-button done" onClick={this.handleDone}>
 					{this.text.done}
 				</button>
@@ -911,12 +917,14 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					setAutocompletePopupHeight={this.onTagAutocompleteShown}
 				/>
 		)
+		const bottomSection = this.renderBottomSection();
 		return (
 			<div>
 				{filterElement}
 				{targetSelectorElement}
 				{noteEditorElement}
 				{tagsInputElement}
+				{bottomSection}
 			</div>
 		);
 	}
@@ -1110,7 +1118,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					onKeyPress={this.handleKeyPress}>
 				{this.renderHeadline()}
 				{this.renderTargetSelector()}
-				{this.renderBottomButtons()}
 				{this.renderProgress()}
 				{this.renderErrors()}
 			</div>

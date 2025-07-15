@@ -212,6 +212,7 @@ body {
 .ProgressWindow-button.cancel {
 	padding-inline: 10px;
 	color: red;
+	margin-inline-start: 10px;
 }
 
 .ProgressWindow-button.cancel.hidden {
@@ -220,7 +221,7 @@ body {
 
 .ProgressWindow-button.disclosure {
 	min-width: 22px;
-	margin-inline-start: auto !important;
+	margin-inline-start: 5px;
 }
 
 /* chevron that flips up or down on each click */
@@ -289,9 +290,9 @@ input::placeholder, textarea::placeholder {
 	opacity: 0.6;
 }
 
-.ProgressWindow-buttons {
+.ProgressWindow-bottom {
 	display: flex;
-	justify-content: space-between;
+	justify-content: end;
 	padding-bottom: 5px;
 	margin-bottom: 5px;
 	border-bottom: 1px solid #d0d0d0;

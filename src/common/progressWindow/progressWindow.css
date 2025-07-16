@@ -368,6 +368,7 @@ input::placeholder, textarea::placeholder {
 }
 
 .ProgressWindow-error {
+	color: inherit;
 	font-size: 13px;
 	line-height: 1.4em;
 	margin-bottom: 4px;

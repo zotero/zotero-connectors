@@ -388,7 +388,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!this.supportsTagsAutocomplete) {
 			tags = tags.join(",");
 		}
-		this.sendMessage('updated', { target: this.target, note: this.state.note, tags });
+		this.sendMessage('updated', { target: this.state.target, note: this.state.note, tags });
 	}
 	
 	//
@@ -515,7 +515,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.setState({ target, selectedTags }, () => {
 			this.sendUpdate();
 		});
-		this.target = target;
 		this.handleUserInteraction();
 	}
 	

@@ -120,7 +120,7 @@ body {
 	z-index: 1000;
 	max-height: 100px;
 	overflow-y: auto;
-	width: 250px;
+	width: 225px;
 	margin-top: 25px;
 }
 
@@ -225,7 +225,7 @@ body {
 
 .ProgressWindow-button.done {
 	width: 70px;
-	margin-inline-start: 10px;
+	margin-inline-start: 5px;
 	color: white;
 	background-color: var(--accent-blue);
 }
@@ -234,7 +234,7 @@ body {
 	padding-inline: 3px;
 	padding-top: 2px;
 	color: red;
-	margin-inline-start: 32px;
+	margin-inline-start: 10px;
 }
 
 .ProgressWindow-button.cancel.hidden {
@@ -243,7 +243,7 @@ body {
 
 .ProgressWindow-button.disclosure {
 	min-width: 22px;
-	margin-inline-start: 5px;
+	margin-inline-start: auto;
 	fill: currentColor;
 	color: var(--fill-primary);
 }

@@ -683,7 +683,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				{this.state.targets
 					? this.renderHeadlineSelect()
 					: (this.state.target ? this.renderHeadlineTarget() : "")}
-				{this.supportsSaveCancelling ? this.renderCancelButton() : "" }
 				<div id="messageAlert" role="alert" style={{ fontSize: 0 }}/>
 				<div id="messageLog" role="log" aria-relevant="additions" style={{ fontSize: 0 }}/>
 			</div>
@@ -744,15 +743,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			<TargetIcon type={getTargetType(this.state.target)}/>
 			{" " + this.state.target.name + "…"}
 		</React.Fragment>;
-	}
-
-	renderCancelButton() {
-		return (
-			<button className={`ProgressWindow-button cancel ${this.supportsSaveCancelling ? "" : " hidden"}`}
-				onClick={this.handleCancel} title={this.text.cancel}>
-					<img src="trash.svg"/>
-			</button>
-		)
 	}
 
 	/**
@@ -900,10 +890,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					existingTags={this.existingTags[this.currentLibraryID] || []}
 					selectedTags={this.state.selectedTags}
 					supportsTagsAutocomplete={this.supportsTagsAutocomplete}
+					supportsSaveCancelling={this.supportsSaveCancelling}
 					updateSelectedTags={this.updateSelectedTags}
 					sendMessage={this.sendMessage}
 					sendUpdate={this.sendUpdate}
 					handleDone={this.handleDone}
+					handleCancel={this.handleCancel}
 					setAutocompletePopupHeight={this.onTagAutocompleteShown}
 				/>
 		)
@@ -1546,6 +1538,11 @@ class TagsInput extends React.Component {
 						onFocus={this.onTagsInputFocus}
 						onBlur={this.onTagsInputBlur}
 					/>
+					{this.props.supportsSaveCancelling ? (
+						<button className="ProgressWindow-button cancel" onClick={this.props.handleCancel} title={this.text.cancel}>
+							<img src="trash.svg"/>
+						</button>
+					) : "" }
 					<button className="ProgressWindow-button done" onClick={this.props.handleDone}>
 						{this.text.done}
 					</button>

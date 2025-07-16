@@ -15,8 +15,7 @@ body {
 	--accent-blue50: #4072e580;
 	--accent-red: #DB2C3A;
 
-	--color-accent: SelectedItem;
-	--color-focus-border: color-mix(in srgb, var(--color-accent) 70%, transparent);
+	--color-focus-border: SelectedItem;
 }
 
 @media (prefers-color-scheme: dark) {

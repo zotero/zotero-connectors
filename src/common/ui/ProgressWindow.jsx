@@ -1552,24 +1552,24 @@ class TagsInput extends React.Component {
 					<button className="ProgressWindow-button done" onClick={this.props.handleDone}>
 						{this.text.done}
 					</button>
-					{willShowAutocomplete ? (
-						<div 
-							className="ProgressWindow-autocomplete" 
-							tabIndex={-1} // necessary so that Tab from tags input does not focus this popup that will then disappear
-							ref={this.autocompletePopupRef}>
-							{tags.map((tag, index) => (
-								<div
-									key={tag}
-									ref={el => this.autocompleteRefs[index] = el}
-									className={`ProgressWindow-autocompleteOption ${this.state.currentTagIndex == index ? 'active' : ''}`}
-									onMouseDown={() => this.onTagAutocompleteMouseDown(index)}
-									onMouseUp={() => this.onTagAutocompleteMouseUp(index)}>
-									{tag}
-								</div>
-							))}
-						</div>
-					) : <></>}
 				</div>
+				{willShowAutocomplete ? (
+					<div 
+						className="ProgressWindow-autocomplete" 
+						tabIndex={-1} // necessary so that Tab from tags input does not focus this popup that will then disappear
+						ref={this.autocompletePopupRef}>
+						{tags.map((tag, index) => (
+							<div
+								key={tag}
+								ref={el => this.autocompleteRefs[index] = el}
+								className={`ProgressWindow-autocompleteOption ${this.state.currentTagIndex == index ? 'active' : ''}`}
+								onMouseDown={() => this.onTagAutocompleteMouseDown(index)}
+								onMouseUp={() => this.onTagAutocompleteMouseUp(index)}>
+								{tag}
+							</div>
+						))}
+					</div>
+				) : <></>}
 			</div>
 		);
 	}

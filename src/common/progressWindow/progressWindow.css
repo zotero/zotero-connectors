@@ -103,7 +103,6 @@ body {
 	background-position: center;
 	background-repeat: no-repeat;
 	margin-left: 4px;
-	margin-right: 3px;
 	vertical-align: -3px;
 	fill: currentColor;
 }
@@ -119,6 +118,7 @@ body {
 .ProgressWindow-inputRow {
 	display: flex;
 	flex-direction: row;
+	align-items: center;
 }
 
 .ProgressWindow-targetSelectorTagsRow {
@@ -128,13 +128,14 @@ body {
 .ProgressWindow-autocomplete {
 	position: absolute;
 	background-color: var(--color-background);
-	border: 1px solid var(--fill-quinary);
+	border: none;
+	border-radius: 5px;
 	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 	z-index: 1000;
 	max-height: 100px;
 	overflow-y: auto;
 	width: 225px;
-	margin-top: 29px;
+	margin-top: 4px;
 }
 
 .ProgressWindow-autocompleteOption {
@@ -240,7 +241,6 @@ body {
 	margin-inline-start: 5px;
 	color: white;
 	background-color: var(--accent-blue);
-	padding-bottom: 2px; /* align the "Done" label a bit better with "Cancel" button */
 }
 
 .ProgressWindow-button.cancel {
@@ -326,7 +326,7 @@ input::placeholder, textarea::placeholder {
 .ProgressWindow-targetSelector {
 	height: 218px;
 	overflow-y: scroll;
-	padding: 8px;
+	padding: 4px 8px;
 	border: 1px solid var(--fill-quarternary);
 	margin-bottom: 8px;
 	background-color: var(--color-background);
@@ -415,26 +415,22 @@ input::placeholder, textarea::placeholder {
 .tree .tree-node {
 	display: flex;
 	padding-top: 2px;
-	padding-left: 7px;
+	padding-left: 4px;
 	padding-bottom: 2px;
 	border-radius: 5px;
 }
 
 .tree-indent {
 	display: inline-block;
-	width: 12px;
+	width: 6px;
 	margin-left: 5px;
 	/*border-left: 1px solid #A2D1FF;*/
 	flex-shrink: 0;
 }
 
-.tree-indent:first-of-type {
-	width: 6px;
-}
-
 /* Align with expandables siblings (where we have the arrow) */
 .tree-node[data-expandable="false"] .tree-indent:last-of-type {
-	margin-right: 15px;
+	margin-right: 8px;
 }
 
 /* For non expandable root nodes, we don't have .tree-indent elements, so we declare
@@ -465,7 +461,7 @@ input::placeholder, textarea::placeholder {
 	fill: currentColor;
 	color: var(--fill-secondary);
 	transition: transform 0.125s ease;
-	width: 10px;
+	width: 8px;
 	transform: rotate(-90deg);
 	vertical-align: middle;
 	margin-top: -3px;

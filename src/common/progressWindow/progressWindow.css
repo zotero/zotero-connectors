@@ -12,7 +12,11 @@ body {
 	--fill-quinary: #0000000d;
 
 	--accent-blue: #4072e5;
+	--accent-blue50: #4072e580;
 	--accent-red: #DB2C3A;
+
+	--color-accent: SelectedItem;
+	--color-focus-border: color-mix(in srgb, var(--color-accent) 70%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,7 +31,12 @@ body {
 		--fill-quinary: #ffffff0f;
 
 		--accent-red: #db2c3ae5;
+		--accent-blue50: #4072e599;
     }
+}
+
+*:focus-visible {
+    outline: 2px solid var(--color-focus-border, var(--accent-blue50));
 }
 
 .ProgressWindow-box {
@@ -126,7 +135,7 @@ body {
 	max-height: 100px;
 	overflow-y: auto;
 	width: 225px;
-	margin-top: 25px;
+	margin-top: 29px;
 }
 
 .ProgressWindow-autocompleteOption {
@@ -232,6 +241,7 @@ body {
 	margin-inline-start: 5px;
 	color: white;
 	background-color: var(--accent-blue);
+	padding-bottom: 2px; /* align the "Done" label a bit better with "Cancel" button */
 }
 
 .ProgressWindow-button.cancel {
@@ -317,8 +327,6 @@ input::placeholder, textarea::placeholder {
 .ProgressWindow-targetSelector {
 	height: 218px;
 	overflow-y: scroll;
-	border-radius: 5px;
-	border: none;
 	padding: 8px;
 	border: 1px solid var(--fill-quarternary);
 	margin-bottom: 8px;

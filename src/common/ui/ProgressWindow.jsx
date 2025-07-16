@@ -1328,6 +1328,7 @@ class TagsInput extends React.Component {
 		this.isClickingTag = false;
 		this.text = {
 			done: Zotero.getString('general_done'),
+			cancel: Zotero.getString('general_cancel'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder')
 		};
 	}
@@ -1540,7 +1541,13 @@ class TagsInput extends React.Component {
 					/>
 					{this.props.supportsSaveCancelling ? (
 						<button className="ProgressWindow-button cancel" onClick={this.props.handleCancel} title={this.text.cancel}>
-							<img src="trash.svg"/>
+							{ /* trash.svg */}
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M13 14.542C13 14.79 12.729 15 12.409 15H3.591C3.271 15 3 14.79 3 14.542V4H2V14.542C2 15.346 2.714 16 3.591 16H12.409C13.286 16 14 15.346 14 14.542V4H13V14.542Z" fill="currentColor"/>
+								<path d="M12 2V1C12 0.448 11.552 0 11 0L5 0C4.448 0 4 0.448 4 1V2H1V3H15V2H12ZM5 2V1H11V2H5Z" fill="currentColor"/>
+								<path d="M7 5H6V13H7V5Z" fill="currentColor"/>
+								<path d="M10 5H9V13H10V5Z" fill="currentColor"/>
+							</svg>
 						</button>
 					) : "" }
 					<button className="ProgressWindow-button done" onClick={this.props.handleDone}>

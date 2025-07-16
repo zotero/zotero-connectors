@@ -2,25 +2,31 @@ body {
 	/* Match tree.css */
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 
-	--fill-quarternary: #0000001a;
 	--color-background: #FFFFFF;
 	--color-sidepane: #F2F2F2;
+	--color-button: #FFFFFF;
 
 	--fill-primary: #000000d9;
 	--fill-tertiary: #00000040;
+	--fill-quarternary: #0000001a;
 	--fill-quinary: #0000000d;
 
 	--accent-blue: #4072e5;
+	--accent-red: #DB2C3A;
 }
 
 @media (prefers-color-scheme: dark) {
     body {
 		--color-background: #1e1e1e;
         --color-sidepane: #303030;
+		--color-button: #404040;
 
 		--fill-primary: #ffffffe5;
 		--fill-tertiary: #ffffff4d;
+		--fill-quarternary: #ffffff1f;
 		--fill-quinary: #ffffff0f;
+
+		--accent-red: #db2c3ae5;
     }
 }
 
@@ -77,8 +83,7 @@ body {
 	text-overflow: ellipsis;
 	background-color: white;
 	border-radius: 5px;
-	border: none;
-	box-shadow: 0px 0px 0px 0.5px #0000000D, 0px 0.5px 2.5px 0px #0000004D;
+	border: 1px solid var(--fill-quarternary);
 	background-color: var(--color-background);
 	color: inherit;
 }
@@ -136,6 +141,7 @@ body {
 	align-items: center;
 	padding-inline-start: 5px;
 	color: inherit;
+	border-radius: 5px;
 }
 .ProgressWindow-autocompleteOption.active {
 	background-color: var(--accent-blue);
@@ -193,7 +199,6 @@ body {
 .ProgressWindow-tagsInput {
 	flex-grow: 1;
 	font-size: 13px;
-	padding: 3px;
 	background-color: var(--color-background);
 }
 
@@ -204,7 +209,6 @@ body {
 	height: 38px; /* initial height that may increase as user types */
 	font-family: inherit;
 	font-size: 13px;
-	padding: 3px;
 	background-color: var(--color-background);
 }
 
@@ -231,10 +235,17 @@ body {
 }
 
 .ProgressWindow-button.cancel {
+	/* center trash svg */
+	display: flex;
+	justify-content: center;
+	align-items: center;
+
 	padding-inline: 3px;
-	padding-top: 2px;
 	color: red;
 	margin-inline-start: 10px;
+	fill: currentColor;
+	color: var(--accent-red);
+	background-color: var(--color-button);
 }
 
 .ProgressWindow-button.cancel.hidden {
@@ -246,6 +257,7 @@ body {
 	margin-inline-start: auto;
 	fill: currentColor;
 	color: var(--fill-primary);
+	background-color: var(--color-button);
 }
 
 /* chevron that flips up or down on each click */
@@ -281,9 +293,9 @@ body {
 
 
 input, textarea {
-	border: none;
+	padding: 3px 6px;
+	border: 1px solid var(--fill-quarternary);
 	border-radius: 5px;
-	box-shadow: 0px 0.5px 1px 0px #0000001F, 0px 1px 2px 0px #0000001F, 0px 0.5px 3px 0px #0000001F;
 	color: inherit;
 }
 input::placeholder, textarea::placeholder {
@@ -305,11 +317,10 @@ input::placeholder, textarea::placeholder {
 .ProgressWindow-targetSelector {
 	height: 218px;
 	overflow-y: scroll;
-	background: white;
 	border-radius: 5px;
 	border: none;
-	padding: 2px 0;
-	box-shadow: 0px 0px 0px 0.5px #0000000D, 0px 0.5px 2.5px 0px #0000004D;
+	padding: 8px;
+	border: 1px solid var(--fill-quarternary);
 	margin-bottom: 8px;
 	background-color: var(--color-background);
 }

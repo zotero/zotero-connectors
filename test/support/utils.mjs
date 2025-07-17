@@ -110,9 +110,9 @@ export function getExtensionURL(path) {
 	return `${extensionURL}${path}`;
 }
 
-export function stubHTTPRequest(requests) {
-	background((requests) => {
-		const stub = sinon.stub(Zotero.HTTP, 'request').callsFake(async (method, url, options) => {
+export async function stubHTTPRequest(requests) {
+	await background((requests) => {
+		const stubFn = async (method, url, options) => {
 			for (const [urlPattern, stubbedResponse] of Object.entries(requests)) {
 				if (url.includes(urlPattern)) {
 					Zotero.debug(`Stubbing HTTP request to ${url} with response ${JSON.stringify(stubbedResponse)}`);
@@ -133,8 +133,14 @@ export function stubHTTPRequest(requests) {
 					return response;
 				}
 			}
-			return stub.wrappedMethod.apply(Zotero.HTTP, [method, url, options]);
-		});
+			// Zotero.debug('Not stubbing HTTP request to ' + url);
+			return Zotero.HTTP.request.wrappedMethod.apply(Zotero.HTTP, [method, url, options]);
+		};
+		sinon.stub(Zotero.HTTP, 'request').callsFake(stubFn);
+		sinon.stub(Zotero.COHTTP, 'request').callsFake(stubFn);
 	}, requests);
-	return () => background(() => Zotero.HTTP.request.restore());
+	return () => background(() => {
+		Zotero.HTTP.request.restore();
+		Zotero.COHTTP.request.restore();
+	});
 }

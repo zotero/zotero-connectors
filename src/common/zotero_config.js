@@ -26,6 +26,7 @@
 const ZOTERO_CONFIG = {
 	CLIENT_NAME: 'Zotero',
 	DOMAIN_NAME: 'zotero.org',
+	SETTINGS_URL: 'https://repo.zotero.org/settings',
 	REPOSITORY_URL: 'https://repo.zotero.org/repo/',
 	REPOSITORY_CHECK_INTERVAL: 86400, // 24 hours
 	REPOSITORY_RETRY_INTERVAL: 3600, // 1 hour

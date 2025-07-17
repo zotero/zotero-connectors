@@ -359,7 +359,8 @@ Zotero.Prefs = new function() {
 		"proxies.loopPreventionTimestamp": 0,
 		
 		"integration.googleDocs.enabled": true,
-		"integration.googleDocs.useGoogleDocsAPI": false,
+		"integration.googleDocs.useV2API": false,
+		"integration.googleDocs.forceDisableV2API": false,
 		
 		"shortcuts.cite": {ctrlKey: true, altKey: true, key: 'c'}
 	};

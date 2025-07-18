@@ -118,7 +118,7 @@ SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
 ITEM_IMAGES="$EXTENSION_SKIN_DIR/item-type/16/light/*[!2x].svg"
 COLLECTION_IMAGES="$EXTENSION_SKIN_DIR/collection-tree/16/light/collection.svg \
 		$EXTENSION_SKIN_DIR/collection-tree/16/light/library.svg"
-TOOLBAR_IMAGES=`ls $CWD/badged-icons/* | grep -v '@2x' | grep -v 'dark.svg'`
+TOOLBAR_IMAGES=`ls $CWD/icons/badged/* | grep -v '@2x' | grep -v 'dark.svg'`
 CONNECTOR_COMMON_IMAGES="$SRCDIR/common/images/*"
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png \
 	$EXTENSION_SKIN_DIR/cross.png \

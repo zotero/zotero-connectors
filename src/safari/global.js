@@ -324,7 +324,7 @@ Zotero.Connector_Browser = new function() {
 	}
 
 	function _showPDFIcon() {
-		let image = "images/toolbar/attachment-pdf.png";
+		let image = "images/toolbar/pdf.png";
 		let tooltip = "Save to Zotero (PDF)";
 		return [image, tooltip]
 	}

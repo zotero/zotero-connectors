@@ -219,4 +219,52 @@ describe("ItemSaver Background", function() {
 			assert.isFalse(result);
 		});
 	});
-}); 
+
+	describe('cancel', function () {
+		let attachment = {
+			id: 'test-attachment',
+			url: 'https://example.com/test.pdf',
+			mimeType: 'application/pdf',
+			parentItem: 'parent-item-id',
+			title: 'Test PDF'
+		};
+
+		it('saveAttachmentToZotero should error on cancelled session', async function () {
+			let sessionID = 'session-123';
+
+			const result = await background(async function (attachment, sessionID, mockTab) {
+				try {
+					Zotero.ItemSaver.cancel(sessionID);
+					await Zotero.ItemSaver.saveAttachmentToZotero(attachment, sessionID, mockTab);
+					return { success: true };
+				}
+				catch (e) {
+					return { error: e.message };
+				}
+			}, attachment, sessionID);
+
+			assert.equal(result.error, 'session_cancelled');
+		});
+
+		it('saveAttachmentToZotero should error if session cancelled half way through', async function () {
+			let sessionID = 'session-456';
+
+			const result = await background(async function (attachment, sessionID, mockTab) {
+				try {
+					setTimeout(() => {
+						Zotero.ItemSaver.cancel(sessionID);
+					}, 10);
+
+					// Will error while fetching the attachment
+					await Zotero.ItemSaver.saveAttachmentToZotero(attachment, sessionID, mockTab);
+					return { success: true };
+				}
+				catch (e) {
+					return { status: e.status };
+				}
+			}, attachment, sessionID);
+
+			assert.equal(result.status, 0);
+		});
+	});
+});

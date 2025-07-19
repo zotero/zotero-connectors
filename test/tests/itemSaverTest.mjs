@@ -121,5 +121,76 @@ describe("ItemSaver", function() {
 			assert.isNotNull(capturedData);
 			assert.equal(capturedData.url, documentUrl);
 		});
+
+		it('should error on cancelled session', async function () {
+			const result = await tab.run(async function () {
+				try {
+					const ItemSaver = (await import(Zotero.getExtensionURL("itemSaver.js"))).default;
+
+					// retrievePageData will take 100ms
+					sinon.stub(Zotero.SingleFile, "retrievePageData").callsFake(async () => {
+						return new Promise(resolve => setTimeout(() => resolve('testing'), 100));
+					});
+					
+					sinon.stub(Zotero.Connector, "saveSingleFile").callsFake(async () => {
+						throw new Error('Should never happen');
+					});
+
+					let itemSaver = new ItemSaver({ sessionID: 'test-session-987' });
+
+					// Set up test data
+					itemSaver._items = [{ url: 'https://example.com/test' }];
+					itemSaver._snapshotAttachment = { title: 'Test Snapshot' };
+					itemSaver._sessionID = 'test-session-758';
+
+					// Cancel session after 10ms
+					setTimeout(() => {
+						itemSaver.cancelled = true;
+					}, 10);
+
+					// Call _executeSingleFile and capture the attachment callback parameters
+					let callbackResult = null;
+					await itemSaver._executeSingleFile((attachment, progress, message) => {
+						callbackResult = { attachment, progress, message };
+					});
+					return callbackResult;
+				}
+				finally {
+					Zotero.SingleFile.retrievePageData.restore();
+					Zotero.Connector.saveSingleFile.restore();
+				}
+			});
+
+			assert.equal(result.progress, false);
+			assert.equal(result.message, "session_cancelled");
+		});
 	});
-}); 
+
+	describe('saveItems', function () {
+		it('should error on cancelled session', async function () {
+			const result = await tab.run(async function () {
+				try {
+					const ItemSaver = (await import(Zotero.getExtensionURL("itemSaver.js"))).default;
+
+					let itemSaver = new ItemSaver({ sessionID: 'test-session-12345' });
+					itemSaver.cancelled = true;
+					
+					// Try to save an item
+					await itemSaver.saveItems([{
+						itemType: 'webpage',
+						title: 'Test Item',
+						url: 'https://example.com',
+						attachments: []
+					}]);
+
+					return { success: true };
+				}
+				catch (e) {
+					return { error: e.message };
+				}
+			});
+
+			assert.equal(result.error, 'session_cancelled');
+		});
+	});
+});

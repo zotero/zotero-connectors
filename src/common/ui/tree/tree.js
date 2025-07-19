@@ -47,7 +47,7 @@ class ArrowExpander extends Component {
     //});
     // Inline the SVG to avoid needing svg-inline-react
     var svg = {
-        __html: '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 13.4c-.5 0-.9-.2-1.2-.6L.4 5.2C0 4.7-.1 4.3.2 3.7S1 3 1.6 3h12.8c.6 0 1.2.1 1.4.7.3.6.2 1.1-.2 1.6l-6.4 7.6c-.3.4-.7.5-1.2.5z"/></svg>'
+        __html: '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none"> <path d="M0 2.70711L4 6.70711L8 2.70711L7.29289 2L4 5.29289L0.707107 2L0 2.70711Z" fill="currentColor"</svg>'
     };
     return createElement('span', {
         className: classNames.join(" "),

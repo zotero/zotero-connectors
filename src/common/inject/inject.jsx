@@ -125,6 +125,9 @@ Zotero.Inject = {
 				return PageSaving.onSaveAsWebpage(data);
 			}
 		});
+		Zotero.Messaging.addMessageListener('cancel', (data) => {
+			return PageSaving.onCancel(data);
+		})
 		Zotero.Messaging.addMessageListener('updateSession', (data) => {
 			return PageSaving.onUpdateSession(data);
 		})

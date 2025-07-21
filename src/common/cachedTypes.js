@@ -79,7 +79,7 @@ Zotero.Connector_Types = new function() {
 			
 			this.getImageSrc = function(idOrName) {
 				var itemType = Zotero.Connector_Types["itemTypes"][idOrName];
-				var icon = itemType ? itemType[6]/* icon */ : idOrName + '.svg';
+				var icon = itemType ? itemType[6]/* icon */ : idOrName + '@2x.svg';
 				if (Zotero.isBackground) {
 					// SVG not supported in toolbar, we use custom-built pngs with custom naming
 					// see getHiDPIImagePaths in background.js

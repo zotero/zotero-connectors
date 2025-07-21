@@ -80,9 +80,10 @@ Zotero.Connector_Types = new function() {
 			this.getImageSrc = function(idOrName) {
 				var itemType = Zotero.Connector_Types["itemTypes"][idOrName];
 				var icon = itemType ? itemType[6]/* icon */ : idOrName + '.svg';
-				icon = icon.replace('@2x', '');
 				if (Zotero.isBackground) {
-					// SVG not supported in toolbar
+					// SVG not supported in toolbar, we use custom-built pngs with custom naming
+					// see getHiDPIImagePaths in background.js
+					icon = icon.replace('@2x', '');
 					icon = 'images/toolbar/' + icon.replace('.svg', '.png');
 				}
 				else {

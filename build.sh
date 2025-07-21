@@ -108,10 +108,10 @@ EXTENSION_TRANSLATE_DIR="$SRCDIR/translate"
 EXTENSION_UTILITIES_DIR="$SRCDIR/utilities"
 EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 
-ITEM_IMAGES="$EXTENSION_SKIN_DIR/item-type/16/light/*[!2x].svg"
+ITEM_IMAGES="$EXTENSION_SKIN_DIR/item-type/16/light/*2x.svg"
 COLLECTION_IMAGES="$EXTENSION_SKIN_DIR/collection-tree/16/light/collection.svg \
 		$EXTENSION_SKIN_DIR/collection-tree/16/light/library.svg"
-TOOLBAR_IMAGES=`ls $CWD/icons/badged/* | grep -v '@2x' | grep -v 'dark.svg'`
+TOOLBAR_IMAGES=`ls $CWD/icons/badged/* | grep '@2x' | grep -v 'dark@2x.svg'`
 CONNECTOR_COMMON_IMAGES="$SRCDIR/common/images/*"
 IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png \
 	$EXTENSION_SKIN_DIR/cross.png \
@@ -271,9 +271,11 @@ function makeToolbarIcons {
 	set -e
 	for f in $COLLECTION_IMAGES $TOOLBAR_IMAGES
 	do
-		rsvg-convert $f -w 32 -h 32 -o "$icon_dir/"`basename $f .svg`".png"
-		rsvg-convert $f -w 16 -h 16 -o "$icon_dir/"`basename $f .svg`"@16.png"
-		rsvg-convert $f -w 48 -h 48 -o "$icon_dir/"`basename $f .svg`"@48.png"
+		rsvg-convert $f -w 32 -h 32 -o "$icon_dir/"`basename $f @2x.svg`".png"
+		if [ "$browser" == "browserExt" ]; then
+			rsvg-convert $f -w 16 -h 16 -o "$icon_dir/"`basename $f @2x.svg`"@16.png"
+			rsvg-convert $f -w 48 -h 48 -o "$icon_dir/"`basename $f @2x.svg`"@48.png"
+		fi
 	done
 	set +e
 }

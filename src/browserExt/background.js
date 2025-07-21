@@ -829,7 +829,7 @@ Zotero.Connector_Browser = new function() {
 	this._showPDFIcon = function(tab) {
 		browser.action.setIcon({
 			tabId: tab.id,
-			path: getHiDPIImagePaths('images/toolbar/pdf.png')
+			path: getHiDPIImagePaths(Zotero.ItemTypes.getImageSrc('pdf'))
 		});
 		browser.action.setTitle({
 			tabId: tab.id,

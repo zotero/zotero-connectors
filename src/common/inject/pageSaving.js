@@ -325,7 +325,7 @@ let PageSaving = {
 		const isOnline = await Zotero.Connector.checkIsOnline();
 		const supportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
 
-		if (document.contentType !== 'text/html' && (supportsAttachmentUpload || !isOnline)) {
+		if (!document.contentType.startsWith('text') && (supportsAttachmentUpload || !isOnline)) {
 			return await this._saveAsStandaloneAttachment({title, saveSnapshot});
 		}
 		return await this._saveAsWebpage({title, saveSnapshot});
@@ -411,7 +411,7 @@ let PageSaving = {
 	},
 
 	async _saveSingleFile(item, data, toServer = false) {
-		let isSingleFileAvailable = document.contentType === "text/html";
+		let isSingleFileAvailable = document.contentType.startsWith("text");
 		// Once snapshot item is created, if requested, run SingleFile
 		if (isSingleFileAvailable) {
 			item.attachments = [{

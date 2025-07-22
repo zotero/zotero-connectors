@@ -273,12 +273,19 @@ function makeToolbarIcons {
 	fi
 	
 	set -e
-	for f in $COLLECTION_IMAGES $TOOLBAR_IMAGES
+	for f in $TOOLBAR_IMAGES $CWD/icons/badged/collection.svg
 	do
-		rsvg-convert $f -w 32 -h 32 -o "$icon_dir/"`basename $f @2x.svg`".png"
+		base_name=$(basename "$f")
+		if [[ "$base_name" == *"@2x.svg" ]]; then
+			base_name="${base_name%@2x.svg}"
+		else
+			base_name="${base_name%.svg}"
+		fi
+		
+		rsvg-convert $f -w 32 -h 32 -o "$icon_dir/${base_name}.png"
 		if [ "$browser" == "browserExt" ]; then
-			rsvg-convert $f -w 16 -h 16 -o "$icon_dir/"`basename $f @2x.svg`"@16.png"
-			rsvg-convert $f -w 48 -h 48 -o "$icon_dir/"`basename $f @2x.svg`"@48.png"
+			rsvg-convert $f -w 16 -h 16 -o "$icon_dir/${base_name}@16.png"
+			rsvg-convert $f -w 48 -h 48 -o "$icon_dir/${base_name}@48.png"
 		fi
 	done
 	set +e

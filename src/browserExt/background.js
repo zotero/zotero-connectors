@@ -786,7 +786,7 @@ Zotero.Connector_Browser = new function() {
 		browser.action.setIcon({
 			tabId: tab.id,
 			path: getHiDPIImagePaths(itemType === "multiple"
-				? "images/toolbar/collection.png"
+				? Zotero.ItemTypes.getImageSrc("collection")
 				: Zotero.ItemTypes.getImageSrc(itemType))
 		});
 

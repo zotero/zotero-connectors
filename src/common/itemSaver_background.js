@@ -47,12 +47,14 @@ Zotero.ItemSaver.saveAttachmentToZotero = async function(attachment, sessionID, 
 		arrayBuffer = await this._fetchAttachment(attachment, tab);
 	}
 	
+	// Encode only the title to handle non-ASCII characters
+	const encodedTitle = btoa(unescape(encodeURIComponent(attachment.title || "Untitled Attachment")));
 	const metadata = {
 		id: attachment.id,
 		url: attachment.url,
 		contentType: attachment.mimeType,
 		parentItemID: attachment.parentItem,
-		title: attachment.title,
+		title: encodedTitle,
 	}
 
 	return Zotero.Connector.callMethod({
@@ -75,10 +77,12 @@ Zotero.ItemSaver.saveStandaloneAttachmentToZotero = async function(attachment, s
 		arrayBuffer = await this._fetchAttachment(attachment, tab);
 	}
 
+	// Encode only the title to handle non-ASCII characters
+	const encodedTitle = btoa(unescape(encodeURIComponent(attachment.title || "Untitled Attachment")));
 	const metadata = {
 		url: attachment.url,
 		contentType: attachment.mimeType,
-		title: attachment.title,
+		title: encodedTitle,
 	}
 
 	return Zotero.Connector.callMethod({

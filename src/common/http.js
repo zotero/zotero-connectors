@@ -389,6 +389,7 @@ Zotero.HTTP = new function() {
 							getAllResponseHeaders: () => "",
 							getResponseHeader: () => ""
 						}
+						Zotero.debug(`HTTP 0 ${url} response: ${e.message}`);
 					}
 					err = new Zotero.HTTP.StatusError({ status: 0 }, url, e.message);
 				}

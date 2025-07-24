@@ -29,6 +29,53 @@ let BOT_BYPASS_WHITELISTED_DOMAINS = [
 ];
 
 Zotero.ItemSaver = Zotero.ItemSaver || {};
+
+/**
+ * Checks if a string contains characters not allowed in HTTP headers (non-ASCII characters)
+ * @param {string} str - The string to check
+ * @returns {boolean} - True if the string contains non-ASCII characters
+ */
+Zotero.ItemSaver._containsNonAsciiChars = function(str) {
+	if (!str) return false;
+	// Check for any character with code > 127 (non-ASCII)
+	for (let i = 0; i < str.length; i++) {
+		if (str.charCodeAt(i) > 127) {
+			return true;
+		}
+	}
+	return false;
+};
+
+/**
+ * RFC2047 encodes a string using quoted-printable encoding for use in HTTP headers
+ * @param {string} str - The string to encode
+ * @returns {string} - The RFC2047 encoded string
+ */
+Zotero.ItemSaver._rfc2047Encode = function(str) {
+	if (!str || !this._containsNonAsciiChars(str)) {
+		return str;
+	}
+	
+	const utf8Bytes = new TextEncoder().encode(str);
+	let encoded = '';
+	for (let byte of utf8Bytes) {
+		// Encode spaces as underscores, other special chars as =XX
+		if (byte === 32) { // space
+			encoded += '_';
+		}
+		else if (byte >= 33 && byte <= 126 && byte !== 61 && byte !== 63 && byte !== 95) {
+			// Printable ASCII except =, ?, _
+			encoded += String.fromCharCode(byte);
+		}
+		else {
+			encoded += '=' + byte.toString(16).toUpperCase().padStart(2, '0');
+		}
+	}
+	
+	// Return RFC2047 encoded format: =?UTF-8?Q?quoted-printable?=
+	return `=?UTF-8?Q?${encoded}?=`;
+};
+
 /**
  * Saves binary attachments to Zotero by fetching them as ArrayBuffer and passing to Zotero.
  * We do this in the background page, otherwise we would have to pass the ArrayBuffer
@@ -47,19 +94,19 @@ Zotero.ItemSaver.saveAttachmentToZotero = async function(attachment, sessionID, 
 		arrayBuffer = await this._fetchAttachment(attachment, tab);
 	}
 	
-	const metadata = {
+	let metadata = JSON.stringify({
 		id: attachment.id,
 		url: attachment.url,
 		contentType: attachment.mimeType,
 		parentItemID: attachment.parentItem,
-		title: attachment.title,
-	}
+		title: this._rfc2047Encode(attachment.title),
+	});
 
 	return Zotero.Connector.callMethod({
 		method: "saveAttachment",
 		headers: {
 			"Content-Type": `${attachment.mimeType}`,
-			"X-Metadata": JSON.stringify(metadata)
+			"X-Metadata": metadata
 		},
 		queryString: `sessionID=${sessionID}`
 	}, arrayBuffer);
@@ -75,17 +122,17 @@ Zotero.ItemSaver.saveStandaloneAttachmentToZotero = async function(attachment, s
 		arrayBuffer = await this._fetchAttachment(attachment, tab);
 	}
 
-	const metadata = {
+	let metadata = JSON.stringify({
 		url: attachment.url,
 		contentType: attachment.mimeType,
-		title: attachment.title,
-	}
+		title: this._rfc2047Encode(attachment.title),
+	});
 
 	return Zotero.Connector.callMethod({
 		method: "saveStandaloneAttachment",
 		headers: {
 			"Content-Type": `${attachment.mimeType}`,
-			"X-Metadata": JSON.stringify(metadata)
+			"X-Metadata": metadata
 		},
 		queryString: `sessionID=${sessionID}`,
 		timeout: 60e3

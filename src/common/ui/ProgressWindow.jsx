@@ -29,8 +29,9 @@ Zotero.UI.style = Zotero.UI.style || {};
 
 Zotero.UI.style.imageBase = Zotero.getExtensionURL("images/");
 
-function getTargetType(id) {
-	return id.startsWith('L') ? 'library': 'collection';
+function getTargetType(target) {
+	if (target.isUserLibrary) return 'library';
+	return target.id.startsWith('L') ? 'group': 'collection';
 }
 
 function getParent(rows, id) {
@@ -62,10 +63,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.done = false;
 		this.canUserAddNote = false;
 		this.supportsTagsAutocomplete = false;
+		this.supportsSaveCancelling = false;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
 			done: Zotero.getString('general_done'),
+			cancel: Zotero.getString('general_cancel'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder'),
 			filterPlaceholder: Zotero.getString('progressWindow_filterPlaceholder'),
 			addNotePlaceholder: Zotero.getString('progressWindow_noteEditorPlaceholder')
@@ -99,6 +102,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.onTagsFocus = this.onTagsFocus.bind(this);
 		this.onTagsBlur = this.onTagsBlur.bind(this);
 		this.handleDone = this.handleDone.bind(this);
+		this.handleCancel = this.handleCancel.bind(this);
 		this.setFilter = this.setFilter.bind(this);
 		this.clearFilter = this.clearFilter.bind(this);
 		this.expandToTarget = this.expandToTarget.bind(this);
@@ -132,9 +136,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 		
-		// Preload other disclosure triangle state
-		(new Image()).src = 'disclosure-open.svg';
-		
 		this.sendMessage('registered');
 		
 		document.querySelector("#progress-window").setAttribute("aria-label", Zotero.getString('general_saveTo', 'Zotero'));
@@ -146,6 +147,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 		// Present scrollbar from briefly appearing when tags are being added
 		document.documentElement.style.scrollbarWidth = 'none';
+
+		Zotero.Connector.getPref('supportsSaveCancelling').then(res => {
+			this.supportsSaveCancelling = res;
+		});
 	}
 	
 	
@@ -199,7 +204,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			
 			// Auto-expand libraries
 			targets.forEach((t) => {
-				if (getTargetType(t.id) == 'library') {
+				if (getTargetType(t) == 'library') {
 					t.expanded = true;
 				}
 			});
@@ -383,7 +388,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!this.supportsTagsAutocomplete) {
 			tags = tags.join(",");
 		}
-		this.sendMessage('updated', { target: this.target, note: this.state.note, tags });
+		this.sendMessage('updated', { target: this.state.target, note: this.state.note, tags });
 	}
 	
 	//
@@ -510,7 +515,6 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.setState({ target, selectedTags }, () => {
 			this.sendUpdate();
 		});
-		this.target = target;
 		this.handleUserInteraction();
 	}
 	
@@ -663,6 +667,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		//this.headlineSelectNode.current.focus();
 		this.sendMessage('close');
 	}
+
+	handleCancel() {
+		this.sendMessage("cancel")
+	}
 	
 	//
 	// Render
@@ -710,12 +718,17 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 						return <option {...props}>{row.name}</option>;
 					})}
 				</select>
-				<button className={"ProgressWindow-disclosure"
+				<button className={"ProgressWindow-button disclosure"
 							+ (this.state.targetSelectorShown ? " is-open" : "")}
 						onClick={this.onDisclosureChange}
 						onKeyPress={this.handleDisclosureKeyPress}
 						aria-expanded={this.state.targetSelectorShown}
-						aria-label={Zotero.getString(`progressWindow_detailsBtn${this.state.targetSelectorShown ? "Hide" : "View"}`)}/>
+						aria-label={Zotero.getString(`progressWindow_detailsBtn${this.state.targetSelectorShown ? "Hide" : "View"}`)}>
+						{/* chevron-8.svg */}
+						<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none">
+							<path d="M0 2.70711L4 6.70711L8 2.70711L7.29289 2L4 5.29289L0.707107 2L0 2.70711Z" fill="currentColor"/>
+						</svg>
+				</button>
 			</React.Fragment>
 		);
 	}
@@ -726,11 +739,10 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 	 */
 	renderHeadlineTarget() {
 		return <React.Fragment>
-			<TargetIcon type={getTargetType(this.state.target.id)}/>
+			<TargetIcon type={getTargetType(this.state.target)}/>
 			{" " + this.state.target.name + "…"}
 		</React.Fragment>;
 	}
-
 
 	/**
 	 * Clear the value of the collections filter and display all rows
@@ -877,10 +889,12 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 					existingTags={this.existingTags[this.currentLibraryID] || []}
 					selectedTags={this.state.selectedTags}
 					supportsTagsAutocomplete={this.supportsTagsAutocomplete}
+					supportsSaveCancelling={this.supportsSaveCancelling}
 					updateSelectedTags={this.updateSelectedTags}
 					sendMessage={this.sendMessage}
 					sendUpdate={this.sendUpdate}
 					handleDone={this.handleDone}
+					handleCancel={this.handleCancel}
 					setAutocompletePopupHeight={this.onTagAutocompleteShown}
 				/>
 		)
@@ -938,6 +952,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		
 		return (
 			<div className="ProgressWindow-progressBox">
+				{items.length > 0 ? <div className="ProgressWindow-progressBox-separator"/> : ""}
 				{items.map(item => this.renderItem(item))}
 			</div>
 		);
@@ -1093,13 +1108,27 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 
 class TargetIcon extends React.Component {
 	render() {
-		var image = this.props.type == 'library'
-			? "treesource-library.png"
-			: "treesource-collection.png";
-		var style = {
-			backgroundImage: `url('${Zotero.UI.style.imageBase}${image}')`
-		};
-		return <div className="ProgressWindow-targetIcon" style={style} />;
+		if (this.props.type == "library" || this.props.type == "group") {
+			return (
+				// library.svg
+				 <div className={`ProgressWindow-targetIcon ${this.props.type}`}>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M16 15V16H1V15H16ZM15 14H2V13H3V5H2V3L8.5 0L15 3V5H14V13H15V14ZM3 4H14V3.64L8.5 1.1L3 3.64V4ZM5 5H4V13H5V5ZM7 5H6V13H7V5ZM9 5H8V13H9V5ZM11 5H10V13H11V5ZM13 5H12V13H13V5Z" fill="currentColor"/>
+					</svg>
+				</div>
+			);
+		}
+		if (this.props.type == "collection") {
+			return (
+				// collection.svg
+				<div className={`ProgressWindow-targetIcon ${this.props.type}`}>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M15 3H9L8.276 1.553C8.107 1.214 7.761 1 7.382 1H3.618C3.239 1 2.893 1.214 2.724 1.553L2 3H1C0.448 3 0 3.448 0 4V6V14C0 14.552 0.448 15 1 15H15C15.552 15 16 14.552 16 14V6V4C16 3.448 15.552 3 15 3ZM15 14H1V6H15V14ZM1 5V4H2C2.379 4 2.725 3.786 2.894 3.447L3.618 2H7.382L8.106 3.447C8.275 3.786 8.621 4 9 4H15V5H1Z" fill="currentColor"/>
+					</svg>
+				</div>
+			);
+		}
+		return <div className={`ProgressWindow-targetIcon ${this.props.type}`}/>;
 	}
 }
 
@@ -1180,7 +1209,7 @@ class TargetTree extends React.Component {
 		// First find the last row in the library
 		while (pos + 1 < this.props.rows.length) {
 			pos++;
-			let current = this.props.rows[pos].id;
+			let current = this.props.rows[pos];
 			// If we hit another library, go back one
 			if (getTargetType(current) == 'library') {
 				pos--;
@@ -1193,7 +1222,7 @@ class TargetTree extends React.Component {
 			let current = this.props.rows[pos];
 			collapse.push(current.id);
 			// When we reach a library, select it and stop
-			if (getTargetType(current.id) == 'library') {
+			if (getTargetType(current) == 'library') {
 				this.props.onRowFocus(current.id);
 				break;
 			}
@@ -1209,7 +1238,7 @@ class TargetTree extends React.Component {
 		var expand = [];
 		// First find the library row
 		while (pos >= 0) {
-			let current = this.props.rows[pos].id;
+			let current = this.props.rows[pos];
 			if (getTargetType(current) == 'library') {
 				break;
 			}
@@ -1221,12 +1250,12 @@ class TargetTree extends React.Component {
 			if (pos == this.props.rows.length) break;
 			let current = this.props.rows[pos];
 			// When we reach another library, select it and stop
-			if (getTargetType(current.id) == 'library' && current.id != libraryID) {
+			if (getTargetType(current) == 'library' && current.id != libraryID) {
 				break;
 			}
 			// If the next row exists, isn't a library, and is one level higher, expand this row
 			let next = this.props.rows[pos + 1];
-			if (next && getTargetType(next.id) != 'library' && next.level > current.level) {
+			if (next && getTargetType(next) != 'library' && next.level > current.level) {
 				expand.push(current.id);
 			}
 			pos++;
@@ -1264,7 +1293,7 @@ class TargetTree extends React.Component {
 							    clicking on the row itself. If the tree is updated to have less
 							    annoying behavior, this can be reverted. */}
 							<span onClick={() => this.props.onRowToggle(item.id)}>{arrow}</span>
-							<TargetIcon type={getTargetType(item.id)} />
+							<TargetIcon type={getTargetType(item)} />
 							<span className="tree-item-label">{item.name}</span>
 						</div>
 					);
@@ -1298,6 +1327,7 @@ class TagsInput extends React.Component {
 		this.isClickingTag = false;
 		this.text = {
 			done: Zotero.getString('general_done'),
+			cancel: Zotero.getString('general_cancel'),
 			tagsPlaceholder: Zotero.getString('progressWindow_tagPlaceholder')
 		};
 	}
@@ -1398,7 +1428,7 @@ class TagsInput extends React.Component {
 				this.addTag(newTag);
 			}
 			else {
-				this.handleDone();
+				this.props.handleDone();
 			}
 			event.preventDefault();
 			event.stopPropagation();
@@ -1471,28 +1501,31 @@ class TagsInput extends React.Component {
 		// Cap tags suggestions count at 100 to not create too many nodes
 		let tags = this.getAvailableTags().slice(0,100);
 		let willShowAutocomplete = this.state.showTagsAutocomplete && tags.length;
+		let willShowSelectedTags = !!this.props.selectedTags.size;
 		return (
-			<div className={`ProgressWindow-targetSelectorTagsRow ${willShowAutocomplete ? 'with-autocomplete' : ''} ${this.props.selectedTags.size ? 'hasTags' : ''}`}>
-				<div
-					className="ProgressWindow-tagsRow"
-					tabIndex={this.props.selectedTags.size ? 0 : -1}
-					role="group"
-					aria-activedescendant={`tag_${this.selectedTagActiveIndex}`}
-					onKeyDown={this.onSelectedTagsKeyDown}>
-					{ Array.from(this.props.selectedTags).map((tag, index) => (
-						<div key={tag}
-							id={`tag_${index}`}
-							className={`ProgressWindow-selectedTag ${this.selectedTagActiveIndex === index ? 'active' : ''}`}
-							aria-label={tag}
-							aria-description={Zotero.getString('progressWindow_removeTag')}>
-							<span className="ProgressWindow-tagLabel" aria-hidden="true"> {tag} </span>
-							<span
-								className="ProgressWindow-removeTag"
-								onClick={() => this.removeTag(tag)}>
-							</span>
-						</div>
-					))}
-				</div>
+			<div className={`ProgressWindow-targetSelectorTagsRow ${willShowAutocomplete ? 'with-autocomplete' : ''}`}>
+				{willShowSelectedTags ? (
+					<div
+						className="ProgressWindow-tagsRow"
+						tabIndex={0}
+						role="group"
+						aria-activedescendant={`tag_${this.selectedTagActiveIndex}`}
+						onKeyDown={this.onSelectedTagsKeyDown}>
+						{ Array.from(this.props.selectedTags).map((tag, index) => (
+							<div key={tag}
+								id={`tag_${index}`}
+								className={`ProgressWindow-selectedTag ${this.selectedTagActiveIndex === index ? 'active' : ''}`}
+								aria-label={tag}
+								aria-description={Zotero.getString('progressWindow_removeTag')}>
+								<span className="ProgressWindow-tagLabel" aria-hidden="true"> {tag} </span>
+								<span
+									className="ProgressWindow-removeTag"
+									onClick={() => this.removeTag(tag)}>
+								</span>
+							</div>
+						))}
+					</div>
+				) : ""}
 				<div className="ProgressWindow-inputRow">
 					<input
 						ref={this.tagsInputNode}
@@ -1505,24 +1538,38 @@ class TagsInput extends React.Component {
 						onFocus={this.onTagsInputFocus}
 						onBlur={this.onTagsInputBlur}
 					/>
-					<button className="ProgressWindow-button" onClick={this.props.handleDone}>{this.text.done}</button>
-					{willShowAutocomplete ? (
-						<div 
-							className="ProgressWindow-autocomplete" 
-							ref={this.autocompletePopupRef}>
-							{tags.map((tag, index) => (
-								<div
-									key={tag}
-									ref={el => this.autocompleteRefs[index] = el}
-									className={`ProgressWindow-autocompleteOption ${this.state.currentTagIndex == index ? 'active' : ''}`}
-									onMouseDown={() => this.onTagAutocompleteMouseDown(index)}
-									onMouseUp={() => this.onTagAutocompleteMouseUp(index)}>
-									{tag}
-								</div>
-							))}
-						</div>
-					) : <></>}
+					{this.props.supportsSaveCancelling ? (
+						<button className="ProgressWindow-button cancel" onClick={this.props.handleCancel} title={this.text.cancel}>
+							{ /* trash.svg */}
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M13 14.542C13 14.79 12.729 15 12.409 15H3.591C3.271 15 3 14.79 3 14.542V4H2V14.542C2 15.346 2.714 16 3.591 16H12.409C13.286 16 14 15.346 14 14.542V4H13V14.542Z" fill="currentColor"/>
+								<path d="M12 2V1C12 0.448 11.552 0 11 0L5 0C4.448 0 4 0.448 4 1V2H1V3H15V2H12ZM5 2V1H11V2H5Z" fill="currentColor"/>
+								<path d="M7 5H6V13H7V5Z" fill="currentColor"/>
+								<path d="M10 5H9V13H10V5Z" fill="currentColor"/>
+							</svg>
+						</button>
+					) : "" }
+					<button className="ProgressWindow-button done" onClick={this.props.handleDone}>
+						{this.text.done}
+					</button>
 				</div>
+				{willShowAutocomplete ? (
+					<div 
+						className="ProgressWindow-autocomplete" 
+						tabIndex={-1} // necessary so that Tab from tags input does not focus this popup that will then disappear
+						ref={this.autocompletePopupRef}>
+						{tags.map((tag, index) => (
+							<div
+								key={tag}
+								ref={el => this.autocompleteRefs[index] = el}
+								className={`ProgressWindow-autocompleteOption ${this.state.currentTagIndex == index ? 'active' : ''}`}
+								onMouseDown={() => this.onTagAutocompleteMouseDown(index)}
+								onMouseUp={() => this.onTagAutocompleteMouseUp(index)}>
+								{tag}
+							</div>
+						))}
+					</div>
+				) : <></>}
 			</div>
 		);
 	}

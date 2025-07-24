@@ -77,7 +77,8 @@ Zotero.Connector = new function() {
 			'googleDocsCitationExplorerEnabled',
 			'supportsAttachmentUpload',
 			'supportsTagsAutocomplete',
-			'canUserAddNote'
+			'canUserAddNote',
+			'supportsSaveCancelling'
 		];
 		for (const key of PREF_KEYS) {
 			const val = !!prefs[key];

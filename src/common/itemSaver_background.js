@@ -29,6 +29,7 @@ let BOT_BYPASS_WHITELISTED_DOMAINS = [
 ];
 
 Zotero.ItemSaver = Zotero.ItemSaver || {};
+Zotero.ItemSaver.cancelledSessions = new Set();
 /**
  * Saves binary attachments to Zotero by fetching them as ArrayBuffer and passing to Zotero.
  * We do this in the background page, otherwise we would have to pass the ArrayBuffer
@@ -38,6 +39,7 @@ Zotero.ItemSaver = Zotero.ItemSaver || {};
  * @param sessionID 
  */
 Zotero.ItemSaver.saveAttachmentToZotero = async function(attachment, sessionID, tab) {
+	Zotero.ItemSaver.assertNotCancelled(sessionID);
 	let arrayBuffer;
 	if (attachment.data) {
 		arrayBuffer = this._unpackSafariAttachmentData(attachment.data);
@@ -55,6 +57,7 @@ Zotero.ItemSaver.saveAttachmentToZotero = async function(attachment, sessionID, 
 		title: attachment.title,
 	}
 
+	Zotero.ItemSaver.assertNotCancelled(sessionID);
 	return Zotero.Connector.callMethod({
 		method: "saveAttachment",
 		headers: {
@@ -160,7 +163,7 @@ Zotero.ItemSaver._createServerAttachmentItem = async function(attachment) {
 },
 
 Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotProtectionBypass=true) {
-	let options = { responseType: "arraybuffer", timeout: 60000 };
+	let options = { responseType: "arraybuffer", timeout: 60000, cancellable: true };
 	if (!Zotero.isSafari) {
 		let cookies;
 		try {
@@ -226,6 +229,35 @@ Zotero.ItemSaver._unpackSafariAttachmentData = function(data) {
 	}
 	return data;
 }
+
+Zotero.ItemSaver.cancel = function (sessionID) {
+	if (Zotero.ItemSaver.cancelledSessions.has(sessionID)) return;
+	Zotero.debug(`Cancelling session ${sessionID}`);
+	Zotero.ItemSaver.cancelledSessions.add(sessionID);
+	Zotero.HTTP.cancelPending();
+	// Wait a minute for all potential requests to get stopped and remove
+	// the session ID from the cancelled list
+	setTimeout(() => {
+		Zotero.debug(`Removing cancelled session ${sessionID}`);
+		Zotero.ItemSaver.cancelledSessions.delete(sessionID);
+	}, 1000 * 60);
+};
+
+/**
+ * Assert that the save session was not cancelled by the user
+ * via Zotero.ItemSaver.cancel() above.
+ * If it was, an error will be thrown to stop the saving process.
+ * Noop if the session was not cancelled.
+ * @param sessionID - id of the session to check
+ * @throws {Error} if the session was cancelled
+ */
+Zotero.ItemSaver.assertNotCancelled = function (sessionID) {
+	if (Zotero.ItemSaver.cancelledSessions.has(sessionID)) {
+		Zotero.debug(`Session ${sessionID} cancelled.`);
+		throw new Error("session_cancelled");
+	}
+};
+
 
 Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe = async function(url, tab) {
 	const id = Math.random().toString(36).slice(2, 11);

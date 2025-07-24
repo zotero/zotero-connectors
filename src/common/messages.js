@@ -189,6 +189,7 @@ var MESSAGES = {
 	ItemSaver: {
 		saveAttachmentToZotero: true,
 		saveStandaloneAttachmentToZotero: true,
+		cancel: true,
 		saveAttachmentToServer: {
 			inject: {
 				preSend: async function(args) {

@@ -136,6 +136,7 @@ describe("Translation", function() {
 				it('saves with a translator that uses the select dialog', async function () {
 					let restoreStub;
 					try {
+						/*
 						restoreStub = await stubHTTPRequest({
 							'doi.org': [ { "DOI": "10.1086/529596", "RA": "Crossref" } ],
 							'crossref.org': { "message": {
@@ -156,6 +157,7 @@ describe("Translation", function() {
 								} ]
 							} }
 						});
+						*/
 						var items = await background(async function(tabId) {
 							var stub1 = sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async function(_, payload){
 								return payload;
@@ -182,7 +184,7 @@ describe("Translation", function() {
 						assert.include(message, items[0].title);
 					}
 					finally {
-						await restoreStub();
+						// await restoreStub();
 					}
 				});
 			

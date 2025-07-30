@@ -127,8 +127,9 @@ if (isTopWindow) {
 	}
 }
 
-function onSafariPageLoad() {
+async function onSafariPageLoad() {
 	if (isTopWindow) {
+		await Zotero.initDeferred.promise;
 		Zotero.Connector_Browser.onPageLoad(document.location.href);
 	}
 }

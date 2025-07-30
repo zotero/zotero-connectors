@@ -90,7 +90,7 @@ Zotero.Messaging = new function() {
 							newArgs[i] = (i === callbackArg ? null : arguments[i]);
 						}
 
-						let requestID = Math.floor(Math.random() * 1e12);
+						let requestID = `${messageName}_${Math.floor(Math.random() * 1e12)}`;
 						let responsePromise = generateResponsePromise(requestID, messageConfig, callback);
 						sendMessage(messageName, requestID, newArgs);
 						return responsePromise;
@@ -140,7 +140,7 @@ Zotero.Messaging = new function() {
 		async function sendMessage(message, messageId, args) {
 			// The Safari App Extension likes to kill the background page,
 			// so we have to keep pinging it to see if it's still there
-			const requestID = Math.floor(Math.random() * 1e12);
+			const requestID = `SwiftPing_${Math.floor(Math.random() * 1e12)}`;
 			let pingPromise = generateResponsePromise(requestID, true);
 			safari.extension.dispatchMessage('message', {
 				message: 'ping',

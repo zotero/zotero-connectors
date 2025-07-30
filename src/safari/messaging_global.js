@@ -55,7 +55,7 @@ Zotero.Messaging.receiveSwiftMessage = async function(messageName, id, data=[], 
 
 Zotero.Messaging.sendMessage = async function(messageName, args=[], tab, messageId, deferred) {
 	try {
-		messageId = messageId || Math.floor(Math.random()*1e12);
+		messageId = messageId || `${messageName}_${Math.floor(Math.random()*1e12)}`;
 		deferred = deferred || Zotero.Promise.defer();
 		const tabId = tab ? tab.id : tab;
 		const messageTimeout = Zotero.initialized ? MESSAGE_TIMEOUT : 2000;

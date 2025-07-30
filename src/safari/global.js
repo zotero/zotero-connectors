@@ -28,6 +28,7 @@ let tabs = {};
 
 // TODO: Garbage collect
 function getTab(tabId) {
+	if (tabId === null) return getTab(-1);
 	if (tabs[tabId]) return tabs[tabId];
 	return tabs[tabId] = {id: tabId};
 }

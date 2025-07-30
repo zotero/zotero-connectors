@@ -26,7 +26,7 @@
 const MESSAGE_TIMEOUT = 5 * 60 * 1000;
 
 Zotero.Messaging._responseListeners = {};
-Zotero.Messaging.receiveSwiftMessage = async function(messageName, id, data=[], tabId=-1) {
+Zotero.Messaging.receiveSwiftMessage = async function(messageName, id, data, tabId) {
 	// Zotero.debug(`Swift message received: ${messageName}:${id}, ${JSON.stringify(data).substr(0, 500)}`);
 	if (messageName == 'response') {
 		let callback = Zotero.Messaging._responseListeners[id];

@@ -31,7 +31,8 @@ Zotero.Messaging.receiveSwiftMessage = async function(messageName, id, data, tab
 	if (messageName == 'response') {
 		let callback = Zotero.Messaging._responseListeners[id];
 		if (!callback) return;
-		if (data[0] == "error") data[1] = JSON.stringify(data[1]);
+		delete Zotero.Messaging._responseListeners[id];
+		if (data && data[0] == "error") data[1] = JSON.stringify(data[1]);
 		let response = callback(data, Zotero.Connector_Browser.getTab(tabId));
 		// await for the response for error handling
 		if (response && response.then) {

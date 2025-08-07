@@ -305,7 +305,8 @@ let PageSaving = {
 		}
 		items = this._processNote(items);
 		this.sessionDetails.items = items;
-		let itemSaver = new ItemSaver({sessionID, baseURI: document.location.href, proxy });
+		let itemType = translators[0].itemType;
+		let itemSaver = new ItemSaver({ sessionID, itemType, baseURI: document.location.href, proxy });
 		this.sessionDetails.itemSaver = itemSaver;
 		return itemSaver.saveItems(items, PageSaving._onAttachmentProgress, onItemsSaved)
 	},

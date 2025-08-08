@@ -236,7 +236,9 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 		let result = Zotero.Utilities.Connector.getContentTypeFromXHR(xhr);
 		contentType = result.contentType;
 
-		if (attachment.mimeType.toLowerCase() === contentType.toLowerCase()) {
+		// If the attachment doesn't specify the mimeType, we accept whatever mimeType we got here.
+		// If translators want to enforce that a PDF is saved, then they should specify that!
+		if (!attachment.mimeType || attachment.mimeType.toLowerCase() === contentType.toLowerCase()) {
 			return xhr.response;
 		}
 	} catch (e) {

@@ -141,6 +141,9 @@ ItemSaver.prototype = {
 				this._setAttachmentReferer(attachment);
 
 				if (zoteroSupportsAttachmentUpload) {
+					if (attachment.snapshot === false) {
+						return true;
+					}
 					if (attachment.mimeType === 'text/html' && !automaticSnapshots) {
 						Zotero.debug("saveToZotero: Ignoring snapshot because automaticSnapshots is disabled");
 						return false;

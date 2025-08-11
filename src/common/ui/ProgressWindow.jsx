@@ -1471,6 +1471,8 @@ class TagsInput extends React.Component {
 		// Cap tags suggestions count at 100 to not create too many nodes
 		let tags = this.getAvailableTags().slice(0,100);
 		let willShowAutocomplete = this.state.showTagsAutocomplete && tags.length;
+		let hasActiveDescendant = willShowAutocomplete && this.state.currentTagIndex >= 0;
+		
 		return (
 			<div className={`ProgressWindow-targetSelectorTagsRow ${willShowAutocomplete ? 'with-autocomplete' : ''} ${this.props.selectedTags.size ? 'hasTags' : ''}`}>
 				<div
@@ -1498,6 +1500,11 @@ class TagsInput extends React.Component {
 						ref={this.tagsInputNode}
 						className="ProgressWindow-tagsInput"
 						type="text"
+						role="combobox"
+						aria-expanded={willShowAutocomplete}
+						aria-controls="tags-autocomplete"
+						aria-activedescendant={hasActiveDescendant ? `tags-autocomplete-option-${this.state.currentTagIndex}` : ""}
+						aria-autocomplete="list"
 						value={this.state.tagsInput}
 						placeholder={this.state.tagsInput ? "" : this.text.tagsPlaceholder}
 						onChange={this.onTagsInputChange}
@@ -1508,13 +1515,17 @@ class TagsInput extends React.Component {
 					<button className="ProgressWindow-button" onClick={this.props.handleDone}>{this.text.done}</button>
 					{willShowAutocomplete ? (
 						<div 
+							id="tags-autocomplete"
 							className="ProgressWindow-autocomplete" 
+							role="listbox"
 							ref={this.autocompletePopupRef}>
 							{tags.map((tag, index) => (
 								<div
 									key={tag}
+									id={`tags-autocomplete-option-${index}`}
 									ref={el => this.autocompleteRefs[index] = el}
 									className={`ProgressWindow-autocompleteOption ${this.state.currentTagIndex == index ? 'active' : ''}`}
+									role="option"
 									onMouseDown={() => this.onTagAutocompleteMouseDown(index)}
 									onMouseUp={() => this.onTagAutocompleteMouseUp(index)}>
 									{tag}

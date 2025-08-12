@@ -238,6 +238,15 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 
 		// If the attachment doesn't specify the mimeType, we accept whatever mimeType we got here.
 		// If translators want to enforce that a PDF is saved, then they should specify that!
+		if (!attachment.mimeType) {
+			// Try to set the missing mimeType based on the content type header or the URL
+			if (xhr.getResponseHeader("Content-Type")) {
+				attachment.mimeType = contentType;
+			}
+			else {
+				attachment.mimeType = Zotero.Utilities.Connector.guessAttachmentMimeType(attachment.url);
+			}
+		}
 		if (!attachment.mimeType || attachment.mimeType.toLowerCase() === contentType.toLowerCase()) {
 			return xhr.response;
 		}

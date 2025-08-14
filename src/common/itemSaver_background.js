@@ -230,15 +230,25 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 
 	// Bot bypass is not supported in Safari (cannot intercept file download popup)
 	attemptBotProtectionBypass = attemptBotProtectionBypass && !Zotero.isSafari;
-	var contentType;
+	var receivedMimeType;
 	try {
 		let xhr = await Zotero.HTTP.request("GET", attachment.url, options);
 		let result = Zotero.Utilities.Connector.getContentTypeFromXHR(xhr);
-		contentType = result.contentType;
+		receivedMimeType = result.contentType;
 
 		// If the attachment doesn't specify the mimeType, we accept whatever mimeType we got here.
 		// If translators want to enforce that a PDF is saved, then they should specify that!
-		if (!attachment.mimeType || attachment.mimeType.toLowerCase() === contentType.toLowerCase()) {
+		if (!attachment.mimeType) {
+			// Try to set the missing mimeType based on the content type header or the URL
+			if (xhr.getResponseHeader("Content-Type")) {
+				attachment.mimeType = receivedMimeType;
+			}
+			else {
+				attachment.mimeType = Zotero.Utilities.Connector.guessAttachmentMimeType(attachment.url);
+			}
+			return xhr.response;
+		}
+		if (attachment.mimeType.toLowerCase() === receivedMimeType.toLowerCase()) {
 			return xhr.response;
 		}
 	} catch (e) {
@@ -250,7 +260,7 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 
 	// Only attempt fallback for attachments on whitelisted domains
 	if (!tab || !attemptBotProtectionBypass || !this._isUrlBotBypassWhitelisted(attachment.url)) {
-		throw new Error("Attachment MIME type "+contentType+
+		throw new Error("Attachment MIME type "+receivedMimeType+
 			" does not match specified type "+attachment.mimeType);
 	}
 	

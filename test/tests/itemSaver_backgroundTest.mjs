@@ -68,7 +68,9 @@ describe("ItemSaver Background", function() {
 			await background(function() {
 				browser.cookies.getAll.restore();
 				Zotero.HTTP.request.restore();
-				Zotero.Utilities.Connector.getContentTypeFromXHR.restore();
+				if (Zotero.Utilities.Connector.getContentTypeFromXHR.restore) {
+					Zotero.Utilities.Connector.getContentTypeFromXHR.restore();
+				}
 				Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe.restore();
 				Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt.restore();
 				Zotero.ItemSaver._isUrlBotBypassWhitelisted.restore();
@@ -179,6 +181,58 @@ describe("ItemSaver Background", function() {
 				}, attachment, mockTab);
 				
 				assert.equal(result, 1024);
+			});
+		});
+
+		describe('When attachment mime type is not provided by the translator', function () {
+			it('should fetch mime type from the content type header', async function () {
+				attachment = {
+					url: 'https://example.com/test.html',
+					referrer: 'https://example.com'
+				};
+				let mimeType = await background(async function (attachment, mockTab) {
+					// Use the actual getContentTypeFromXHR
+					Zotero.Utilities.Connector.getContentTypeFromXHR.restore();
+
+					// mock http response with a content type header
+					Zotero.HTTP.request.resolves({
+						response: new ArrayBuffer(1024),
+						status: 200,
+						getResponseHeader: () => {
+							return 'text/html; charset=utf-8';
+						}
+					});
+					await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return attachment.mimeType;
+				}, attachment, mockTab);
+
+				// attachment should have a mime type
+				assert.equal(mimeType, 'text/html');
+			});
+
+			it('should guess mime type from the url if there is no content type header', async function () {
+				attachment = {
+					url: 'https://example.com/test.pdf',
+					referrer: 'https://example.com'
+				};
+				let mimeType = await background(async function (attachment, mockTab) {
+					// Use the actual getContentTypeFromXHR
+					Zotero.Utilities.Connector.getContentTypeFromXHR.restore();
+
+					// mock http response without a content type header
+					Zotero.HTTP.request.resolves({
+						response: new ArrayBuffer(1024),
+						status: 200,
+						getResponseHeader: () => {
+							return null; // No content type header
+						}
+					});
+					await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return attachment.mimeType;
+				}, attachment, mockTab);
+
+				// mime type should be guessed from the url
+				assert.equal(mimeType, 'application/pdf');
 			});
 		});
 	});

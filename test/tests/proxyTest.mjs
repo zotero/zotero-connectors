@@ -23,7 +23,7 @@
 	***** END LICENSE BLOCK *****
 */
 
-import { background } from '../support/utils.mjs';
+import { background, offscreen } from '../support/utils.mjs';
 
 describe('Zotero.Proxies', function() {
 	var originalProxies;
@@ -139,7 +139,7 @@ describe('Zotero.Proxies', function() {
 describe('Zotero.Proxy', function() {
 	describe('toProxy method', function() {
 		it('should preserve pathname and query string with toProxyScheme', async function () {
-			let result = await background(function() {
+			let result = await offscreen(function() {
 				let proxy = new Zotero.Proxy({
 					toProperScheme: "%h.proxy.example.org/%p",
 					toProxyScheme: "https://login.proxy.example.org/login?qurl=%u",
@@ -161,7 +161,7 @@ describe('Zotero.Proxy', function() {
 		});
 		
 		it('should preserve pathname and query string with toProperScheme', async function () {
-			let result = await background(function() {
+			let result = await offscreen(function() {
 				let proxy = new Zotero.Proxy({
 					toProperScheme: "%h.proxy.example.org/%p",
 					hosts: ["journal.example.com"]
@@ -180,7 +180,7 @@ describe('Zotero.Proxy', function() {
 		});
 		
 		it('should replace dots with hyphens for HTTPS URLs', async function () {
-			let result = await background(function() {
+			let result = await offscreen(function() {
 				let proxy = new Zotero.Proxy({
 					toProperScheme: "%h.proxy.example.org/%p",
 					hosts: ["test.example.com"]
@@ -201,7 +201,7 @@ describe('Zotero.Proxy', function() {
 	
 	describe('toProper', function() {
 		it('should preserve pathname and query string when converting back', async function () {
-			let result = await background(function() {
+			let result = await offscreen(function() {
 				let proxy = new Zotero.Proxy({
 					toProperScheme: "%h.proxy.example.org/%p",
 					hosts: ["journal.example.com"]
@@ -220,7 +220,7 @@ describe('Zotero.Proxy', function() {
 		});
 		
 		it('should handle HTTPS URLs with hyphens converted back to dots', async function () {
-			let result = await background(function() {
+			let result = await offscreen(function() {
 				let proxy = new Zotero.Proxy({
 					toProperScheme: "%h.proxy.example.org/%p",
 					hosts: ["test.example.com"]
@@ -239,7 +239,7 @@ describe('Zotero.Proxy', function() {
 		});
 		
 		it('should return original URL if not proxied', async function () {
-			let result = await background(function() {
+			let result = await offscreen(function() {
 				let proxy = new Zotero.Proxy({
 					toProperScheme: "%h.proxy.example.org/%p",
 					hosts: ["example.com"]
@@ -260,7 +260,7 @@ describe('Zotero.Proxy', function() {
 	
 	describe('round-trip conversion', function() {
 		it('should maintain URL integrity through toProxy and toProper cycle', async function () {
-			let result = await background(function() {
+			let result = await offscreen(function() {
 				let proxy = new Zotero.Proxy({
 					toProperScheme: "%h.proxy.example.org/%p",
 					hosts: ["journal.example.com"]
@@ -283,7 +283,7 @@ describe('Zotero.Proxy', function() {
 		});
 		
 		it('should maintain URL integrity with toProxyScheme', async function () {
-			let result = await background(function() {
+			let result = await offscreen(function() {
 				let proxy = new Zotero.Proxy({
 					toProperScheme: "%h.proxy.example.org/%p",
 					toProxyScheme: "https://login.proxy.example.org/login?qurl=%u",

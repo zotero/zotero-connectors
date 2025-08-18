@@ -27,7 +27,6 @@
  * Part of background page. Manages the offscreen page
  */
 Zotero.OffscreenManager = {
-	initPromise: null,
 	offscreenPageInitialized: false,
 	messagingDeferred: Zotero.Promise.defer(),
 	offscreenUrl: 'offscreen/offscreen.html',

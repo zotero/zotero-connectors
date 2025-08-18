@@ -666,6 +666,7 @@ Zotero.Connector_Browser = new function() {
 		if (Zotero.isFirefox) {
 			_showPreferencesContextMenuItem();
 		}
+		_showTabContextMenuItem();
 	}
 	
 	// context menu item onclick event not supported in event pages (i.e. MV3),
@@ -905,6 +906,13 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 
+	function _showTabContextMenuItem() {
+		browser.contextMenus.create({
+			id: "zotero-context-menu-tabs",
+			title: `${Zotero.getString('general_saveTo', 'Zotero')}`,
+			contexts: ['tab']
+		});
+	}
 	function _showPreferencesContextMenuItem() {
 		browser.contextMenus.create({
 			type: "separator",
@@ -1191,6 +1199,16 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 
+	async function _processTabs(info, tab) {
+		if (info.menuItemId === "zotero-context-menu-tabs") {
+			browser.tabs.query({highlighted: true, currentWindow: true}, async (tabs) => {
+				for (let t of tabs) {
+					await _browserAction(t);
+				}
+			});
+		}
+	}
+
 	browser.action.onClicked.addListener(waitForInit(logListenerErrors(_browserAction)));
 	
 	browser.tabs.onRemoved.addListener(waitForInit(logListenerErrors(_clearInfoForTab)));
@@ -1209,6 +1227,8 @@ Zotero.Connector_Browser = new function() {
 	browser.webNavigation.onCommitted.addListener(waitForInit(logListenerErrors(onNavigation)));
 	browser.webNavigation.onDOMContentLoaded.addListener(waitForInit(logListenerErrors(onDOMContentLoaded)))
 	browser.webNavigation.onHistoryStateUpdated.addListener(waitForInit(logListenerErrors(details => onNavigation(details, true))));
+	
+	browser.contextMenus.onClicked.addListener(waitForInit(logListenerErrors(_processTabs)));
 }
 
 Zotero.initGlobal();

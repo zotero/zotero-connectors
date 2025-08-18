@@ -191,6 +191,27 @@ Zotero.Utilities.Connector = {
 		}
 		
 		return uint8Array.buffer;
+	},
+
+	/**
+	 * Try to guess the mime type of an attachment based on its URL.
+	 * Used as a fallback when the mime type is not provided by the translator.
+	 */
+	guessAttachmentMimeType: function (url) {
+		if (!url) return undefined;
+
+		let extension = url.split(".").pop().toLowerCase();
+		switch (extension) {
+			case "pdf":
+				return "application/pdf";
+			case "jpg":
+			case "jpeg":
+				return "image/jpeg";
+			case "png":
+				return "image/png";
+			default:
+				return undefined;
+		}
 	}
 };
 

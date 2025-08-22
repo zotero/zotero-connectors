@@ -634,7 +634,7 @@ Zotero.Connector_Browser = new function() {
 			saveMenuID = "zotero-context-menu-save-menu";
 			browser.contextMenus.create({
 				id: saveMenuID,
-				title: `${Zotero.getString('general_saveTo', 'Zotero')}`,
+				title: `${Zotero.getString('general_saveTo', ZOTERO_CONFIG.CLIENT_NAME)}`,
 				contexts: [...buttonContext, 'page', 'selection']
 			});
 		}
@@ -665,8 +665,8 @@ Zotero.Connector_Browser = new function() {
 		
 		if (Zotero.isFirefox) {
 			_showPreferencesContextMenuItem();
+			_showTabContextMenuItem();
 		}
-		_showTabContextMenuItem();
 	}
 	
 	// context menu item onclick event not supported in event pages (i.e. MV3),
@@ -702,6 +702,13 @@ Zotero.Connector_Browser = new function() {
 			await browser.permissions.request({permissions: ['clipboardWrite']});
 			// navigator.clipboard.writeText doesn't work in the background page because it has no focus
 			Zotero.Messaging.sendMessage('clipboardWrite', [Zotero.Proxies.proxyToProper(info.linkUrl)], tab);
+		},
+		"zotero-context-menu-tabs": async () => {
+			const tabs = await browser.tabs.query({highlighted: true, currentWindow: true});
+			Zotero.debug(`Saving ${tabs.length} tabs`);
+			for (let tab of tabs) {
+				await _browserAction(tab);
+			}
 		}
 	};
 	
@@ -909,7 +916,7 @@ Zotero.Connector_Browser = new function() {
 	function _showTabContextMenuItem() {
 		browser.contextMenus.create({
 			id: "zotero-context-menu-tabs",
-			title: `${Zotero.getString('general_saveTo', 'Zotero')}`,
+			title: `${Zotero.getString('general_saveTo', ZOTERO_CONFIG.CLIENT_NAME)}`,
 			contexts: ['tab']
 		});
 	}
@@ -1199,16 +1206,6 @@ Zotero.Connector_Browser = new function() {
 		}
 	}
 
-	async function _processTabs(info, tab) {
-		if (info.menuItemId === "zotero-context-menu-tabs") {
-			browser.tabs.query({highlighted: true, currentWindow: true}, async (tabs) => {
-				for (let t of tabs) {
-					await _browserAction(t);
-				}
-			});
-		}
-	}
-
 	browser.action.onClicked.addListener(waitForInit(logListenerErrors(_browserAction)));
 	
 	browser.tabs.onRemoved.addListener(waitForInit(logListenerErrors(_clearInfoForTab)));
@@ -1227,8 +1224,6 @@ Zotero.Connector_Browser = new function() {
 	browser.webNavigation.onCommitted.addListener(waitForInit(logListenerErrors(onNavigation)));
 	browser.webNavigation.onDOMContentLoaded.addListener(waitForInit(logListenerErrors(onDOMContentLoaded)))
 	browser.webNavigation.onHistoryStateUpdated.addListener(waitForInit(logListenerErrors(details => onNavigation(details, true))));
-	
-	browser.contextMenus.onClicked.addListener(waitForInit(logListenerErrors(_processTabs)));
 }
 
 Zotero.initGlobal();

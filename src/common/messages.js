@@ -175,6 +175,7 @@ var MESSAGES = {
 		injectScripts: true,
 		injectSingleFile: true,
 		isIncognito: true,
+		isTabFocused: true,
 		newerVersionRequiredPrompt: true,
 		openTab: false,
 		openConfigEditor: false,

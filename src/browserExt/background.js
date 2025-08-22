@@ -294,6 +294,10 @@ Zotero.Connector_Browser = new function() {
 	this.isIncognito = function(tab) {
 		return tab.incognito;
 	}
+
+	this.isTabFocused = function(tab) {
+		return tab.active;
+	}
 	
 	/**
 	 * Checks whether translation scripts are already injected into a frame and if not - injects

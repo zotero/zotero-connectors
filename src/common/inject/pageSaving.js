@@ -563,7 +563,7 @@ let PageSaving = {
 		// popup until we've had a chance to hide it (which happens in the 'select'
 		// callback in progressWindow_inject.js).
 		let delay = translator.itemType == 'multiple' ? 100 : 0;
-		setTimeout(() => {
+		let sendShowMessage = () => {
 			Zotero.Messaging.sendMessage(
 				"progressWindow.show",
 				[
@@ -572,7 +572,16 @@ let PageSaving = {
 					false,
 				]
 			);
-		}, delay)
+		}
+		// If tab is not focused (e.g. when saving multiple), setTimeout with 0 delay actually waits for
+		// a long time, probably due to how non-focused tabs are deprioritized in the event loop and causes
+		// the progress window to not be displayed/updated properly
+		if (delay) {
+			setTimeout(sendShowMessage, delay)
+		}
+		else {
+			sendShowMessage();
+		}
 		
 		try {
 			let translators = this.translators.slice(translatorIndex);

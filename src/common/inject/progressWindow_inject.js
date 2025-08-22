@@ -68,6 +68,7 @@ if (isTopWindow) {
 	var scrollY;
 	
 	async function sendMessage(name, data = {}) {
+		// frameId=null - send message to all frames
 		return Zotero.Messaging.sendMessage(name, data, null, null);
 	}
 
@@ -79,7 +80,6 @@ if (isTopWindow) {
 	// to the iframe once the component is ready
 	function addEvent(name, data) {
 		frameReadyDeferred.promise.then(function() {
-			// frameId=null - send message to all frames
 			sendMessage(`progressWindowIframe.${name}`, data);
 		});
 	}
@@ -217,7 +217,7 @@ if (isTopWindow) {
 	function handleMouseLeave() {
 		insideIframe = false;
 		if (closeOnLeave) {
-			startCloseTimer(2500);
+			startCloseTimer(closeOnLeave);
 		}
 	}
 	
@@ -484,8 +484,18 @@ if (isTopWindow) {
 		showFrame();
 	});
 	
-	Zotero.Messaging.addMessageListener("progressWindow.done", (returnValue) => {
-		closeOnLeave = true;
+	Zotero.Messaging.addMessageListener("progressWindow.done", async (returnValue) => {
+		const isTabFocused = await Zotero.Connector_Browser.isTabFocused();
+		if (!isTabFocused) {
+			// Don't queue hiding the progress bar if the save finished when the tab was not focused,
+			// so that when the user switches to it they can review the save.
+			// However, we set closeOnLeave, because when you switch to the tab, it seems that
+			// iframe mouseLeave event is automatically fired, and either way we don't want the progress window
+			// to be displayed forever.
+			closeOnLeave = 8000;
+			return;
+		}
+		closeOnLeave = 2500;
 		if (document.location.href.startsWith(Zotero.getExtensionURL('confirm/confirm.html'))) {
 			// Handled in contentTypeHandler
 			return;

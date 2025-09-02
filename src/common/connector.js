@@ -27,7 +27,6 @@
 Zotero.Connector = new function() {
 	const CONNECTOR_API_VERSION = 3;
 	
-	var _ieStandaloneIframeTarget, _ieConnectorCallbacks;
 	this.isOnline = (Zotero.isSafari || Zotero.isFirefox) ? false : null;
 	this.clientVersion = '';
 	this.prefs = {
@@ -50,6 +49,11 @@ Zotero.Connector = new function() {
 			return false;
 		}
 	};
+	
+	this.onStateChange = function(version) {
+		Zotero.Connector_Browser?.onStateChange(version);
+		Zotero.UpdaterFix.onStateChange(version);
+	}
 
 	this.reportActiveURL = function(url) {
 		if (!this.isOnline || !this.prefs.reportActiveURL) return;
@@ -167,9 +171,7 @@ Zotero.Connector = new function() {
 			Zotero.Connector.clientVersion = xhr.getResponseHeader('X-Zotero-Version');
 			if (Zotero.Connector.isOnline !== true) {
 				Zotero.Connector.isOnline = true;
-				if (Zotero.Connector_Browser?.onStateChange) {
-					Zotero.Connector_Browser.onStateChange(Zotero.Connector.clientVersion);
-				}
+				Zotero.Connector.onStateChange(Zotero.Connector.clientVersion)
 			}
 			var val = xhr.response
 			if (xhr.responseText) {
@@ -183,9 +185,7 @@ Zotero.Connector = new function() {
 			if (xhr.status === 0) {
 				if (Zotero.Connector.isOnline !== false) {
 					Zotero.Connector.isOnline = false;
-					if (Zotero.Connector_Browser?.onStateChange) {
-						Zotero.Connector_Browser.onStateChange(false);
-					}
+					Zotero.Connector.onStateChange(Zotero.Connector.clientVersion)
 				}
 				throw new Zotero.Connector.CommunicationError('Connector: Zotero is offline');
 			}

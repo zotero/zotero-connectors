@@ -693,7 +693,7 @@ Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponen
 		}
 		
 		let currentProxy = this.state.currentProxy;
-		var multiHost = currentProxy && currentProxy.toProperScheme.includes('%h') || currentProxy.toProperScheme.includes('%u');
+		var multiHost = currentProxy && currentProxy.toProperScheme?.includes('%h') || currentProxy.toProperScheme?.includes('%u');
 		
 		// If a host exists in the last position and is empty, don't allow adding more
 		let disableRemoveHost = this.state.currentHostIdx == -1;

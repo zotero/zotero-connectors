@@ -39,6 +39,8 @@
 
 "use strict";
 
+const OPENATHENS_REDIRECT_INTERVAL = 12 * 60 * 60 * 1000;
+
 /**
  * A singleton to handle URL rewriting proxies
  * @namespace
@@ -50,17 +52,21 @@ Zotero.Proxies = new function() {
 	this.REDIRECT_LOOP_TIMEOUT = 3600e3;
 	this.REDIRECT_LOOP_MONITOR_COUNT = 4;
 	this.REDIRECT_LOOP_MONITOR_TIMEOUT = 5e3;
+	this.openAthensHostRedirectTime = {};
 	/**
 	 * Initializes the proxy settings
 	 * @returns Promise{boolean} proxy enabled/disabled status
 	 */
-	this.init = function() {
+	this.init = async function() {
 		if (Zotero.isSafari) return;
 		this.transparent = false;
 		this.proxies = [];
 		this.hosts = {};
 		this._redirectedTabIDs = {};
 		this._loopPreventionTimestamp = Zotero.Prefs.get('proxies.loopPreventionTimestamp');
+
+		this.openAthensHostRedirectTime =
+			await Zotero.Utilities.Connector.createMV3PersistentObject('openAthensRedirectTime');
 		
 		this.loadPrefs();
 		
@@ -68,7 +74,7 @@ Zotero.Proxies = new function() {
 		Zotero.Proxies.disabledByDomain = false;
 		
 		Zotero.Proxies.proxies = Zotero.Prefs.get('proxies.proxies').map(function(proxy) {
-			proxy = new Zotero.Proxy(proxy);
+			proxy = Zotero.Proxies._createProxyInstance(proxy);
 			for (let host of proxy.hosts) {
 				Zotero.Proxies.hosts[host] = proxy;
 			}
@@ -100,7 +106,8 @@ Zotero.Proxies = new function() {
 	this.enable = function() {
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onHeadersReceived);
-			browser.webNavigation.onCommitted.addListener(Zotero.Proxies.onNavigationCommited)
+			browser.webNavigation.onBeforeNavigate.addListener(Zotero.Proxies.onBeforeNavigate)
+			browser.webNavigation.onCommitted.addListener(Zotero.Proxies.checkForRedirectLoop)
 		} else {
 			safari.application.addEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
@@ -110,7 +117,8 @@ Zotero.Proxies = new function() {
 	this.disable = function() {
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onHeadersReceived);
-			browser.webNavigation.onCommitted.removeListener(Zotero.Proxies.onNavigationCommited)
+			browser.webNavigation.onBeforeNavigate.removeListener(Zotero.Proxies.onBeforeNavigate)
+			browser.webNavigation.onCommitted.removeListener(Zotero.Proxies.checkForRedirectLoop)
 		} else {
 			safari.application.removeEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
@@ -155,7 +163,7 @@ Zotero.Proxies = new function() {
 					existingProxy.hosts = Array.from(new Set(existingProxy.hosts));
 				} else {
 					// Otherwise add the proxy
-					Zotero.Proxies.save(new Zotero.Proxy(proxy));
+					Zotero.Proxies.save(Zotero.Proxies._createProxyInstance(proxy));
 				}
 			}
 
@@ -178,7 +186,13 @@ Zotero.Proxies = new function() {
 
 		Zotero.Proxies.updateDisabledByDomain();
 		if (Zotero.Proxies.disabledByDomain) return;
-		let redirect = Zotero.Proxies._maybeRedirect(details);
+		let redirect;
+		for (let proxy of Zotero.Proxies.proxies) {
+			if (typeof proxy.maybeRedirect === 'function') {
+				redirect = proxy.maybeRedirect(details);
+				if (redirect) break;
+			}
+		}
 		if (redirect) {
 			e.target.url = redirect.redirectUrl;
 		}
@@ -191,7 +205,11 @@ Zotero.Proxies = new function() {
 	this.onPageLoadSafari = function(tab) {
 		let details = {url: tab.url, frameId: 0, tabId: tab, statusCode: 200};
 	
-		Zotero.Proxies._maybeAddHost(details);
+		for (let proxy of Zotero.Proxies.proxies) {
+			if (typeof proxy.maybeAddHost === 'function') {
+				proxy.maybeAddHost(details);
+			}
+		}
 	};
 
 	/**
@@ -214,30 +232,40 @@ Zotero.Proxies = new function() {
 	 *
 	 * @param {Object} details - webRequest details object
 	 */
-	this.onNavigationCommited = (details) => {
+	this.onBeforeNavigate = (details) => {
 		if (details.statusCode >= 400 || details.frameId != 0) {
 			return;
 		}
 
-		Zotero.Proxies._checkForRedirectLoop(details);
-		
-		Zotero.Proxies._maybeAddHost(details);
-
 		Zotero.Proxies.updateDisabledByDomain();
 		if (Zotero.Proxies.disabledByDomain) return;
 		
+		for (let proxy of Zotero.Proxies.proxies) {
+			proxy.maybeAddHost(details);
+		}
+		
 		if (Zotero.Proxies.isPreventingRedirectLoops()) return;
 		
-		let redirect = Zotero.Proxies._maybeRedirect(details);
-		if (redirect) {
-			// We will track this tab in case it causes a redirect loop
+		let redirect;
+		let redirectProxy;
+		for (redirectProxy of Zotero.Proxies.proxies) {
+			if (typeof redirectProxy.maybeRedirect === 'function') {
+				redirect = redirectProxy.maybeRedirect(details);
+				if (redirect) break;
+			}
+		}
+		if (!redirect) return;
+		// We will track this tab in case it causes a redirect loop
+		if (redirectProxy.type !== 'openathens') {
+			// OpenAthens always redirects back to original host, but that's handled by
+			// proxy logic
 			this._redirectedTabIDs[details.tabId] = {
 				host: new URL(details.url).host,
 				count: this.REDIRECT_LOOP_MONITOR_COUNT,
 				timeout: Date.now() + this.REDIRECT_LOOP_MONITOR_TIMEOUT
 			};
-			browser.tabs.update(details.tabId, {url: redirect.redirectUrl});
 		}
+		browser.tabs.update(details.tabId, {url: redirect.redirectUrl});
 	};
 	
 	this.toggleRedirectLoopPrevention = function(value) {
@@ -253,11 +281,11 @@ Zotero.Proxies = new function() {
 		return this._loopPreventionTimestamp > Date.now();
 	}
 	
-	this._checkForRedirectLoop = (details) => {
+	this.checkForRedirectLoop = (details) => {
 		if (details.frameId != 0) return;
 		let redirectedTab = this._redirectedTabIDs[details.tabId];
 		if (redirectedTab) {
-			if (details?.transitionQualifiers.includes('forward_back') || details?.transitionQualifiers.includes('from_address_bar') ) {
+			if (details.transitionQualifiers?.includes('forward_back') || details.transitionQualifiers?.includes('from_address_bar') ) {
 				// History navigation (back button) may cause false-positives here, so we stop monitoring
 				delete this._redirectedTabIDs[details.tabId];
 			}
@@ -275,79 +303,11 @@ Zotero.Proxies = new function() {
 		return false;
 	}
 	
-	this._maybeAddHost = function(details) {
-		// see if there is a proxy we already know
-		var m = false;
-		for (var proxy of Zotero.Proxies.proxies) {
-			if (proxy.regexp) {
-				m = proxy.regexp.exec(details.url);
-				if (m) break;
-			}
-		}
-		if (!m) return;
-		
-		let host = m[proxy.parameters.indexOf("%h")+1];
-		// Unhyphenate host before checking it
-		//
-		// DEBUG: If a site has a valid hyphen in it, we probably won't redirect it properly,
-		// because we'll add the host with a dot instead and won't match it when the original
-		// unproxied site is loaded with the hyphen.
-		if (!host.includes('.')) {
-			host = host.replace(/-/g, '.');
-		}
-		
-		let shouldRemapHostToMatchedProxy = false;
-		let associatedProxy = Zotero.Proxies.hosts[host];
-		if (associatedProxy && associatedProxy.toProperScheme.substr(0, 5) != 'https') {
-			let secureAssociatedProxyScheme = associatedProxy.toProperScheme.substr(0, 4) + 's' + associatedProxy.toProperScheme.substr(4);
-			// I.e. if we matched a proxy with a scheme like https://%h.proxy.edu/%p
-			// (which means that we navigated to https://%h/%p) and the host was previously associated with a
-			// proxy with a scheme like http://%h.proxy.edu/%p, we remap this host to be mapped to the
-			// https proxy instead
-			shouldRemapHostToMatchedProxy = secureAssociatedProxyScheme == proxy.toProperScheme
-		}
-		// add this host if we know a proxy
-		if (proxy.autoAssociate							// if autoAssociate is on
-			&& (!Zotero.Proxies.hosts[host] || shouldRemapHostToMatchedProxy)		// and host is not saved
-			&& proxy.hosts.indexOf(host) === -1
-			&& !Zotero.Proxies._isBlacklisted(host)					// and host is not blacklisted
-		) {
-			if (shouldRemapHostToMatchedProxy) {
-				associatedProxy.hosts = associatedProxy.hosts.filter(h => h != host);
-				Zotero.Proxies.save(associatedProxy);
-			}
-			proxy.hosts.push(host);
-			Zotero.Proxies.save(proxy);
-			Zotero.Proxies.toggleRedirectLoopPrevention(false);
-
-			_showNotification(
-				'New Zotero Proxy Host',
-				`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected through ${proxy.toDisplayName()}.`,
-				["✕", "Proxy Settings", "Don’t Proxy This Site"],
-				details.tabId
-			)
-			.then(function(response) {
-				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
-				if (response == 2) {
-
-					proxy.hosts = proxy.hosts.filter((h) => h != host);
-					Zotero.Proxies.save(proxy);
-					return browser.tabs.update(details.tabId, {url: proxy.toProper(details.url)})
-				}
-			});
-		}	
-	};
-	
 	this.notifyNewProxy = async function(proxy, tabId) {
-		// If empty or default scheme
-		var invalid = Zotero.Proxies.validate(proxy);
-		if (invalid) {
-			Zotero.debug(`Proxy  ${proxy.toProperScheme} : ${proxy.toProxyScheme} invalid with reason ${JSON.stringify(invalid)}`);
-			return Zotero.Proxies.remove(proxy);
-		}
-		let response = await _showNotification(
+		let instance = Zotero.Proxies._createProxyInstance(proxy);
+		let response = await Zotero.Proxies.showNotification(
 			'New Zotero Proxy',
-			`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${proxy.toDisplayName()}?`,
+			`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${instance.toDisplayName()}?`,
 			['✕', 'Proxy Settings', 'Accept'],
 			tabId
 		);
@@ -356,10 +316,10 @@ Zotero.Proxies = new function() {
 				title: 'Only add proxies linked from your library, school, or corporate website',
 				message: 'Adding other proxies allows malicious sites to masquerade as sites you trust.<br/></br>'
 				+ 'Adding this proxy will allow Zotero to recognize items from proxied pages and will automatically '
-				+ `redirect future requests to ${proxy.hosts[proxy.hosts.length - 1]} through ${proxy.toDisplayName()}.`,
+				+ `redirect future requests to ${proxy.hosts[proxy.hosts.length - 1]} through ${instance.toDisplayName()}.`,
 				button1Text: 'Add Proxy',
 				button2Text: 'Cancel'
-			});
+			}, tabId);
 			if (result.button == 1) {
 				return Zotero.Proxies.save(proxy);
 			}
@@ -390,143 +350,59 @@ Zotero.Proxies = new function() {
 				let requestURI = new URL(details.url);
 				Zotero.debug("Proxies: Detected "+detectorName+" proxy "+proxy.toProperScheme+" for "+requestURI.host);
 				
-				this.notifyNewProxy(proxy, details.tabId);
+				let invalid = (typeof proxy.validate === 'function') ? proxy.validate() : false;
+				if (invalid) continue;
+
+				this.notifyNewProxy(proxy.toJSON ? proxy.toJSON() : proxy, details.tabId);
 				
 				break;
 			}
 		});
 	};
 
-	this._maybeRedirect = function(details) {
-		var proxied = Zotero.Proxies.properToProxy(details.url, true);
-		if (!proxied
-			// Don't redirect https websites via http proxies
-			|| details.url.substr(0, 5) == 'https' && proxied.substr(0, 5) != 'https') return;
-		
-		var proxiedURI = new URL(proxied);
-		
-		// parse the original request's URL so that we can extract host, etc.
-		let uri = new URL(details.url);
-
-		// make sure that the top two domains (e.g. gmu.edu in foo.bar.gmu.edu) of the
-		// channel and the site to which we're redirecting don't match, to prevent loops.
-		const top2DomainsRe = /[^\.]+\.[^\.]+$/;
-		let top21 = top2DomainsRe.exec(uri.hostname);
-		let top22 = top2DomainsRe.exec(proxiedURI.hostname);
-		if (!top21 || !top22 || top21[0] == top22[0]) {
-			Zotero.debug("Proxies: skipping redirect; redirect URI and URI have same top 2 domains");
-			return;
-		}
-
-		// Otherwise, redirect.
-		if (Zotero.Proxies.showRedirectNotification && details.frameId === 0) {
-			let proxy = Zotero.Proxies.hosts[uri.host];
-			_showNotification(
-				'Zotero Proxy Redirection',
-				`Zotero automatically redirected your request to ${uri.host} through the proxy at ${proxy.toDisplayName()}.`,
-				['✕', 'Proxy Settings', "Don’t Proxy This Site"],
-				details.tabId
-			).then(function(response) {
-				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
-				if (response == 2) {
-					proxy.hosts = proxy.hosts.filter((h) => h != uri.host);
-					Zotero.Proxies.save(proxy);
-					// Don't redirect for hosts associated with frames
-					return browser.tabs.update(details.tabId, {url: details.url})
-				}
-			});
-		}
-
-		return {redirectUrl: proxied};
-	}
-
 
 	/**
 	 * Update proxy and host maps and store proxy settings in storage
 	 */
 	this.save = function(proxy) {
-		proxy.toProxyScheme = (proxy.toProxyScheme || "").trim();
-		proxy.toProperScheme = (proxy.toProperScheme || proxy.scheme || "").trim();
-		proxy.hosts = proxy.hosts.map(host => host.trim()).filter(host => host);
-		
-		// If empty or default scheme
-		var invalid = Zotero.Proxies.validate(proxy);
-		if (invalid) {
-			Zotero.debug(`Proxy  ${proxy.toProperScheme} : ${proxy.toProxyScheme} invalid with reason ${JSON.stringify(invalid)}`);
-			return Zotero.Proxies.remove(proxy);
-		}
+		let instance = Zotero.Proxies._createProxyInstance(proxy);
+
+		instance.toProxyScheme = (instance.toProxyScheme || "").trim();
+		instance.toProperScheme = (instance.toProperScheme || instance.scheme || "").trim();
+		instance.hosts = instance.hosts.map(host => host.trim()).filter(host => host);
 		
 		// If no %h or %u present, then only a single host can be supported and we drop all but the first one.
-		let multiHost = proxy.toProperScheme.includes('%h') || proxy.toProperScheme.includes('%u');
+		// OpenAthens proxies always support multiple hosts via the redirector.
+		let multiHost = (instance.type === 'openathens')
+			|| (instance.toProperScheme || '').includes('%h')
+			|| (instance.toProxyScheme || '').includes('%u');
 		if (!multiHost) {
-			proxy.hosts = proxy.hosts.slice(0, 1);
+			instance.hosts = instance.hosts.slice(0, 1);
 		}
-		proxy = new Zotero.Proxy(proxy);
-	
-		var existingProxyIndex = Zotero.Proxies.proxies.findIndex((p) => p.id == proxy.id);
+		
+		var existingProxyIndex = Zotero.Proxies.proxies.findIndex((p) => p.id == instance.id);
 		if (existingProxyIndex == -1) {
-			Zotero.Proxies.proxies.push(proxy);
+			Zotero.Proxies.proxies.push(instance);
 		}
 		else {
-			Zotero.Proxies.proxies[existingProxyIndex] = proxy;
+			Zotero.Proxies.proxies[existingProxyIndex] = instance;
 		}
-		if (!proxy.regexp) proxy.compileRegexp();
+		if (!instance.regexp && typeof instance.compileRegexp === 'function') instance.compileRegexp();
 
 		// delete hosts that point to this proxy if they no longer exist
 		for (let host in Zotero.Proxies.hosts) {
-			if (Zotero.Proxies.hosts[host].id == proxy.id && proxy.hosts.indexOf(host) == -1) {
+			if (Zotero.Proxies.hosts[host].id == instance.id && instance.hosts.indexOf(host) == -1) {
 				delete Zotero.Proxies.hosts[host];
 			}
 		}
 		
-		for (let host of proxy.hosts) {
-			Zotero.Proxies.hosts[host] = proxy;
+		for (let host of instance.hosts) {
+			Zotero.Proxies.hosts[host] = instance;
 		}
+
+		Object.assign(proxy, instance.toJSON())
 		
 		Zotero.Proxies.storeProxies();
-	};
-
-	/**
-	 * Ensures that the proxy scheme and host settings are valid for this proxy type
-	 *
-	 * @returns {Array{String}|Boolean} An error type if a validation error occurred, or "false" if there was
-	 *	no error.
-	 */
-	this.validate = function(proxy) {
-		if (
-			// Scheme very short
-			proxy.toProperScheme.length <= "%h.-.--/%p".length 
-				// Unmodified
-				|| proxy.toProperScheme == '%h.example.com/%p'
-				|| proxy.toProxyScheme == 'proxy.example.com/login?qurl=%s'
-				// Host is at the end of the domain part of the scheme
-				|| proxy.toProperScheme.includes('%h/')
-				// No-op proxy schemes that don't actually proxy anything (see #492)
-				|| proxy.toProperScheme == '%h/%p'
-				|| proxy.toProperScheme == '%h%p'
-		) {
-			return ["scheme.invalid"];
-		}
-		
-		for (let p of Zotero.Proxies.proxies) {
-			if ((proxy.toProxyScheme == p.toProxyScheme || proxy.toProperScheme == p.toProperScheme) && p.id != proxy.id) {
-				return ["scheme.alreadyExists"]
-			}
-		}
-		
-		if (!Zotero_Proxy_schemeParameterRegexps["%p"].test(proxy.toProperScheme)) {
-			return ["scheme.noPath"];
-		}
-		
-		for (let host in proxy.hosts) {
-			host = host.trim();
-			var oldProxy = Zotero.Proxies.hosts[host];
-			if (oldProxy && oldProxy.proxyID  != proxy.proxyID) {
-				return ["host.proxyExists", host];
-			}
-		}
-		
-		return false;
 	};
 	
 	this.remove = function(proxy) {
@@ -546,14 +422,24 @@ Zotero.Proxies = new function() {
 		let proxies = Zotero.Proxies.proxies.map(function(p) {
 			return {
 				id: p.id,
+				name: p.name,
 				autoAssociate: p.autoAssociate,
 				toProxyScheme: p.toProxyScheme,
 				toProperScheme: p.toProperScheme || p.scheme,
 				hosts: p.hosts,
+				type: p.type
 			};
 		});
 		
 		Zotero.Prefs.set('proxies.proxies', proxies);
+	};
+
+	// Create an instance of the correct proxy subtype
+	this._createProxyInstance = function(json={}) {
+		if (json.type === 'openathens') {
+			return new Zotero.Proxy.OpenAthensProxy(json);
+		}
+		return new Zotero.Proxy(json);
 	};
 
 	/**
@@ -658,7 +544,7 @@ Zotero.Proxies = new function() {
 						var proxyHost = parts.slice(j+1).join('.');
 						let scheme = `%h${skippedParts}.${proxyHost}/%p`
 						// Backwards compatibility
-						urlToProxy[properURL] = {toProperScheme: scheme, scheme, dotsToHyphens: true};
+						urlToProxy[properURL] = {toProperScheme: scheme, scheme};
 					}
 				}
 			}
@@ -720,53 +606,19 @@ Zotero.Proxies = new function() {
 	 * @param {Number} tabId
 	 * @param {Number} timeout
 	 */
-	function _showNotification(title, message, actions, tabId, timeout) {
+	this.showNotification = function(title, message, actions, tabId, timeout) {
 		// browser.notifications.create({
 		// 	type: 'basic',
 		// 	title,
 		// 	message,
 		// 	iconUrl: 'Icon-128.png'
 		// });
-		Zotero.debug(`NOTIFICATION: ${message}`);
+		Zotero.debug(`Proxy notification: ${message}`);
 		actions = actions && actions.map((a) => {return {title: a, dismiss: true}});
 		return Zotero.Connector_Browser.notify(message, actions, timeout, tabId);
 	}
 
 };
-
-/**
- * Creates a Zotero.Proxy object from a DB row
- *
- * @constructor
- * @class A model for a http proxy server
- */
-Zotero.Proxy = function (json={}) {
-	this.id = json.id || Date.now();
-	this.autoAssociate = json.autoAssociate == undefined ? true : !!json.autoAssociate;
-	this.toProperScheme = json.toProperScheme || json.scheme;
-	// Proxy login URL with %u where the URL to-be-proxied should be inserted
-	this.toProxyScheme = json.toProxyScheme;
-	// MV3 proxy toJSON needs this
-	this.scheme = this.toProperScheme;
-	this.hosts = json.hosts || [];
-	this.dotsToHyphens = true;
-	if (this.toProperScheme) {
-		// Loading from storage or new
-		this.compileRegexp();
-	}
-};
-
-/**
- * Convert the proxy to JSON compatible object
- * @returns {Object}
- */
-Zotero.Proxy.prototype.toJSON = function() {
-	if (!this.toProperScheme) {
-		throw Error('Cannot convert proxy to JSON - no scheme');
-	}
-	return {id: this.id, dotsToHyphens: true, scheme: this.toProperScheme, toProperScheme: this.toProperScheme, toProxy: this.toProxyScheme};
-};
-
 
 /**
  * Regexps to match the URL contents corresponding to proxy scheme parameters
@@ -790,148 +642,410 @@ const Zotero_Proxy_schemeParameterRegexps = {
 
 
 /**
- * Compiles the regular expression against which we match URLs to determine if this proxy is in use
- * and saves it in this.regexp
- */
-Zotero.Proxy.prototype.compileRegexp = function() {
-	var indices = this.indices = {};
-	this.parameters = [];
-	for (var param in Zotero_Proxy_schemeParameters) {
-		var index = this.toProperScheme.indexOf(param);
-
-		// avoid escaped matches
-		while (this.toProperScheme[index-1] && (this.toProperScheme[index-1] == "%")) {
-			this.toProperScheme = this.toProperScheme.substr(0, index-1)+this.toProperScheme.substr(index);
-			index = this.toProperScheme.indexOf(param, index+1);
-		}
-
-		if (index != -1) {
-			this.indices[param] = index;
-			this.parameters.push(param);
-		}
-	}
-
-	// sort params by index
-	this.parameters = this.parameters.sort(function(a, b) {
-		return indices[a]-indices[b];
-	});
-
-	// now replace with regexp fragment in reverse order
-	var re;
-	if (this.toProperScheme.includes('://')) {
-		re = "^"+Zotero.Utilities.quotemeta(this.toProperScheme)+"$";
-	} else {
-		re = "^https?"+Zotero.Utilities.quotemeta('://'+this.toProperScheme)+"$";
-	}
-	for(var i=this.parameters.length-1; i>=0; i--) {
-		var param = this.parameters[i];
-		re = re.replace(Zotero_Proxy_schemeParameterRegexps[param], "$1"+Zotero_Proxy_schemeParameters[param]);
-	}
-
-	this.regexp = new RegExp(re);
-}
-
-/**
- * Converts a proxied URL to an unproxied URL using this proxy
+ * Creates a Zotero.Proxy object from a DB row
  *
- * @param m {Array} The match from running this proxy's regexp against a URL spec
- * @type String
+ * @constructor
+ * @class A model for a http proxy server
  */
-Zotero.Proxy.prototype.toProper = function(m) {
-	if (!Array.isArray(m)) {
-		// make sure url has a trailing slash
-		m = new URL(m).href;
-		let match = this.regexp.exec(m);
-		if (!match) {
-			return m
+Zotero.Proxy = class {
+	constructor(json={}) {
+		this.id = json.id || Date.now();
+		// Whether hosts should be automatically associated with this proxy
+		this.autoAssociate = json.autoAssociate !== false;
+		this.name = json.name;
+		this.toProperScheme = json.toProperScheme || json.scheme;
+		// Proxy login URL with %u where the URL to-be-proxied should be inserted
+		this.toProxyScheme = json.toProxyScheme;
+		// MV3 proxy toJSON needs this
+		this.scheme = this.toProperScheme;
+		this.hosts = json.hosts || [];
+		if (this.toProperScheme) {
+			this.compileRegexp();
+		}
+	}
+
+	validate() {
+		for (let host in this.hosts) {
+			host = host.trim();
+			var oldProxy = Zotero.Proxies.hosts[host];
+			if (oldProxy && oldProxy.id != this.id) {
+				return ["host.proxyExists", host];
+			}
+		}
+
+		if (this.toProxyScheme) {
+			let scheme = this.toProxyScheme.trim();
+			for (let p of Zotero.Proxies.proxies) {
+				if (!p || p.id == this.id) continue;
+				if ((p.toProxyScheme || '').trim() && (p.toProxyScheme || '').trim() == scheme) {
+					return ["scheme.duplicate"];
+				}
+			}
+		}
+		
+		if (!this.toProperScheme) return false;
+
+		if (
+			// Scheme very short
+			this.toProperScheme.length <= "%h.-.--/%p".length 
+				// Unmodified
+				|| this.toProperScheme == '%h.example.com/%p'
+				|| this.toProxyScheme == 'proxy.example.com/login?qurl=%s'
+				// Host is at the end of the domain part of the scheme
+				|| this.toProperScheme.includes('%h/')
+				// No-op proxy schemes that don't actually proxy anything (see #492)
+				|| this.toProperScheme == '%h/%p'
+				|| this.toProperScheme == '%h%p'
+		) {
+			return ["scheme.invalid"];
+		}
+
+		if (!Zotero_Proxy_schemeParameterRegexps["%p"].test(this.toProperScheme)) {
+			return ["scheme.noPath"];
+		}
+		return false;
+	}
+
+	/**
+	 * Compiles the regular expression against which we match URLs to determine if this proxy is in use
+	 * and saves it in this.regexp
+	 */
+	compileRegexp() {
+		var indices = this.indices = {};
+		this.parameters = [];
+		for (var param in Zotero_Proxy_schemeParameters) {
+			var index = this.toProperScheme.indexOf(param);
+
+			// avoid escaped matches
+			while (this.toProperScheme[index-1] && (this.toProperScheme[index-1] == "%")) {
+				this.toProperScheme = this.toProperScheme.substr(0, index-1)+this.toProperScheme.substr(index);
+				index = this.toProperScheme.indexOf(param, index+1);
+			}
+
+			if (index != -1) {
+				this.indices[param] = index;
+				this.parameters.push(param);
+			}
+		}
+
+		// sort params by index
+		this.parameters = this.parameters.sort(function(a, b) {
+			return indices[a]-indices[b];
+		});
+
+		// now replace with regexp fragment in reverse order
+		var re;
+		if (this.toProperScheme.includes('://')) {
+			re = "^"+Zotero.Utilities.quotemeta(this.toProperScheme)+"$";
 		} else {
-			m = match;
+			re = "^https?"+Zotero.Utilities.quotemeta('://'+this.toProperScheme)+"$";
 		}
-	}
-	let hostIdx = this.parameters.indexOf("%h");
-	let protocol = m[0].indexOf('https') == 0 ? 'https://' : 'http://';
-	if (hostIdx != -1) {
-		var properURL = protocol+m[hostIdx+1]+"/";
-	} else {
-		var properURL = protocol+this.hosts[0]+"/";
-	}
-	
-	// Replace `-` with `.` in https to support EZProxy HttpsHyphens.
-	// Potentially troublesome with domains that contain dashes
-	if (protocol == "https://" ||
-		!properURL.includes('.')) {
-		properURL = properURL.replace(/-/g, '.');
-	}
-
-	if (this.indices["%p"]) {
-		properURL += m[this.parameters.indexOf("%p")+1];
-	} else {
-		var dir = m[this.parameters.indexOf("%d")+1];
-		var file = m[this.parameters.indexOf("%f")+1];
-		if (dir !== "") properURL += dir+"/";
-		properURL += file;
-	}
-
-	return properURL;
-}
-
-/**
- * Converts an unproxied URL to a proxied URL using this proxy
- *
- * @param {Object|String} uri The URI corresponding to the unproxied URL
- * @type String
- */
-Zotero.Proxy.prototype.toProxy = function(uri) {
-	if (typeof uri == "string") {
-		uri = new URL(uri);
-		// If there's no path it is set to null, but we need
-		// at least an empty string to avoid doing many checks
-		uri.pathname = uri.pathname || '';
-	}
-	if (this.regexp.exec(uri.href) || Zotero.Proxies._isBlacklisted(uri.hostname)) {
-		return uri.href;
-	}
-	if (this.toProxyScheme) {
-		return this.toProxyScheme.replace('%u', encodeURIComponent(uri.href));
-	}
-	var proxyURL = this.toProperScheme;
-
-	for(var i=this.parameters.length-1; i>=0; i--) {
-		var param = this.parameters[i];
-		var value = "";
-		if (param == "%h") {
-			value = (uri.protocol == 'https:') ? uri.hostname.replace(/\./g, '-') : uri.hostname;
-		} else if (param == "%p") {
-			value = uri.pathname.substr(1) + uri.search;
+		for(var i=this.parameters.length-1; i>=0; i--) {
+			var param = this.parameters[i];
+			re = re.replace(Zotero_Proxy_schemeParameterRegexps[param], "$1"+Zotero_Proxy_schemeParameters[param]);
 		}
 
-		proxyURL = proxyURL.substr(0, this.indices[param])+value+proxyURL.substr(this.indices[param]+2);
+		this.regexp = new RegExp(re);
 	}
 
-	if (proxyURL.includes('://')) {
-		return proxyURL;
+
+	/**
+	 * Convert the proxy to JSON compatible object
+	 * @returns {Object}
+	 */
+	toJSON() {
+		return {
+			id: this.id,
+			name: this.name,
+			autoAssociate: this.autoAssociate,
+			toProxyScheme: this.toProxyScheme,
+			toProperScheme: this.toProperScheme,
+			hosts: this.hosts,
+			type: this.type,
+		}
 	}
-	return uri.protocol + '//' + proxyURL;
+
+	/**
+	 * Converts a proxied URL to an unproxied URL using this proxy
+	 *
+	 * @param m {Array|String} Either the match from running this proxy's regexp against a URL,
+	 *                         or a URL string to be matched.
+	 * @type String
+	 */
+	toProper(m) {
+		if (!this.toProperScheme) return m;
+		if (!Array.isArray(m)) {
+			// make sure url has a trailing slash
+			m = new URL(m).href;
+			let match = this.regexp.exec(m);
+			if (!match) {
+				return m
+			} else {
+				m = match;
+			}
+		}
+		let hostIdx = this.parameters.indexOf("%h");
+		let protocol = m[0].indexOf('https') == 0 ? 'https://' : 'http://';
+		if (hostIdx != -1) {
+			var properURL = protocol+m[hostIdx+1]+"/";
+		} else {
+			var properURL = protocol+this.hosts[0]+"/";
+		}
+		
+		// Replace `-` with `.` in https to support EZProxy HttpsHyphens.
+		// Potentially troublesome with domains that contain dashes
+		if (protocol == "https://" ||
+			!properURL.includes('.')) {
+			properURL = properURL.replace(/-/g, '.');
+		}
+
+		if (this.indices["%p"]) {
+			properURL += m[this.parameters.indexOf("%p")+1];
+		} else {
+			var dir = m[this.parameters.indexOf("%d")+1];
+			var file = m[this.parameters.indexOf("%f")+1];
+			if (dir !== "") properURL += dir+"/";
+			properURL += file;
+		}
+
+		return properURL;
+	}
+
+	/**
+	 * Converts an unproxied URL to a proxied URL using this proxy
+	 *
+	 * @param {Object|String} uri The URI corresponding to the unproxied URL
+	 * @type String
+	 */
+	toProxy(uri) {
+		if (typeof uri == "string") {
+			uri = new URL(uri);
+			// If there's no path it is set to null, but we need
+			// at least an empty string to avoid doing many checks
+			uri.pathname = uri.pathname || '';
+		}
+		if (this.regexp?.exec(uri.href) || Zotero.Proxies._isBlacklisted(uri.hostname)) {
+			return uri.href;
+		}
+		if (this.toProxyScheme) {
+			return this.toProxyScheme.replace('%u', encodeURIComponent(uri.href));
+		}
+		var proxyURL = this.toProperScheme;
+
+		for(var i=this.parameters.length-1; i>=0; i--) {
+			var param = this.parameters[i];
+			var value = "";
+			if (param == "%h") {
+				value = (uri.protocol == 'https:') ? uri.hostname.replace(/\./g, '-') : uri.hostname;
+			} else if (param == "%p") {
+				value = uri.pathname.substr(1) + uri.search;
+			}
+
+			proxyURL = proxyURL.substr(0, this.indices[param])+value+proxyURL.substr(this.indices[param]+2);
+		}
+
+		if (proxyURL.includes('://')) {
+			return proxyURL;
+		}
+		return uri.protocol + '//' + proxyURL;
+	}
+
+	/**
+	 * For URL-rewriting proxies, detect and add host associations when navigating
+	 */
+	maybeAddHost(details) {
+		if (!this.regexp || !this.autoAssociate) return;
+		var m = this.regexp.exec(details.url);
+		if (!m) return;
+		
+		let hostParamIndex = this.parameters ? this.parameters.indexOf("%h") : -1;
+		if (hostParamIndex === -1) return;
+		
+		let host = m[hostParamIndex + 1];
+		if (!host) return;
+		// Unhyphenate host before checking it
+		if (!host.includes('.')) {
+			host = host.replace(/-/g, '.');
+		}
+
+		if (this.hosts.includes(host) || Zotero.Proxies._isBlacklisted(host)) return;
+
+		let otherProxy = Zotero.Proxies.hosts[host];
+		let shouldMapHost = !otherProxy;
+		if (otherProxy && otherProxy.toProperScheme && otherProxy.toProperScheme.substr(0, 5) != 'https') {
+			let httpsOtherProxyScheme = otherProxy.toProperScheme.replace(/^http/, 'https');
+			// If other proxy is not https, but this proxy is, we should remap the host to this proxy
+			shouldMapHost = httpsOtherProxyScheme == this.toProperScheme
+		}
+		if (!shouldMapHost) return;
+
+		if (otherProxy) {
+			otherProxy.hosts = otherProxy.hosts.filter(h => h != host);
+			Zotero.Proxies.save(otherProxy);
+		}
+		this.hosts.push(host);
+		Zotero.Proxies.save(this);
+		Zotero.Proxies.toggleRedirectLoopPrevention(false);
+
+		Zotero.Proxies.showNotification(
+			'New Zotero Proxy Host',
+			`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected through ${this.toDisplayName()}.`,
+			["✕", "Proxy Settings", "Don’t Proxy This Site"],
+			details.tabId
+		)
+		.then((response) => {
+			if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
+			if (response == 2) {
+				this.hosts = this.hosts.filter((h) => h != host);
+				Zotero.Proxies.save(this);
+				return browser.tabs.update(details.tabId, {url: this.toProper(details.url)})
+			}
+		});
+	}
+
+	/**
+	 * For URL-rewriting proxies, perform redirect if this proxy is associated with the host
+	 */
+	maybeRedirect(details) {
+		let uri = new URL(details.url);
+		if (Zotero.Proxies.hosts[uri.host] !== this) return;
+		let proxied = this.toProxy(uri);
+		if (!proxied) return;
+		// Don't redirect https websites via http proxies
+		if (details.url.substr(0, 5) == 'https' && proxied.substr(0, 5) != 'https') return;
+		
+		var proxiedURI = new URL(proxied);
+
+		// make sure that the top two domains (e.g. gmu.edu in foo.bar.gmu.edu) of the
+		// channel and the site to which we're redirecting don't match, to prevent loops.
+		const top2DomainsRe = /[^\.]+\.[^\.]+$/;
+		let top21 = top2DomainsRe.exec(uri.hostname);
+		let top22 = top2DomainsRe.exec(proxiedURI.hostname);
+		if (!top21 || !top22 || top21[0] == top22[0]) {
+			Zotero.debug("Proxies: skipping redirect; redirect URI and URI have same top 2 domains");
+			return;
+		}
+
+		// Otherwise, redirect.
+		if (Zotero.Proxies.showRedirectNotification && details.frameId === 0) {
+			Zotero.Proxies.showNotification(
+				'Zotero Proxy Redirection',
+				`Zotero automatically redirected your request to ${uri.host} through the proxy at ${this.toDisplayName()}.`,
+				['✕', 'Proxy Settings', "Don’t Proxy This Site"],
+				details.tabId
+			).then((response) => {
+				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
+				if (response == 2) {
+					this.hosts = this.hosts.filter((h) => h != uri.host);
+					Zotero.Proxies.save(this);
+					// Don't redirect for hosts associated with frames
+					return browser.tabs.update(details.tabId, {url: details.url})
+				}
+			});
+		}
+
+		return {redirectUrl: proxied};
+	}
+
+	/**
+	 * Generate a display name for the proxy (e.g., "proxy.example.edu (HTTPS)")
+	 *
+	 * @return {String}
+	 */
+	toDisplayName() {
+		if (this.name) {
+			return this.name;
+		}
+		try {
+			var parts = this.toProperScheme.match(/^(?:(?:[^:]+):\/\/)?([^\/]+)/);
+			var domain = parts[1]
+				// Include part after %h, if it's present
+				.split('%h').pop()
+				// Trim leading punctuation after the %h
+				.match(/\W(.+)/)[1];
+			return domain;
+		}
+		catch (e) {
+			Zotero.logError(`Invalid proxy ${this.toProperScheme}: ${e}`);
+			return this.toProperScheme;
+		}
+	}
 }
 
-/**
- * Generate a display name for the proxy (e.g., "proxy.example.edu (HTTPS)")
- *
- * @return {String}
- */
-Zotero.Proxy.prototype.toDisplayName = function () {
-	try {
-		var parts = this.toProperScheme.match(/^(?:(?:[^:]+):\/\/)?([^\/]+)/);
-		var domain = parts[1]
-			// Include part after %h, if it's present
-			.split('%h').pop()
-			// Trim leading punctuation after the %h
-			.match(/\W(.+)/)[1];
-		return domain;
+Zotero.Proxy.OpenAthensProxy = class extends Zotero.Proxy {
+	constructor(json={}) {
+		super(json);
+		this.type = 'openathens';
+		// Regexp to match the redirect URL and capture the destination to add to hosts
+		this.toProxyRegexp = new RegExp(XRegExp.escape(this.toProxyScheme).replace('%u', '([^&]+)'));
 	}
-	catch (e) {
-		Zotero.logError(`Invalid proxy ${this.toProperScheme}: ${e}`);
-		return this.toProperScheme;
+
+	/**
+	 * Checks if the url matches the OpenAthens redirector and if so adds the host to this proxy
+	 * and disasociates it from any other proxy.
+	 * @param {Object} details 
+	 * @returns 
+	 */
+	maybeAddHost(details) {
+		if (!this.toProxyScheme || !this.autoAssociate) return;
+		let m = this.toProxyRegexp.exec(details.url);
+		if (!m) return;
+		
+		let redirectURL = decodeURIComponent(m[1]);
+		let uri = new URL(redirectURL);
+		let host = uri.host;
+		if (!host || this.hosts.includes(host) || Zotero.Proxies._isBlacklisted(host)) return;
+
+		let otherProxy = Zotero.Proxies.hosts[host];
+		if (otherProxy) {
+			// If we are redirecting to an OpenAthens host, we disassociate it from any other proxy
+			otherProxy.hosts = otherProxy.hosts.filter((h) => h != host);
+			Zotero.Proxies.save(otherProxy);
+		}
+		this.hosts.push(host);
+		Zotero.Proxies.save(this);
+		Zotero.Proxies.toggleRedirectLoopPrevention(false);
+
+		Zotero.Proxies.showNotification(
+			'New Zotero Proxy Host',
+			`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected through ${this.toDisplayName()}.`,
+			["✕", "Proxy Settings", "Don’t Proxy This Site"],
+			details.tabId
+		)
+		.then((response) => {
+			if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
+			if (response == 2) {
+				this.hosts = this.hosts.filter((h) => h != host);
+				Zotero.Proxies.save(this);
+			}
+		});
+	}
+
+	maybeRedirect(details) {
+		let uri = new URL(details.url);
+		if (Zotero.Proxies.hosts[uri.host] !== this) return;
+		// Redirect via OpenAthens hosts every OPENATHENS_REDIRECT_INTERVAL, to make sure we are still
+		// authenticated with the provider, since we don't have a good way to check for that.
+		let last = Zotero.Proxies.openAthensHostRedirectTime[uri.host] || 0;
+		if (Date.now() - last < OPENATHENS_REDIRECT_INTERVAL) return;
+		
+		Zotero.Proxies.openAthensHostRedirectTime[uri.host] = Date.now();
+
+		if (Zotero.Proxies.showRedirectNotification && details.frameId === 0) {
+			Zotero.Proxies.showNotification(
+				'Zotero Proxy Redirection',
+				`Zotero automatically redirected your request to ${uri.host} through the proxy at ${this.toDisplayName()}.`,
+				['✕', 'Proxy Settings', "Don’t Proxy This Site"],
+				details.tabId
+			).then((response) => {
+				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
+				if (response == 2) {
+					this.hosts = this.hosts.filter((h) => h != uri.host);
+					Zotero.Proxies.save(this);
+				}
+			});
+		}
+		return {redirectUrl: this.toProxy(details.url)};
 	}
 }
 
@@ -1047,8 +1161,8 @@ Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function
 	if (isProxiedHost) {
 		let isExisting;
 		for (let proxy of Zotero.Proxies.proxies) {
-			isExisting = proxy.regexp.test(details.url)
-			if (isExisting) {
+			if (proxy.regexp && proxy.regexp.test(details.url)) {
+				isExisting = true;
 				if (!proxy.toProxyScheme) {
 					// Add a proxyScheme if not present
 					proxy.toProxyScheme = this.toProxy;
@@ -1063,29 +1177,46 @@ Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function
 				toProxyScheme: this.toProxy,
 				hosts: [this.properURI.host.replace(/-/g, '.')]
 			});
-			Zotero.Proxies.notifyNewProxy(proxy, details.tabId)
+			if (proxy.validate()) {
+				Zotero.Proxies.notifyNewProxy(proxy.toJSON(), details.tabId)
+			}
 		}
 		this.deregister();
 	}
 };
 
-/**
- * Detector for Juniper Networks WebVPN
- * @param {Object} details
- * @type Boolean|Zotero.Proxy
- */
-Zotero.Proxies.Detectors.Juniper = function(details) {
-	const juniperRe = /^https?:\/\/([^\/:]+(?:\:[0-9]+)?)\/(.*),DanaInfo=([^+,]*)([^+]*)(?:\+(.*))?$/;
-	var m = juniperRe.exec(details.url);
+Zotero.Proxies.Detectors.OpenAthens = function(details) {
+	var m = /^https?:\/\/go\.openathens\.net\/redirector\/([^?]*)\?url=([^&]+)/i.exec(details.url);
 	if (!m) return false;
 	
-	return new Zotero.Proxy({
+	var name = m[1];
+	var properURL = decodeURIComponent(m[2]);
+	try {
+		var properURI = new URL(properURL);
+	}
+	catch (e) {
+		return false;
+	}
+	
+	var toProxyScheme = `https://go.openathens.net/redirector/${name}?url=%u`;
+	
+	for (let proxy of Zotero.Proxies.proxies) {
+		if (proxy.toProxyScheme == toProxyScheme) {
+			// already recognized
+			return false;
+		}
+	}
+	
+	// Create an OA proxy instance; hosts are added via maybeAddHost when navigating through redirector
+	let proxy = new Zotero.Proxy.OpenAthensProxy({
+		name: name,
 		autoAssociate: true,
-		scheme: m[1]+"/%d"+",DanaInfo=%h%a+%f",
-		hosts: [m[3]]
+		toProxyScheme: toProxyScheme,
+		hosts: [properURI.host],
+		type: "openathens"
 	});
-}
-
+	return proxy;
+};
 
 Zotero.Proxies.DNS = new function() {
 	this.getHostnames = function() {

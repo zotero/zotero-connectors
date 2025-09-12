@@ -1,5 +1,5 @@
 body {
-	font-family: Lucida Grande, Tahoma, Arial, sans;
+	font-family: Lucida Grande, Tahoma, Arial, sans-serif;
 	font-size: 12px;
 	background-color: #b7bfcb;
 }
@@ -84,10 +84,6 @@ body {
 	margin-bottom: 10px;
 }
 
-.group-content {
-	font-size: 11px;
-}
-
 .group-content div:first-child, .group-content p:first-child {
 	margin: 0;
 }
@@ -98,19 +94,19 @@ body {
 
 label {
 	white-space: nowrap;
-	margin-right: 5px;
-	display: flex;
-	align-items: center;	
+	margin-right: 10px;
+	display: inline-flex;
+	align-items: center;
 }
 
 input {
 	font-size: 1em;
-	max-width: 24em;
-	margin-left: 0.5em;
+	margin: 0 3px 0 0;
+	font-family: Lucida Grande, Tahoma, Arial, sans-serif;
 }
 
-input[type=checkbox] {
-	vertical-align: middle;
+label > input[type=text] {
+	margin-left: 5px;
 }
 
 /** Shamelessly stolen from Firefox **/
@@ -137,8 +133,8 @@ input[type=button][disabled="true"] {
   color: rgb(120,120,120);
 }
 
-input.shortcut-input.invalid{
-	/*color: rgba(255, 0, 0, 0.7);*/
+select[multiple] {
+	overflow: auto;
 }
 
 #google-docs-shortcut {
@@ -148,9 +144,4 @@ input.shortcut-input.invalid{
 
 .Preferences-MIMETypeHandling-hostSelect {
 	width: 18em;
-}
-
-.Preferences-Proxies-proxySelect,
-.Preferences-Proxies-hostSelect {
-	width: 24em;
 }

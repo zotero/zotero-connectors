@@ -360,6 +360,10 @@ Zotero.Proxies = new function() {
 		});
 	};
 
+	this.validate = function(proxy) {
+		let instance = Zotero.Proxies._createProxyInstance(proxy);
+		return instance.validate();
+	}
 
 	/**
 	 * Update proxy and host maps and store proxy settings in storage
@@ -422,7 +426,6 @@ Zotero.Proxies = new function() {
 		let proxies = Zotero.Proxies.proxies.map(function(p) {
 			return {
 				id: p.id,
-				name: p.name,
 				autoAssociate: p.autoAssociate,
 				toProxyScheme: p.toProxyScheme,
 				toProperScheme: p.toProperScheme || p.scheme,
@@ -652,7 +655,6 @@ Zotero.Proxy = class {
 		this.id = json.id || Date.now();
 		// Whether hosts should be automatically associated with this proxy
 		this.autoAssociate = json.autoAssociate !== false;
-		this.name = json.name;
 		this.toProperScheme = json.toProperScheme || json.scheme;
 		// Proxy login URL with %u where the URL to-be-proxied should be inserted
 		this.toProxyScheme = json.toProxyScheme;
@@ -665,11 +667,11 @@ Zotero.Proxy = class {
 	}
 
 	validate() {
-		for (let host in this.hosts) {
+		for (let host of this.hosts) {
 			host = host.trim();
 			var oldProxy = Zotero.Proxies.hosts[host];
 			if (oldProxy && oldProxy.id != this.id) {
-				return ["host.proxyExists", host];
+				return ["proxy_validate_hostProxyExists", host];
 			}
 		}
 
@@ -678,30 +680,32 @@ Zotero.Proxy = class {
 			for (let p of Zotero.Proxies.proxies) {
 				if (!p || p.id == this.id) continue;
 				if ((p.toProxyScheme || '').trim() && (p.toProxyScheme || '').trim() == scheme) {
-					return ["scheme.duplicate"];
+					return ["proxy_validate_schemeDuplicate"];
 				}
 			}
 		}
 		
 		if (!this.toProperScheme) return false;
 
+		// Unmodified
+		if (this.toProperScheme == '%h.example.com/%p' || this.toProxyScheme == 'proxy.example.com/login?qurl=%s') {
+			return ["proxy_validate_schemeUnmodified"];
+		}
+
 		if (
 			// Scheme very short
 			this.toProperScheme.length <= "%h.-.--/%p".length 
-				// Unmodified
-				|| this.toProperScheme == '%h.example.com/%p'
-				|| this.toProxyScheme == 'proxy.example.com/login?qurl=%s'
 				// Host is at the end of the domain part of the scheme
 				|| this.toProperScheme.includes('%h/')
 				// No-op proxy schemes that don't actually proxy anything (see #492)
 				|| this.toProperScheme == '%h/%p'
 				|| this.toProperScheme == '%h%p'
 		) {
-			return ["scheme.invalid"];
+			return ["proxy_validate_schemeInvalid"];
 		}
 
 		if (!Zotero_Proxy_schemeParameterRegexps["%p"].test(this.toProperScheme)) {
-			return ["scheme.noPath"];
+			return ["proxy_validate_schemeNoPath"];
 		}
 		return false;
 	}
@@ -756,7 +760,6 @@ Zotero.Proxy = class {
 	toJSON() {
 		return {
 			id: this.id,
-			name: this.name,
 			autoAssociate: this.autoAssociate,
 			toProxyScheme: this.toProxyScheme,
 			toProperScheme: this.toProperScheme,
@@ -953,8 +956,8 @@ Zotero.Proxy = class {
 	 * @return {String}
 	 */
 	toDisplayName() {
-		if (this.name) {
-			return this.name;
+		if (this.type === 'openathens') {
+			return this.toProxyScheme.match(/\/redirector\/([^?]+)/)[1];
 		}
 		try {
 			var parts = this.toProperScheme.match(/^(?:(?:[^:]+):\/\/)?([^\/]+)/);
@@ -1209,7 +1212,6 @@ Zotero.Proxies.Detectors.OpenAthens = function(details) {
 	
 	// Create an OA proxy instance; hosts are added via maybeAddHost when navigating through redirector
 	let proxy = new Zotero.Proxy.OpenAthensProxy({
-		name: name,
 		autoAssociate: true,
 		toProxyScheme: toProxyScheme,
 		hosts: [properURI.host],

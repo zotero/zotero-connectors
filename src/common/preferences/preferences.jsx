@@ -83,12 +83,6 @@ var Zotero_Preferences = {
 			});
 		}
 
-		Zotero.Prefs.loadNamespace('shortcuts').then(function() {
-			let spans = document.querySelectorAll('.shortcut-input[data-pref]');
-			for (let span of spans) {
-				ReactDOM.render(<Zotero_Preferences.Components.ShortcutInput pref={span.dataset.pref} />, span);
-			}
-		});
 
 		Zotero.initDeferred.resolve();
 		Zotero.isInject = true;
@@ -414,7 +408,6 @@ Zotero_Preferences.Components.ProxySettings = class ProxySettings extends React.
 					<div className="group-title">Proxy Settings</div>
 					<div className="group-content">
 						<p>Zotero will transparently redirect requests through saved proxies. See the <a href="https://www.zotero.org/support/connector_preferences#proxies">proxy documentation</a> for more information.</p>
-						<p></p>
 						<Zotero_Preferences.Components.ProxyPreferences onTransparentChange={this.handleTransparentChange}/>
 					</div>
 				</div>
@@ -490,13 +483,14 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 					<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;Enable proxy redirection</label>
 					<div style={{marginLeft: "1em"}}>
 						<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;Show a notification when redirecting through a proxy</label>
+						<br/>
 						{autoRecognise}
 						<p>
-							<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains<span>*</span></label>
+							<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains (available when Zotero is running)</label>
+							<br/>
 							<input style={{marginTop: "0.5em", marginLeft: "1.5em"}} type="text" onChange={this.handleTextInputChange} disabled={!this.state.transparent || !this.state.disableByDomain} name="disableByDomainString" defaultValue={this.state.disableByDomainString}/>
 						</p>
 					</div>
-					<p><span>*</span>Available when Zotero is running</p>
 				</div>
 			</div>
 		);
@@ -504,265 +498,241 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 };
 
 
-Zotero_Preferences.Components.Proxies = class Proxies extends React.PureComponent {
-	constructor(props) {
-		super(props);
-		let proxies = Zotero.Prefs.get('proxies.proxies').map((proxy) => {
-			proxy.toProperScheme = proxy.toProperScheme || proxy.scheme
-			return proxy;
-		});
-		this.state = {
-			proxies,
-			currentProxy: undefined,
-			currentHostIdx: -1
-		};
-		
-		this.handleProxySelectChange = this.handleProxySelectChange.bind(this);
-		this.handleProxyButtonClick = this.handleProxyButtonClick.bind(this);
-		this.handleSchemeChange = this.handleSchemeChange.bind(this);
-		this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
-		this.handleHostSelectChange = this.handleHostSelectChange.bind(this);
-		this.handleHostButtonClick = this.handleHostButtonClick.bind(this);
-		this.handleHostnameChange = this.handleHostnameChange.bind(this);
+Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
+	const { transparent, proxy, onProxyChange } = props;
+
+	if (!transparent || !proxy) {
+		return "";
 	}
-	
-	componentWillMount() {
-		this.saveProxy = Zotero.Utilities.debounce(Zotero.Proxies.save.bind(Zotero.Proxies), 200);
-	}
-	
-	componentDidUpdate(prevProps, prevState) {
-		if (this.focusToProxyInput) {
-			this.focusToProxyInput = false;
-			this.refs.toProxyInput.focus();
-		}
-		else if (this.focusHostInput) {
-			this.focusHostInput = false;
-			this.refs.hostInput.focus();
-		}
-	}
-	
-	/**
-	 * Update the current proxy with a new one and resave it
-	 *
-	 * A lot of this code could be cleaner if state flowed down from the prefs.
-	 */
-	updateCurrentProxyInState(proxy, prevState, newState) {
-		newState.currentProxy = proxy;
-		newState.proxies = prevState.proxies.map((p, i) => p.id == proxy.id ? proxy : p);
-		this.saveProxy(proxy);
-	}
-	
-	handleProxySelectChange(event) {
-		var target = event.target;
-		this.setState((prevState) => {
-			return {
-				currentProxy: prevState.proxies.find(p => target && p.id == target.value),
-				currentHostIdx: -1
+
+	const [toProxyScheme, setToProxyScheme] = React.useState(proxy.toProxyScheme);
+	const [toProperScheme, setToProperScheme] = React.useState(proxy.toProperScheme);
+	const [hosts, setHosts] = React.useState(proxy.hosts);
+	const [currentHostIdx, setCurrentHostIdx] = React.useState(-1);
+	const [autoAssociate, setAutoAssociate] = React.useState(proxy.autoAssociate);
+	const [isOpenAthens, setIsOpenAthens] = React.useState(proxy.type === 'openathens');
+	const [error, setError] = React.useState(null);
+
+	const hostInputRef = React.useRef(null);
+	const toProxyInputRef = React.useRef(null);
+
+	React.useEffect(() => {
+		setToProxyScheme(proxy.toProxyScheme);
+		setToProperScheme(proxy.toProperScheme);
+		setHosts(proxy.hosts);
+		setCurrentHostIdx(-1);
+		setAutoAssociate(proxy.autoAssociate);
+		setIsOpenAthens(proxy.type === 'openathens');
+	}, [proxy?.id]);
+
+	React.useLayoutEffect(() => {
+		// Focus the toProxyScheme input if proxy is new
+		toProxyScheme.includes('example.com') && toProxyInputRef.current?.focus();
+	}, [toProxyScheme])
+
+	React.useLayoutEffect(() => {
+		// Focus the host input if host is new
+		hosts[currentHostIdx]?.length === 0 && hostInputRef.current?.focus();
+	}, [currentHostIdx])
+
+	React.useEffect(() => {
+		(async () => {
+			let updatedProxy = Object.assign(
+				{},
+				proxy,
+				{
+					toProxyScheme: toProxyScheme,
+					toProperScheme: toProperScheme,
+					hosts: hosts.filter(h => h.length),
+					autoAssociate: autoAssociate
+				}
+			);
+			if (isOpenAthens) {
+				updatedProxy.type = 'openathens';
+			} else {
+				delete updatedProxy.type;
 			}
-		});
-	}
-	
-	handleProxyButtonClick(event) {
-		var value = event.target.value;
-		this.setState((prevState) => {
-			var newState = {};
-			// Add proxy
-			if (value == '+') {
-				let newProxy = {
-					id: Date.now(),
-					toProxyScheme: 'https://www.example.com/login?qurl=%u',
-					toProperScheme: '%h.example.com/%p',
-					autoAssociate: true,
-					hosts: []
-				};
-				newState.proxies = prevState.proxies.concat([newProxy]);
-				newState.currentProxy = newProxy;
-				newState.currentHostIdx = -1;
-				this.focusToProxyInput = true;
-				this.saveProxy(newProxy);
+			let error = await Zotero.Proxies.validate(updatedProxy);
+			if (error?.[0] === "proxy_validate_schemeUnmodified") return;
+
+			setError(error);
+			if (error?.[0] === "proxy_validate_hostProxyExists") {
+				updatedProxy.hosts = updatedProxy.hosts.filter(h => h != error[1]);
 			}
-			// Delete proxy
-			else if (value == '-') {
-				let oldProxies = prevState.proxies;
-				let pos = oldProxies.findIndex(p => p == prevState.currentProxy);
-				newState.proxies = [
-					...oldProxies.slice(0, pos),
-					...oldProxies.slice(pos + 1)
-				];
-				Zotero.Proxies.remove(prevState.currentProxy);
-				newState.currentProxy = newState.proxies [pos] || newState.proxies[pos - 1];
-			}
-			return newState;
-		});
-	}
-	
-	handleSchemeChange(event) {
+			else if (error) return;
+
+			saveProxy(updatedProxy);
+			onProxyChange(updatedProxy);
+		})();
+	}, [toProxyScheme, toProperScheme, hosts, autoAssociate, isOpenAthens])
+
+	var multiHost = toProperScheme?.includes('%h') || toProxyScheme?.includes('%u');
+
+	const saveProxy = React.useRef(
+		Zotero.Utilities.debounce(Zotero.Proxies.save.bind(Zotero.Proxies), 200)
+	).current;
+
+	let disableRemoveHost = currentHostIdx == -1;
+
+	function handleSchemeChange(event) {
 		var value = event.target.value;
 		var name = event.target.name;
-		this.setState((prevState) => {
-			var newState = {};
-			var oldProxy = prevState.currentProxy;
-			var newProxy = Object.assign(
-				{},
-				oldProxy,
-				{
-					[name]: value,
-					hosts: [...oldProxy.hosts]
-				}
-			);
-			this.updateCurrentProxyInState(newProxy, prevState, newState);
-			return newState;
-		});
-	}
-	
-	handleCheckboxChange(event) {
-		var target = event.target;
-		this.setState((prevState) => {
-			var newState = {};
-			var oldProxy = prevState.currentProxy;
-			var newProxy = Object.assign(
-				{},
-				oldProxy,
-				{
-					[target.name]: target.checked
-				}
-			);
-			this.updateCurrentProxyInState(newProxy, prevState, newState);
-			return newState;
-		});
-	}
-	
-	handleHostSelectChange(event) {
-		this.setState({
-			currentHostIdx: event.target.value !== "" ? parseInt(event.target.value) : -1
-		});
-	}
-	
-	handleHostButtonClick(event) {
-		var value = event.target.value;
-		this.setState((prevState) => {
-			var newState = {};
-			var oldProxy = prevState.currentProxy;
-			var newProxy = Object.assign({}, oldProxy);
-			// Add host to end
-			if (value == '+') {
-				let lastHostEmpty = oldProxy.hosts.length && oldProxy.hosts[oldProxy.hosts.length-1].trim().length == 0;
-				if (!lastHostEmpty) {
-					newProxy.hosts = oldProxy.hosts.concat(['']);
-				}
-				newState.currentHostIdx = newProxy.hosts.length - 1;
-				this.focusHostInput = true;
-			}
-			// Delete host at current index
-			else if (value == '-') {
-				newProxy.hosts = [
-					...oldProxy.hosts.slice(0, prevState.currentHostIdx),
-					...oldProxy.hosts.slice(prevState.currentHostIdx + 1)
-				];
-				// If this was the last host, select the previous one
-				if (prevState.currentHostIdx == newProxy.hosts.length) {
-					newState.currentHostIdx = prevState.currentHostIdx - 1;
-				}
-			}
-			this.updateCurrentProxyInState(newProxy, prevState, newState);
-			return newState;
-		});
-	}
-	
-	handleHostnameChange(event) {
-		var value = event.target.value;
-		this.setState((prevState) => {
-			var newState = {};
-			var oldProxy = prevState.currentProxy;
-			var newProxy = Object.assign(
-				{},
-				oldProxy,
-				{
-					// Replace the current host value
-					hosts: oldProxy.hosts.map((h, i) => i == prevState.currentHostIdx ? value : h)
-				}
-			);
-			this.updateCurrentProxyInState(newProxy, prevState, newState);
-			return newState;
-		});
-	}
-	
-	renderProxySettings() {
-		if (!this.props.transparent || !this.state.currentProxy) {
-			return "";
+		if (name == 'toProxyScheme') {
+			setToProxyScheme(value);
 		}
+		else if (name == 'toProperScheme') {
+			setToProperScheme(value);
+		}
+	}
+
+	function handleCheckboxChange(event) {
+		var target = event.target;
+		setAutoAssociate(target.checked);
 		
-		let currentProxy = this.state.currentProxy;
-		var multiHost = currentProxy && currentProxy.toProperScheme?.includes('%h') || currentProxy.toProperScheme?.includes('%u');
-		
-		// If a host exists in the last position and is empty, don't allow adding more
-		let disableRemoveHost = this.state.currentHostIdx == -1;
-		
-		return (
-			<div className="group" style={{marginTop: "10px"}}>
-				<p style={{display: "flex", alignItems: "center", flexWrap: "wrap"}}>
-					<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={this.handleCheckboxChange} checked={currentProxy.autoAssociate}/>&nbsp;Automatically associate new hosts</label>
-				</p>
-				<p style={{display: "flex", alignItems: "center"}}>
-					<label style={{alignSelf: "center", marginRight: "5px"}}>Login URL Scheme: </label>
-					<input style={{flexGrow: "1"}} type="text" name="toProxyScheme" onChange={this.handleSchemeChange} value={currentProxy.toProxyScheme || ""} ref={"toProxyInput"}/>
-				</p>	
-				<p style={{display: "flex", alignItems: "center"}}>
-					<label style={{alignSelf: "center", marginRight: "5px"}}>Proxied URL Scheme: </label>
-					<input style={{flexGrow: "1"}} type="text" name="toProperScheme" onChange={this.handleSchemeChange} value={currentProxy.toProperScheme} ref={"toProperInput"}/>
-				</p>
+	}
+
+	function handleTypeChange(event) {
+		var value = event.target.value;
+		setIsOpenAthens(value === 'openathens');
+	}
+
+	function handleHostSelectChange(event) {
+		setCurrentHostIdx(event.target.value !== "" ? parseInt(event.target.value) : -1);
+	}
+
+	function handleAddHost() {
+		setHosts(hosts.concat(['']));
+		setCurrentHostIdx(hosts.length);
+	}
+
+	function handleRemoveHost() {
+		setHosts(hosts.filter((h, i) => i != currentHostIdx));
+		if (hosts.length - 1) {
+			setCurrentHostIdx(Math.max(0, currentHostIdx - 1));
+		}
+		else {
+			setCurrentHostIdx(-1);
+		}
+	}
+
+	function handleHostnameChange(event) {
+		var value = event.target.value;
+		setHosts(hosts.map((h, i) => i == currentHostIdx ? value : h));
+	}
+
+	return (
+		<div className="group" style={{marginTop: "10px"}}>
+			<p>
+				<label><input type="radio" name="proxyType" value="ezproxy" checked={!isOpenAthens} onChange={handleTypeChange}/>URL-rewriting proxy (e.g. EZproxy)</label>
+				<label><input type="radio" name="proxyType" value="openathens" checked={isOpenAthens} onChange={handleTypeChange}/>OpenAthens</label>
+			</p>
+			<p>
+				<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={handleCheckboxChange} checked={autoAssociate}/>&nbsp;Automatically associate new hosts</label>
+			</p>
+			<p>
+				<label>Login URL Scheme:
+					<input style={{flexGrow: "1"}} type="text" name="toProxyScheme" onChange={handleSchemeChange} value={toProxyScheme || ""} ref={toProxyInputRef}/>
+				</label>
+			</p>
+			<p>
+				<label>Proxied URL Scheme:
+					<input style={{flexGrow: "1"}} type="text" name="toProperScheme" onChange={handleSchemeChange} value={toProperScheme || ""}/>
+				</label>
+			</p>
+
+			{error && <p style={{color: "red"}}>{Zotero.getString(error[0], error.slice(1))}</p>}
+
+			<p>
+				You may use the following variables in your proxy schemes:<br/>
+				&#37;h - The hostname of the proxied site (e.g., www.example.com)<br/>
+				&#37;p - The path of the proxied page excluding the leading slash (e.g., about/index.html)<br/>
+				&#37;u - Full encoded proxied site url (e.g. https://www.example.com/about/index.html)
+			</p>
+			
+			<div style={{display: "flex", flexDirection: "column", marginTop: "10px"}}>
+				<label>Hostnames</label>
+				<select className="Preferences-Proxies-hostSelect" size="8" multiple
+						value={[currentHostIdx != -1 ? currentHostIdx : '']}
+						onChange={handleHostSelectChange}>
+					{hosts.map((host, i) =>
+						<option key={i} value={i}>{host}</option>)}
+				</select>
 				<p>
-					You may use the following variables in your proxy schemes:<br/>
-					&#37;h - The hostname of the proxied site (e.g., www.example.com)<br/>
-					&#37;p - The path of the proxied page excluding the leading slash (e.g., about/index.html)<br/>
-					&#37;u - Full encoded proxied site url (e.g. https://www.example.com/about/index.html)
+					<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleAddHost} value="+"/>
+					<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleRemoveHost} disabled={disableRemoveHost} value="-"/>
 				</p>
 				
-				<div style={{display: "flex", flexDirection: "column", marginTop: "10px"}}>
-					<label>Hostnames</label>
-					<select className="Preferences-Proxies-hostSelect" size="8" multiple
-							value={[this.state.currentHostIdx]}
-							onChange={this.handleHostSelectChange}>
-						{currentProxy.hosts.map((host, i) =>
-							<option key={i} value={i}>{host}</option>)}
-					</select>
-					<p>
-						<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostButtonClick} value="+"/>
-						<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostButtonClick} disabled={disableRemoveHost} value="-"/>
-					</p>
-
-					<p style={{display: this.state.currentHostIdx === -1 ? 'none' : 'flex'}}>
-						<label style={{alignSelf: 'center', marginRight: "5px"}}>Hostname: </label>
+				<p style={{display: currentHostIdx === -1 ? 'none' : 'flex'}}>
+					<label>Hostname:
 						<input style={{flexGrow: '1'}}
 							type="text"
-							value={currentProxy.hosts[this.state.currentHostIdx] || ''}
-							onChange={this.handleHostnameChange} ref={"hostInput"}/>
-					</p>
-				</div>
-			</div>
-		);
-	};
-	
-	render() {
-		return (
-			<div style={{display: "flex", flexDirection: "column"}}>
-				<select className="Preferences-Proxies-proxySelect" size="8" multiple
-						value={[this.state.currentProxy ? this.state.currentProxy.id : '']}
-						onChange={this.handleProxySelectChange}
-						disabled={!this.props.transparent}>
-					{this.state.proxies.length && this.state.proxies.map((proxy, i) => {
-						return <option key={i} value={proxy.id}>{proxy.toProxyScheme || proxy.toProperScheme}</option>;
-					})}
-				</select>
-				<p style={{display: this.props.transparent ? null : 'none'}}>
-					<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleProxyButtonClick} value="+"/>
-					<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleProxyButtonClick} disabled={!this.state.currentProxy} value="-"/>
+							value={hosts[currentHostIdx] || ""}
+							onChange={handleHostnameChange} ref={hostInputRef}/>
+					</label>
 				</p>
-				
-				{this.renderProxySettings()}
 			</div>
-		);
+		</div>
+	);
+};
+
+
+Zotero_Preferences.Components.Proxies = function Proxies(props) {
+	const [proxies, setProxies] = React.useState(() =>
+		Zotero.Prefs.get('proxies.proxies').map((proxy) => {
+			proxy.toProperScheme = proxy.toProperScheme || proxy.scheme;
+			return proxy;
+		})
+	);
+	const [currentProxyIdx, setCurrentProxyIdx] = React.useState(-1);
+
+	function onProxyChange(updatedProxy) {
+		setProxies((prev) => prev.map((p, i) => i == currentProxyIdx ? updatedProxy : p));
 	}
+
+	function handleProxySelectChange(event) {
+		var target = event.target;
+		setCurrentProxyIdx(proxies.findIndex(p => p.id == target.value));
+	}
+
+	function handleProxyAdd() {
+		setProxies((prev) => prev.concat([{
+			id: Date.now(),
+			toProxyScheme: 'https://www.example.com/login?qurl=%u',
+			toProperScheme: '%h.example.com/%p',
+			autoAssociate: true,
+			hosts: []
+		}]));
+		setCurrentProxyIdx(proxies.length);
+	}
+
+	function handleProxyRemove() {
+		setProxies((prev) => prev.filter((p, i) => i != currentProxyIdx));
+		setCurrentProxyIdx(Math.max(0, currentProxyIdx - 1));
+		Zotero.Proxies.remove(proxies[currentProxyIdx]);
+	}
+
+	return (
+		<div style={{display: "flex", flexDirection: "column"}}>
+			<select className="Preferences-Proxies-proxySelect" size="8" multiple
+					value={[currentProxyIdx != -1 ? proxies[currentProxyIdx].id : '']}
+					onChange={handleProxySelectChange}
+					disabled={!props.transparent}>
+				{proxies.length && proxies.map((proxy, i) => {
+					return <option key={i} value={proxy.id}>{proxy.toProxyScheme || proxy.toProperScheme}</option>;
+				})}
+			</select>
+			<p style={{display: props.transparent ? null : 'none'}}>
+				<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleProxyAdd} value="+"/>
+				<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleProxyRemove} disabled={!currentProxyIdx} value="-"/>
+			</p>
+			
+			<Zotero_Preferences.Components.ProxyDetails
+				transparent={props.transparent}
+				proxy={proxies[currentProxyIdx]}
+				onProxyChange={onProxyChange}
+			/>
+		</div>
+	);
 };
 
 
@@ -865,22 +835,49 @@ Zotero_Preferences.Components.MIMETypeHandling = class MIMETypeHandling extends 
 	}
 };
 
-Zotero_Preferences.Components.ShortcutInput = class extends React.Component {
-	constructor(props) {
-		super(props);
-		this.handleKeyDown = this.handleKeyDown.bind(this);
-		this.handleBlur = this.handleBlur.bind(this);
-		this.state = {modifiers: Zotero.Prefs.get(props.pref) || {}};
+
+
+// Customized built-in web component: <input is="shortcut-input">
+class ShortcutInput extends HTMLInputElement {
+	constructor() {
+		super();
+		this._connected = false;
+		this._keys = ['ctrlKey', 'altKey', 'shiftKey', 'metaKey'];
 	}
 
-	async handleKeyDown(e) {
-		if (e.key == 'Tab') {
-			return;
-		}
-		const keys = ['ctrlKey', 'altKey', 'shiftKey', 'metaKey'];
+	async connectedCallback() {
+		if (this._connected) return;
+		this._connected = true;
+		this.setAttribute('autocomplete', 'off');
+		this.setAttribute('spellcheck', 'false');
+		this.addEventListener('keydown', this._handleKeyDown);
+		this.addEventListener('blur', this._handleBlur);
+		await Zotero.initDeferred.promise;
+		await this._updateFromPref();
+	}
+
+	disconnectedCallback() {
+		this.removeEventListener('keydown', this._handleKeyDown);
+		this.removeEventListener('blur', this._handleBlur);
+		this._connected = false;
+	}
+
+	get _prefName() {
+		return this.dataset.pref;
+	}
+
+	async _updateFromPref() {
+		let modifiers = await Zotero.Prefs.getAsync(this._prefName) || {};
+		this.value = Zotero.Utilities.Connector.kbEventToShortcutString(modifiers);
+		this.classList.remove('invalid');
+	}
+
+	_handleKeyDown = async (e) => {
+		if (e.key == 'Tab') return;
+		e.preventDefault();
 		let modifiers = {};
 		let invalid = false;
-		for (let key of keys) {
+		for (let key of this._keys) {
 			modifiers[key] = e[key];
 		}
 		if (e.key.length == 1) {
@@ -888,37 +885,34 @@ Zotero_Preferences.Components.ShortcutInput = class extends React.Component {
 		} else {
 			modifiers.key = '';
 		}
-		if (modifiers.key && keys.some(k => modifiers[k])) {
-			Zotero.Prefs.set(this.props.pref, modifiers);
+		if (e.key == 'Backspace' || e.key == 'Escape' || e.key == 'Delete') {
+			Zotero.Prefs.clear(this._prefName);
+			await this._updateFromPref();
+			return;
+		}
+		if (modifiers.key && this._keys.some(k => modifiers[k])) {
+			Zotero.Prefs.set(this._prefName, modifiers);
 		} else {
 			invalid = true;
 		}
-		if (e.key == 'Backspace' || e.key == 'Escape' || e.key == 'Delete') {
-			Zotero.Prefs.clear(this.props.pref);
-			modifiers = await Zotero.Prefs.getAsync(this.props.pref) || {};
-			invalid = false;
-		}
-		this.setState({modifiers, invalid});
-	}
-
-	async handleBlur() {
-		const keys = ['ctrlKey', 'altKey', 'shiftKey', 'metaKey'];
-		if (!this.state.modifiers.key || !keys.some(k => this.state.modifiers[k])) {
-			let modifiers = await Zotero.Prefs.getAsync(this.props.pref) || {};
-			this.setState({modifiers, invalid: false});
+		this.value = Zotero.Utilities.Connector.kbEventToShortcutString(modifiers);
+		if (invalid) {
+			this.classList.add('invalid');
+		} else {
+			this.classList.remove('invalid');
 		}
 	}
 
-	render() {
-		let val = Zotero.Utilities.Connector.kbEventToShortcutString(this.state.modifiers);
-
-		let classes = "shortcut-input";
-		if (this.state.invalid) {
-			classes += " invalid"
+	_handleBlur = async () => {
+		let saved = await Zotero.Prefs.getAsync(this._prefName) || {};
+		if (!saved.key || !this._keys.some(k => saved[k])) {
+			await this._updateFromPref();
 		}
-
-		return <input className={classes} onKeyDown={this.handleKeyDown} onBlur={this.handleBlur} value={val}/>
 	}
 }
+
+try {
+	customElements.define('shortcut-input', ShortcutInput, { extends: 'input' });
+} catch (e) {}
 
 window.addEventListener("load", Zotero_Preferences.init, false);

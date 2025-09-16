@@ -557,6 +557,11 @@ let PageSaving = {
 			return Zotero.Messaging.sendMessage("progressWindow.show", [this.sessionDetails.id]);
 		}
 
+		// Each save on multiple should be a new session (do not reopen the popup)
+		if (translator.itemType === 'multiple' && this.sessionDetails.id && !options.resave) {
+			options.resave = true;
+		}
+
 		const sessionID = this._initSession(translatorID, options);
 
 		// If we're likely to show the Select Items window, delay the opening of the

@@ -249,6 +249,13 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 		if (attachment.mimeType.toLowerCase() === receivedMimeType.toLowerCase()) {
 			return xhr.response;
 		}
+		// Be lenient for PDFs served as application/octet-stream (e.g., some hosts like OSF)
+		// We already allow octet-stream for pdf.js detection; accept it here too
+		const expectedPDFIsOctetStream = attachment.mimeType.toLowerCase() === 'application/pdf'
+			&& receivedMimeType.toLowerCase() === 'application/octet-stream'
+		if (expectedPDFIsOctetStream) {
+			return xhr.response;
+		}
 	} catch (e) {
 		if (!attemptBotProtectionBypass || !tab || !this._isUrlBotBypassWhitelisted(attachment.url)) {
 			throw e;

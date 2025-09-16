@@ -235,6 +235,28 @@ describe("ItemSaver Background", function() {
 				assert.equal(mimeType, 'application/pdf');
 			});
 		});
+
+		describe('When Content-Type is application/octet-stream but expecting application/pdf', function() {
+			it('should accept the response without attempting bot bypass', async function() {
+				const outcome = await background(async function(attachment, mockTab) {
+					Zotero.Utilities.Connector.getContentTypeFromXHR.returns({
+						contentType: 'application/octet-stream'
+					});
+					const response = await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return {
+						byteLength: response.byteLength,
+						iframeCalled: Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe.called,
+						windowPromptCalled: Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt.called
+					};
+				}, attachment, mockTab);
+
+				assert.equal(outcome.byteLength, 1024);
+				assert.isFalse(outcome.iframeCalled);
+				assert.isFalse(outcome.windowPromptCalled);
+			});
+		});
+
+
 	});
 
 	describe('_isUrlBotBypassWhitelisted', function() {

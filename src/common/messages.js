@@ -280,6 +280,7 @@ var MESSAGES = {
 	},
 	Proxies: {
 		loadPrefs: false,
+		validate: true,
 		save: false,
 		remove: false,
 		toggleRedirectLoopPrevention: false

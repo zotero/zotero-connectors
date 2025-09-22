@@ -266,7 +266,9 @@ Zotero.HTTP = new function() {
 				(xmlhttp.status < 200 || xmlhttp.status >= 300);
 			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(xmlhttp.status);
 			if (invalidDefaultStatus || invalidStatus) {
-				throw new Zotero.HTTP.StatusError(xmlhttp, url, typeof xmlhttp.responseText == 'string' ? xmlhttp.responseText : undefined);
+				// Firefox throws accessing responseText when the response is not text
+				let responseText = ['', 'text'].includes(xmlhttp.responseType) ? xmlhttp.responseText : undefined;
+				throw new Zotero.HTTP.StatusError(xmlhttp, url, responseText);
 			}
 			return xmlhttp;
 		}

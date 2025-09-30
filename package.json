@@ -10,7 +10,7 @@
     "bluebird": "^3.5.3",
     "chai": "^5.2.0",
     "dompurify": "^3.2.5",
-    "gulp": "^4.0.2",
+    "gulp": "^5.0.1",
     "gulp-concat": "^2.6.1",
     "gulp-plumber": "^1.2.1",
     "merge-stream": "^2.0.0",

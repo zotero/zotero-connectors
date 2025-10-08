@@ -623,7 +623,7 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 	return (
 		<div className="group" style={{marginTop: "10px"}}>
 			<p>
-				<label><input type="radio" name="proxyType" value="ezproxy" checked={!isOpenAthens} onChange={handleTypeChange}/>URL-rewriting proxy (e.g. EZproxy)</label>
+				<label><input type="radio" name="proxyType" value="ezproxy" checked={!isOpenAthens} onChange={handleTypeChange}/>URL-rewriting proxy (e.g., EZproxy)</label>
 				<label><input type="radio" name="proxyType" value="openathens" checked={isOpenAthens} onChange={handleTypeChange}/>OpenAthens</label>
 			</p>
 			<p>

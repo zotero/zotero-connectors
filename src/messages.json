@@ -301,6 +301,9 @@
 	"proxy_validate_schemeNoPath": {
 		"message": "The login URL scheme does not contain a path (%p). Please enter a valid login URL scheme."
 	},
+	"proxy_validate_openAthens_domainInvalid": {
+		"message": "The OpenAthens redirector domain is invalid. Please enter a valid OpenAthens redirector domain."
+	},
 	
 	"permissions_siteAccess_title": {
 		"message": "Site Access Permissions Required"

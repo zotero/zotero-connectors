@@ -92,6 +92,11 @@ body {
 	margin: 10px 0 0 0;
 }
 
+.proxy-grid {
+    display: grid ;
+    grid-template-columns: min-content 400px;
+}
+
 label {
 	white-space: nowrap;
 	margin-right: 10px;

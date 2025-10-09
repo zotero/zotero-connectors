@@ -585,6 +585,12 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 		}
 	}
 
+	function handleOpenAthensDomainChange(event) {
+		var domain = event.target.value;
+		var newToProxyScheme = domain ? `https://go.openathens.net/redirector/${domain}?url=%u` : '';
+		setToProxyScheme(newToProxyScheme);
+	}
+
 	function handleCheckboxChange(event) {
 		var target = event.target;
 		setAutoAssociate(target.checked);
@@ -620,34 +626,55 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 		setHosts(hosts.map((h, i) => i == currentHostIdx ? value : h));
 	}
 
+	function getOpenAthensDomain() {
+		if (!toProxyScheme) return '';
+		var match = toProxyScheme.match(/\/redirector\/([^?]+)/);
+		return match ? match[1] : '';
+	}
+	function _renderProxyInput() {
+		return (
+			<div className="proxy-grid">
+				<label htmlFor="to-proxy-scheme-input">Login URL Scheme:</label>
+				<input id="to-proxy-scheme-input" style={{flexGrow: "1"}} type="text" name="toProxyScheme" onChange={handleSchemeChange} value={toProxyScheme || ""} ref={toProxyInputRef}/>
+				<label htmlFor="to-proper-scheme-input">Proxied URL Scheme:</label>
+				<input id="to-proper-scheme-input" style={{flexGrow: "1"}} type="text" name="toProperScheme" onChange={handleSchemeChange} value={toProperScheme || ""}/>
+			</div>
+		)
+	}
+
+	function _renderOpenAthensInput() {
+		return (
+			<div className="proxy-grid">
+				<label htmlFor="openathens-domain-input">OpenAthens Redirector Domain:</label>
+				<input id="openathens-domain-input" style={{flexGrow: "1"}} type="text" name="openathensDomain" onChange={handleOpenAthensDomainChange} value={getOpenAthensDomain() || ""} placeholder="yourinstitution.ac.uk"/>
+			</div>
+		)
+	}
+
 	return (
 		<div className="group" style={{marginTop: "10px"}}>
 			<p>
 				<label><input type="radio" name="proxyType" value="ezproxy" checked={!isOpenAthens} onChange={handleTypeChange}/>URL-rewriting proxy (e.g., EZproxy)</label>
 				<label><input type="radio" name="proxyType" value="openathens" checked={isOpenAthens} onChange={handleTypeChange}/>OpenAthens</label>
 			</p>
-			<p>
-				<label style={{visibility: multiHost ? null : 'hidden'}}><input type="checkbox" name="autoAssociate" onChange={handleCheckboxChange} checked={autoAssociate}/>&nbsp;Automatically associate new hosts</label>
-			</p>
-			<p>
-				<label>Login URL Scheme:
-					<input style={{flexGrow: "1"}} type="text" name="toProxyScheme" onChange={handleSchemeChange} value={toProxyScheme || ""} ref={toProxyInputRef}/>
-				</label>
-			</p>
-			<p>
-				<label>Proxied URL Scheme:
-					<input style={{flexGrow: "1"}} type="text" name="toProperScheme" onChange={handleSchemeChange} value={toProperScheme || ""}/>
-				</label>
-			</p>
+
+			{multiHost && !isOpenAthens &&
+				<p>
+					<label><input type="checkbox" name="autoAssociate" onChange={handleCheckboxChange} checked={autoAssociate}/>&nbsp;Automatically associate new hosts</label>
+				</p>
+			}
+			{isOpenAthens ? _renderOpenAthensInput() : _renderProxyInput()}
 
 			{error && <p style={{color: "red"}}>{Zotero.getString(error[0], error.slice(1))}</p>}
 
-			<p>
-				You may use the following variables in your proxy schemes:<br/>
-				&#37;h - The hostname of the proxied site (e.g., www.example.com)<br/>
-				&#37;p - The path of the proxied page excluding the leading slash (e.g., about/index.html)<br/>
-				&#37;u - Full encoded proxied site url (e.g. https://www.example.com/about/index.html)
-			</p>
+			{!isOpenAthens &&
+				<p>
+					You may use the following variables in your proxy schemes:<br/>
+					&#37;h - The hostname of the proxied site (e.g., www.example.com)<br/>
+					&#37;p - The path of the proxied page excluding the leading slash (e.g., about/index.html)<br/>
+					&#37;u - Full encoded proxied site url (e.g. https://www.example.com/about/index.html)
+				</p>
+			}
 			
 			<div style={{display: "flex", flexDirection: "column", marginTop: "10px"}}>
 				<label>Hostnames</label>

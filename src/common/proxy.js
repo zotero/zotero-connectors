@@ -957,7 +957,7 @@ Zotero.Proxy = class {
 	 */
 	toDisplayName() {
 		if (this.type === 'openathens') {
-			return this.toProxyScheme.match(/\/redirector\/([^?]+)/)[1];
+			return this.toProxyScheme.match(/\/redirector\/([^?]+)/)?.[1] || this.toProxyScheme;
 		}
 		try {
 			var parts = this.toProperScheme.match(/^(?:(?:[^:]+):\/\/)?([^\/]+)/);
@@ -981,6 +981,10 @@ Zotero.Proxy.OpenAthensProxy = class extends Zotero.Proxy {
 		this.type = 'openathens';
 		// Regexp to match the redirect URL and capture the destination to add to hosts
 		this.toProxyRegexp = new RegExp(XRegExp.escape(this.toProxyScheme).replace('%u', '([^&]+)'));
+	}
+
+	get domain() {
+		return this.toProxyScheme.match(/\/redirector\/([^?]+)/)?.[1] || "";
 	}
 
 	/**
@@ -1049,6 +1053,11 @@ Zotero.Proxy.OpenAthensProxy = class extends Zotero.Proxy {
 			});
 		}
 		return {redirectUrl: this.toProxy(details.url)};
+	}
+
+	validate() {
+		if (this.domain.length < 3) return ["proxy_validate_openAthens_domainInvalid"];
+		return super.validate();
 	}
 }
 

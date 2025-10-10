@@ -50,7 +50,7 @@ Zotero.Messaging = new function() {
 			// and is back online. We need to refresh the tab data before
 			// we can issue any other commands to it
 			const messageId = Math.floor(Math.random() * 1e12);
-			let onTabDataPromise = generateResponsePromise(messageId, true);
+			generateResponsePromise(messageId, true);
 			safari.extension.dispatchMessage('message', {
 				message: 'Connector_Browser.onTabData',
 				messageId,
@@ -70,7 +70,7 @@ Zotero.Messaging = new function() {
 				Zotero[ns][meth] = new function() {
 					var messageName = ns+MESSAGE_SEPARATOR+meth;
 					var messageConfig = MESSAGES[ns][meth];
-					return function() {
+					return async function() {
 						// see if last argument is a callback
 						var callback, callbackArg = null;
 						if(messageConfig) {
@@ -92,7 +92,8 @@ Zotero.Messaging = new function() {
 
 						let requestID = `${messageName}_${Math.floor(Math.random() * 1e12)}`;
 						let responsePromise = generateResponsePromise(requestID, messageConfig, callback);
-						sendMessage(messageName, requestID, newArgs);
+						// Might throw for SwiftPing timeout
+						await sendMessage(messageName, requestID, newArgs);
 						return responsePromise;
 					};
 				};
@@ -128,7 +129,6 @@ Zotero.Messaging = new function() {
 				var callback = _callbacks[messageId];
 				// if no function matching, message must have been for another instance in this tab
 				if (!callback) return;
-				delete _callbacks[messageId];
 
 				// run callback
 				callback(payload);
@@ -137,11 +137,14 @@ Zotero.Messaging = new function() {
 			}
 		}
 		
-		async function sendMessage(message, messageId, args) {
+		async function sendMessage(message, messageId, args, attempt=0) {
 			// The Safari App Extension likes to kill the background page,
 			// so we have to keep pinging it to see if it's still there
 			const requestID = `SwiftPing_${Math.floor(Math.random() * 1e12)}`;
-			let pingPromise = generateResponsePromise(requestID, true);
+			let pingPromise = generateResponsePromise(requestID, true)
+			// If we get a nil response don't immediately retry, wait 1 second first
+			// otherwise this turns into spam
+				.then(v => v || Zotero.Promise.delay(1000));
 			safari.extension.dispatchMessage('message', {
 				message: 'ping',
 				messageId: requestID,
@@ -150,8 +153,11 @@ Zotero.Messaging = new function() {
 			// If we do not receive a response in 1 second then the
 			// background page is too unresponsive for some reason and we need to act
 			let response = await Zotero.Promise.race([pingPromise, Zotero.Promise.delay(1000)]);
-			if (!response) {
-				return sendMessage(message, messageId, args);
+			if (!response && attempt < 5) {
+				return sendMessage(message, messageId, args, attempt+1);
+			}
+			else if (attempt >= 5) {
+				throw new Error(`Zotero Connector: Failed to send message ${message} to background page. It may be dead.`);
 			}
 			
 			safari.extension.dispatchMessage('message', {
@@ -162,8 +168,9 @@ Zotero.Messaging = new function() {
 		}
 		
 		async function generateResponsePromise(requestID, messageConfig, callback) {
-			return new Zotero.Promise(function(resolve, reject) {
-				if (messageConfig) {
+			if (!messageConfig) return;
+			try {
+				return await new Zotero.Promise(function (resolve, reject) {
 					_callbacks[requestID] = function (response) {
 						if (response && response[0] == 'error') {
 							response[1] = JSON.parse(response[1]);
@@ -177,15 +184,16 @@ Zotero.Messaging = new function() {
 							}
 							if (typeof callback == 'function') callback(response);
 							resolve(response);
-						} catch (e) {
+						}
+						catch (e) {
 							Zotero.logError(e);
 							reject(e);
 						}
 					}
-				} else {
-					resolve();
-				}
-			});
+				});
+			} finally {
+				delete _callbacks[requestID];
+			}
 		}
 		
 		safari.self.addEventListener("message", function(event) {

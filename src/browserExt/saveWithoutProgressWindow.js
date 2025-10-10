@@ -106,7 +106,7 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		await Zotero.Connector.ping();
 		const zoteroSupportsAttachmentUpload = Zotero.Connector.getPref('supportsAttachmentUpload');
 		if (zoteroSupportsAttachmentUpload) {
-			await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(data, data.sessionID);
+			await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(data, data.sessionID, tab);
 		}
 		else {
 			await Zotero.Connector.callMethodWithCookies("saveSnapshot", data, tab);

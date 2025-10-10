@@ -25,6 +25,7 @@
 
 let BOT_BYPASS_WHITELISTED_DOMAINS = [
 	'sciencedirect.com',
+	'pdf.sciencedirectassets.com',
 	'ncbi.nlm.nih.gov', // PubMed
 ];
 
@@ -353,23 +354,28 @@ Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt = async function(url, tab) {
 	Zotero.debug(`Attempting to pass JS bot detection via window prompt for URL: ${url}`);
 	
 	// Get screen dimensions and position
-	const screenInfo = await browser.scripting.executeScript({
-		target: { tabId: tab.id },
-		func: () => {
-			return {
-				width: window.screen.availWidth,
-				height: window.screen.availHeight,
-				left: window.screen.availLeft,
-				top: window.screen.availTop
-			};
-		}
-	});
-	
-	const screen = screenInfo[0].result;
-	const width = Math.floor(screen.width * 0.8);
-	const height = Math.floor(screen.height * 0.8);
-	const left = screen.left + Math.floor((screen.width - width) / 2);
-	const top = screen.top + Math.floor((screen.height - height) / 2);
+	let left, top, width, height;
+	try {
+		const screenInfo = await browser.scripting.executeScript({
+			target: { tabId: tab.id },
+			func: () => {
+				return {
+					width: window.screen.availWidth,
+					height: window.screen.availHeight,
+					left: window.screen.availLeft,
+					top: window.screen.availTop
+				};
+			}
+		});
+		const screen = screenInfo[0].result;
+		width = Math.floor(screen.width * 0.8);
+		height = Math.floor(screen.height * 0.8);
+		left = screen.left + Math.floor((screen.width - width) / 2);
+		top = screen.top + Math.floor((screen.height - height) / 2);
+	} catch (e) {
+		Zotero.debug(`Error getting screen dimensions and position for window prompt for ${url}`);
+		Zotero.debug(e);
+	}
 	
 	// Create window for CAPTCHA solving
 	const monitorUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html");

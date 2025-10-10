@@ -321,7 +321,13 @@ MESSAGES.COHTTP = {
 					let match = xhr.responseHeaders.match(new RegExp(`^${name}: (.*)$`, 'mi'));
 					return match ? match[1] : null;
 				};
-				if (Array.isArray(xhr.response) && xhr.responseType === "arraybuffer" || (xhr.response.startsWith && xhr.response.startsWith('blob:'))) {
+				// Safari Base64 encoded string
+				let isSafariArrayBuffer = Zotero.isSafari && xhr.responseType === "arraybuffer";
+				// MV3 packed array
+				let isArrayBuffer = Array.isArray(xhr.response) && xhr.responseType === "arraybuffer";
+				// MV2 blob url
+				let isBlob = xhr.response.startsWith && xhr.response.startsWith('blob:');
+				if (isSafariArrayBuffer || isArrayBuffer || isBlob) {
 					xhr.response = await unpackArrayBuffer(xhr.response);
 				} else {
 					xhr.responseText = xhr.response;

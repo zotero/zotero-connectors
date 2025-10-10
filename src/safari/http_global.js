@@ -94,6 +94,11 @@ Zotero.HTTP.request = async function(method, url, options={}) {
 	result.getAllResponseHeaders = () => {
 		return Object.entries(responseHeaders).map(([key, value]) => `${key}: ${value}`).join('\n');
 	};
+
+	if (result.response instanceof ArrayBuffer) {
+		result.responseType = 'arraybuffer';
+	}
+
 	return result;
 }
 

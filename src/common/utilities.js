@@ -159,18 +159,32 @@ Zotero.Utilities.Connector = {
 	 * @return {string} - The base64 encoded string
 	 */
 	arrayBufferToBase64: function(buffer) {
-		// Create a Uint8Array view of the ArrayBuffer
-		const uint8Array = new Uint8Array(buffer);
-		
-		// Convert to a binary string
-		let binary = '';
-		const len = uint8Array.byteLength;
-		for (let i = 0; i < len; i++) {
-			binary += String.fromCharCode(uint8Array[i]);
+		// Byte-wise Base64 encoder that doesn't rely on btoa, safe for arbitrary binary data
+		const bytes = new Uint8Array(buffer);
+		const base64abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+		let result = "";
+		let i = 0;
+		const len = bytes.length;
+		for (; i + 2 < len; i += 3) {
+			let n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+			result += base64abc[(n >> 18) & 63]
+				+ base64abc[(n >> 12) & 63]
+				+ base64abc[(n >> 6) & 63]
+				+ base64abc[n & 63];
 		}
-		
-		// Convert binary string to base64
-		return btoa(binary);
+		if (i < len) {
+			let n = bytes[i] << 16;
+			result += base64abc[(n >> 18) & 63];
+			if (i === len - 1) {
+				result += base64abc[(n >> 12) & 63] + "==";
+			} else {
+				n |= bytes[i + 1] << 8;
+				result += base64abc[(n >> 12) & 63]
+					+ base64abc[(n >> 6) & 63]
+					+ "=";
+			}
+		}
+		return result;
 	},
 	
 	/**

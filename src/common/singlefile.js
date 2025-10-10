@@ -26,7 +26,11 @@
 const FETCH_REQUEST_EVENT = "single-file-request-fetch";
 const FETCH_RESPONSE_EVENT = "single-file-response-fetch";
 
+let fetchNum =
+
 Zotero.SingleFile = {
+	_throttledRequest: Zotero.Utilities.throttle((...args) => Zotero.COHTTP.request(...args), 10),
+
 	singleFileFetch: async function(url, options = {}) {
 		try {
 			options.referrerPolicy = 'strict-origin-when-cross-origin';
@@ -39,10 +43,10 @@ Zotero.SingleFile = {
 		options.responseType = 'arraybuffer';
 		options.referrer = document.location.href;
 		delete options.referrerPolicy;
-		let xhr = await Zotero.COHTTP.request("GET", url, options);
-		if (Zotero.isSafari) {
-			xhr.response = this._base64StringToUint8Array(xhr.response).buffer;
-		}
+		// Singlefile likes to fire off 50 requests at once which doesn't seem healthy in general
+		// but it's causing catastrophic failures on Safari when saving substack, at least during dev,
+		// so we throttle it.
+		let xhr = await this._throttledRequest("GET", url, options);
 		return {
 			status: xhr.status,
 			arrayBuffer: async () => xhr.response,

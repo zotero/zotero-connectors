@@ -67,6 +67,11 @@ Zotero.Connector_Browser = new function() {
 	
 	this.onTabFocus = _updateButtonStatus;
 	
+	this.isTabFocused = function() {
+		// TODO
+		return true;
+	}
+	
 	/**
 	 * If there's a frame with a PDF mimeType this gets invoked
 	 * @param frameURL

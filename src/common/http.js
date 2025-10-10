@@ -380,6 +380,7 @@ Zotero.HTTP = new function() {
 					err = new Zotero.HTTP.TimeoutError(url, options.timeout);
 				}
 				else {
+					Zotero.debug(`HTTP 0 ${url} response: ${e.message}`);
 					if (options.successCodes === false) {
 						return {
 							status: 0,
@@ -391,7 +392,6 @@ Zotero.HTTP = new function() {
 							getAllResponseHeaders: () => "",
 							getResponseHeader: () => ""
 						}
-						Zotero.debug(`HTTP 0 ${url} response: ${e.message}`);
 					}
 					err = new Zotero.HTTP.StatusError({ status: 0 }, url, e.message);
 				}

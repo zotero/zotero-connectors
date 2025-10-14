@@ -258,7 +258,7 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 			return xhr.response;
 		}
 	} catch (e) {
-		if (!attemptBotProtectionBypass || !tab || !this._isUrlBotBypassWhitelisted(attachment.url)) {
+		if (e.status === 404 || !attemptBotProtectionBypass || !tab || !this._isUrlBotBypassWhitelisted(attachment.url)) {
 			throw e;
 		}
 		Zotero.debug(`Error downloading attachment ${attachment.url} : ${e.message} \nattempting bot protection bypass`);

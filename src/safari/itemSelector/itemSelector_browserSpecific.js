@@ -30,7 +30,7 @@ function sendMessage() {
 	if(responseSent) return;
 	responseSent = true;
 	// send message
-	const requestID = Math.floor(Math.random() * 1e12);
+	const requestID = `selectDone_${Math.floor(Math.random() * 1e12)}`;
 	safari.extension.dispatchMessage('message', {
 		message: "Messaging.sendMessage",
 		messageId: requestID,

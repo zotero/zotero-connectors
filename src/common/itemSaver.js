@@ -591,7 +591,16 @@ ItemSaver.prototype = {
 	},
 	
 	_setAttachmentReferer(attachment) {
-		attachment.referrer = new URL(document.location.href).origin;
+		const url = new URL(document.location.href);
+
+		try {
+			// Might throw if attachment.url is invalid/undefined
+			const attachmentUrl = new URL(attachment.url);
+			const sameOrigin = attachmentUrl.origin === url.origin && attachmentUrl.scheme === url.scheme;
+			attachment.referrer = sameOrigin ? url.href : url.origin;
+		} catch (e) {
+			attachment.referrer = url.origin;
+		}
 	},
 	
 	/**

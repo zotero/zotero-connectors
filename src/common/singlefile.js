@@ -29,7 +29,7 @@ const FETCH_RESPONSE_EVENT = "single-file-response-fetch";
 let fetchNum =
 
 Zotero.SingleFile = {
-	_throttledRequest: Zotero.Utilities.throttle((...args) => Zotero.COHTTP.request(...args), 10),
+	_throttledRequest: Zotero.Utilities.Connector.throttleAsync(Zotero.COHTTP.request, 10),
 
 	singleFileFetch: async function(url, options = {}) {
 		try {

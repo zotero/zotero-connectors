@@ -31,6 +31,21 @@
 Zotero.Utilities = Zotero.Utilities || {};
 
 Zotero.Utilities.Connector = {
+	throttleAsync: function(func, wait) {
+		var previous = 0;
+		return function() {
+			let now = Date.now();
+			let remaining = wait - (now - previous);
+			if (remaining <= 0) {
+				previous = now;
+				return func.apply(this, arguments);
+			}
+			// Reserve time for next invocation
+			previous = now + remaining;
+			return new Promise(resolve => setTimeout(resolve, remaining)).then(() => func.apply(this, arguments));
+		}
+	},
+
 	kbEventToShortcutString: function (e) {
 		const keymap = [
 			['ctrlKey', 'Ctrl+'],

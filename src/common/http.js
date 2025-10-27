@@ -354,6 +354,8 @@ Zotero.HTTP = new function() {
 			if (options.referrer) {
 				options.headers['Referer'] = options.referrer;
 			}
+
+			await this._augmentCfCookie(url, options);
 			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
 				.map(header => {
 					const val = { name: header, value: options.headers[header] }
@@ -587,6 +589,28 @@ Zotero.HTTP = new function() {
 		};
 		return deferred.promise;
 	};
+
+	/**
+	 * Claudflare started setting their cf_clearance cookie from an iframe, perhaps as an additional bot
+	 * protection measure which sets it under a partition key.
+	 * Chrome service worker doesn't send this cookie via fetch even with credentials: 'include'.
+	 * Firefox devtools don't show it sending this cookie either, but the request succeeds, although if you
+	 * copy the request as curl and attempt it in the terminal it fails.
+	 * 
+	 * Likely to continue causing headaches.
+	 * @param {Object} options
+	 */
+	this._augmentCfCookie = async function(url, options) {
+		const cfCookies = await browser.cookies.getAll({url, name: 'cf_clearance', partitionKey: {}});
+		if (!cfCookies.length) return;
+		const cookieString = cfCookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+		if (options.headers['Cookie']) {
+			options.headers['Cookie'] = `${options.headers['Cookie']}; ${cookieString}`;
+		}
+		else {
+			options.headers['Cookie'] = cookieString;
+		}
+	}
 }
 
 // Alias as COHTTP = Cross-origin HTTP; this is how we will call it from children

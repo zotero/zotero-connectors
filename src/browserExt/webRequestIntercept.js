@@ -155,6 +155,10 @@ Zotero.WebRequestIntercept = {
 	
 	replaceHeadersDNR: async function(url, headers) {
 		const requestHeaders = headers.map((headerObj) => {
+			if (headerObj.name.toLowerCase() === 'cookie') {
+				// Chrome bug: 'append' op is checked against an allow-list and fails if header name is not lowercase
+				return { header: headerObj.name.toLowerCase(), value: headerObj.value, operation: 'append' };
+			}
 			return { header: headerObj.name, value: headerObj.value, operation: 'set' }
 		});
 		const ruleID = Math.floor(Math.random() * 100000);

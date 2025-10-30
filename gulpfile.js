@@ -123,6 +123,7 @@ var backgroundInclude = [
 	'oauthsimple.js',
 	'proxy.js',
 	'connector.js',
+	'updaterFix.js',
 	'repo.js',
 	'translate/debug.js',
 	'translate/tlds.js',

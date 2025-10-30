@@ -27,7 +27,7 @@ Zotero.UpdaterFix = {
 	updaterFixCommandIssued: false,
 	affectedVersions: new Set(["7.0.16"]),
 	
-	onZoteroStateChange: async (version) => {
+	onStateChange: async (version) => {
 		if (!version) {
 			this.updaterFixCommandIssued = false;
 			return;

@@ -61,24 +61,8 @@ export class ConnectorWebTranslationEnvironment extends AbstractWebTranslationEn
 	 * @returns {Promise<true>}
 	 */
 	async waitForLoad(tab, { tester }) {
-		let waitForLoadComplete = () => new Promise((resolve) => {
-			let loadListener = (tabId, changeInfo) => {
-				if (tabId !== tab.id) {
-					return;
-				}
-				if (changeInfo.status !== 'complete') {
-					return;
-				}
-
-				browser.tabs.onUpdated.removeListener(loadListener);
-				resolve();
-			};
-			browser.tabs.onUpdated.addListener(loadListener);
-		});
-		
 		// Wait for potential immediate redirects
 		while (tab.status === 'loading') {
-			await waitForLoadComplete();
 			await Zotero.Promise.delay(1000);
 			tab = await browser.tabs.get(tab.id);
 		}

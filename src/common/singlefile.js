@@ -26,8 +26,6 @@
 const FETCH_REQUEST_EVENT = "single-file-request-fetch";
 const FETCH_RESPONSE_EVENT = "single-file-response-fetch";
 
-let fetchNum =
-
 Zotero.SingleFile = {
 	_throttledRequest: Zotero.Utilities.Connector.throttleAsync(Zotero.COHTTP.request, 10),
 

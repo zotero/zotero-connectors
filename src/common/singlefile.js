@@ -111,7 +111,8 @@ Zotero.SingleFile = {
 		const scriptElement = document.createElement("script");
 		scriptElement.src = Zotero.getExtensionURL("lib/SingleFile/single-file-hooks-frames.js");
 		scriptElement.async = false;
-		(document.documentElement || document).appendChild(scriptElement);
+		let insertElement = document.head || document.documentElement || document;
+		insertElement.appendChild(scriptElement);
 		scriptElement.remove();
 	},
 

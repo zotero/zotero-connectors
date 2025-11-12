@@ -47,7 +47,7 @@ Zotero.HTTP = new function() {
 			this.retryAfter = xmlhttp.getResponseHeader('Retry-After');
 		}
 		try {
-			this.responseText = responseText;
+			this.responseText = responseText.substr(0, 1024);
 		} catch (e) {}
 	};
 	this.StatusError.prototype = Object.create(Error.prototype);

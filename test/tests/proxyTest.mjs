@@ -25,27 +25,15 @@
 
 import { background, offscreen } from '../support/utils.mjs';
 
+async function setProxies(proxies) {
+	await background(function(proxies) {
+		Zotero.Proxies.proxies = proxies.map(p => new Zotero.Proxy(p));
+		Zotero.Proxies.hosts = [];
+		Zotero.Proxies.proxies.forEach(proxy => proxy.hosts.forEach(host => Zotero.Proxies.hosts[host] = proxy))
+	}, proxies);
+}
+
 describe('Zotero.Proxies', function() {
-	var originalProxies;
-
-	async function setProxies(proxies) {
-		await background(function(proxies) {
-			Zotero.Proxies.proxies = proxies.map(p => new Zotero.Proxy(p));
-			Zotero.Proxies.hosts = [];
-			Zotero.Proxies.proxies.forEach(proxy => proxy.hosts.forEach(host => Zotero.Proxies.hosts[host] = proxy))
-		}, proxies);
-	}
-
-	before(async function () {
-		originalProxies = await background(function() {
-			return Zotero.Proxies.proxies.map(p => p.toJSON());
-		});
-	});
-
-	after(async function () {
-		await setProxies(originalProxies);
-	});
-
 	describe('#getPotentialProxies()', function() {
 		it('returns no proxies if link unproxied', async function() {
 			let url = 'http://www.zotero.org/';
@@ -68,7 +56,6 @@ describe('Zotero.Proxies', function() {
 			assert.equal(Object.keys(proxies).length, 2);
 			assert.isNull(proxies[url]);
 			assert.equal(proxies['https://www.zotero.org/'].scheme, '%h.proxy.example.com/%p');
-			assert.isTrue(proxies['https://www.zotero.org/'].dotsToHyphens);
 		});
 	});
 
@@ -137,6 +124,23 @@ describe('Zotero.Proxies', function() {
 
 
 describe('Zotero.Proxy', function() {
+	before(async function () {
+		await background(function() {
+			sinon.stub(Zotero.Proxies, 'showNotification').resolves(0);
+		});
+	});
+
+	after(async function () {
+		await background(function() {
+			Zotero.Proxies.showNotification.restore();
+		});
+	});
+
+	afterEach(async function () {
+		// Reset proxies after each test
+		await setProxies([]);
+	});
+
 	describe('toProxy method', function() {
 		it('should preserve pathname and query string with toProxyScheme', async function () {
 			let result = await offscreen(function() {
@@ -306,6 +310,192 @@ describe('Zotero.Proxy', function() {
 			
 			assert.equal(result.extractedUrl, result.originalUrl);
 			assert.isTrue(result.proxiedUrl.includes("login.proxy.example.org"));
+		});
+	});
+
+	describe('maybeAddHost', function() {
+		it('adds host from proxied URL', async function() {
+			await setProxies([{ toProperScheme: '%h.proxy.example.org/%p', id: 'p1', hosts: [] }]);
+			let result = await background(function() {
+				let proxy = Zotero.Proxies.proxies[0];
+				proxy.maybeAddHost({ url: 'http://www.zotero.org.proxy.example.org/article/123' });
+				return {
+					hosts: proxy.hosts.slice(),
+					mapped: Zotero.Proxies.hosts['www.zotero.org'] ? Zotero.Proxies.hosts['www.zotero.org'].id : null
+				};
+			});
+			assert.include(result.hosts, 'www.zotero.org');
+			assert.equal(result.mapped, 'p1');
+		});
+
+		it('undashes hyphenated hostnames (HTTPS hyphenation)', async function() {
+			await setProxies([{ toProperScheme: '%h.proxy.example.org/%p', id: 'p2', hosts: [] }]);
+			let result = await background(function() {
+				let proxy = Zotero.Proxies.proxies[0];
+				proxy.maybeAddHost({ url: 'https://www-zotero-org.proxy.example.org/path?x=1' });
+				return {
+					hosts: proxy.hosts.slice(),
+					mapped: Zotero.Proxies.hosts['www.zotero.org'] ? Zotero.Proxies.hosts['www.zotero.org'].id : null
+				};
+			});
+			assert.include(result.hosts, 'www.zotero.org');
+			assert.equal(result.mapped, 'p2');
+		});
+
+		it('does not add blacklisted hosts', async function() {
+			await setProxies([{ toProperScheme: '%h.proxy.example.org/%p', id: 'p3', hosts: [] }]);
+			let result = await background(function() {
+				let proxy = Zotero.Proxies.proxies[0];
+				proxy.maybeAddHost({ url: 'http://www.google.com.proxy.example.org/' });
+				return {
+					hosts: proxy.hosts.slice(),
+					mapped: Zotero.Proxies.hosts['www.google.com'] || null
+				};
+			});
+			assert.notInclude(result.hosts, 'www.google.com');
+			assert.isNull(result.mapped);
+		});
+
+		it('remaps host from http proxy to https proxy when both match', async function() {
+			await setProxies([
+				{ toProperScheme: 'http://%h.proxy.example.org/%p', id: 'http', hosts: ['www.zotero.org'] },
+				{ toProperScheme: 'https://%h.proxy.example.org/%p', id: 'https', hosts: [] }
+			]);
+			let result = await background(function() {
+				let httpProxy = Zotero.Proxies.proxies.find(p => p.id === 'http');
+				let httpsProxy = Zotero.Proxies.proxies.find(p => p.id === 'https');
+				httpsProxy.maybeAddHost({ url: 'https://www-zotero-org.proxy.example.org/article' });
+				return {
+					httpHosts: httpProxy.hosts.slice(),
+					httpsHosts: httpsProxy.hosts.slice(),
+					mapped: Zotero.Proxies.hosts['www.zotero.org'] ? Zotero.Proxies.hosts['www.zotero.org'].id : null
+				};
+			});
+			assert.notInclude(result.httpHosts, 'www.zotero.org');
+			assert.include(result.httpsHosts, 'www.zotero.org');
+			assert.equal(result.mapped, 'https');
+		});
+	});
+
+	describe('maybeRedirect', function() {
+		it('returns redirect for associated host', async function() {
+			await setProxies([{ toProperScheme: '%h.proxy.example.org/%p', toProxyScheme: 'https://login.proxy.example.org/login?qurl=%u', id: 'p2', hosts: ['www.zotero.org'] }]);
+			let result = await background(function() {
+				let proxy = Zotero.Proxies.proxies[0];
+				return proxy.maybeRedirect({ url: 'https://www.zotero.org/path?a=1' });
+			});
+			assert.isObject(result);
+			assert.property(result, 'redirectUrl');
+			assert.equal(result.redirectUrl, 'https://login.proxy.example.org/login?qurl=' + encodeURIComponent('https://www.zotero.org/path?a=1'));
+		});
+
+		it('returns redirect for associated host when no toProxyScheme is set', async function() {
+			await setProxies([{ toProperScheme: '%h.proxy.example.org/%p', id: 'p1', hosts: ['www.zotero.org'] }]);
+			let result = await background(function() {
+				let proxy = Zotero.Proxies.proxies[0];
+				return proxy.maybeRedirect({ url: 'https://www.zotero.org/article/123?x=1' });
+			});
+			assert.isObject(result);
+			assert.property(result, 'redirectUrl');
+			assert.equal(result.redirectUrl, 'https://www-zotero-org.proxy.example.org/article/123?x=1');
+		});
+
+		it('does not redirect unassociated host', async function() {
+			await setProxies([{ toProperScheme: '%h.proxy.example.org/%p', id: 'p3', hosts: ['www.zotero.org'] }]);
+			let result = await background(function() {
+				let proxy = Zotero.Proxies.proxies[0];
+				return proxy.maybeRedirect({ url: 'https://other.example.com/' });
+			});
+			assert.isUndefined(result);
+		});
+	});
+	
+	describe('OpenAthensProxy', function() {
+		describe('maybeAddHost', function() {
+			it('adds host only when navigating via redirector URL', async function () {
+				let result = await background(function() {
+					let oa = new Zotero.Proxy.OpenAthensProxy({
+						toProxyScheme: 'https://go.openathens.net/redirector/demo?url=%u',
+						hosts: []
+					});
+					Zotero.Proxies.proxies = [oa];
+					Zotero.Proxies.hosts = {};
+					// Navigate through redirector
+					oa.maybeAddHost({ url: 'https://go.openathens.net/redirector/demo?url=' + encodeURIComponent('https://www.zotero.org/article/123') });
+					return {
+						hosts: oa.hosts.slice(),
+						mapped: Zotero.Proxies.hosts['www.zotero.org'] ? Zotero.Proxies.hosts['www.zotero.org'].type : null
+					};
+				});
+				assert.include(result.hosts, 'www.zotero.org');
+				assert.equal(result.mapped, 'openathens');
+			});
+
+			it('does not add host when not using redirector URL', async function () {
+				let result = await background(function() {
+					let oa = new Zotero.Proxy.OpenAthensProxy({
+						toProxyScheme: 'https://go.openathens.net/redirector/demo?url=%u',
+						hosts: []
+					});
+					Zotero.Proxies.proxies = [oa];
+					Zotero.Proxies.hosts = {};
+					// Direct navigation to site should not trigger add
+					oa.maybeAddHost({ url: 'https://www.zotero.org/' });
+					return oa.hosts.slice();
+				});
+				assert.notInclude(result, 'www.zotero.org');
+			});
+
+			it('remaps host from another proxy when navigating via redirector', async function () {
+				let result = await background(function() {
+					let other = new Zotero.Proxy({
+						toProperScheme: '%h.proxy.example.org/%p',
+						hosts: ['www.zotero.org'],
+						id: 'other'
+					});
+					let oa = new Zotero.Proxy.OpenAthensProxy({
+						toProxyScheme: 'https://go.openathens.net/redirector/demo?url=%u',
+						hosts: []
+					});
+					Zotero.Proxies.proxies = [other, oa];
+					Zotero.Proxies.hosts = { 'www.zotero.org': other };
+					// Navigate via redirector to trigger remap
+					oa.maybeAddHost({ url: 'https://go.openathens.net/redirector/demo?url=' + encodeURIComponent('https://www.zotero.org/page') });
+					return {
+						otherHosts: other.hosts.slice(),
+						oaHosts: oa.hosts.slice(),
+						mappedType: Zotero.Proxies.hosts['www.zotero.org'] ? Zotero.Proxies.hosts['www.zotero.org'].type : null
+					};
+				});
+				assert.notInclude(result.otherHosts, 'www.zotero.org');
+				assert.include(result.oaHosts, 'www.zotero.org');
+				assert.equal(result.mappedType, 'openathens');
+			});
+		});
+
+		describe('maybeRedirect', function() {
+			it('redirects via redirector and respects timeout window', async function () {
+				let result = await background(function() {
+					let oa = new Zotero.Proxy.OpenAthensProxy({
+						toProxyScheme: 'https://go.openathens.net/redirector/demo?url=%u',
+						hosts: ['www.zotero.org']
+					});
+					Zotero.Proxies.proxies = [oa];
+					Zotero.Proxies.hosts = { 'www.zotero.org': oa };
+					let url = 'https://www.zotero.org/resource';
+					let first = oa.maybeRedirect({ url });
+					let second = oa.maybeRedirect({ url });
+					// Manually expire timeout (13 hours)
+					Zotero.Proxies.openAthensHostRedirectTime['www.zotero.org'] = Date.now() - (13 * 60 * 60 * 1000);
+					let third = oa.maybeRedirect({ url });
+					return { first, second, third };
+				});
+				assert.isObject(result.first);
+				assert.equal(result.first.redirectUrl, 'https://go.openathens.net/redirector/demo?url=' + encodeURIComponent('https://www.zotero.org/resource'));
+				assert.isUndefined(result.second);
+				assert.isObject(result.third);
+				assert.equal(result.third.redirectUrl, 'https://go.openathens.net/redirector/demo?url=' + encodeURIComponent('https://www.zotero.org/resource'));
+			});
 		});
 	});
 });

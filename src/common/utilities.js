@@ -71,10 +71,12 @@ Zotero.Utilities.Connector = {
 			set: function (target, prop, value) {
 				target[prop] = value;
 				browser.storage.session.set({[name]: JSON.stringify(target)});
+				return target[prop];
 			},
 			deleteProperty: function(target, prop) {
 				delete target[prop];
 				browser.storage.session.set({[name]: JSON.stringify(target)});
+				return true;
 			}
 		})
 	},

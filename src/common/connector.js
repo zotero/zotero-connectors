@@ -52,7 +52,7 @@ Zotero.Connector = new function() {
 	
 	this.onStateChange = function(version) {
 		Zotero.Connector_Browser?.onStateChange(version);
-		Zotero.UpdaterFix.onStateChange(version);
+		Zotero.UpdaterFix?.onStateChange(version);
 	}
 
 	this.reportActiveURL = function(url) {

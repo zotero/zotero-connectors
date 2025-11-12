@@ -374,7 +374,7 @@ Zotero.Prefs = new function() {
 	/**
 	 * Should override per browser and load data into this.syncStorage
 	 */
-	this.init = function() {throw new Error("Prefs initialization not overriden");};
+	this.init = function() {throw new Error("Prefs initialization not overridden");};
 	
 	this.get = function(pref) {
 		try {

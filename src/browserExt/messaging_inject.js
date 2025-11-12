@@ -101,7 +101,7 @@ Zotero.Messaging = new function() {
 						}, function(e) {
 							// Unclear what to do with these. Chrome doesn't have error instance defined
 							// and these could be simply messages saying that no response was received for
-							// calls that didn't expect a resposne either.
+							// calls that didn't expect a response either.
 							// Either way, if we should be at least expecting a response and get an error we 
 							// throw
 							if (messageConfig && messageConfig.response !== false) {

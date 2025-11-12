@@ -170,7 +170,7 @@ Zotero.Proxies = new function() {
 	 */
 	this.onBeforeNavigateSafari = function(e) {
 		// Safari calls onBeforeNavigate from default tab while typing the url
-		// so if you type a proxied url you immediatelly get redirected without pressing enter.
+		// so if you type a proxied url you immediately get redirected without pressing enter.
 		// Not cool.
 		if (!e.target.url) return;
 		let details = {url: e.url || '', originUrl: e.target.url, type: 'main_frame',
@@ -198,7 +198,7 @@ Zotero.Proxies = new function() {
 	 * Called on webRequest headersReceived. Used to detect new proxies. Chrome and possibly
 	 * other browserExt browsers call this when typing in the url bar, performing a prefetch
 	 * for a faster page load, so we cannot issue a redirect here, as the prefetch may not get
-	 * commited as page navigation.
+	 * committed as page navigation.
 	 * @param details
 	 */
 	this.onHeadersReceived = (details) => {

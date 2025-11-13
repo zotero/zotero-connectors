@@ -50,7 +50,7 @@ Zotero.HTTP.isSameOrigin = function(url) {
 }
 
 /**
- * Determing if trying to load non-HTTPs URLs from HTTPS pages
+ * Determine if trying to load non-HTTPs URLs from HTTPS pages
  */
 Zotero.HTTP.isLessSecure = function(url) {
 	if (url.substr(0,8).toLowerCase() == 'https://') return false;

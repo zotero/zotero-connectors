@@ -35,7 +35,7 @@ let MessagingGeneric = class {
 	 * 		Add a handler for a sendMessage call from the remote JS context
 	 *
 	 * @param options.functionOverrides {Object}
-	 * 		An object specifying which local function calls should be created/overriden and invoked
+	 * 		An object specifying which local function calls should be created/overridden and invoked
 	 * 		as a function call at the remote JS context
 	 *
 	 * @param options.handlerFunctionOverrides {Object}

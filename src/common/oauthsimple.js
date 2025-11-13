@@ -142,7 +142,7 @@ if (OAuthSimple === undefined)
             return this;
         };
 
-        /** convienence method for setParameters
+        /** convenience method for setParameters
          *
          * @param parameters {string,object} See .setParameters
          */
@@ -162,7 +162,7 @@ if (OAuthSimple === undefined)
             return this;
         };
 
-        /** convienence method for setURL
+        /** convenience method for setURL
          *
          * @param path {string} see .setURL
          */

@@ -206,7 +206,7 @@ Zotero.UI.ModalPrompt.PropTypes = {
 	 */
 	clickOutsideToClose: PropTypes.bool,
 	/**
-	 * Triggered on <ESC> clicking outside of the prompt and on Cancel, unless overriden.
+	 * Triggered on <ESC> clicking outside of the prompt and on Cancel, unless overridden.
 	 *
 	 * This is required because the component does not know how to remove itself from the DOM.
 	 */

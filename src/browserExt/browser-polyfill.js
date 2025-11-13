@@ -697,7 +697,7 @@
        * Wraps an existing method of the target object, so that calls to it are
        * intercepted by the given wrapper function. The wrapper function receives,
        * as its first argument, the original `target` object, followed by each of
-       * the arguments passed to the orginal method.
+       * the arguments passed to the original method.
        *
        * @param {object} target
        *        The original target object that the wrapped method belongs to.

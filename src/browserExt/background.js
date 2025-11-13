@@ -228,7 +228,7 @@ Zotero.Connector_Browser = new function() {
 		alert('Zotero Connector for Chrome '+zoteroVersion+' is incompatible with the running '+
 			'version of Zotero Standalone'+(standaloneVersion ? " ("+standaloneVersion+")" : "")+
 			'. Zotero Connector will continue to operate, but functionality that relies upon '+
-			'Zotero Standalone may be unavaliable.\n\n'+
+			'Zotero Standalone may be unavailable.\n\n'+
 			'Please ensure that you have installed the latest version of these components. See '+
 			'https://www.zotero.org/download for more details.');
 		_incompatibleVersionMessageShown = true;

@@ -111,7 +111,7 @@ Zotero.OffscreenTranslate = {
 			}
 
 			// In a JS environment (the only one where Connector would work), <noscript> contents
-			// are treated as a literaly string, but in a non-js environment (DOMParser), the contents
+			// are treated as a literally string, but in a non-js environment (DOMParser), the contents
 			// are treated as HTML.
 			// We're generally not interested in content of <noscript> tags, but they can sometimes
 			// cause issues, especially if they do weird things like put <img> tags inside them

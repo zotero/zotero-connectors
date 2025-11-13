@@ -380,7 +380,7 @@ if (isTopWindow) {
 	}
 
 	/**
-	 * Shows the frame (initializing it if neccessary)
+	 * Shows the frame (initializing it if necessary)
 	 * @returns {Promise<iframe>}
 	 */
 	async function showFrame() {
@@ -470,7 +470,7 @@ if (isTopWindow) {
 	Zotero.Messaging.addMessageListener("progressWindow.close", function () {
 		// Mark frame as hidden so that if this is called after a progressWindow.show but before
 		// the popup has been initialized (e.g., when displaying the Select Items dialog) it's
-		// not made visble
+		// not made visible
 		frameIsHidden = true;
 		
 		hideFrame();

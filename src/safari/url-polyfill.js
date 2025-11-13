@@ -101,7 +101,7 @@
         if( !/^[0-9A-Fa-f:.]{2,}$/.test( ip ) ) return false;
 
         /**
-         * An IPv6 address should not include any sequences bellow:
+         * An IPv6 address should not include any sequences below:
          * 1. a hexadecimal with length greater than 4
          * 2. three or more consecutive colons
          * 3. two or more consecutive dots
@@ -356,7 +356,7 @@
          */
         from = parse( from );
         if( !from ) {
-            throw new TypeError( 'The first paramter must be a valid URL string.' );
+            throw new TypeError( 'The first parameter must be a valid URL string.' );
         }
 
         if( !to ) return original;

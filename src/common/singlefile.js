@@ -27,6 +27,7 @@ const FETCH_REQUEST_EVENT = "single-file-request-fetch";
 const FETCH_RESPONSE_EVENT = "single-file-response-fetch";
 
 Zotero.SingleFile = {
+	_hooksInjected: false,
 	_throttledRequest: Zotero.Utilities.Connector.throttleAsync(Zotero.COHTTP.request, 10),
 
 	singleFileFetch: async function(url, options = {}) {
@@ -81,6 +82,10 @@ Zotero.SingleFile = {
 	},
 	
 	retrievePageData: async function() {
+		if (!this._hooksInjected) {
+			await this._injectSingleFileHooks();
+			this._hooksInjected = true;
+		}
 		try {
 			if (typeof singlefile === 'undefined') {
 				if (Zotero.isSafari) {
@@ -111,9 +116,14 @@ Zotero.SingleFile = {
 		const scriptElement = document.createElement("script");
 		scriptElement.src = Zotero.getExtensionURL("lib/SingleFile/single-file-hooks-frames.js");
 		scriptElement.async = false;
+		let promise = new Promise((resolve, reject) => {
+			scriptElement.onload = () => resolve();
+			scriptElement.onerror = () => reject();
+		});
 		let insertElement = document.head || document.documentElement || document;
 		insertElement.appendChild(scriptElement);
 		scriptElement.remove();
+		return promise;
 	},
 
 	async _injectSingleFileSafari() {
@@ -136,11 +146,3 @@ Zotero.SingleFile = {
 		return bytes;
 	}
 };
-
-if (window.top) {
-	try {
-		if (window.top == window) {
-			Zotero.SingleFile._injectSingleFileHooks();
-		}
-	} catch(e) {};
-}

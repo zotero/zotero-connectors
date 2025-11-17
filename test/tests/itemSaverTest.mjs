@@ -42,7 +42,7 @@ describe("ItemSaver", function() {
 
 			const capturedData = await tab.run(async function (testUrl) {
 				try {
-					const ItemSaver = (await import(Zotero.getExtensionURL("itemSaver.js"))).default;
+					const ItemSaver = Zotero.ItemSaver;
 					let capturedData = null;
 
 					// Stub the required functions
@@ -84,7 +84,7 @@ describe("ItemSaver", function() {
 			const documentUrl = getExtensionURL('test/data/journalArticle-single.html');
 			const capturedData = await tab.run(async function () {
 				try {
-					const ItemSaver = (await import(Zotero.getExtensionURL("itemSaver.js"))).default;
+					const ItemSaver = Zotero.ItemSaver;
 					let capturedData = null;
 
 					// Stub the required functions

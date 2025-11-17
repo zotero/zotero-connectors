@@ -662,4 +662,4 @@ ItemSaver.fetchAttachmentSafari = async function(attachment) {
 	}
 }
 
-export default ItemSaver;
+Zotero.ItemSaver = ItemSaver;

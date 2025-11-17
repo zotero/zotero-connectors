@@ -23,9 +23,6 @@
     ***** END LICENSE BLOCK *****
 */
 
-// import PageSaving from "./pageSaving.js";
-let PageSaving;
-
 var isTopWindow = false;
 if(window.top) {
 	try {
@@ -72,10 +69,8 @@ var instanceID = isTopWindow ? 0 : (new Date()).getTime();
  * @namespace
  */
 Zotero.Inject = {
-	
 	async init() {
 		if (!shouldInject) return;
-		PageSaving = (await import(Zotero.getExtensionURL("inject/pageSaving.js"))).default;
 		
 		await Zotero.initInject();
 		// Zotero namespace APIs now initialized
@@ -92,10 +87,10 @@ Zotero.Inject = {
 		if(document.readyState !== "complete") {
 			window.addEventListener("pageshow", function(e) {
 				if(e.target !== document) return;
-				return PageSaving.onPageLoad(e.persisted);
+				return Zotero.PageSaving.onPageLoad(e.persisted);
 			}, false);
 		} else {
-			return PageSaving.onPageLoad();
+			return Zotero.PageSaving.onPageLoad();
 		}	
 	},
 
@@ -114,26 +109,26 @@ Zotero.Inject = {
 		// add listener for translate message from background page
 		Zotero.Messaging.addMessageListener("translate", function(data) {
 			if (data.shift() !== instanceID) return;
-			return PageSaving.onTranslate(...data);
+			return Zotero.PageSaving.onTranslate(...data);
 		});
 		// add a listener to save as webpage when translators unavailable
 		Zotero.Messaging.addMessageListener("saveAsWebpage", function(data) {
 			if (Zotero.isSafari) {
 				if (data[0] !== instanceID) return;
-				return PageSaving.onSaveAsWebpage(data[1]);
+				return Zotero.PageSaving.onSaveAsWebpage(data[1]);
 			} else {
-				return PageSaving.onSaveAsWebpage(data);
+				return Zotero.PageSaving.onSaveAsWebpage(data);
 			}
 		});
 		Zotero.Messaging.addMessageListener('updateSession', (data) => {
-			return PageSaving.onUpdateSession(data);
+			return Zotero.PageSaving.onUpdateSession(data);
 		})
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", Zotero.Utilities.debounce(function() {
-			PageSaving.onPageLoad(true);
+			Zotero.PageSaving.onPageLoad(true);
 		}, 1000));
 		Zotero.Messaging.addMessageListener('historyChanged', Zotero.Utilities.debounce(function() {
-			PageSaving.onPageLoad(true);
+			Zotero.PageSaving.onPageLoad(true);
 		}, 1000));
 
 		Zotero.Messaging.addMessageListener("firstUse", function () {

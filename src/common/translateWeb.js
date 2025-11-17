@@ -134,5 +134,4 @@ Zotero.Translate.ItemSaver.prototype.saveItems = async function (jsonItems) {
 	return jsonItems
 }
 
-// export TranslateWeb
-export default TranslateWeb;
+Zotero.TranslateWeb = TranslateWeb;

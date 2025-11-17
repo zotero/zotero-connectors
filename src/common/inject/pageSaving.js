@@ -23,9 +23,6 @@
 	***** END LICENSE BLOCK *****
 */
 
-import TranslateWeb from "../translateWeb.js";
-import ItemSaver from "../itemSaver.js";
-
 // Used to display a different message for failing translations on pages
 // with site-access limits
 const SITE_ACCESS_LIMIT_TRANSLATORS = new Set([
@@ -114,7 +111,7 @@ let PageSaving = {
 			}
 
 			let translate = await this._initTranslate();
-			let translators = await TranslateWeb.detect({ translate });
+			let translators = await Zotero.TranslateWeb.detect({ translate });
 			// We check tab content type in bg pages on browser ext, but that's not available on Safari
 			if (!translators.length && Zotero.isSafari) {
 				if (!isTopWindow && document.contentType == 'application/pdf') {
@@ -290,7 +287,7 @@ let PageSaving = {
 		let translate = await this._initTranslate(translators[0].itemType);
 		let options = { translate, translators: translators.slice(), onSelect, onItemSaving, onTranslatorFallback };
 		try {
-			var { items, proxy } = await TranslateWeb.translate(options);
+			var { items, proxy } = await Zotero.TranslateWeb.translate(options);
 		} catch (e) {
 			if (translators[0].itemType != 'multiple' && fallbackOnFailure) {
 				Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', this.translators.at(-1).label, "Save as Webpage"]);
@@ -306,7 +303,7 @@ let PageSaving = {
 		items = this._processNote(items);
 		this.sessionDetails.items = items;
 		let itemType = translators[0].itemType;
-		let itemSaver = new ItemSaver({ sessionID, itemType, baseURI: document.location.href, proxy });
+		let itemSaver = new Zotero.ItemSaver({ sessionID, itemType, baseURI: document.location.href, proxy });
 		this.sessionDetails.itemSaver = itemSaver;
 		return itemSaver.saveItems(items, PageSaving._onAttachmentProgress, onItemsSaved)
 	},
@@ -389,7 +386,7 @@ let PageSaving = {
 		} catch (e) {
 			// Client unavailable
 			if (e.status === 0) {
-				let itemSaver = new ItemSaver({});
+				let itemSaver = new Zotero.ItemSaver({});
 				this.sessionDetails.itemSaver = itemSaver;
 				let result = await itemSaver.saveAsWebpage();
 				items[0].key = result[0].key;
@@ -491,7 +488,7 @@ let PageSaving = {
 		}
 
 		try {
-			await ItemSaver.fetchAttachmentSafari(standaloneAttachment);
+			await Zotero.ItemSaver.fetchAttachmentSafari(standaloneAttachment);
 			let { canRecognize } = await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(standaloneAttachment, sessionID)
 			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
 			progressItem.progress = 100;
@@ -697,4 +694,4 @@ let PageSaving = {
 	}
 }
 
-export default PageSaving
+Zotero.PageSaving = PageSaving;

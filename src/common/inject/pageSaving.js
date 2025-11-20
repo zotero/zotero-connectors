@@ -317,7 +317,7 @@ let PageSaving = {
 	 * @returns {Promise<*>}
 	 */
 	async saveAsWebpage({ title=document.title, snapshot: saveSnapshot=true } = {}) {
-		var result = await Zotero.Inject.checkActionToServer();
+		var result = await Zotero.Inject.handleZoteroIsOffline();
 		if (!result) return;
 
 		const isOnline = await Zotero.Connector.checkIsOnline();
@@ -537,7 +537,7 @@ let PageSaving = {
 	 * with selection as a note.
 	 */
 	async onTranslate(translatorID, options={}) {
-		let result = await Zotero.Inject.checkActionToServer();
+		let result = await Zotero.Inject.handleZoteroIsOffline();
 		if (!result) return;
 		let translatorIndex = this.translators.findIndex(t => t.translatorID === translatorID);
 		let translator = this.translators[translatorIndex];
@@ -625,7 +625,7 @@ let PageSaving = {
 	 * Entry point for clicking on the Zotero button to save when no translators are available
 	 */
 	async onSaveAsWebpage([ title=document.title, options={} ]) {
-		var result = await Zotero.Inject.checkActionToServer();
+		var result = await Zotero.Inject.handleZoteroIsOffline();
 		if (!result) return;
 
 		Zotero.debug(`PageSaving.onSaveAsWebpage: Saving webpage, ${JSON.stringify(options)}`);

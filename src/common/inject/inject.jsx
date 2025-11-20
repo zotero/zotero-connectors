@@ -291,6 +291,17 @@ Zotero.Inject = {
 				return 'cancel';
 		}
 	},
+
+	async shouldOpenZoteroPrompt() {
+		let result = await this.confirm({
+			title: Zotero.getString('openZotero_title'),
+			message: Zotero.getString('openZotero_message'),
+			button1Text: Zotero.getString('general_ok'),
+			button2Text: Zotero.getString('general_cancel'),
+		});
+		return result.button === 1;
+	},
+	
 	
 	getConnectionErrorTroubleshootingString() {
 		var clientName = ZOTERO_CONFIG.CLIENT_NAME;
@@ -310,13 +321,28 @@ Zotero.Inject = {
 	 * 
 	 * return {Promise<Boolean>} whether the action should proceed
 	 */
-	async checkActionToServer() {
-		var [firstSaveToServer, zoteroIsOnline] = await Zotero.Promise.all([
-			Zotero.Prefs.getAsync('firstSaveToServer'), 
-			Zotero.Connector.checkIsOnline()
+	async handleZoteroIsOffline() {
+		var [zoteroIsOnline, firstSaveToServer, shouldOpenZotero] = await Zotero.Promise.all([
+			Zotero.Connector.checkIsOnline(),
+			Zotero.Prefs.getAsync('firstSaveToServer'),
+			Zotero.Prefs.getAsync('shouldOpenZotero')
 		]);
 		if (zoteroIsOnline || !firstSaveToServer) {
 			return true;
+		}
+		// We try to open Zotero on Safari before prompting about saving to server
+		// because we can do it easily with the Safari extension
+		if (Zotero.isSafari) {
+			if (!shouldOpenZotero) {
+				shouldOpenZotero = await this.shouldOpenZoteroPrompt();
+			}
+			if (shouldOpenZotero) {
+				let result = await Zotero.Connector.openZotero();
+				if (result) {
+					Zotero.Prefs.set('shouldOpenZotero', true);
+					return true;
+				}
+			}
 		}
 		var result = await this.firstSaveToServerPrompt();
 		if (result == 'server') {
@@ -326,11 +352,11 @@ Zotero.Inject = {
 			// If we perform the retry immediately and Zotero is still unavailable the prompt returns instantly
 			// making the user interaction confusing so we wait a bit first
 			await Zotero.Promise.delay(500);
-			return this.checkActionToServer();
+			return this.handleZoteroIsOffline();
 		}
 		return false;
 	},
-	
+
 	addKeyboardShortcut(eventDescriptor, fn, elem) {
 		elem = elem || document;
 		let listener = (event) => {

@@ -191,6 +191,13 @@
 		"description": "The Accept button for the first-run dialog"
 	},
 	
+	"openZotero_title": {
+		"message": "Open Zotero?"
+	},
+	"openZotero_message": {
+		"message": "Zotero is not open. Would you like the Zotero Connector to open Zotero automatically?"
+	},
+	
 	"error_connection_isAppRunning": {
 		"message": "Is $1 Running?"
 	},

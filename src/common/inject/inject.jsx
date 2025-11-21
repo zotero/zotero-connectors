@@ -156,10 +156,17 @@ Zotero.Inject = {
 				// Find the nearest <a> with an href
 				let a = e.target.closest("a[href]");
 				if (!a) return;
-				let url = a.href;
-		
+				
+				let url;
+				try {
+					url = new URL(a.href);
+				}
+				catch {
+					return;
+				}
+				
 				// Check for zotero.org/save
-				if (url.startsWith("https://www.zotero.org/save")) {
+				if ((url.hostname == "www.zotero.org" || url.hostname == 'zotero.org') && url.pathname.startsWith("/save")) {
 					e.preventDefault();
 					e.stopPropagation();
 		

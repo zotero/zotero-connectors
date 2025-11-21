@@ -172,6 +172,7 @@ var MESSAGES = {
 				},
 			}
 		},
+		onZoteroButtonElementClick: true,
 		injectScripts: true,
 		injectSingleFile: true,
 		isIncognito: true,

@@ -81,6 +81,7 @@ Zotero.Inject = {
 		}, false);
 		
 		this._addMessageListeners();
+		this._addZoteroButtonElementListener();
 		
 		this._handleOAuthComplete()
 
@@ -143,6 +144,34 @@ Zotero.Inject = {
 		Zotero.Messaging.addMessageListener("clipboardWrite", function (text) {
 			navigator.clipboard.writeText(text);
 		});
+	},
+
+	_addZoteroButtonElementListener() {
+		document.addEventListener("click", (e) => {
+				// Only user-initiated, primary-button, no modifiers
+				if ((!e.isTrusted && !Zotero.isDebug) || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+					return;
+				}
+				
+				// Find the nearest <a> with an href
+				let a = e.target.closest("a[href]");
+				if (!a) return;
+				let url = a.href;
+		
+				// Check for zotero.org/save
+				if (url.startsWith("https://www.zotero.org/save")) {
+					e.preventDefault();
+					e.stopPropagation();
+		
+					Zotero.debug("Inject: Zotero button element clicked");
+					// A little indirection here, going via the background page,
+					// but that's where the logic for button click is defined
+					// although it will just send a message back here to PageSaving.
+					Zotero.Connector_Browser.onZoteroButtonElementClick();
+				}
+			},
+			{ capture: true }
+		);
 	},
 	
 	/**

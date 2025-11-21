@@ -233,6 +233,10 @@ Zotero.Connector_Browser = new function() {
 			'https://www.zotero.org/download for more details.');
 		_incompatibleVersionMessageShown = true;
 	}
+
+	this.onZoteroButtonElementClick = function(tab) {
+		return _browserAction(tab);
+	}
 	
 	/**
 	 * Called if Zotero version is determined to be incompatible with Standalone

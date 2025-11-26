@@ -223,6 +223,10 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 				url: attachment.url,
 			});
 		}
+		// Chromium and Firefox will send cookies, but Chrome currently ignores those with partitionKey.
+		// Cloudflare clearance cookies and potentially others in the future are set with a partitionKey.
+		// There's a bug filed for this at https://issues.chromium.org/issues/458071621
+		cookies = cookies.filter(c => c.partitionKey);
 		options.headers = {
 			"Cookie": cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
 		}

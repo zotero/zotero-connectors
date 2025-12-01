@@ -908,7 +908,7 @@ Zotero.Connector_Browser = new function() {
 		browser.contextMenus.create({
 			id: `zotero-context-menu-copy-unproxied-url`,
 			title: Zotero.getString('copyUnproxiedPageURL'),
-			contexts: ['page']
+			contexts: ['page', ...buttonContext]
 		});
 		for (let proxy of Zotero.Proxies.proxies) {
 			let proxyHostname = proxy.toDisplayName();

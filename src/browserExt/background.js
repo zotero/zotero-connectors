@@ -702,12 +702,10 @@ Zotero.Connector_Browser = new function() {
 			browser.tabs.create({url: browser.runtime.getURL('preferences/preferences.html')});
 		},
 		"zotero-context-menu-copy-unproxied-url": async (info, tab) => {
-			await browser.permissions.request({permissions: ['clipboardWrite']});
 			// navigator.clipboard.writeText doesn't work in the background page because it has no focus
 			Zotero.Messaging.sendMessage('clipboardWrite', [Zotero.Proxies.proxyToProper(tab.url)], tab);
 		},
 		"zotero-context-menu-copy-unproxied-link": async (info, tab) => {
-			await browser.permissions.request({permissions: ['clipboardWrite']});
 			// navigator.clipboard.writeText doesn't work in the background page because it has no focus
 			Zotero.Messaging.sendMessage('clipboardWrite', [Zotero.Proxies.proxyToProper(info.linkUrl)], tab);
 		},
@@ -721,12 +719,17 @@ Zotero.Connector_Browser = new function() {
 	};
 	
 	async function _handleContextMenuClick(info, tab) {
+		const id = info.menuItemId;
+		if (id.startsWith("zotero-context-menu-copy-unproxied")) {
+			// Request permissions before other async actions otherwise
+			// it's not treated like we do it within a gesture
+			await browser.permissions.request({permissions: ['clipboardWrite']});
+		}
 		const shouldContinue = await _checkPermissions(tab);
 		if (!shouldContinue) {
 			return;
 		}
 
-		const id = info.menuItemId;
 		// The PDF viewer in Chromium is apparently implemented as a special extension.
 		// If you right-click on the pdf-reader UI and select a Zotero option, the handler
 		// here gets passed a tab that has id == -1 and an internal extension URL.y

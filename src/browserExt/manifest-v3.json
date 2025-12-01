@@ -22,7 +22,7 @@
 			"path": "styleInterceptRules.json"
 		}]
 	},
-	"optional_permissions": ["management"],
+	"optional_permissions": ["management", "clipboardWrite"],
 	"background": {
 		"service_worker": "background-worker.js"
 	},

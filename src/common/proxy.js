@@ -1056,7 +1056,9 @@ Zotero.Proxy.OpenAthensProxy = class extends Zotero.Proxy {
 	}
 
 	validate() {
-		if (this.domain.length < 3) return ["proxy_validate_openAthens_domainInvalid"];
+		if (this.domain.length <= 0) return;
+		let tld = this.domain.split('.')[1];
+		if (!tld || tld.length < 2) return ["proxy_validate_openAthens_domainInvalid"];
 		return super.validate();
 	}
 }

@@ -562,6 +562,9 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 		if (error) {
 			debouncedSetError(error);
 		} else {
+			// But we still need to call it, otherwise the debounced function with the error
+			// is called after the timeout
+			debouncedSetError(null);
 			setError(null);
 		}
 		if (error?.[0] === "proxy_validate_hostProxyExists") {
@@ -607,7 +610,13 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 
 	function handleTypeChange(event) {
 		var value = event.target.value;
-		setIsOpenAthens(value === 'openathens');
+		const isOpenAthens = value === 'openathens';
+		setIsOpenAthens(isOpenAthens);
+		if (isOpenAthens) {
+			setToProxyScheme('https://go.openathens.net/redirector/?url=%u');
+		} else {
+			setToProxyScheme('https://www.example.com/login?qurl=%u');
+		}
 	}
 
 	function handleHostSelectChange(event) {

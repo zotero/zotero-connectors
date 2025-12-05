@@ -515,6 +515,9 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 
 	const hostInputRef = React.useRef(null);
 	const toProxyInputRef = React.useRef(null);
+	const debouncedSetError = React.useRef(
+		Zotero.Utilities.debounce(setError, 500)
+	).current;
 
 	React.useEffect(() => {
 		setToProxyScheme(proxy.toProxyScheme);
@@ -552,11 +555,16 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 			} else {
 				delete updatedProxy.type;
 			}
-			let error = await Zotero.Proxies.validate(updatedProxy);
-			if (error?.[0] === "proxy_validate_schemeUnmodified") return;
+		let error = await Zotero.Proxies.validate(updatedProxy);
+		if (error?.[0] === "proxy_validate_schemeUnmodified") error = null;
 
-			setError(error);
-			if (error?.[0] === "proxy_validate_hostProxyExists") {
+		// Debounce showing errors, but clear them immediately when valid
+		if (error) {
+			debouncedSetError(error);
+		} else {
+			setError(null);
+		}
+		if (error?.[0] === "proxy_validate_hostProxyExists") {
 				updatedProxy.hosts = updatedProxy.hosts.filter(h => h != error[1]);
 			}
 			else if (error) return;

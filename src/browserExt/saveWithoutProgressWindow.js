@@ -95,10 +95,7 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 	try {
 		browser.browserAction.setIcon({
 			tabId:tab.id,
-			path: {
-				'16': 'images/spinner-16px.png',
-				'32': 'images/spinner-16px@2x.png'
-			}
+			path: 'images/toolbar/loading.png'
 		});
 		browser.browserAction.setTitle({
 			tabId:tab.id,
@@ -117,11 +114,8 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		}
 		
 		browser.browserAction.setIcon({
-			tabId:tab.id,
-			path: {
-				'16': 'images/tick.png',
-				'32': 'images/tick@2x.png'
-			}
+			tabId: tab.id,
+			path: 'images/toolbar/tick.png'
 		});
 		browser.browserAction.setTitle({
 			tabId:tab.id,
@@ -135,12 +129,12 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		}
 		
 		browser.browserAction.setIcon({
-			tabId:tab.id,
-			path: "images/cross.png"
+			tabId: tab.id,
+			path: "images/toolbar/cross.png"
 		});
 		
 		browser.browserAction.setTitle({
-			tabId:tab.id,
+			tabId: tab.id,
 			title: "Saving failed. Is Zotero running?"
 		});
 	}

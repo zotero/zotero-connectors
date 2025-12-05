@@ -118,11 +118,14 @@ SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
 ITEM_IMAGES="$EXTENSION_SKIN_DIR/item-type/16/light/*2x.svg"
 COLLECTION_IMAGES="$EXTENSION_SKIN_DIR/collection-tree/16/light/collection.svg \
 		$EXTENSION_SKIN_DIR/collection-tree/16/light/library.svg"
-TOOLBAR_IMAGES=`ls $CWD/icons/badged/* | grep '@2x' | grep -v 'dark@2x.svg'`
+TOOLBAR_IMAGES=`ls $CWD/icons/badged/* | grep -v '@2x' | grep -v 'dark.svg'`
+NO_PROGRESS_WINDOW_TOOLBAR_IMAGES="$EXTENSION_SKIN_DIR/16/universal/cross.svg \
+	$EXTENSION_SKIN_DIR/16/universal/tick.svg \
+	$EXTENSION_SKIN_DIR/16/light/loading.svg"
+
 CONNECTOR_COMMON_IMAGES="$SRCDIR/common/images/*"
-IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png \
-	$EXTENSION_SKIN_DIR/cross.png \
-	$EXTENSION_SKIN_DIR/tick.png $EXTENSION_SKIN_DIR/tick@2x.png"
+IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png"
+
 
 LIBS=()
 	
@@ -271,12 +274,30 @@ function makeToolbarIcons {
 	fi
 	
 	set -e
-	for f in $COLLECTION_IMAGES $TOOLBAR_IMAGES
+	for f in $COLLECTION_IMAGES $TOOLBAR_IMAGES $NO_PROGRESS_WINDOW_TOOLBAR_IMAGES
 	do
-		rsvg-convert $f -w 32 -h 32 -o "$icon_dir/"`basename $f @2x.svg`".png"
+		# Check if @2x version exists for higher resolution icons
+		f_2x="${f/.svg/@2x.svg}"
+		if [ ! -f "$f_2x" ]; then
+			f_2x="$f"
+		fi
+		
+		# Apply specific fill colors for tick and cross icons
+		basename_no_ext=`basename $f .svg`
+		style_opt=""
+		if [ "$basename_no_ext" == "tick" ]; then
+			echo "Applying fill color for tick icon"
+			echo 'path { fill: #39bf68; }' > /tmp/rsvg-style.css
+			style_opt="-s /tmp/rsvg-style.css"
+		elif [ "$basename_no_ext" == "cross" ]; then
+			echo 'path { fill: #db2c3a; }' > /tmp/rsvg-style.css
+			style_opt="-s /tmp/rsvg-style.css"
+		fi
+		
+		rsvg-convert "$f_2x" -w 32 -h 32 $style_opt -o "$icon_dir/$basename_no_ext.png"
 		if [ "$browser" == "browserExt" ]; then
-			rsvg-convert $f -w 16 -h 16 -o "$icon_dir/"`basename $f @2x.svg`"@16.png"
-			rsvg-convert $f -w 48 -h 48 -o "$icon_dir/"`basename $f @2x.svg`"@48.png"
+			rsvg-convert $f -w 16 -h 16 $style_opt -o "$icon_dir/$basename_no_ext@16.png"
+			rsvg-convert "$f_2x" -w 48 -h 48 $style_opt -o "$icon_dir/$basename_no_ext@48.png"
 		fi
 	done
 	set +e

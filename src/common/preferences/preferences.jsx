@@ -555,19 +555,19 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 			} else {
 				delete updatedProxy.type;
 			}
-		let error = await Zotero.Proxies.validate(updatedProxy);
-		if (error?.[0] === "proxy_validate_schemeUnmodified") error = null;
+			let error = await Zotero.Proxies.validate(updatedProxy);
+			if (error?.[0] === "proxy_validate_schemeUnmodified") error = null;
 
-		// Debounce showing errors, but clear them immediately when valid
-		if (error) {
-			debouncedSetError(error);
-		} else {
-			// But we still need to call it, otherwise the debounced function with the error
-			// is called after the timeout
-			debouncedSetError(null);
-			setError(null);
-		}
-		if (error?.[0] === "proxy_validate_hostProxyExists") {
+			// Debounce showing errors, but clear them immediately when valid
+			if (error) {
+				debouncedSetError(error);
+			} else {
+				// But we still need to call it, otherwise the debounced function with the error
+				// is called after the timeout
+				debouncedSetError(null);
+				setError(null);
+			}
+			if (error?.[0] === "proxy_validate_hostProxyExists") {
 				updatedProxy.hosts = updatedProxy.hosts.filter(h => h != error[1]);
 			}
 			else if (error) return;

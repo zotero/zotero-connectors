@@ -164,6 +164,11 @@ Zotero_Preferences.General = {
 			ReactDOM.render(this.mimeTypeHandlingComponent, elem.querySelectorAll('.group-content')[0]);
 		}
 
+		if (Zotero.isSafari) {
+			let groupGeneralPrefs = document.getElementById('group-general-prefs');
+			if (groupGeneralPrefs) groupGeneralPrefs.style.display = null;
+		}
+
 		ReactDOM.render(React.createElement(Zotero_Preferences.Components.ClientStatus, null),
 			document.getElementById("client-status"));
 		document.getElementById("general-button-clear-credentials").onclick = Zotero_Preferences.General.clearCredentials;

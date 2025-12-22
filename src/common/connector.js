@@ -290,6 +290,33 @@ Zotero.Connector = new function() {
 		return this.callMethod(options, data);
 	}
 
+	this.openZotero = async function() {
+		if (!Zotero.isSafari) {
+			return false;
+		}
+
+		const waitToOpen = 10e3; // 10 seconds
+		const waitInterval = 500; // 500ms
+		try {
+			Zotero.Messaging.sendMessage('Swift.openZotero');
+			Zotero.debug(`Attempting to open Zotero, waiting for it to become online for ${waitToOpen}ms`);
+
+			for (let i = 0; i < waitToOpen / waitInterval; i++) {
+				await Zotero.Promise.delay(waitInterval);
+				if (await this.checkIsOnline()) {
+					Zotero.debug("Zotero opened successfully");
+					return true;
+				}
+			}
+			Zotero.debug("Waiting for Zotero to become online timed out");
+			return false;
+		} catch (e) {
+			Zotero.debug("Error opening Zotero");
+			Zotero.logError(e);
+			return false;
+		}
+	}
+
 	/**
 	 * If running an integration method check if the tab is still available to receive
 	 * a response from Zotero and if not - respond with an error message so that

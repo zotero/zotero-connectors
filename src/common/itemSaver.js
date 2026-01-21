@@ -134,8 +134,27 @@ ItemSaver.prototype = {
 			item.id = item.id || Zotero.Utilities.randomString(8);
 			
 			// Prepare attachments for saving
+			// First filter out attachments without valid URLs (except link-only attachments)
+			if (item.attachments) {
+				item.attachments = item.attachments.filter((attachment) => {
+					// Keep attachments that are link-only (snapshot === false) even without URL
+					// as they might be handled differently
+					if (attachment.snapshot === false) return true;
+					// Skip attachments without URLs - they can't be downloaded
+					if (!attachment.url) {
+						Zotero.debug(`saveToZotero: Skipping attachment without URL for item "${item.title}"`);
+						return false;
+					}
+					return true;
+				});
+			} else {
+				item.attachments = [];
+			}
+			
 			item.attachments = item.attachments.filter((attachment) => {
-				if (!attachment.title) attachment.title = attachment.mimeType + ' Attachment';
+				if (!attachment.title) {
+					attachment.title = (attachment.mimeType || 'Unknown') + ' Attachment';
+				}
 				attachment.id = attachment.id || Zotero.Utilities.randomString(8);
 				attachment.parentItem = item.id;
 				this._setAttachmentReferer(attachment);
@@ -278,6 +297,14 @@ ItemSaver.prototype = {
 		for (let item of this._items) {
 			item.hasPrimaryAttachment = false;
 			for (let attachment of item.attachments) {
+				// Skip attachments without valid URLs - they can't be downloaded
+				// This handles cases where translators (like COinS) create items without
+				// attachment URLs, or when attachment URL extraction failed
+				if (!attachment.url) {
+					Zotero.debug(`ItemSaver.saveAttachmentsToZotero: Skipping attachment without URL`);
+					continue;
+				}
+
 				if (attachment.snapshot === false) {
 					attachmentCallback(attachment, 100);
 					continue;
@@ -542,10 +569,17 @@ ItemSaver.prototype = {
 	_saveAttachmentsToServer: async function(itemKey, baseName, attachments, prefs, attachmentCallback=()=>0) {
 		let promises = []
 		for (let attachment of attachments) {
+			// Skip attachments without valid URLs
+			if (!attachment.url) {
+				Zotero.debug(`ItemSaver._saveAttachmentsToServer: Skipping attachment without URL`);
+				continue;
+			}
+			
 			Zotero.debug(`ItemSaver._saveAttachmentsToServer: Saving attachment ${attachment.title} to server`);
 			let isSnapshot = false;
-			if (attachment.mimeType) {
-				switch (attachment.mimeType.toLowerCase()) {
+			const mimeType = attachment.mimeType || '';
+			if (mimeType) {
+				switch (mimeType.toLowerCase()) {
 					case "text/html":
 					case "application/xhtml+xml":
 						isSnapshot = true;
@@ -559,7 +593,7 @@ ItemSaver.prototype = {
 
 			attachment.parentKey = itemKey;
 
-			switch (attachment.mimeType.toLowerCase()) {
+			switch (mimeType.toLowerCase()) {
 			case "application/pdf":
 				attachment.filename = baseName+".pdf";
 				break;

@@ -122,4 +122,128 @@ describe("ItemSaver", function() {
 			assert.equal(capturedData.url, documentUrl);
 		});
 	});
+	describe('_saveToZotero', function () {
+		before(async function () {
+			await background(function () {
+				sinon.stub(Zotero.Connector, 'checkIsOnline').resolves(true);
+				sinon.stub(Zotero.Connector, 'callMethodWithCookies').callsFake(async () => ({ items: [] }));
+			});
+		});
+
+		after(async function () {
+			await background(function () {
+				Zotero.Connector.checkIsOnline.restore();
+				Zotero.Connector.callMethodWithCookies.restore();
+			});
+		});
+
+		it('filters out attachments without URLs', async function () {
+			const result = await tab.run(async function () {
+				try {
+					const ItemSaver = Zotero.ItemSaver;
+
+					// Stub sendMessage in content script context
+					sinon.stub(Zotero.Messaging, 'sendMessage').callsFake(() => { });
+
+					// Create ItemSaver instance with test data
+					const itemSaver = new ItemSaver({
+						sessionID: 'test-session',
+						baseURI: 'https://example.com'
+					});
+
+					const items = [{
+						title: 'Test Item',
+						itemType: 'journalArticle',
+						attachments: [
+							{ title: 'Valid PDF', url: 'https://example.com/file.pdf', mimeType: 'application/pdf' },
+							{ title: 'No URL', mimeType: 'application/pdf' },
+							{ title: 'Also Valid', url: 'https://example.com/other.pdf', mimeType: 'application/pdf' },
+						]
+					}];
+
+					await itemSaver._saveToZotero(items, () => 0, () => 0);
+
+					return items[0].attachments.map(a => a.title);
+				}
+				finally {
+					Zotero.Messaging.sendMessage.restore();
+				}
+			});
+
+			// Verify only valid attachments are included
+			assert.deepEqual(result, ['Valid PDF', 'Also Valid']);
+		});
+
+		it('keeps link-only attachments (snapshot === false) even without URLs', async function () {
+			const result = await tab.run(async function () {
+				try {
+					const ItemSaver = Zotero.ItemSaver;
+
+					// Stub sendMessage in content script context
+					sinon.stub(Zotero.Messaging, 'sendMessage').callsFake(() => { });
+
+					// Create ItemSaver instance with test data
+					const itemSaver = new ItemSaver({
+						sessionID: 'test-session',
+						baseURI: 'https://example.com'
+					});
+
+					const items = [{
+						title: 'Test Item',
+						itemType: 'journalArticle',
+						attachments: [
+							{ title: 'Valid PDF', url: 'https://example.com/file.pdf', mimeType: 'application/pdf' },
+							{ title: 'Link Only No URL', mimeType: 'text/html', snapshot: false }, // Should be kept
+							{ title: 'Regular No URL', mimeType: 'application/pdf' }, // Should be filtered out
+						]
+					}];
+
+					await itemSaver._saveToZotero(items, () => 0, () => 0);
+
+					return items[0].attachments.map(a => a.title);
+				}
+				finally {
+					Zotero.Messaging.sendMessage.restore();
+				}
+			});
+
+			// Verify only valid attachments are included
+			assert.deepEqual(result, ['Valid PDF', 'Link Only No URL']);
+		});
+
+		it('sets default attachment title when mimeType is undefined', async function () {
+			const result = await tab.run(async function () {
+				try {
+					const ItemSaver = Zotero.ItemSaver;
+
+					// Stub sendMessage in content script context
+					sinon.stub(Zotero.Messaging, 'sendMessage').callsFake(() => { });
+
+					// Create ItemSaver instance with test data
+					const itemSaver = new ItemSaver({
+						sessionID: 'test-session',
+						baseURI: 'https://example.com'
+					});
+
+					const items = [{
+						title: 'Test Item',
+						itemType: 'journalArticle',
+						attachments: [
+							{ url: 'https://example.com/file' }, // No title, no mimeType
+						]
+					}];
+
+					await itemSaver._saveToZotero(items, () => 0, () => 0);
+
+					return items[0].attachments[0].title;
+				}
+				finally {
+					Zotero.Messaging.sendMessage.restore();
+				}
+			});
+
+			assert.isString(result);
+			assert.equal(result, 'Unknown Attachment');
+		});
+	});
 }); 

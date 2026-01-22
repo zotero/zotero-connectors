@@ -604,18 +604,8 @@ Zotero.Proxies = new function() {
 	 * @returns {Object} Unproxied url to proxy object
 	 */
 	this.getPotentialProxies = function(url) {
-		// Handle undefined or invalid URLs gracefully
-		if (!url) {
-			Zotero.debug(`Proxies.getPotentialProxies: Received invalid URL: ${url}`);
-			return {};
-		}
 		// make sure url has a trailing slash
-		try {
-			url = new URL(url).href;
-		} catch (e) {
-			Zotero.debug(`Proxies.getPotentialProxies: Failed to parse URL: ${url}`);
-			return {};
-		}
+		url = new URL(url).href;
 		var urlToProxy = {};
 		// If it's a known proxied URL just return it
 		if (Zotero.Proxies.transparent) {

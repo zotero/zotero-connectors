@@ -31,6 +31,7 @@ const ZOTERO_CONFIG = {
 	REPOSITORY_CHECK_INTERVAL: 86400, // 24 hours
 	REPOSITORY_RETRY_INTERVAL: 3600, // 1 hour
 	REPOSITORY_CHANNEL: 'trunk',
+	ALWAYS_FETCH_FROM_REPOSITORY: false,
 	BASE_URI: 'https://zotero.org/',
 	WWW_BASE_URL: 'https://www.zotero.org/',
 	CLIENT_DOWNLOAD_URL: 'https://www.zotero.org/download',

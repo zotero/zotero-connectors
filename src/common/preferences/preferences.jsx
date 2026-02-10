@@ -750,15 +750,19 @@ Zotero_Preferences.Components.Proxies = function Proxies(props) {
 	}
 
 	function handleProxyRemove() {
+		if (currentProxyIdx == -1 || !proxies[currentProxyIdx]) return;
+		let proxyToRemove = proxies[currentProxyIdx];
 		setProxies((prev) => prev.filter((p, i) => i != currentProxyIdx));
-		setCurrentProxyIdx(Math.max(0, currentProxyIdx - 1));
-		Zotero.Proxies.remove(proxies[currentProxyIdx]);
+		setCurrentProxyIdx(proxies.length > 1 ? Math.max(0, currentProxyIdx - 1) : -1);
+		Zotero.Proxies.remove(proxyToRemove);
 	}
+
+	let canRemoveProxy = currentProxyIdx != -1 && !!proxies[currentProxyIdx];
 
 	return (
 		<div style={{display: "flex", flexDirection: "column"}}>
 			<select className="Preferences-Proxies-proxySelect" size="8" multiple
-					value={[currentProxyIdx != -1 ? proxies[currentProxyIdx].id : '']}
+					value={[canRemoveProxy ? proxies[currentProxyIdx].id : '']}
 					onChange={handleProxySelectChange}
 					disabled={!props.transparent}>
 				{proxies.length && proxies.map((proxy, i) => {
@@ -767,7 +771,7 @@ Zotero_Preferences.Components.Proxies = function Proxies(props) {
 			</select>
 			<p style={{display: props.transparent ? null : 'none'}}>
 				<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleProxyAdd} value="+"/>
-				<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleProxyRemove} disabled={!currentProxyIdx} value="-"/>
+				<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleProxyRemove} disabled={!canRemoveProxy} value="-"/>
 			</p>
 			
 			<Zotero_Preferences.Components.ProxyDetails

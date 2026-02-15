@@ -6,9 +6,9 @@
 	"default_locale": "en",
 	"browser_action": {
 		"default_icon": {
-			"16": "images/treeitem-webpage-gray.png",
-			"32": "images/treeitem-webpage-gray@2x.png",
-			"48": "images/treeitem-webpage-gray@48px.png"
+			"16": "images/toolbar/webpage-gray@16.png",
+			"32": "images/toolbar/webpage-gray.png",
+			"48": "images/toolbar/webpage-gray@48.png"
 		},
 		"default_title": "Save to Zotero"
 	},
@@ -63,7 +63,9 @@
 	"homepage_url": "https://www.zotero.org/",
 	"icons": {
 		"16": "Icon-16.png",
+		"32": "Icon-32.png",
 		"48": "Icon-48.png",
+		"64": "Icon-64.png",
 		"96": "Icon-96.png",
 		"128": "Icon-128.png"
 	},

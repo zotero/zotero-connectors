@@ -352,6 +352,7 @@ if (Zotero.isSafari) {
 		onTabData: true,
 		getExtensionVersion: true
 	});
+	MESSAGES.Connector.openZotero = true;
 }
 
 // Chrome does not support passing arrayBuffers via the message

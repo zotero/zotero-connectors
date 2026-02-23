@@ -44,11 +44,13 @@ Zotero.Repo = new function() {
 		var translator = await Zotero.Translators.getWithoutCode(translatorID);
 		var code;
 		
-		// try standalone
-		try {
-			code = await Zotero.Connector.callMethod("getTranslatorCode", { translatorID: translatorID })
+		if (!ZOTERO_CONFIG.ALWAYS_FETCH_FROM_REPOSITORY) {
+			// try standalone
+			try {
+				code = await Zotero.Connector.callMethod("getTranslatorCode", { translatorID: translatorID })
+			}
+			catch (e) {}
 		}
-		catch (e) {}
 		
 		// Don't fetch from repo in debug mode
 		if (!code && !debugMode) {
@@ -92,6 +94,9 @@ Zotero.Repo = new function() {
 	 * Retrieve translator metadata from Zotero Standalone
 	 */
 	this.getTranslatorMetadataFromZotero = async function() {
+		if (ZOTERO_CONFIG.ALWAYS_FETCH_FROM_REPOSITORY) {
+			throw new Error("Cannot fetch metadata from Zotero when ALWAYS_FETCH_FROM_REPOSITORY is enabled");
+		}
 		let translatorMetadata = await Zotero.Connector.callMethod("getTranslators", {});
 		Zotero.Prefs.set("connector.repo.lastCheck.localTime", Date.now());
 		return translatorMetadata;

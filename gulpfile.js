@@ -244,6 +244,10 @@ function processFile() {
 					contents = contents.replace(/REPOSITORY_URL: [^,]*/,
 						`REPOSITORY_URL: "${process.env.ZOTERO_REPOSITORY_URL}"`);
 				}
+				if (process.env.ZOTERO_ALWAYS_FETCH_FROM_REPOSITORY) {
+					contents = contents.replace('ALWAYS_FETCH_FROM_REPOSITORY: false',
+						'ALWAYS_FETCH_FROM_REPOSITORY: true');
+				}
 				file.contents = Buffer.from(contents);
 				break;
 			case 'zotero.js':

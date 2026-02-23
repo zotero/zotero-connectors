@@ -27,9 +27,6 @@
 Zotero.Messaging.addMessageListener('translatorTester_dummyTranslate', async (data) => {
 	let [translatorID] = data;
 
-	let PageSaving = (await import(Zotero.getExtensionURL("inject/pageSaving.js"))).default;
-	let TranslateWeb = (await import(Zotero.getExtensionURL('translateWeb.js'))).default;
-	
 	let translator = await Zotero.Translators.get(translatorID);
 	
 	let detectedTranslators = await detect(translator);
@@ -39,12 +36,12 @@ Zotero.Messaging.addMessageListener('translatorTester_dummyTranslate', async (da
 
 	let detectedItemType = detectedTranslators[0].itemType;
 
-	let translate = await PageSaving._initTranslate(detectedItemType);
+	let translate = await Zotero.PageSaving._initTranslate(detectedItemType);
 	translate.setHandler('debug', makeHandler('debug'));
 	translate.setHandler('error', makeHandler('error'));
 	translate.setHandler('select', makeHandler('select'));
 
-	let { items } = await TranslateWeb.translate({ translate, translators: [translator] });
+	let { items } = await Zotero.TranslateWeb.translate({ translate, translators: [translator] });
 	return { detectedItemType, items };
 });
 
@@ -68,16 +65,13 @@ async function detect(translator) {
 	// succeed. This is roughly the same set of conditions as PageSaving
 	// uses (and it should be kept in sync with that).
 	
-	let PageSaving = (await import(Zotero.getExtensionURL("inject/pageSaving.js"))).default;
-	let TranslateWeb = (await import(Zotero.getExtensionURL('translateWeb.js'))).default;
-	
 	return new Promise(async (resolve) => {
 		let resolveIfDetected = async () => {
 			let options = {
-				translate: await PageSaving._initTranslate(),
+				translate: await Zotero.PageSaving._initTranslate(),
 				translators: [translator],
 			};
-			let detectedTranslators = await TranslateWeb.detect(options);
+			let detectedTranslators = await Zotero.TranslateWeb.detect(options);
 			if (detectedTranslators.length) {
 				resolve(detectedTranslators);
 				return true;

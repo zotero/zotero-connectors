@@ -173,7 +173,7 @@ Zotero.Proxies = new function() {
 		// so if you type a proxied url you immediately get redirected without pressing enter.
 		// Not cool.
 		if (!e.target.url) return;
-		let details = {url: e.url || '', originUrl: e.target.url, type: 'main_frame',
+		let details = {url: e.url || '', originUrl: e.target.url, frameId: 0,
 			requestHeadersObject: {}, tabId: e.target};
 
 		Zotero.Proxies.updateDisabledByDomain();
@@ -189,7 +189,7 @@ Zotero.Proxies = new function() {
 	 * @param tab
 	 */
 	this.onPageLoadSafari = function(tab) {
-		let details = {url: tab.url, type: 'main_frame', tabId: tab, statusCode: 200};
+		let details = {url: tab.url, frameId: 0, tabId: tab, statusCode: 200};
 	
 		Zotero.Proxies._maybeAddHost(details);
 	};
@@ -419,7 +419,7 @@ Zotero.Proxies = new function() {
 		}
 
 		// Otherwise, redirect.
-		if (Zotero.Proxies.showRedirectNotification && details.type === 'main_frame') {
+		if (Zotero.Proxies.showRedirectNotification && details.frameId === 0) {
 			let proxy = Zotero.Proxies.hosts[uri.host];
 			_showNotification(
 				'Zotero Proxy Redirection',

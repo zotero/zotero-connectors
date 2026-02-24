@@ -54,6 +54,9 @@
 		"message": "Copy to Clipboard"
 	},
 	
+	"itemType_webpage": {
+		"message": "Web Page"
+	},
 	"itemType_pdf": {
 		"message": "PDF attachment"
 	},

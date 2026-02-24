@@ -67,16 +67,38 @@ Zotero.Utilities.Connector = {
 		if (!Zotero.isManifestV3) return {};
 		let stored = await browser.storage.session.get({[name]: "{}"});
 		let obj = JSON.parse(stored[name]);
-		return new Proxy(obj, {
-			set: function (target, prop, value) {
-				target[prop] = value;
-				browser.storage.session.set({[name]: JSON.stringify(target)});
-			},
-			deleteProperty: function(target, prop) {
-				delete target[prop];
-				browser.storage.session.set({[name]: JSON.stringify(target)});
-			}
-		})
+		function persist() {
+			let json = JSON.stringify(obj, (key, value) => {
+				if (typeof value === 'function') {
+					Zotero.logError(new Error(`MV3PersistentObject '${name}': cannot serialize function at key '${key}'`));
+					return undefined;
+				}
+				return value;
+			});
+			browser.storage.session.set({[name]: json});
+		}
+		function makeDeepProxy(target) {
+			return new Proxy(target, {
+				get: function(target, prop, receiver) {
+					let value = Reflect.get(target, prop, receiver);
+					if (value !== null && typeof value === 'object') {
+						return makeDeepProxy(value);
+					}
+					return value;
+				},
+				set: function (target, prop, value) {
+					target[prop] = value;
+					persist();
+					return true;
+				},
+				deleteProperty: function(target, prop) {
+					delete target[prop];
+					persist();
+					return true;
+				}
+			});
+		}
+		return makeDeepProxy(obj);
 	},
 	
 	keepServiceWorkerAliveFunction: function(fn) {

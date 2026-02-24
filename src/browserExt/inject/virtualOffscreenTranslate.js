@@ -95,7 +95,14 @@ Zotero.VirtualOffscreenTranslate = class {
 				}
 			}
 		}
-		return this.sendMessage('Translate.setDocument', [doc.documentElement.outerHTML, doc.location.href, doc.cookie]);
+		let cookie = '';
+		try {
+			cookie = doc.cookie;
+		}
+		catch (e) {
+			// SecurityError in sandboxed frames lacking 'allow-same-origin'
+		}
+		return this.sendMessage('Translate.setDocument', [doc.documentElement.outerHTML, doc.location.href, cookie]);
 	}
 	
 	async setTranslator(translators) {

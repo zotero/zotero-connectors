@@ -67,6 +67,7 @@ Zotero.Utilities.Connector = {
 		if (!Zotero.isManifestV3) return {};
 		let stored = await browser.storage.session.get({[name]: "{}"});
 		let obj = JSON.parse(stored[name]);
+<<<<<<< HEAD
 		function persist() {
 			let json = JSON.stringify(obj, (key, value) => {
 				if (typeof value === 'function') {
@@ -89,7 +90,7 @@ Zotero.Utilities.Connector = {
 				set: function (target, prop, value) {
 					target[prop] = value;
 					persist();
-					return true;
+					return target[prop];
 				},
 				deleteProperty: function(target, prop) {
 					delete target[prop];

@@ -288,6 +288,22 @@
 	"reloadVia": {
 		"message": "Reload via $1"
 	},
+
+	"proxy_validate_hostProxyExists": {
+		"message": "A proxy is already defined for $1. Please remove the entry in the existing proxy or change the hostname."
+	},
+	"proxy_validate_schemeDuplicate": {
+		"message": "A proxy with the same login URL scheme is already defined. Please remove the existing proxy or change the login URL scheme."
+	},
+	"proxy_validate_schemeInvalid": {
+		"message": "The Proxied URL scheme is invalid. Please enter a valid proxied URL scheme."
+	},
+	"proxy_validate_schemeNoPath": {
+		"message": "The login URL scheme does not contain a path (%p). Please enter a valid login URL scheme."
+	},
+	"proxy_validate_openAthens_domainInvalid": {
+		"message": "The OpenAthens redirector domain is invalid. Please enter a valid OpenAthens redirector domain."
+	},
 	
 	"permissions_siteAccess_title": {
 		"message": "Site Access Permissions Required"

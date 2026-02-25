@@ -89,7 +89,7 @@ Zotero.Utilities.Connector = {
 				set: function (target, prop, value) {
 					target[prop] = value;
 					persist();
-					return target[prop];
+					return true;
 				},
 				deleteProperty: function(target, prop) {
 					delete target[prop];

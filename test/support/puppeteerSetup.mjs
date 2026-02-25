@@ -64,7 +64,7 @@ export async function mochaGlobalSetup() {
 			return target.type() === 'service_worker' &&
 				target.url().endsWith('background-worker.js');
 		},
-		{ timeout: 10000 }
+		{ timeout: 5000 }
 	);
 
 	if (!workerTarget) {
@@ -73,7 +73,7 @@ export async function mochaGlobalSetup() {
 
 	const offscreenPageTarget = await browser.waitForTarget(
 		target => target.url().endsWith('offscreen.html'),
-		{ timeout: 10000 }
+		{ timeout: 5000 }
 	);
 
 	if (!offscreenPageTarget) {

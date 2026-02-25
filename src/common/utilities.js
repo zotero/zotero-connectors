@@ -67,7 +67,6 @@ Zotero.Utilities.Connector = {
 		if (!Zotero.isManifestV3) return {};
 		let stored = await browser.storage.session.get({[name]: "{}"});
 		let obj = JSON.parse(stored[name]);
-<<<<<<< HEAD
 		function persist() {
 			let json = JSON.stringify(obj, (key, value) => {
 				if (typeof value === 'function') {

@@ -200,7 +200,7 @@ var Zotero = global.Zotero = new function() {
 		}
 		await Zotero.i18n.init();
 		Zotero.Translators.init();
-		Zotero.Proxies.init();
+		await Zotero.Proxies.init();
 		await this._initDateFormatsJSON();
 		Zotero.initDeferred.resolve();
 		if (Zotero.GoogleDocs.API.init) {

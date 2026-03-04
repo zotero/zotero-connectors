@@ -51,7 +51,7 @@ An overview of the Zotero Connector architecture.
 ##### Chrome/Firefox Browser Extension Framework
 
 The extension uses the WebExtension API cross-browser technology. See [Chrome Extension docs](https://developer.chrome.com/extensions)
-and [Firefox Extension docs](https://developer.mozilla.org/en-US/Add-ons/WebExtensions) for more information.
+and [Firefox Extension docs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions) for more information.
 
 ##### Safari Extension Framework
 
@@ -73,7 +73,7 @@ code running on the webpage and a background process.
 
 ##### a) Injected scripts for individual webpages
 
-Each webpage is injected ([Chrome](https://developer.chrome.com/extensions/content_scripts)/[Firefox](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts)/[Safari](https://developer.apple.com/documentation/safariservices/injecting-a-script-into-a-webpage))
+Each webpage is injected ([Chrome](https://developer.chrome.com/extensions/content_scripts)/[Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Content_scripts)/[Safari](https://developer.apple.com/documentation/safariservices/injecting-a-script-into-a-webpage))
 with a full Zotero [translation framework](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/gulpfile.js#L45-L79).
 A [*Zotero.Translate.Web*](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/src/common/inject/inject.jsx#L314-L314) 
 instance orchestrates running individual translators for detection and translation.
@@ -87,7 +87,7 @@ framework, such as retrieving translator code and sending translated items eithe
 ##### b) Background process
 
 The Connector runs a [background process](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/gulpfile.js#L95-L125) 
-([Chrome](https://developer.chrome.com/extensions/event_pages)/[Firefox](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Anatomy_of_a_WebExtension#Background_scripts)/[Safari](https://developer.apple.com/documentation/safariservices/building-a-safari-app-extension))
+([Chrome](https://developer.chrome.com/extensions/event_pages)/[Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Anatomy_of_a_WebExtension#Background_scripts)/[Safari](https://developer.apple.com/documentation/safariservices/building-a-safari-app-extension))
 which works as a middle-layer between the translation framework running in inject scripts (a) and Zotero (c) or zotero.org (d).
 
 The background process maintains a cache of translators and performs the initial [translator detection using URL matching](https://github.com/zotero/zotero-connectors/blob/e1a16c8ad2e17c6893554c3f376384e18182202d/src/common/translators.js#L140-L196).
@@ -118,7 +118,7 @@ The interactions with zotero.org API are defined in [api.js](https://github.com/
 ## Message passing
 
 The only way for the background extension process and injected scripts to communicate is using the message passing
-protocol provided by the browsers ([Chrome](https://developer.chrome.com/extensions/messaging)/[Firefox](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#Communicating_with_background_scripts)/[Safari](https://developer.apple.com/documentation/safariservices/passing-messages-between-safari-app-extensions-and-injected-scripts)). 
+protocol provided by the browsers ([Chrome](https://developer.chrome.com/extensions/messaging)/[Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Content_scripts#Communicating_with_background_scripts)/[Safari](https://developer.apple.com/documentation/safariservices/passing-messages-between-safari-app-extensions-and-injected-scripts)). 
 Injected scripts often need to communicate to background scripts. To simplify
 these interactions, calls to functions in background scripts are monkey-patched in injected scripts. These calls are
 asynchronous and if a return value is required, it is provided either to a callback function as the last argument of

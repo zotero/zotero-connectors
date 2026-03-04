@@ -150,7 +150,7 @@ Zotero.HTTP = new function() {
 			// cross-domain request, we can use the content XHR that it provides, which does
 			// include Referer. Chrome's XHR in content scripts includes Referer by default.
 			//
-			// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#XHR_and_Fetch
+			// [1] https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Content_scripts#XHR_and_Fetch
 			if (Zotero.HTTP.isSameOrigin(url) && !(Zotero.isSafari && options.headers['User-Agent'])) {
 				if (typeof content != 'undefined' && content.XMLHttpRequest) {
 					Zotero.debug("Using content XHR");

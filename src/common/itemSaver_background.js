@@ -254,11 +254,9 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 		if (attachment.mimeType.toLowerCase() === receivedMimeType.toLowerCase()) {
 			return xhr.response;
 		}
-		// Be lenient for PDFs served as application/octet-stream (e.g., some hosts like OSF)
-		// We already allow octet-stream for pdf.js detection; accept it here too
-		const expectedPDFIsOctetStream = attachment.mimeType.toLowerCase() === 'application/pdf'
-			&& receivedMimeType.toLowerCase() === 'application/octet-stream'
-		if (expectedPDFIsOctetStream) {
+		// Trust the translator's mimeType when the server returns octet-stream,
+		// since some servers serve all binary files as octet-stream (e.g., OSF, Libraries Tasmania)
+		if (receivedMimeType.toLowerCase() === 'application/octet-stream') {
 			return xhr.response;
 		}
 	} catch (e) {

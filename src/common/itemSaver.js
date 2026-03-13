@@ -655,8 +655,8 @@ ItemSaver.fetchAttachmentSafari = async function(attachment) {
 	let { contentType } = Zotero.Utilities.Connector.getContentTypeFromXHR(xhr);
 
 	const mimeTypeMatches = attachment.mimeType.toLowerCase() === contentType.toLowerCase()
-	const expectedPDFIsOctetStream = attachment.mimeType.toLowerCase() === 'application/pdf' && contentType.toLowerCase() === 'application/octet-stream'
-	if (mimeTypeMatches || expectedPDFIsOctetStream) {
+	const serverIsOctetStream = contentType.toLowerCase() === 'application/octet-stream'
+	if (mimeTypeMatches || serverIsOctetStream) {
 		Zotero.debug(`Fetched an attachment in safari content script: ${attachment.url}`);
 		attachment.data = Zotero.Utilities.Connector.arrayBufferToBase64(xhr.response);
 	}

@@ -405,7 +405,39 @@ ItemSaver.prototype = {
 
 		return false;
 	},
-
+	
+	/**
+	 * Fetch optional attachment transfer stats from a Desktop plugin endpoint.
+	 * This endpoint is intentionally optional and silently ignored if missing.
+	 *
+	 * Expected response shape:
+	 *   { attachments: { [attachmentID]: { downloadedBytes, totalBytes, rateBps, etaSec } } }
+	 * or:
+	 *   { [attachmentID]: { downloadedBytes, totalBytes, rateBps, etaSec } }
+	 *
+	 * @param {String} sessionID
+	 * @returns {Promise<Object|null>}
+	 */
+	_fetchAttachmentTransferStats: async function(sessionID) {
+		try {
+			let response = await Zotero.Connector.callMethod({
+				method: "attachmentDownloadProgress",
+				timeout: 300
+			}, { sessionID });
+			if (!response || typeof response != 'object') {
+				return null;
+			}
+			if (response.attachments && typeof response.attachments == 'object') {
+				return response.attachments;
+			}
+			return response;
+		}
+		catch (e) {
+			// The plugin endpoint is optional; ignore endpoint missing/unavailable errors.
+			return null;
+		}
+	},
+	
 	/**
 	 * Polls for updates to attachment progress
 	 * @param items Items in Zotero.Item.toArray() format
@@ -439,12 +471,17 @@ ItemSaver.prototype = {
 				return;
 			}
 			
+			let transferStatsByID = await this._fetchAttachmentTransferStats(this._sessionID);
+			
 			// Store last version of attachments so we can cancel them if a subsequent request fails
 			let newAttachments = [];
 			for (let item of response.items) {
 				if (!item.attachments) continue;
 				for (let attachment of item.attachments) {
 					attachment.parentItem = item.id;
+					if (transferStatsByID && attachment.id && transferStatsByID[attachment.id]) {
+						Object.assign(attachment, transferStatsByID[attachment.id]);
+					}
 					attachmentCallback(attachment, attachment.progress);
 					newAttachments.push(attachment);
 				}

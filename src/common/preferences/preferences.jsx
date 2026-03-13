@@ -161,9 +161,39 @@ Zotero_Preferences.General = {
 		ReactDOM.render(React.createElement(Zotero_Preferences.Components.ClientStatus, null),
 			document.getElementById("client-status"));
 		document.getElementById("general-button-clear-credentials").onclick = Zotero_Preferences.General.clearCredentials;
+		Zotero_Preferences.General.initDownloadProgressSettings();
 
 		Zotero.API.getUserInfo().then(Zotero_Preferences.General.updateAuthorization);
 
+	},
+
+	initDownloadProgressSettings: function() {
+		const showStatsCheckbox = document.getElementById('general-checkbox-show-download-stats');
+		const localeSelect = document.getElementById('general-select-download-locale');
+		if (!showStatsCheckbox || !localeSelect) return;
+
+		Zotero.Prefs.getAsync('progressWindow.showDownloadStats').then((value) => {
+			if (value === null || typeof value == 'undefined') {
+				value = true;
+				Zotero.Prefs.set('progressWindow.showDownloadStats', value);
+			}
+			showStatsCheckbox.checked = !!value;
+		});
+
+		Zotero.Prefs.getAsync('progressWindow.downloadLocale').then((value) => {
+			if (!value) {
+				value = 'auto';
+				Zotero.Prefs.set('progressWindow.downloadLocale', value);
+			}
+			localeSelect.value = value;
+		});
+
+		showStatsCheckbox.addEventListener('change', (event) => {
+			Zotero.Prefs.set('progressWindow.showDownloadStats', event.target.checked);
+		});
+		localeSelect.addEventListener('change', (event) => {
+			Zotero.Prefs.set('progressWindow.downloadLocale', event.target.value || 'auto');
+		});
 	},
 
 	/**

@@ -62,6 +62,8 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.done = false;
 		this.canUserAddNote = false;
 		this.supportsTagsAutocomplete = false;
+		this.downloadLocalePref = "auto";
+		this.showDownloadStats = true;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
@@ -143,6 +145,13 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 		Zotero.Connector.getPref('supportsTagsAutocomplete').then(res => {
 			this.supportsTagsAutocomplete = res;
+		});
+		Zotero.Prefs.getAsync('progressWindow.downloadLocale').then((locale) => {
+			this.downloadLocalePref = locale || "auto";
+		});
+		Zotero.Prefs.getAsync('progressWindow.showDownloadStats').then((showStats) => {
+			// Default to true if preference has not been set yet
+			this.showDownloadStats = showStats !== false;
 		});
 		// Present scrollbar from briefly appearing when tags are being added
 		document.documentElement.style.scrollbarWidth = 'none';
@@ -283,12 +292,102 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			if (params.itemType) {
 				p.itemType = params.itemType
 			}
+			let downloadedBytes = params.downloadedBytes;
+			if (typeof downloadedBytes != 'number' && typeof params.downloaded == 'number') {
+				downloadedBytes = params.downloaded;
+			}
+			if (typeof downloadedBytes == 'number') {
+				p.downloadedBytes = downloadedBytes;
+			}
+			let totalBytes = params.totalBytes;
+			if (typeof totalBytes != 'number' && typeof params.total == 'number') {
+				totalBytes = params.total;
+			}
+			if (typeof totalBytes == 'number') {
+				p.totalBytes = totalBytes;
+			}
+			let rateBps = params.rateBps;
+			if (typeof rateBps != 'number' && typeof params.rate == 'number') {
+				rateBps = params.rate;
+			}
+			if (typeof rateBps == 'number') {
+				p.rateBps = rateBps;
+			}
+			if (typeof params.etaSec == 'number') {
+				p.etaSec = params.etaSec;
+			}
 			return newState;
 		});
 		// Do not being announcing alerts until all top level items are loaded
 		if (!this.announceAlerts) {
 			this.announceAlerts = params.itemsLoaded;
 		}
+	}
+
+	getEffectiveDownloadLocale() {
+		if (this.downloadLocalePref && this.downloadLocalePref != 'auto') {
+			return this.downloadLocalePref;
+		}
+		return navigator.language || 'en-US';
+	}
+
+	isChineseDownloadLocale() {
+		return this.getEffectiveDownloadLocale().toLowerCase().startsWith('zh');
+	}
+
+	formatBytes(bytes) {
+		if (typeof bytes != 'number' || !isFinite(bytes) || bytes < 0) return '';
+		let units = ['B', 'KB', 'MB', 'GB', 'TB'];
+		let idx = 0;
+		let val = bytes;
+		while (val >= 1024 && idx < units.length - 1) {
+			val /= 1024;
+			idx++;
+		}
+		let digits = idx <= 1 ? 0 : 1;
+		return `${val.toFixed(digits)} ${units[idx]}`;
+	}
+
+	formatRate(rateBps) {
+		let bytes = this.formatBytes(rateBps);
+		if (!bytes) return '';
+		return this.isChineseDownloadLocale() ? `${bytes}/秒` : `${bytes}/s`;
+	}
+
+	formatEta(etaSec) {
+		if (typeof etaSec != 'number' || !isFinite(etaSec) || etaSec < 0) return '';
+		let total = Math.round(etaSec);
+		let min = Math.floor(total / 60);
+		let sec = total % 60;
+		if (this.isChineseDownloadLocale()) {
+			return min > 0 ? `剩余 ${min}分${sec}秒` : `剩余 ${sec}秒`;
+		}
+		return min > 0 ? `${min}m ${sec}s left` : `${sec}s left`;
+	}
+
+	getProgressMeta(item) {
+		if (!this.showDownloadStats || !item.parentItem) return '';
+		let parts = [];
+		if (typeof item.percentage == 'number' && item.percentage >= 0 && item.percentage < 100) {
+			parts.push(`${Math.round(item.percentage)}%`);
+		}
+		let downloaded = this.formatBytes(item.downloadedBytes);
+		let total = this.formatBytes(item.totalBytes);
+		if (downloaded && total) {
+			parts.push(`${downloaded} / ${total}`);
+		}
+		else if (downloaded) {
+			parts.push(downloaded);
+		}
+		let rate = this.formatRate(item.rateBps);
+		if (rate) {
+			parts.push(rate);
+		}
+		let eta = this.formatEta(item.etaSec);
+		if (eta) {
+			parts.push(eta);
+		}
+		return parts.join(this.isChineseDownloadLocale() ? ' | ' : ' | ');
 	}
 	
 	addError() {
@@ -982,12 +1081,20 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				backgroundSize: "contain"
 			},
 		);
+		var progressMeta = this.getProgressMeta(item);
 		
 		return (
 			<div key={item.id} className="ProgressWindow-item" style={itemStyle}>
 				<div className="ProgressWindow-itemIcon" style={iconStyle}></div>
-				<div className="ProgressWindow-itemText">
-					{item.title}
+				<div className="ProgressWindow-itemTextWrap">
+					<div className="ProgressWindow-itemText">
+						{item.title}
+					</div>
+					{progressMeta ? (
+						<div className="ProgressWindow-itemMeta">
+							{progressMeta}
+						</div>
+					) : null}
 				</div>
 			</div>
 		);

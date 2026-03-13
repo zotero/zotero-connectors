@@ -269,6 +269,20 @@ button:active {
 	text-overflow: ellipsis
 }
 
+.ProgressWindow-itemTextWrap {
+	flex: 1;
+	min-width: 0;
+}
+
+.ProgressWindow-itemMeta {
+	font-size: 11px;
+	color: #666;
+	margin: 2px 0 0 22px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
 .ProgressWindow-error {
 	font-size: 13px;
 	line-height: 1.4em;

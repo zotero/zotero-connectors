@@ -281,33 +281,17 @@ Zotero.HTTP = new function() {
 	
 	this._requestFetch = async function(method, url, options) {
 		if (Zotero.isInject) {
-			// Make a cross-origin request via the background page, parsing the responseText with
-			// DOMParser and returning a Proxy with 'response' set to the parsed document
-			let isDocRequest = options.responseType == 'document';
-			let coOptions = Object.assign({}, options);
-			if (isDocRequest) {
+			// Make a cross-origin request via the background page
+			const coOptions = Object.assign({}, options);
+			if (options.responseType == 'document') {
 				coOptions.responseType = 'text';
 			}
 			if (Zotero.isSafari && options.headers['User-Agent']) {
 				coOptions.headers['Cookie'] = document.cookie;
 			}
-			return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
-				if (!isDocRequest || Zotero.isManifestV3) {
-					xmlhttp.responseType = options.responseType;
-					return xmlhttp;
-				}
-				
-				Zotero.debug("Parsing cross-origin response for " + url);
-				let parser = new DOMParser();
-				let contentType = xmlhttp.getResponseHeader("Content-Type");
-				let doc = parser.parseFromString(xmlhttp.responseText, Zotero.HTTP.determineDOMParserContentType(contentType));
-				
-				return new Proxy(xmlhttp, {
-					get: function (target, name) {
-						return name == 'response' ? doc : target[name];
-					}
-				});
-			});
+			const xmlhttp = await Zotero.COHTTP.request(method, url, coOptions);
+			xmlhttp.responseType = options.responseType;
+			return xmlhttp;
 		}
 		
 		try {
@@ -370,7 +354,7 @@ Zotero.HTTP = new function() {
 					method,
 					headers: options.headers,
 					body: options.body,
-					credentials: Zotero.isInject ? 'same-origin' : 'include',
+					credentials: 'include',
 				}
 				if (abortController) {
 					fetchOptions.signal = abortController.signal;

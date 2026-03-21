@@ -761,6 +761,8 @@ Zotero.Proxy = class {
 		return {
 			id: this.id,
 			autoAssociate: this.autoAssociate,
+			// Zotero client uses `scheme` to compile proxy regexp
+			scheme: this.toProperScheme,
 			toProxyScheme: this.toProxyScheme,
 			toProperScheme: this.toProperScheme,
 			hosts: this.hosts,

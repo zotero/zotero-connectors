@@ -141,6 +141,20 @@ describe('Zotero.Proxy', function() {
 		await setProxies([]);
 	});
 
+	describe('toJSON', function() {
+		it('should include scheme for Zotero client proxy regexp compilation', async function () {
+			let json = await background(function() {
+				let proxy = new Zotero.Proxy({
+					toProperScheme: "%h.proxy.example.org/%p",
+					toProxyScheme: "https://login.proxy.example.org/login?qurl=%u",
+					hosts: ["journal.example.com"]
+				});
+				return proxy.toJSON();
+			});
+			assert.equal(json.scheme, '%h.proxy.example.org/%p');
+		});
+	});
+
 	describe('toProxy method', function() {
 		it('should preserve pathname and query string with toProxyScheme', async function () {
 			let result = await offscreen(function() {

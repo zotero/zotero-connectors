@@ -106,8 +106,7 @@ Zotero.Proxies = new function() {
 	this.enable = function() {
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onHeadersReceived);
-			browser.webNavigation.onBeforeNavigate.addListener(Zotero.Proxies.onBeforeNavigate)
-			browser.webNavigation.onCommitted.addListener(Zotero.Proxies.checkForRedirectLoop)
+			browser.webNavigation.onCommitted.addListener(Zotero.Proxies.onNavigationCommitted)
 		} else {
 			safari.application.addEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
@@ -117,8 +116,7 @@ Zotero.Proxies = new function() {
 	this.disable = function() {
 		if (Zotero.isBrowserExt) {
 			Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onHeadersReceived);
-			browser.webNavigation.onBeforeNavigate.removeListener(Zotero.Proxies.onBeforeNavigate)
-			browser.webNavigation.onCommitted.removeListener(Zotero.Proxies.checkForRedirectLoop)
+			browser.webNavigation.onCommitted.removeListener(Zotero.Proxies.onNavigationCommitted)
 		} else {
 			safari.application.removeEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
 		}
@@ -217,6 +215,7 @@ Zotero.Proxies = new function() {
 	 * other browserExt browsers call this when typing in the url bar, performing a prefetch
 	 * for a faster page load, so we cannot issue a redirect here, as the prefetch may not get
 	 * committed as page navigation.
+	 * 
 	 * @param details
 	 */
 	this.onHeadersReceived = (details) => {
@@ -226,16 +225,20 @@ Zotero.Proxies = new function() {
 	}
 
 	/**
-	 * Called on webNavigation onCommited. Used to redirect existing hosts and detect new hosts for
-	 * existing proxies. We cannot use this to detect new proxies because we need
+	 * Called on webNavigation onCommitted. Used to redirect existing hosts and detect new
+	 * hosts for existing proxies. We cannot use this to detect new proxies because we need
 	 * response headers which are only available via webRequest APIs.
 	 *
-	 * @param {Object} details - webRequest details object
+	 * @param {Object} details - webNavigation details object
 	 */
-	this.onBeforeNavigate = (details) => {
-		if (details.statusCode >= 400 || details.frameId != 0) {
+	this.onNavigationCommitted = (details) => {
+		if (details.frameId != 0) {
 			return;
 		}
+
+		// N.B. The check should run in the same handler as redirection logic, otherwise
+		// we may start getting false postive redirect loop detections.
+		this.checkForRedirectLoop(details);
 
 		Zotero.Proxies.updateDisabledByDomain();
 		if (Zotero.Proxies.disabledByDomain) return;

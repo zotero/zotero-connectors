@@ -237,7 +237,7 @@ Zotero.Proxies = new function() {
 		}
 
 		// N.B. The check should run in the same handler as redirection logic, otherwise
-		// we may start getting false postive redirect loop detections.
+		// we may start getting false positive redirect loop detections.
 		this.checkForRedirectLoop(details);
 
 		Zotero.Proxies.updateDisabledByDomain();

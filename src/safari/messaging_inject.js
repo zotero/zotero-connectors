@@ -89,6 +89,9 @@ Zotero.Messaging = new function() {
 						for(var i=0; i<arguments.length; i++) {
 							newArgs[i] = (i === callbackArg ? null : arguments[i]);
 						}
+						if (messageConfig.inject && messageConfig.inject.preSend) {
+							newArgs = await messageConfig.inject.preSend(newArgs);
+						}
 
 						let requestID = `${messageName}_${Math.floor(Math.random() * 1e12)}`;
 						let responsePromise = generateResponsePromise(requestID, messageConfig, callback);

@@ -237,8 +237,10 @@ Zotero.API = new function() {
 			return xhr.responseText;
 		}
 		catch(e) {
-			if (askForAuth && e.status === 403) {
-				return Zotero.API.createItem(payload, true);
+			if (e.status === 403 && askForAuth !== false) {
+				// Stored API key may have been revoked, so clear credentials and reauthorize
+				Zotero.API.clearCredentials();
+				return Zotero.API.createItem(payload);
 			}
 			Zotero.logError(e);
 			throw e;

@@ -602,7 +602,15 @@ async function runURLSpecifiedTranslators() {
 	const href = document.location.href;
 	let hashParams = href.split('#')[1];
 	if (!hashParams) return;
-	
+
+	// Check for createTest mode: #create=<translatorID>&url=<url>
+	// or #create=<translatorID>&input=<data>&type=<import|search>
+	let params = new URLSearchParams(hashParams);
+	if (params.has('create')) {
+		await runCreateTest(params);
+		return;
+	}
+
 	let translatorIDs = new Set(hashParams.split('translators=')[1].split(',').map(decodeURI));
 	let translatorTestViews = [];
 	for (let type in translatorTestViewsToRun) {
@@ -618,6 +626,81 @@ async function runURLSpecifiedTranslators() {
 	var elem = document.createElement('p');
 	elem.setAttribute('id', 'translator-tests-complete');
 	document.body.appendChild(elem);
+}
+
+/**
+ * Create a test case by running a translator against a URL or input.
+ * Hash params: #create=<translatorID>&url=<url> or #create=<translatorID>&input=<data>&type=<import|search>
+ */
+async function runCreateTest(params) {
+	let translatorID = params.get('create');
+	let url = params.get('url');
+	let input = params.get('input');
+	let testType = params.get('type') || (url ? 'web' : 'search');
+
+	if (input) {
+		try {
+			input = JSON.parse(input);
+		}
+		catch {}
+	}
+
+	// Fetch the translator directly - don't rely on translatorTestViewsToRun,
+	// which only contains translators with existing test cases
+	let translator = await Zotero.Translators.get(translatorID);
+	if (!translator) {
+		window.createTestOutput = { error: 'Translator not found: ' + translatorID };
+		let completeElem = document.createElement('p');
+		completeElem.id = 'create-test-complete';
+		document.body.append(completeElem);
+		return;
+	}
+	// Ensure code is loaded
+	if (!translator.code) {
+		translator.code = await Zotero.Translators.getCodeForTranslator(translator);
+	}
+
+	let { TranslatorTester } = await import('./translatorTester.mjs');
+	let { ConnectorWebTranslationEnvironment, ConnectorNonWebTranslationEnvironment } = await import('./translatorTester_environment.mjs');
+	let { Test } = await import('./test.mjs');
+
+	let tester = new TranslatorTester(translator, {
+		webTranslationEnvironment: new ConnectorWebTranslationEnvironment(),
+		nonWebTranslationEnvironment: new ConnectorNonWebTranslationEnvironment(),
+		debug: (message) => console.log('Create test:', message),
+	});
+
+	// Create a synthetic test
+	let syntheticTest = new Test({
+		type: testType,
+		...(testType === 'web' ? { url } : { input }),
+		items: [],
+	});
+
+	try {
+		let result = await tester.run(syntheticTest);
+		// The result will be a "failure" (data mismatch) because we passed empty items[].
+		// updatedTest contains the actual items.
+		if (result.updatedTest) {
+			window.createTestOutput = result.updatedTest.toJSON();
+		}
+		else if (result.status === 'success') {
+			// This would happen if the translator returned 0 items and we expected 0
+			window.createTestOutput = {
+				type: testType,
+				...(testType === 'web' ? { url } : { input }),
+				items: [],
+			};
+		}
+		else {
+			window.createTestOutput = { error: result.reason || 'Translation failed' };
+		}
+	}
+	catch (e) {
+		window.createTestOutput = { error: e.message };
+	}
+
+	document.body.appendChild(Object.assign(document.createElement('p'), { id: 'create-test-complete' }));
 }
 
 /**

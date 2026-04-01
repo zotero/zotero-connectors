@@ -145,6 +145,21 @@ Zotero.OffscreenTranslate = {
 		
 		this.addMessageListener('tabClosed', (tabId) => this.onTabClosed(tabId));
 		this.addMessageListener('translateCleanup', (tabIds) => this.onTranslateCleanup(tabIds));
+
+		if (Zotero.isDebug) {
+			// Handler for non-web Translator Tester test runs.
+			// Translator code needs to be executed here so we can eval().
+			Zotero.OffscreenSandbox.addMessageListener('translatorTester_runNonWeb',
+				async (translatorID, testType, input) => {
+					let translator = await Zotero.Translators.get(translatorID);
+					await Zotero.Translators.getCodeForTranslator(translator);
+
+					let { runNonWebTranslation }
+						= await import('/tools/testTranslators/translatorTester.mjs');
+					return runNonWebTranslation({ type: testType, input }, translator);
+				}
+			);
+		}
 	},
 
 	sendMessage: function(message, payload, tabId, frameId) {

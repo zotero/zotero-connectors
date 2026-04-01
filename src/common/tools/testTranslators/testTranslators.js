@@ -214,9 +214,10 @@ TranslatorTestView.prototype.initWithTranslatorAndType = async function(translat
 	this.setLabel(translator.label);
 	
 	let { TranslatorTester } = await import('./translatorTester.mjs');
-	let { ConnectorWebTranslationEnvironment } = await import('./translatorTester_environment.mjs');
+	let { ConnectorWebTranslationEnvironment, ConnectorNonWebTranslationEnvironment } = await import('./translatorTester_environment.mjs');
 	this._translatorTester = new TranslatorTester(translator, {
 		webTranslationEnvironment: new ConnectorWebTranslationEnvironment(),
+		nonWebTranslationEnvironment: new ConnectorNonWebTranslationEnvironment(),
 		debug: (message) => this._debug(this._translatorTester, message),
 	});
 	

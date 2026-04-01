@@ -26,13 +26,36 @@
 
 import {
 	AbstractWebTranslationEnvironment,
-	TranslatorTester
+	AbstractNonWebTranslationEnvironment,
 } from './translatorTester.mjs';
 
 /**
  * @type {Map<number, Record<string, Function>>} Handlers set by the TranslatorTester, by tab
  */
 let tabHandlers = new Map();
+
+/**
+ * Routes non-web translations through the offscreen sandbox.
+ */
+export class ConnectorNonWebTranslationEnvironment extends AbstractNonWebTranslationEnvironment {
+	async runTranslation(test, { tester, signal }) {
+		let result = await Promise.race([
+			Zotero.TranslatorTesterBackground.runNonWebInOffscreen({
+				translatorID: tester.translator.translatorID,
+				testType: test.type,
+				input: test.input,
+			}),
+			new Promise((_, reject) => {
+				signal.addEventListener('abort', () => reject(signal.reason));
+			}),
+		]);
+
+		if (!result) {
+			return { items: null, reason: 'Failed to initialize translation' };
+		}
+		return result;
+	}
+}
 
 export class ConnectorWebTranslationEnvironment extends AbstractWebTranslationEnvironment {
 

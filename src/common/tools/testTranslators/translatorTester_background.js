@@ -25,6 +25,18 @@
 
 
 Zotero.TranslatorTesterBackground = {
+	async runNonWebInOffscreen({
+		translatorID,
+		testType,
+		input,
+	}) {
+		// Forward to the offscreen context where eval() is allowed
+		return Zotero.OffscreenManager.sendMessage(
+			'translatorTester_runNonWeb',
+			[translatorID, testType, input]
+		);
+	},
+
 	async runDummyTranslationInTab({
 		tabId,
 		translatorID,

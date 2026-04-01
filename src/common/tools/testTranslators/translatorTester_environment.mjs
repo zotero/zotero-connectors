@@ -81,16 +81,37 @@ export class ConnectorWebTranslationEnvironment extends AbstractWebTranslationEn
 	/**
 	 * @param {Tab} tab
 	 * @param {TranslatorTester} tester
-	 * @returns {Promise<true>}
+	 * @returns {Promise<boolean>}
 	 */
 	async waitForLoad(tab, { tester }) {
-		// Wait for potential immediate redirects
-		while (tab.status === 'loading') {
-			await Zotero.Promise.delay(1000);
+		// Background tabs (active: false) can have their load event deferred
+		// indefinitely by Chromium, so tab.status stays 'loading' forever even
+		// though DOM content is ready. We poll with a timeout and also check
+		// the actual document.readyState via scripting.
+		let waited = 0;
+		while (tab.status === 'loading' && waited < 10000) {
+			await Zotero.Promise.delay(500);
+			waited += 500;
 			tab = await browser.tabs.get(tab.id);
 		}
 
-		// We follow monitorDOMChanges(), so no need to add an artificial delay
+		if (tab.status === 'loading') {
+			// Tab still "loading" after 10s - check if the DOM is actually ready
+			try {
+				let [{ result }] = await browser.scripting.executeScript({
+					target: { tabId: tab.id },
+					func: () => document.readyState,
+				});
+				if (result === 'interactive' || result === 'complete') {
+					return true;
+				}
+			}
+			catch {
+				// scripting.executeScript can fail if the page isn't ready at all
+			}
+			// Proceed anyway - detect() will retry on events
+		}
+
 		return true;
 	}
 

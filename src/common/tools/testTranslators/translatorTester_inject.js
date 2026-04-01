@@ -60,19 +60,21 @@ function makeHandler(handler) {
 }
 
 async function detect(translator) {
-	// This is a mess, but I'm not sure there's a better way to wait for a
-	// bunch of different events that could possibly allow detection to
-	// succeed. This is roughly the same set of conditions as PageSaving
-	// uses (and it should be kept in sync with that).
-	
-	return new Promise(async (resolve) => {
+	// Try detection immediately, then retry on page events with a timeout.
+	// Background tabs can have deferred load events, so we can't rely solely
+	// on readystatechange. We also poll periodically as a fallback.
+
+	return new Promise(async (resolve, reject) => {
+		let resolved = false;
 		let resolveIfDetected = async () => {
+			if (resolved) return false;
 			let options = {
 				translate: await Zotero.PageSaving._initTranslate(),
 				translators: [translator],
 			};
 			let detectedTranslators = await Zotero.TranslateWeb.detect(options);
 			if (detectedTranslators.length) {
+				resolved = true;
 				resolve(detectedTranslators);
 				return true;
 			}
@@ -85,5 +87,28 @@ async function detect(translator) {
 		document.addEventListener('readystatechange', () => resolveIfDetected());
 		Zotero.Messaging.addMessageListener('pageModified', Zotero.Utilities.debounce(() => resolveIfDetected(), 1000));
 		Zotero.Messaging.addMessageListener('historyChanged', Zotero.Utilities.debounce(() => resolveIfDetected(), 1000));
+
+		// Poll every second as fallback for pages where events don't fire
+		// (to work around some background tabs never firing load events).
+		// Keep this well under the 15-second per-test timeout.
+		let polls = 0;
+		let pollInterval = setInterval(async () => {
+			polls++;
+			if (resolved) {
+				clearInterval(pollInterval);
+				return;
+			}
+			if (await resolveIfDetected()) {
+				clearInterval(pollInterval);
+				return;
+			}
+			if (polls >= 8) {
+				clearInterval(pollInterval);
+				if (!resolved) {
+					resolved = true;
+					resolve([]);
+				}
+			}
+		}, 1000);
 	});
 }

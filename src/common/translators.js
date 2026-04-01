@@ -38,7 +38,8 @@ Zotero.Translators = new function() {
 	
 	this._translatorsHash = null;
 	this._sortedTranslatorHash = null;
-	
+	var _updateFromRemotePromise = null;
+
 	/**
 	 * Initializes translator cache, loading all relevant translators into memory
 	 * and setting up regular repo checks for translator updates
@@ -164,6 +165,25 @@ Zotero.Translators = new function() {
 	 * @param reset {Boolean} Fetches all metadata from repo instead of just the diff since last checked
 	 */
 	this.updateFromRemote = async function(reset=false) {
+		if (_updateFromRemotePromise) {
+			if (!reset) {
+				Zotero.debug('Translators: Update already in progress -- waiting for it to complete');
+				return _updateFromRemotePromise;
+			}
+			Zotero.debug('Translators: Waiting for in-progress update before resetting');
+			try { await _updateFromRemotePromise; } catch (e) {}
+		}
+		let promise = this._doUpdateFromRemote(reset);
+		_updateFromRemotePromise = promise;
+		promise.finally(() => {
+			if (_updateFromRemotePromise === promise) {
+				_updateFromRemotePromise = null;
+			}
+		});
+		return promise;
+	}
+
+	this._doUpdateFromRemote = async function(reset) {
 		Zotero.debug('Retrieving translators from Zotero Client');
 		let translatorMetadata;
 		try {

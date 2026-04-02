@@ -133,9 +133,20 @@ ItemSaver.prototype = {
 		for (let item of items) {
 			item.id = item.id || Zotero.Utilities.randomString(8);
 			
-			// Prepare attachments for saving
+			if(!item.attachments) {
+				item.attachments = [];
+			}
+			
 			item.attachments = item.attachments.filter((attachment) => {
-				if (!attachment.title) attachment.title = attachment.mimeType + ' Attachment';
+				// Skip attachments without URLs - they can't be downloaded
+				// (unless they are link-only attachments with snapshot === false)
+				if (!attachment.url && attachment.snapshot !== false) {
+					return false;
+				}
+
+				if (!attachment.title) {
+					attachment.title = (attachment.mimeType || 'Unknown') + ' Attachment';
+				}
 				attachment.id = attachment.id || Zotero.Utilities.randomString(8);
 				attachment.parentItem = item.id;
 				this._setAttachmentReferer(attachment);
@@ -481,7 +492,12 @@ ItemSaver.prototype = {
 			}
 			itemIndices[i] = newItems.length;
 			newItems = newItems.concat(Zotero.Utilities.Item.itemToAPIJSON(item));
-			for (let attachment of item.attachments) {
+
+			// Filter out attachments without URLs - they can't be downloaded
+			if (item.attachments) {
+				item.attachments = item.attachments.filter(attachment => attachment.url);
+			}
+			for (let attachment of item.attachments || []) {
 				attachment.id = Zotero.Utilities.randomString();
 			}
 		}

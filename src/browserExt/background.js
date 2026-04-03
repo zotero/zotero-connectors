@@ -61,7 +61,7 @@ Zotero.Connector_Browser = new function() {
 				buttonContext.push('action');
 				await Zotero.OffscreenManager.init();
 			}
-			this._tabInfo = _tabInfo = await Zotero.Utilities.Connector.createMV3PersistentObject('tabInfo');
+			this._tabInfo = _tabInfo = await Zotero.Utilities.Connector.createMV3PersistentObject('tabInfo', {ignoreKeys: ['selectCallback']});
 			setInterval(async () => {
 				let tabs = await browser.tabs.query({});
 				for (let tab of tabs) {
@@ -189,10 +189,16 @@ Zotero.Connector_Browser = new function() {
 				+ "#" + encodeURIComponent(JSON.stringify([tab.id, items])),
 			{width: 600, height: 325}, tab
 		);
-		return new Promise((resolve) => {
-			let tabInfo = this.getTabInfo(tab.id);
-			tabInfo.selectCallback = resolve;
-		});
+		try {
+			Zotero.Connector_Browser.setKeepServiceWorkerAlive(true);
+			return await new Promise((resolve) => {
+				let tabInfo = this.getTabInfo(tab.id);
+				tabInfo.selectCallback = resolve;
+			});
+		}
+		finally {
+			Zotero.Connector_Browser.setKeepServiceWorkerAlive(false);
+		}
 	};
 	
 	/**

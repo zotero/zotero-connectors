@@ -63,12 +63,28 @@ Zotero.Utilities.Connector = {
 		return val;
 	},
 	
-	createMV3PersistentObject: async function (name) {
+	/**
+	 * Creates a Proxy-wrapped object that automatically persists to browser.storage.session
+	 * on every property change. Only used in Manifest V3 where the service worker can be
+	 * killed at any time and state needs to survive restarts.
+	 *
+	 * @param {String} name - Storage key used in browser.storage.session
+	 * @param {Object} [options]
+	 * @param {String[]} [options.ignoreKeys=[]] - Property names to silently skip during
+	 *     serialization. Use for keys that intentionally hold non-serializable values
+	 *     (e.g. callback functions) so they don't trigger error logging.
+	 * @returns {Promise<Object>} A deep Proxy over the stored (or empty) object
+	 */
+	createMV3PersistentObject: async function (name, options={}) {
 		if (!Zotero.isManifestV3) return {};
+		let ignoreKeys = options.ignoreKeys || [];
 		let stored = await browser.storage.session.get({[name]: "{}"});
 		let obj = JSON.parse(stored[name]);
 		function persist() {
 			let json = JSON.stringify(obj, (key, value) => {
+				if (ignoreKeys.includes(key)) {
+					return undefined;
+				}
 				if (typeof value === 'function') {
 					Zotero.logError(new Error(`MV3PersistentObject '${name}': cannot serialize function at key '${key}'`));
 					return undefined;

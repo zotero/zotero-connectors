@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<meta name="google" content="notranslate">
+	<base target="_blank">
+	<title>ProgressWindow Preview</title>
+	<style>
+		body {
+			background: #f5f5f5;
+			display: flex;
+			justify-content: center;
+			padding-top: 40px;
+		}
+	</style>
+
+	<!--
+		Minimal browser extension API mocks so progressWindow can render
+		outside of the extension context.
+
+		We define mocks in _setupBrowserMock(), call it before browser-polyfill.js
+		so the polyfill sees `browser` as already defined and skips its wrapping,
+		then call it again after to restore our mock (the polyfill still overwrites
+		global.browser with an empty export on line 11).
+	-->
+	<script>
+	var _chromeMessageListeners = [];
+
+	function dispatchMessage(messageName, payload) {
+		var request = [messageName, payload];
+		_chromeMessageListeners.forEach(function(listener) {
+			listener(request, {}, function() {});
+		});
+	}
+
+	var _messages = {};
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', '../_locales/en/messages.json', false);
+	xhr.send();
+	if (xhr.status === 200) {
+		_messages = JSON.parse(xhr.responseText);
+	}
+
+	function _setupBrowserMock() {
+		window.browser = {
+			runtime: {
+				getURL: function(path) { return '../' + path; },
+				getManifest: function() { return { version: '0.0.0-preview' }; },
+				getPlatformInfo: function() { return Promise.resolve({ os: 'mac' }); },
+				getBrowserInfo: function() { return Promise.resolve({ name: 'Firefox', version: '0' }); },
+				sendMessage: async function(msg) {
+					console.log('[mock] browser.runtime.sendMessage:', msg);
+					return undefined;
+				},
+				onMessage: {
+					addListener: function(fn) {
+						_chromeMessageListeners.push(fn);
+					}
+				}
+			},
+			i18n: {
+				getMessage: function(key, subs) {
+					var entry = _messages[key];
+					var str = entry ? entry.message : '{' + key + '}';
+					if (subs) {
+						if (!Array.isArray(subs)) subs = [subs];
+						subs.forEach(function(sub, i) {
+							str = str.replace('$' + (i + 1), sub);
+						});
+					}
+					return str;
+				}
+			}
+		};
+		window.chrome = window.chrome || {};
+		window.chrome.runtime = window.browser.runtime;
+		if (typeof global === 'undefined') {
+			window.global = window;
+		}
+	}
+
+	_setupBrowserMock();
+	</script>
+
+	<!--BEGIN CONNECTOR-->
+	<script src="../browser-polyfill.js"></script>
+	<!-- Restore mocks after polyfill overwrites global.browser -->
+	<script>_setupBrowserMock();</script>
+	<script src="../zotero_config.js"></script>
+	<script src="../zotero.js"></script>
+	<script src="../lib/react.js"></script>
+	<script src="../lib/react-dom.js"></script>
+	<script src="../lib/react-dom-factories.js"></script>
+	<script src="../lib/prop-types.js"></script>
+	<script src="../ui/tree/tree.js"></script>
+	<script src="../ui/ProgressWindow.js"></script>
+	<script src="../translate/promise.js"></script>
+	<script src="../messages.js"></script>
+	<script src="../messaging_inject.js"></script>
+	<script src="../i18n.js"></script>
+	<!--END CONNECTOR-->
+	<script src="progressWindow.js"></script>
+
+	<link rel="stylesheet" href="progressWindow.css" />
+
+	<script>
+	// After the real progressWindow.js boots, dispatch sample data
+	Zotero.initDeferred.promise.then(async function() {
+		await new Promise(function(r) { setTimeout(r, 100); });
+
+		var targets = [
+			{ id: 'L1', name: 'My Library', level: 0, filesEditable: true },
+			{ id: 'C10', name: 'Research', level: 1, filesEditable: true, recent: true },
+			{ id: 'C11', name: 'Philosophy of Science', level: 2, filesEditable: true },
+			{ id: 'C12', name: 'History', level: 2, filesEditable: true },
+			{ id: 'C13', name: 'Teaching', level: 1, filesEditable: true },
+			{ id: 'L2', name: 'Group Library', level: 0, filesEditable: false },
+			{ id: 'C20', name: 'Shared Papers', level: 1, filesEditable: false, recent: true },
+		];
+
+		var tags = {
+			1: ['philosophy', 'science', 'paradigm', 'epistemology', 'history of science'],
+			2: ['collaboration']
+		};
+
+		dispatchMessage('progressWindowIframe.changeHeadline', [
+			'Saving to',
+			{ id: 'C10', name: 'Research', filesEditable: true },
+			targets,
+			tags
+		]);
+
+		var itemId = 1001;
+
+		dispatchMessage('progressWindowIframe.updateProgress', [
+			itemId,
+			{
+				id: itemId,
+				iconSrc: '../images/treeitem-journalArticle@2x.png',
+				title: 'The Structure of Scientific Revolutions',
+				progress: 100,
+				itemType: 'journalArticle',
+				itemsLoaded: 1
+			}
+		]);
+
+		dispatchMessage('progressWindowIframe.updateProgress', [
+			2001,
+			{
+				id: 2001,
+				iconSrc: '../images/treeitem-attachment-pdf@2x.png',
+				title: 'Full Text PDF',
+				parentItem: itemId,
+				progress: 100,
+				itemType: 'PDF'
+			}
+		]);
+	});
+	</script>
+</head>
+<body>
+	<div id="progress-window" role="dialog"></div>
+</body>
+</html>

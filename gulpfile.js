@@ -269,6 +269,7 @@ function processFile() {
 			}
 			case 'preferences.html':
 			case 'progressWindow.html':
+			case 'progressWindow_preview.html':
 			case 'modalPrompt.html':
 			case 'offscreenSandbox.html':
 				file.contents = Buffer.from(file.contents.toString()
@@ -398,6 +399,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/browserExt/confirm/confirm.html',
 		'./src/common/preferences/preferences.html',
 		'./src/common/progressWindow/progressWindow.html',
+		'./src/common/progressWindow/progressWindow_preview.html',
 		'./src/common/modalPrompt/modalPrompt.html',
 		'./src/browserExt/offscreen/offscreenSandbox.html',
 		'./src/common/schema.js',

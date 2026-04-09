@@ -9,7 +9,7 @@
     "@babel/preset-react": "^7.8.3",
     "bluebird": "^3.5.3",
     "chai": "^5.2.0",
-    "dompurify": "^3.2.5",
+    "dompurify": "^3.3.2",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
     "gulp-plumber": "^1.2.1",

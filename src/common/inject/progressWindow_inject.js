@@ -44,6 +44,7 @@ if (isTopWindow) {
 	//
 	var frameID = 'zotero-progress-window-frame';
 	var closeOnLeave = false;
+	var itemBoxOpen = false;
 	var lastSuccessfulTarget;
 	var frameReadyDeferred = Zotero.Promise.defer();
 	var frameInitialized;
@@ -82,6 +83,57 @@ if (isTopWindow) {
 		frameReadyDeferred.promise.then(function() {
 			sendMessage(`progressWindowIframe.${name}`, data);
 		});
+	}
+
+	/**
+	 * Transform a raw translator item into the format expected by the ItemBox component:
+	 * { id, fields: [{name, label, value}], creators: [...], creatorTypes: [{value, label}] }
+	 *
+	 * Field and type labels come from Zotero.Schema.locale (en-US locale from schema.json),
+	 * stored during Zotero.Schema.init() in schema.js.
+	 */
+	function formatItemMetadata(id, item) {
+		let locale = Zotero.Schema.locale || {};
+		let fieldLocale = locale.fields || {};
+		let itemTypeLocale = locale.itemTypes || {};
+		let creatorTypeLocale = locale.creatorTypes || {};
+
+		let itemTypeID = Zotero.ItemTypes.getID(item.itemType);
+		let fieldIDs = Zotero.ItemFields.getItemTypeFields(itemTypeID);
+
+		let fields = [
+			{
+				name: 'itemType',
+				label: Zotero.getString("progressWindow_itemBox_itemType"),
+				value: itemTypeLocale[item.itemType] || item.itemType
+			}
+		];
+		for (let fieldID of fieldIDs) {
+			let fieldName = Zotero.ItemFields.getName(fieldID);
+			let value = item[fieldName];
+			let field = {
+				name: fieldName,
+				label: fieldLocale[fieldName] || fieldName,
+				value: (value != null && value !== '') ? String(value) : ''
+			};
+			if (Zotero.ItemFields.isMultiline(fieldID)) {
+				field.multiline = true;
+			}
+			fields.push(field);
+		}
+
+		let creatorTypeObjs = Zotero.CreatorTypes.getTypesForItemType(itemTypeID);
+		let creatorTypes = creatorTypeObjs.map(ct => ({
+			value: ct.name,
+			label: creatorTypeLocale[ct.name] || ct.name
+		}));
+
+		return {
+			id,
+			fields,
+			creators: item.creators || [],
+			creatorTypes
+		};
 	}
 	
 	function changeHeadline() {
@@ -225,8 +277,10 @@ if (isTopWindow) {
 		// Don't start the timer if the mouse is over the popup or the tags box has focus
 		if (insideIframe) return;
 		if (closeTimerDisabled) return;
-		
+
 		if (!delay) delay = 5000;
+		// Give the user more time if they have the item box open
+		if (itemBoxOpen) delay = Math.max(delay, 20000);
 		stopCloseTimer();
 		closeTimeoutID = setTimeout(hideFrame, delay);
 	}
@@ -298,7 +352,12 @@ if (isTopWindow) {
 			// If we're making changes, don't close the popup and keep delaying syncs
 			stopCloseTimer();
 			blurred = false;
-			
+
+			// If target selector hasn't been used yet, data.target may be undefined.
+			// Use lastSuccessfulTarget as fallback.
+			if (!data.target && !lastSuccessfulTarget) return;
+			var target = data.target || lastSuccessfulTarget;
+
 			// If the session isn't yet registered or a session update is in progress,
 			// store the data to run after, overwriting any already-queued data
 			if (!createdSessions.has(currentSessionID) || updatingSession) {
@@ -311,11 +370,12 @@ if (isTopWindow) {
 				await sendMessage(
 					"updateSession",
 					{
-						target: data.target.id,
+						target: target.id,
 						tags: data.tags,
+						updatedMetadata: data.updatedMetadata,
 						note: data.note.replace(/\n/g, "<br>"), // replace newlines with <br> for note-editor
-						resaveAttachments: !lastSuccessfulTarget.filesEditable && data.target.filesEditable,
-						removeAttachments: lastSuccessfulTarget.filesEditable && !data.target.filesEditable
+						resaveAttachments: !lastSuccessfulTarget.filesEditable && target.filesEditable,
+						removeAttachments: lastSuccessfulTarget.filesEditable && !target.filesEditable
 					}
 				);
 			}
@@ -335,7 +395,7 @@ if (isTopWindow) {
 			}
 			
 			// Keep track of last successful target to show on reopen and failure
-			lastSuccessfulTarget = data.target;
+			lastSuccessfulTarget = target;
 		};
 		
 		// Once a session is created in the client, send any queued session data
@@ -358,6 +418,7 @@ if (isTopWindow) {
 		
 		addMessageListener('progressWindowIframe.disableCloseTimer', () => closeTimerDisabled = true);
 		addMessageListener('progressWindowIframe.enableCloseTimer', () => closeTimerDisabled = false);
+		addMessageListener('progressWindowIframe.itemBoxToggled', (data) => { itemBoxOpen = data.open; });
 		
 		addMessageListener('progressWindowIframe.blurred', async function() {
 			blurred = true;
@@ -366,7 +427,12 @@ if (isTopWindow) {
 			// (i.e., they didn't just switch to another window)
 			await Zotero.Promise.delay(150);
 			if (lastClick > new Date() - 500) {
-				hideFrame();
+				if (itemBoxOpen) {
+					startCloseTimer(20000);
+				}
+				else {
+					hideFrame();
+				}
 			}
 		});
 		
@@ -467,6 +533,11 @@ if (isTopWindow) {
 		addEvent("updateProgress", [data.id, data]);
 	});
 	
+	Zotero.Messaging.addMessageListener("progressWindow.setItemMetadata", (data) => {
+		if (data.sessionID && data.sessionID != currentSessionID) return;
+		addEvent("setItemMetadata", [formatItemMetadata(data.id, data.item)]);
+	});
+
 	Zotero.Messaging.addMessageListener("progressWindow.close", function () {
 		// Mark frame as hidden so that if this is called after a progressWindow.show but before
 		// the popup has been initialized (e.g., when displaying the Select Items dialog) it's

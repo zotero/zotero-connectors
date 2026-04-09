@@ -49,6 +49,10 @@
 				getPlatformInfo: function() { return Promise.resolve({ os: 'mac' }); },
 				getBrowserInfo: function() { return Promise.resolve({ name: 'Firefox', version: '0' }); },
 				sendMessage: async function(msg) {
+					// Return true for pref requests so features are enabled in preview
+					if (Array.isArray(msg) && msg[0] === 'Connector.getPref') {
+						return true;
+					}
 					console.log('[mock] browser.runtime.sendMessage:', msg);
 					return undefined;
 				},
@@ -93,6 +97,7 @@
 	<script src="../lib/react-dom-factories.js"></script>
 	<script src="../lib/prop-types.js"></script>
 	<script src="../ui/tree/tree.js"></script>
+	<script src="../ui/ItemBox.js?v=4"></script>
 	<script src="../ui/ProgressWindow.js"></script>
 	<script src="../translate/promise.js"></script>
 	<script src="../messages.js"></script>
@@ -155,6 +160,47 @@
 				itemType: 'PDF'
 			}
 		]);
+
+		// Item metadata for ItemBox — all fields for journalArticle, including empty ones
+		dispatchMessage('progressWindowIframe.setItemMetadata', [{
+			id: itemId,
+			fields: [
+				{ name: 'itemType', label: 'Item Type', value: 'Journal Article' },
+				{ name: 'title', label: 'Title', value: 'The Structure of Scientific Revolutions' },
+				{ name: 'abstractNote', label: 'Abstract', value: 'A groundbreaking work in the philosophy of science that introduced the concept of paradigm shifts. Kuhn argued that scientific progress is not a steady accumulation of knowledge but rather a series of revolutions in which one paradigm replaces another. The book has been influential across many disciplines beyond the history of science.', multiline: true },
+				{ name: 'publicationTitle', label: 'Publication', value: 'International Encyclopedia of Unified Science' },
+				{ name: 'volume', label: 'Volume', value: '2' },
+				{ name: 'issue', label: 'Issue', value: '2' },
+				{ name: 'pages', label: 'Pages', value: '1-210' },
+				{ name: 'date', label: 'Date', value: '1962' },
+				{ name: 'series', label: 'Series', value: '' },
+				{ name: 'seriesTitle', label: 'Series Title', value: '' },
+				{ name: 'seriesText', label: 'Series Text', value: '' },
+				{ name: 'journalAbbreviation', label: 'Journal Abbr', value: '' },
+				{ name: 'language', label: 'Language', value: '' },
+				{ name: 'DOI', label: 'DOI', value: '10.1234/example' },
+				{ name: 'ISSN', label: 'ISSN', value: '' },
+				{ name: 'shortTitle', label: 'Short Title', value: '' },
+				{ name: 'url', label: 'URL', value: 'https://example.com/article' },
+				{ name: 'accessDate', label: 'Accessed', value: '' },
+				{ name: 'archive', label: 'Archive', value: '' },
+				{ name: 'archiveLocation', label: 'Loc. in Archive', value: '' },
+				{ name: 'libraryCatalog', label: 'Library Catalog', value: '' },
+				{ name: 'callNumber', label: 'Call Number', value: '' },
+				{ name: 'rights', label: 'Rights', value: '' },
+				{ name: 'extra', label: 'Extra', value: '', multiline: true }
+			],
+			creators: [
+				{ firstName: 'Thomas S.', lastName: 'Kuhn', creatorType: 'author' },
+				{ firstName: 'Margaret', lastName: 'Masterman', creatorType: 'editor' }
+			],
+			creatorTypes: [
+				{ value: 'author', label: 'Author' },
+				{ value: 'editor', label: 'Editor' },
+				{ value: 'translator', label: 'Translator' },
+				{ value: 'reviewedAuthor', label: 'Reviewed Author' }
+			]
+		}]);
 	});
 	</script>
 </head>

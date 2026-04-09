@@ -241,6 +241,16 @@ let PageSaving = {
 					itemType: item.itemType
 				}
 			);
+
+			// Send full item data to have progressWindow render it in the itemBox
+			Zotero.Messaging.sendMessage(
+				"progressWindow.setItemMetadata",
+				{
+					sessionID,
+					id: item.id,
+					item
+				}
+			);
 		};
 		const onTranslatorFallback = (oldTranslator, newTranslator) => {
 			Zotero.debug(`Saving with ${oldTranslator.label} failed. Trying ${newTranslator.label}`);
@@ -669,7 +679,8 @@ let PageSaving = {
 				sessionID: this.sessionDetails.id,
 				target: data.target,
 				tags: data.tags,
-				note: data.note
+				note: data.note,
+				updatedMetadata: data.updatedMetadata
 			}
 		);
 

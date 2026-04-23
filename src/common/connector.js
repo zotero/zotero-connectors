@@ -283,8 +283,11 @@ Zotero.Connector = new function() {
 	}
 
 	/**
-	 * Just calls callMethod, but we need a separate method for content script messaging
-	 * marked as largePayload in messages.js to use Messaging._sendViaIframeServiceWorkerPort()
+	 * Thin wrapper around callMethod that exists as a distinct RPC message so
+	 * messages.js can attach chunking hooks (inject.preSend / background.postReceive)
+	 * to just this message. Those hooks use Zotero.Messaging.sendAsChunks /
+	 * getChunkedPayload to split the `snapshotContent` field across multiple
+	 * runtime messages, working around MV3 Chromium's 64 MB per-message limit.
 	 */
 	this.saveSingleFile = async function(options, data) {
 		return this.callMethod(options, data);

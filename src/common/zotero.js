@@ -111,6 +111,11 @@ var Zotero = global.Zotero = new function() {
 	
 	this.migrate = async function() {
 		let lastVersion = Zotero.Prefs.get('lastVersion') || Zotero.version;
+		if (Zotero.Utilities.semverCompare(lastVersion, Zotero.version) > 0) {
+			Zotero.debug(`Zotero.migrate: implausible stored lastVersion ${lastVersion} `
+				+ `> ${Zotero.version}; resetting for migration evaluation`);
+			lastVersion = "5.0.100";
+		}
 		// Skip first-use dialog for existing users when enabled for non-Firefox browsers
 		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.87") < 0 && !this.isFirefox) {
 			Zotero.Prefs.set('firstUse', false);
@@ -131,6 +136,26 @@ var Zotero = global.Zotero = new function() {
 			}
 			if (ruleIDs.length) {
 				await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ruleIDs });
+			}
+		}
+		if (Zotero.isChromium) {
+			let done = false;
+			try { done = !!Zotero.Prefs.get('migration.resetTranslators'); } catch (e) {}
+			if (!done) {
+				Zotero.debug("Migration: resetting translator caches");
+				try {
+					Zotero.Prefs.clear('translatorMetadata');
+					Zotero.Prefs.clear('connector.repo.lastCheck.localTime');
+					Zotero.Prefs.clear('connector.repo.lastCheck.repoTime');
+					await Zotero.Prefs.removeAllCachedTranslators();
+					await Zotero.Translators.updateFromRemote(true);
+				}
+				catch (e) {
+					Zotero.logError(e);
+					return;
+				}
+				await Zotero.API.clearCredentials();
+				Zotero.Prefs.set('migration.resetTranslators', true);
 			}
 		}
 		Zotero.Prefs.set('lastVersion', Zotero.version);
@@ -209,6 +234,13 @@ var Zotero = global.Zotero = new function() {
 		Zotero.initialized = true;
 
 		await Zotero.migrate();
+
+		// Flush any previously-failed server-side API key revocation.
+		// Fire-and-forget: a network failure here just means we try again on
+		// the next startup (pref stays set).
+		if (Zotero.API && Zotero.API.retryPendingRevocation) {
+			Zotero.API.retryPendingRevocation().catch(e => Zotero.logError(e));
+		}
 	};
 	
 	/**

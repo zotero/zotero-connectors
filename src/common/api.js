@@ -182,12 +182,71 @@ Zotero.API = new function() {
 	};
 	
 	/**
-	 * Clears OAuth credentials from storage
+	 * Clears OAuth credentials from storage and revokes the API
 	 */
-	this.clearCredentials = function() {
+	this.clearCredentials = async function() {
+		let token;
+		try {
+			token = Zotero.Prefs.get('auth-token_secret');
+		}
+		catch (e) {
+			// No credentials stored
+		}
 		let keys = ['auth-token', 'auth-token_secret', 'auth-userID', 'auth-username'];
 		Zotero.Prefs.clear(keys);
-		// TODO revoke key
+		if (token) {
+			await this._revokeKey(token);
+		}
+	};
+
+	/**
+	 * Attempt to revoke a Zotero API key.
+	 * On failure the token is stashed in prefs and retried on next startup.
+	 */
+	this._revokeKey = async function(token) {
+		const url = config.API_URL + "keys/" + encodeURIComponent(token);
+		const options = {
+			headers: {
+				"Zotero-API-Key": token,
+				"Zotero-API-Version": "3"
+			},
+			successCodes: false
+		};
+		let status;
+		try {
+			const xhr = await Zotero.HTTP.request("DELETE", url, options);
+			status = xhr.status;
+		}
+		catch (e) {
+			status = 0;
+		}
+		// 4xx means the key is already revoked so no need to retry
+		if (status === 0 || status >= 500) {
+			Zotero.logError(`API: Failed to revoke API key server-side (status ${status}). `
+				+ `Will retry on next startup.`);
+			Zotero.Prefs.set('pending-auth-revocation', token);
+		}
+		else {
+			Zotero.debug(`API: Revoked Zotero API key server-side (status ${status})`);
+			Zotero.Prefs.clear('pending-auth-revocation');
+		}
+	};
+
+	/**
+	 * Called during startup to flush any API key revocation that
+	 * previously failed due to transient network issues.
+	 */
+	this.retryPendingRevocation = async function() {
+		let pending;
+		try {
+			pending = Zotero.Prefs.get('pending-auth-revocation');
+		}
+		catch (e) {
+			return;
+		}
+		if (!pending) return;
+		Zotero.debug("API: Retrying pending API key revocation");
+		await this._revokeKey(pending);
 	};
 	
 	/**

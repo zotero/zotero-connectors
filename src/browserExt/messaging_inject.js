@@ -23,8 +23,6 @@
     ***** END LICENSE BLOCK *****
 */
 
-let ZoteroFrame;
-
 /**
  * @namespace
  * See messages.js for an overview of the message handling process.
@@ -74,12 +72,12 @@ Zotero.Messaging = new function() {
 							newArgs = await messageConfig.inject.preSend(newArgs);
 						}
 
-						// MV3 Chromium messaging has a limit of 64MB payload, so we 
-						// use an alternative method
-						if (Zotero.isChromium && messageConfig.largePayload) {
-							return Zotero.Messaging._sendViaIframeServiceWorkerPort(messageName, newArgs);
-						}
-						
+						// MV3 Chromium messaging has a 64MB per-message limit; payloads
+						// that can exceed it are split into chunks in the message's
+						// inject.preSend / background.postReceive hooks via
+						// Zotero.Messaging.sendAsChunks / getChunkedPayload (see
+						// messages.js).
+
 						// send message
 						return browser.runtime.sendMessage([messageName, newArgs]).then(async function(response) {
 							if (response && response[0] == 'error') {
@@ -140,29 +138,6 @@ Zotero.Messaging = new function() {
 			})();
 			return true;
 		});
-	}
-
-	/**
-	 * Send a message to the background page by creating an iframe which has access to the
-	 * background service worker which allows sending large payloads.
-	 * @param {String} messageName 
-	 * @param {Any[]} args 
-	 * @returns {Promise<Any>}
-	 */
-	this._sendViaIframeServiceWorkerPort = async function(messageName, args) {
-		if (!Zotero.isChromium) {
-			throw new Error("sendViaIframeServiceWorkerPort is only supported on Chromium");
-		}
-		if (!ZoteroFrame) {
-			ZoteroFrame = (await import(Zotero.getExtensionURL("zoteroFrame.js"))).default;
-		}
-		const frame = new ZoteroFrame({
-			src: Zotero.getExtensionURL("chromeMessageIframe/messageIframe.html"),
-		}, { display: "none" }, {});
-		await frame.init();
-		let response = await frame.sendMessage('sendToBackground', [messageName, args])
-		// frame.remove();
-		return response;
 	}
 
 	this.sendAsChunks = async function(payload) {

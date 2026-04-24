@@ -26,7 +26,16 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval';">	
+	<!--
+		Translator code is eval'd in this page. The CSP below restricts every
+		directive not needed by the loader scripts or the translator runtime to
+		'none' via default-src, so translator code cannot make direct network
+		egress (fetch / XHR / WebSocket / <img>.src / sendBeacon / etc.) even if
+		it tries to. All legitimate HTTP from translators is proxied through
+		Zotero.HTTP.request, which is overridden in offscreenFunctionOverrides.js
+		to route via messaging to the service worker.
+	-->
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-eval'; base-uri 'none'; form-action 'none'; frame-ancestors 'self';">	
 	<title>Zotero - Offscreen Translate Sandbox</title>
 </head>
 <body>

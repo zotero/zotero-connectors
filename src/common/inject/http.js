@@ -121,33 +121,3 @@ Zotero.HTTP.processDocuments = async function (urls, processor, options = {}) {
 	
 	return results;
 }
-
-Zotero.Browser = {
-	createHiddenBrowser: function() {
-		var hiddenBrowser = document.createElement("iframe");
-		hiddenBrowser.style.display = "none";
-		if(document.domain == document.location.hostname) {
-			// Since sandboxed iframes cannot set document.domain, if
-			// document.domain is set on this page, then SOP will
-			// definitely prevent us from accessing the document
-			// in a sandboxed iframe. On the other hand, if we don't
-			// sandbox the iframe, it is possible it will navigate the
-			// top-level page. So we set the sandbox attribute only if
-			// we are not certain that document.domain has been set.
-			// This is not perfect, since if a page sets
-			// document.domain = document.domain, it is still a 
-			// different origin and we will not be able to access pages
-			// loaded in the iframe. Additionally, if a page sets
-			// document.domain to a different hostname, since we don't
-			// sandbox, it is possible that it will navigate the
-			// top-level page.
-			// TODO: consider HTML XHR
-			hiddenBrowser.sandbox = "allow-same-origin allow-forms allow-scripts";
-		}
-		document.body.appendChild(hiddenBrowser);
-		return hiddenBrowser;
-	},
-	deleteHiddenBrowser: function(hiddenBrowser) {
-		document.body.removeChild(hiddenBrowser);
-	}
-};

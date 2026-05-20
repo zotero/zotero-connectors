@@ -25,7 +25,7 @@
 
 const MAX_BACKOFF = 64e3;
 
-const HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Cookie', 'Referer'];
+const HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Cookie', 'Referer', 'Sec-Fetch-Site'];
 
 /**
  * Functions for performing HTTP requests, both via XMLHTTPRequest and using a hidden browser

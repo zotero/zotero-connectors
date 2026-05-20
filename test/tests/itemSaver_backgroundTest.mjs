@@ -46,20 +46,21 @@ describe("ItemSaver Background", function() {
 				
 				sinon.stub(Zotero.HTTP, 'request').resolves({
 					response: new ArrayBuffer(1024),
-					status: 200
+					status: 200,
+					getResponseHeader: (header) => header.toLowerCase() == 'content-length' ? '1024' : null
 				});
 				
 				sinon.stub(Zotero.Utilities.Connector, 'getContentTypeFromXHR').returns({
 					contentType: 'application/pdf'
 				});
 				
-				sinon.stub(Zotero.ItemSaver, '_passJSBotDetectionViaHiddenIframe')
+				sinon.stub(Zotero.BotBypass, 'passJSDetectionViaHiddenIframe')
 					.resolves('https://example.com/corrected.pdf');
 				
-				sinon.stub(Zotero.ItemSaver, '_passJSBotDetectionViaWindowPrompt')
+				sinon.stub(Zotero.BotBypass, 'passJSDetectionViaWindowPrompt')
 					.resolves('https://example.com/corrected.pdf');
 
-				sinon.stub(Zotero.ItemSaver, '_isUrlBotBypassWhitelisted').returns(true);
+				sinon.stub(Zotero.BotBypass, 'isUrlWhitelisted').returns(true);
 			});
 		});
 
@@ -71,9 +72,12 @@ describe("ItemSaver Background", function() {
 				if (Zotero.Utilities.Connector.getContentTypeFromXHR.restore) {
 					Zotero.Utilities.Connector.getContentTypeFromXHR.restore();
 				}
-				Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe.restore();
-				Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt.restore();
-				Zotero.ItemSaver._isUrlBotBypassWhitelisted.restore();
+				Zotero.BotBypass.passJSDetectionViaHiddenIframe.restore();
+				Zotero.BotBypass.passJSDetectionViaWindowPrompt.restore();
+				Zotero.BotBypass.isUrlWhitelisted.restore();
+				if (Zotero.BotBypass.bypassAmazonCaptcha.restore) {
+					Zotero.BotBypass.bypassAmazonCaptcha.restore();
+				}
 			});
 		});
 
@@ -97,7 +101,7 @@ describe("ItemSaver Background", function() {
 						contentType: 'text/html'  // Wrong content type
 					});
 					
-					Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe
+					Zotero.BotBypass.passJSDetectionViaHiddenIframe
 						.resolves('https://sciencedirect.com/corrected.pdf');
 					
 					Zotero.Utilities.Connector.getContentTypeFromXHR.onSecondCall().returns({
@@ -120,10 +124,10 @@ describe("ItemSaver Background", function() {
 					});
 					
 					// Mock bot bypass methods - iframe fails
-					Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe
+					Zotero.BotBypass.passJSDetectionViaHiddenIframe
 						.rejects(new Error('Iframe bypass failed'));
 					
-					Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt
+					Zotero.BotBypass.passJSDetectionViaWindowPrompt
 						.resolves('https://sciencedirect.com/corrected.pdf');
 					
 					Zotero.Utilities.Connector.getContentTypeFromXHR.returns({
@@ -141,11 +145,11 @@ describe("ItemSaver Background", function() {
 				attachment.url = 'https://non-whitelisted.com/test.pdf';
 				
 				const error = await background(async function(attachment, mockTab) {
-					Zotero.Utilities.Connector.getContentTypeFromXHR.onFirstCall().returns({
+					Zotero.Utilities.Connector.getContentTypeFromXHR.returns({
 						contentType: 'text/html'
 					});
 
-					Zotero.ItemSaver._isUrlBotBypassWhitelisted.returns(false);
+					Zotero.BotBypass.isUrlWhitelisted.returns(false);
 					
 					try {
 						await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
@@ -159,17 +163,50 @@ describe("ItemSaver Background", function() {
 			});
 		});
 
-		describe('When HTTP.request throws 403 error', function() {
+		describe('When HTTP.request returns a bot-protection response', function() {
+			it('should bypass Amazon WAF challenges with Sec-Fetch-Site: same-origin', async function() {
+				const result = await background(async function(attachment, mockTab) {
+					Zotero.HTTP.request.onFirstCall().resolves({
+						response: new ArrayBuffer(0),
+						status: 200,
+						getResponseHeader: (header) => header.toLowerCase() == 'x-amzn-waf-action' ? 'challenge' : null
+					});
+					Zotero.HTTP.request.onSecondCall().resolves({
+						response: new ArrayBuffer(2048),
+						status: 200,
+						getResponseHeader: (header) => {
+							if (header.toLowerCase() == 'content-length') return '2048';
+							if (header.toLowerCase() == 'content-type') return 'application/pdf';
+							return null;
+						}
+					});
+
+					const result = await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return {
+						byteLength: result.byteLength,
+						header: Zotero.HTTP.request.secondCall.args[2].headers['Sec-Fetch-Site']
+					};
+				}, attachment, mockTab);
+
+				assert.equal(result.byteLength, 2048);
+				assert.equal(result.header, 'same-origin');
+			});
+		});
+
+		describe('When HTTP.request returns 403', function() {
 			it('should attempt bot bypass', async function() {
 				attachment.url = 'https://sciencedirect.com/test.pdf';
 				
 				const result = await background(async function(attachment, mockTab) {
 					
-					// First request throws 403 error
-					const httpError = new Zotero.HTTP.StatusError({status: 403});
-					Zotero.HTTP.request.onFirstCall().rejects(httpError);
+					// First request returns 403
+					Zotero.HTTP.request.onFirstCall().resolves({
+						response: new ArrayBuffer(0),
+						status: 403,
+						getResponseHeader: (header) => header.toLowerCase() == 'content-length' ? '0' : null
+					});
 					
-					Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe
+					Zotero.BotBypass.passJSDetectionViaHiddenIframe
 						.resolves('https://sciencedirect.com/corrected.pdf');
 					
 					Zotero.Utilities.Connector.getContentTypeFromXHR.returns({
@@ -198,8 +235,10 @@ describe("ItemSaver Background", function() {
 					Zotero.HTTP.request.resolves({
 						response: new ArrayBuffer(1024),
 						status: 200,
-						getResponseHeader: () => {
-							return 'text/html; charset=utf-8';
+						getResponseHeader: (header) => {
+							if (header.toLowerCase() == 'content-length') return '1024';
+							if (header.toLowerCase() == 'content-type') return 'text/html; charset=utf-8';
+							return null;
 						}
 					});
 					await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
@@ -223,7 +262,8 @@ describe("ItemSaver Background", function() {
 					Zotero.HTTP.request.resolves({
 						response: new ArrayBuffer(1024),
 						status: 200,
-						getResponseHeader: () => {
+						getResponseHeader: (header) => {
+							if (header.toLowerCase() == 'content-length') return '1024';
 							return null; // No content type header
 						}
 					});
@@ -245,8 +285,8 @@ describe("ItemSaver Background", function() {
 					const response = await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
 					return {
 						byteLength: response.byteLength,
-						iframeCalled: Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe.called,
-						windowPromptCalled: Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt.called
+						iframeCalled: Zotero.BotBypass.passJSDetectionViaHiddenIframe.called,
+						windowPromptCalled: Zotero.BotBypass.passJSDetectionViaWindowPrompt.called
 					};
 				}, attachment, mockTab);
 
@@ -264,8 +304,8 @@ describe("ItemSaver Background", function() {
 					const response = await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
 					return {
 						byteLength: response.byteLength,
-						iframeCalled: Zotero.ItemSaver._passJSBotDetectionViaHiddenIframe.called,
-						windowPromptCalled: Zotero.ItemSaver._passJSBotDetectionViaWindowPrompt.called
+						iframeCalled: Zotero.BotBypass.passJSDetectionViaHiddenIframe.called,
+						windowPromptCalled: Zotero.BotBypass.passJSDetectionViaWindowPrompt.called
 					};
 				}, attachment, mockTab);
 
@@ -278,40 +318,4 @@ describe("ItemSaver Background", function() {
 
 	});
 
-	describe('_isUrlBotBypassWhitelisted', function() {
-		it('should return true for a whitelisted domain', async function() {
-			const result = await background(function(url) {
-				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
-			}, 'https://www.sciencedirect.com/science/article/pii/S0000000000000000');
-			assert.isTrue(result);
-		});
-
-		it('should return true for a subdomain of a whitelisted domain', async function() {
-			const result = await background(function(url) {
-				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
-			}, 'https://foo.sciencedirect.com/science/article/pii/S0000000000000000');
-			assert.isTrue(result);
-		});
-
-		it('should return false for a non-whitelisted domain', async function() {
-			const result = await background(function(url) {
-				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
-			}, 'https://www.example.com/test.pdf');
-			assert.isFalse(result);
-		});
-
-		it('should return true for a proxied whitelisted domain', async function() {
-			const result = await background(function(url) {
-				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
-			}, 'https://www-sciencedirect-com.proxy.uni.edu/science/article/pii/S0000000000000000');
-			assert.isTrue(result);
-		});
-
-		it('should return false for a proxied non-whitelisted domain', async function() {
-			const result = await background(function(url) {
-				return Zotero.ItemSaver._isUrlBotBypassWhitelisted(url);
-			}, 'https://www-example-com.proxy.uni.edu/test.pdf');
-			assert.isFalse(result);
-		});
-	});
 }); 

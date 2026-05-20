@@ -131,6 +131,7 @@ var backgroundInclude = [
 	'translate/debug.js',
 	'translate/tlds.js',
 	'translate/translator.js',
+	'botBypass.js',
 	'itemSaver_background.js',
 	'translators.js',
 	'cachedTypes.js',

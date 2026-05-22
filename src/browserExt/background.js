@@ -1233,6 +1233,9 @@ Zotero.Connector_Browser = new function() {
 		var tab = await browser.tabs.get(details.tabId);
 		if (!tab) return;
 		const url = tab.url || tab.pendingUrl;
+		// ??? I am seeing logged errors with url === undefined. Either way, if a tab with
+		// no url gets activated, there's nothing for us to do.
+		if (!url) return;
 		// Ignore item selector
 		if (url.indexOf(browser.runtime.getURL("itemSelector/itemSelector.html")) === 0) return;
 		Zotero.debug("Connector_Browser: onActivated for " + url);

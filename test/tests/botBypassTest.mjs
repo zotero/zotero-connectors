@@ -62,4 +62,24 @@ describe('BotBypass', function() {
 			assert.isFalse(result);
 		});
 	});
+
+	describe('isAmazonCaptchaResponse', function() {
+		it('should return true for Amazon WAF challenge responses', async function() {
+			const result = await background(function() {
+				return Zotero.BotBypass.isAmazonCaptchaResponse({
+					getResponseHeader: (header) => header.toLowerCase() == 'x-amzn-waf-action' ? 'challenge' : null
+				});
+			});
+			assert.isTrue(result);
+		});
+
+		it('should return true for Amazon WAF captcha responses', async function() {
+			const result = await background(function() {
+				return Zotero.BotBypass.isAmazonCaptchaResponse({
+					getResponseHeader: (header) => header.toLowerCase() == 'x-amzn-waf-action' ? 'captcha' : null
+				});
+			});
+			assert.isTrue(result);
+		});
+	});
 });

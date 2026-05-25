@@ -169,7 +169,11 @@ describe("ItemSaver Background", function() {
 					Zotero.HTTP.request.onFirstCall().resolves({
 						response: new ArrayBuffer(0),
 						status: 200,
-						getResponseHeader: (header) => header.toLowerCase() == 'x-amzn-waf-action' ? 'challenge' : null
+						getResponseHeader: (header) => {
+							if (header.toLowerCase() == 'x-amzn-waf-action') return 'challenge';
+							if (header.toLowerCase() == 'content-length') return '0';
+							return null;
+						}
 					});
 					Zotero.HTTP.request.onSecondCall().resolves({
 						response: new ArrayBuffer(2048),
@@ -273,6 +277,44 @@ describe("ItemSaver Background", function() {
 
 				// mime type should be guessed from the url
 				assert.equal(mimeType, 'application/pdf');
+			});
+		});
+
+		describe('When response has no Content-Length header', function() {
+			it('should accept the response if content type is valid', async function() {
+				const result = await background(async function(attachment, mockTab) {
+					Zotero.HTTP.request.resolves({
+						response: new ArrayBuffer(1024),
+						status: 200,
+						getResponseHeader: () => null
+					});
+					const result = await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return result.byteLength;
+				}, attachment, mockTab);
+
+				assert.equal(result, 1024);
+			});
+		});
+
+		describe('When response has Content-Length: 0', function() {
+			it('should not accept the response', async function() {
+				const error = await background(async function(attachment, mockTab) {
+					Zotero.HTTP.request.resolves({
+						response: new ArrayBuffer(0),
+						status: 200,
+						getResponseHeader: (header) => header.toLowerCase() == 'content-length' ? '0' : null
+					});
+					Zotero.BotBypass.isUrlWhitelisted.returns(false);
+					try {
+						await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+						return null;
+					}
+					catch (e) {
+						return e.message;
+					}
+				}, attachment, mockTab);
+
+				assert.include(error, 'Attachment MIME type application/pdf does not match specified type application/pdf');
 			});
 		});
 

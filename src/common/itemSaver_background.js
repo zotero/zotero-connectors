@@ -270,7 +270,7 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 
 Zotero.ItemSaver._validateResponse = function(attachment, xhr, contentType) {
 	let contentLength = xhr.getResponseHeader("Content-Length");
-	if (contentLength === 0) {
+	if (contentLength !== null && parseInt(contentLength) === 0) {
 		return false;
 	}
 	contentType = contentType || Zotero.Utilities.Connector.getContentTypeFromXHR(xhr).contentType;

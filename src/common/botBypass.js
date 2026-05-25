@@ -30,7 +30,7 @@ let BOT_BYPASS_WHITELISTED_DOMAINS = [
 ];
 
 let AMAZON_CAPTCHA_HEADERS = {
-	'x-amzn-waf-action': 'challenge',
+	'x-amzn-waf-action': ['challenge', 'captcha'],
 };
 
 Zotero.BotBypass = Zotero.BotBypass || {};
@@ -53,9 +53,9 @@ Zotero.BotBypass.canBotBypass = function(url, xhr) {
 
 Zotero.BotBypass.isAmazonCaptchaResponse = function(xhr) {
 	if (!xhr || !xhr.getResponseHeader) return false;
-	for (let [header, value] of Object.entries(AMAZON_CAPTCHA_HEADERS)) {
+	for (let [header, values] of Object.entries(AMAZON_CAPTCHA_HEADERS)) {
 		let responseValue = xhr.getResponseHeader(header);
-		if (responseValue && responseValue.toLowerCase() === value) {
+		if (responseValue && values.includes(responseValue.toLowerCase())) {
 			return true;
 		}
 	}

@@ -329,6 +329,9 @@ ItemSaver.prototype = {
 				});
 			}
 			if (!item.hasAttachmentResolvers) {
+				if (attachment) {
+					attachmentCallback(attachment, false, "PDF fetch failed and no resolvers found");
+				}
 				return;
 			}
 			

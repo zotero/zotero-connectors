@@ -66,7 +66,7 @@ Zotero.Connector_Browser = new function() {
 				let tabs = await browser.tabs.query({});
 				for (let tab of tabs) {
 					// Remove cached tabInfo for tabs that are no longer open every 15 minutes
-					if (!tab.id in _tabInfo) {
+					if (!(tab.id in _tabInfo)) {
 						_clearInfoForTab(tab.id)
 					}
 				}

@@ -51,12 +51,6 @@ async function init() {
 	const iframe = document.querySelector('iframe');
 	iframe.contentWindow.postMessage('offscreen-port', "*", [messageChannel.port1]);
 
-	console.log('Offscreen: awaiting offscreen translate host to prepare for service worker connection')
-	await new Promise((resolve) => {
-		messageChannel.port2.onmessage = resolve;
-	});
-	messageChannel.port2.onmessage = null;
-	
 	const backgroundServiceWorker = await navigator.serviceWorker.ready;
 	backgroundServiceWorker.active.postMessage('offscreen-port', [messageChannel.port2]);
 	console.log('Offscreen: messaging ports posted');

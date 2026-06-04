@@ -130,9 +130,11 @@ self.onmessage = async (e) => {
 		else {
 			Zotero.OffscreenManager._messaging = new Zotero.MessagingGeneric(messagingOptions);
 		}
+		let initializedPromise = new Promise(resolve => {
+			Zotero.OffscreenManager._messaging.addMessageListener('offscreen-translate-host-manager-initialized', resolve);
+		});
 		Zotero.debug('OffscreenManager: messaging initialized')
-		e.ports[0].postMessage(null);
-		await new Promise(resolve => Zotero.OffscreenManager._messaging.addMessageListener('offscreen-translate-host-manager-initialized', resolve));
+		await initializedPromise;
 		Zotero.debug('OffscreenManager: offscreen translate host manager initialized message received')
 		Zotero.OffscreenManager.messagingDeferred.resolve();
 	}

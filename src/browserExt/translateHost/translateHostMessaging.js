@@ -51,19 +51,14 @@ Zotero.TranslateHostMessaging = {
 		Zotero.debug('OffscreenTranslateHostManager: initializing messaging');
 		let messagingOptions = {
 			functionOverrides: TRANSLATE_HOST_FUNCTIONS,
-			overrideTarget: Zotero
+			overrideTarget: Zotero,
+			sendMessage: (...args) => {
+				serviceWorkerPort.postMessage(args)
+			},
+			addMessageListener: (fn) => {
+				serviceWorkerPort.onmessage = (e) => fn(e.data);
+			}
 		}
-		await new Promise((resolve) => {
-			// The service worker will send us a message to confirm established communication
-			serviceWorkerPort.onmessage = resolve;
-			serviceWorkerPort.postMessage('offscreen-translate-host-awaiting-service-worker-connection');
-		})
-		messagingOptions.sendMessage = (...args) => {
-			serviceWorkerPort.postMessage(args)
-		};
-		messagingOptions.addMessageListener = (fn) => {
-			serviceWorkerPort.onmessage = (e) => fn(e.data);
-		};
 		if (this._messaging) {
 			this._messaging.reinit(messagingOptions);
 		}

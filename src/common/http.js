@@ -142,7 +142,9 @@ Zotero.HTTP = new function() {
 		// However, if the request requires replacing user-agent, we still send the request via
 		// the background page since we're unable to replace user-agent via an on-page xhr and
 		// since user-agent option is explicitly set, it takes priority.
-		let sameOriginRequestViaSafari = Zotero.isSafari && Zotero.HTTP.isSameOrigin(url) && !options.headers['User-Agent'];
+		// isSameOrigin() is only defined in injected pages (inject/http.js), and this flag is only
+		// used in the Zotero.isInject branch below, so don't evaluate it in the background.
+		let sameOriginRequestViaSafari = Zotero.isSafari && Zotero.isInject && Zotero.HTTP.isSameOrigin(url) && !options.headers['User-Agent'];
 		if (Zotero.isInject && !options.forceInject && !sameOriginRequestViaSafari) {
 			// The privileged XHR that Firefox makes available to content scripts so that they
 			// can make cross-domain requests doesn't include the Referer header in requests [1],

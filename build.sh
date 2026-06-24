@@ -141,6 +141,7 @@ rm -rf "$BUILD_DIR/browserExt" \
 	"$BUILD_DIR/manifestv3" \
 	"$BUILD_DIR/firefox" \
 	"$BUILD_DIR/safari" \
+	"$BUILD_DIR/safari-webext" \
 	"$BUILD_DIR/bookmarklet"
 
 # Make directories if they don't exist
@@ -300,9 +301,10 @@ if [[ $BUILD_SAFARI == 1 ]]; then
 	copyResources 'safari'
 fi
 
-# Make separate Manifest v3 and Firefox directories
+# Make separate Manifest v3, Firefox, and Safari WebExtension directories
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/manifestv3/
+	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/safari-webext/
 	mv $BUILD_DIR/browserExt $BUILD_DIR/firefox
 fi
 
@@ -321,6 +323,7 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	# Remove MV3 manifest file
 	rm "$BUILD_DIR/manifestv3/manifest-v3.json"
 	rm "$BUILD_DIR/firefox/manifest-v3.json"
+	rm "$BUILD_DIR/safari-webext/manifest-v3.json"
 	
 	# Chrome modifications
 	
@@ -351,6 +354,26 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 		cp $img `echo $img | sed 's/@48px//'`
 	done
 
+	# Safari WebExtension modifications
+	#
+	# Safari is built from the MV2 (Firefox-style) manifest with a background page, since
+	# Safari WebExtensions don't support the MV3 offscreen-document API the Chromium build relies on.
+
+	# Remove the 'applications' property used by Firefox from the manifest
+	pushd $BUILD_DIR/safari-webext > /dev/null
+	cat manifest.json | jq '. |= del(.applications)' > manifest.json-tmp
+	mv manifest.json-tmp manifest.json
+	popd > /dev/null
+
+	# TEMP: Copy 2x icons to 1x until getImageSrc() is updated to detect HiDPI
+	for img in "$BUILD_DIR"/safari-webext/images/*2x.png; do
+		cp $img `echo $img | sed 's/@2x//'`
+	done
+	## 2.5x
+	for img in "$BUILD_DIR"/safari-webext/images/*48px.png; do
+		cp $img `echo $img | sed 's/@48px//'`
+	done
+
 fi
 
 # TODO: Would be better to skip these in gulpfile.js for non-debug builds and remove them in
@@ -358,6 +381,7 @@ fi
 if [ -z $DEBUG ]; then
 	rm -rf "$BUILD_DIR/manifestv3/test"
 	rm -rf "$BUILD_DIR/firefox/test"
+	rm -rf "$BUILD_DIR/safari-webext/test"
 fi
 
 echo "done"

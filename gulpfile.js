@@ -285,9 +285,10 @@ function processFile() {
 				file.contents = Buffer.from(replaceScriptsHTML(
 					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeManifestV3.map(s => `../../${s}`)));
 			}
-			for (let browser of ['manifestv3', 'firefox']) {
+			for (let browser of ['manifestv3', 'firefox', 'safari-webext']) {
 				if (basename === 'manifest.json' && browser === 'manifestv3'
-					|| basename === 'manifest-v3.json' && browser === 'firefox') {
+					|| basename === 'manifest-v3.json' && browser === 'firefox'
+					|| basename === 'manifest-v3.json' && browser === 'safari-webext') {
 					continue;
 				}
 				
@@ -327,6 +328,7 @@ function processFile() {
 					contents = replaceBrowser(contents, {
 						browserExt: true,
 						firefox: browser == 'firefox',
+						safari: browser == 'safari-webext',
 						manifestV3: browser == 'manifestv3'
 					});
 					f.contents = Buffer.from(contents);
@@ -354,7 +356,7 @@ function processFile() {
 				+ parts.slice(i+3).join('/');
 			console.log(`-> ${f.path.slice(f.cwd.length)}`);
 			this.push(f);
-			['manifestv3', 'firefox'].forEach((browser) => {
+			['manifestv3', 'firefox', 'safari-webext'].forEach((browser) => {
 				f = file.clone({contents: false});
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/zotero-google-docs-integration/`
 					+ parts.slice(i+3).join('/');

@@ -245,6 +245,7 @@ var Zotero = global.Zotero = new function() {
 	this.initInject = async function() {
 		Zotero.isInject = true;
 		Zotero.Messaging.init();
+		// Safari loads raw localized strings here (getMessage mangles some); harmless elsewhere.
 		if (Zotero.isSafari) {
 			await Zotero.i18n.init();
 		}

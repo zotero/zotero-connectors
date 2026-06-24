@@ -1245,7 +1245,11 @@ Zotero.Connector_Browser = new function() {
 	
 	browser.webNavigation.onCommitted.addListener(waitForInit(logListenerErrors(onNavigation)));
 	browser.webNavigation.onDOMContentLoaded.addListener(waitForInit(logListenerErrors(onDOMContentLoaded)))
-	browser.webNavigation.onHistoryStateUpdated.addListener(waitForInit(logListenerErrors(details => onNavigation(details, true))));
+	// Safari doesn't implement webNavigation.onHistoryStateUpdated, so feature-detect it. Without it
+	// we don't re-detect translators on SPA pushState navigations there.
+	if (browser.webNavigation.onHistoryStateUpdated) {
+		browser.webNavigation.onHistoryStateUpdated.addListener(waitForInit(logListenerErrors(details => onNavigation(details, true))));
+	}
 }
 
 Zotero.initGlobal();

@@ -242,6 +242,9 @@ Zotero.HTTP = new function() {
 		xmlhttp.open(method, url, true);
 
 		for (let header in options.headers) {
+			// Safari logs a warning if you try to set referer (forbidden).
+			// We set it above with DNR anyway.
+			if (Zotero.isSafari && header.toLowerCase() == 'referer') continue;
 			xmlhttp.setRequestHeader(header, options.headers[header]);
 		}
 		

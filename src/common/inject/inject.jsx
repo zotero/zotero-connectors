@@ -114,12 +114,7 @@ Zotero.Inject = {
 		});
 		// add a listener to save as webpage when translators unavailable
 		Zotero.Messaging.addMessageListener("saveAsWebpage", function(data) {
-			if (Zotero.isSafari) {
-				if (data[0] !== instanceID) return;
-				return Zotero.PageSaving.onSaveAsWebpage(data[1]);
-			} else {
-				return Zotero.PageSaving.onSaveAsWebpage(data);
-			}
+			return Zotero.PageSaving.onSaveAsWebpage(data);
 		});
 		Zotero.Messaging.addMessageListener('updateSession', (data) => {
 			return Zotero.PageSaving.onUpdateSession(data);
@@ -190,7 +185,6 @@ Zotero.Inject = {
 	 * @return {Promise} resolves when components are injected
 	 */
 	async loadReactComponents(components=[]) {
-		if (Zotero.isSafari) return;
 		var toLoad = [];
 		if (typeof ReactDOM === "undefined" || typeof React === "undefined"
 				|| !React.useState) {

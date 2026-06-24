@@ -67,12 +67,22 @@ Zotero.ContentTypeHandler = {
 			this._addDNRInterceptRules();
 			this._enabled = true;
 		}
+		else if (!this._enabled && Zotero.isSafari) {
+			// Same static redirect ruleset MV3 uses; on Safari DNR redirects also need the
+			// declarativeNetRequestWithHostAccess permission (added in build.sh).
+			chrome.declarativeNetRequest.updateEnabledRulesets({ enableRulesetIds: ['styleIntercept'] });
+			this._enabled = true;
+		}
 	},
 	
 	disable: function() {
 		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
 		if (this._enabled && Zotero.isManifestV3) {
 			this._removeDNRInterceptRules();
+			this._enabled = false;
+		}
+		else if (this._enabled && Zotero.isSafari) {
+			chrome.declarativeNetRequest.updateEnabledRulesets({ disableRulesetIds: ['styleIntercept'] });
 			this._enabled = false;
 		}
 	},
@@ -90,7 +100,7 @@ Zotero.ContentTypeHandler = {
 		const contentType = details.responseHeadersObject['content-type'].split(';')[0];
 		const contentDisposition = details.responseHeadersObject['content-disposition'];
 		
-		if (Zotero.isManifestV3) {
+		if (Zotero.isManifestV3 || Zotero.isSafari) {
 			for (let destination in Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp) {
 				const regexp = Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp[destination];
 				let match = details.url.match(regexp);
@@ -110,7 +120,9 @@ Zotero.ContentTypeHandler = {
 					return;
 				}
 			}
-			return;
+			// MV3 relies entirely on the DNR redirect; Safari also falls through to observational
+			// content-type detection below for imports the static ruleset can't match.
+			if (Zotero.isManifestV3) return;
 		}
 		if (Zotero.ContentTypeHandler._isImportableStyle(details.url, contentType, contentDisposition)) {
 			// No await, because we need to return a navigation cancelling object

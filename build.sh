@@ -359,9 +359,14 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	# Safari is built from the MV2 (Firefox-style) manifest with a background page, since
 	# Safari WebExtensions don't support the MV3 offscreen-document API the Chromium build relies on.
 
-	# Remove the 'applications' property used by Firefox from the manifest
+	# Remove the 'applications' property used by Firefox from the manifest, and register the static
+	# declarativeNetRequest ruleset used to intercept importable URLs (Safari has no blocking
+	# webRequest, so it can't cancel the download otherwise). Disabled by default; ContentTypeHandler
+	# enables it when a Zotero client is detected.
+	# Safari requires declarativeNetRequestWithHostAccess (not plain declarativeNetRequest) for DNR
+	# redirect actions (since Safari 16.4).
 	pushd $BUILD_DIR/safari-webext > /dev/null
-	cat manifest.json | jq '. |= del(.applications)' > manifest.json-tmp
+	cat manifest.json | jq '. |= del(.applications) | .declarative_net_request = {"rule_resources":[{"id":"styleIntercept","enabled":false,"path":"styleInterceptRules.json"}]} | .permissions += ["declarativeNetRequestWithHostAccess"]' > manifest.json-tmp
 	mv manifest.json-tmp manifest.json
 	popd > /dev/null
 

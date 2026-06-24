@@ -103,22 +103,14 @@ Zotero.Proxies = new function() {
 	};
 	
 	this.enable = function() {
-		if (Zotero.isBrowserExt) {
-			Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onHeadersReceived);
-			browser.webNavigation.onCommitted.addListener(Zotero.Proxies.onNavigationCommitted)
-		} else {
-			safari.application.addEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
-		}
+		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onHeadersReceived);
+		browser.webNavigation.onCommitted.addListener(Zotero.Proxies.onNavigationCommitted)
 	};
-	
-	
+
+
 	this.disable = function() {
-		if (Zotero.isBrowserExt) {
-			Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onHeadersReceived);
-			browser.webNavigation.onCommitted.removeListener(Zotero.Proxies.onNavigationCommitted)
-		} else {
-			safari.application.removeEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
-		}
+		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onHeadersReceived);
+		browser.webNavigation.onCommitted.removeListener(Zotero.Proxies.onNavigationCommitted)
 	};
 	
 	
@@ -169,31 +161,6 @@ Zotero.Proxies = new function() {
 		}, () => 0);
 	}
 
-	/**
-	 * Called by the `safari.application` event listener
-	 * @param e {Event}
-	 */
-	this.onBeforeNavigateSafari = function(e) {
-		// Safari calls onBeforeNavigate from default tab while typing the url
-		// so if you type a proxied url you immediately get redirected without pressing enter.
-		// Not cool.
-		if (!e.target.url) return;
-		let details = {url: e.url || '', originUrl: e.target.url, frameId: 0,
-			requestHeadersObject: {}, tabId: e.target};
-
-		Zotero.Proxies.updateDisabledByDomain();
-		if (Zotero.Proxies.disabledByDomain) return;
-		let redirect;
-		for (let proxy of Zotero.Proxies.proxies) {
-			if (typeof proxy.maybeRedirect === 'function') {
-				redirect = proxy.maybeRedirect(details);
-				if (redirect) break;
-			}
-		}
-		if (redirect) {
-			e.target.url = redirect.redirectUrl;
-		}
-	};
 
 	/**
 	 * Called from the Safari global page

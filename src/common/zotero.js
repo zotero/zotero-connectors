@@ -59,7 +59,7 @@ var Zotero = global.Zotero = new function() {
 		/* this.isBrowserExt = SET IN BUILD SCRIPT */;
 
 		this.isChrome = this.isEdge = false;
-		if (this.isBrowserExt && !this.isFirefox) {
+		if (this.isBrowserExt && !this.isFirefox && !this.isSafari) {
 			this.isChromium = true;
 			if (global.navigator.userAgent.includes("Edg/")) {
 				this.isEdge = true;
@@ -207,10 +207,6 @@ var Zotero = global.Zotero = new function() {
 		}
 
 		Zotero.Messaging.init();
-		if (Zotero.isSafari) {
-			this.version = await Zotero.Connector_Browser.getExtensionVersion();
-			window.safari = {extension: {baseURI: await Zotero.Messaging.sendMessage('Swift.getBaseURI')}};
-		}
 		Zotero.Connector_Types.init();
 		await Zotero.Prefs.init();
 		
@@ -274,19 +270,12 @@ var Zotero = global.Zotero = new function() {
 	};
 
 	this._initDateFormatsJSON = async function() {
-		let dateFormatsJSON;
-		if (Zotero.isSafari) {
-			dateFormatsJSON = await Zotero.Messaging.sendMessage('Swift.getDateFormatsJSON');
+		let url = Zotero.getExtensionURL('utilities/resource/dateFormats.json');
+		if (Zotero.isOffscreen) {
+			url = await url;
 		}
-		else {
-			let url = Zotero.getExtensionURL('utilities/resource/dateFormats.json');
-			if (Zotero.isOffscreen) {
-				url = await url;
-			}
-			let xhr = await Zotero.HTTP.request('GET', url, {responseType: 'json'});
-			dateFormatsJSON = xhr.response;
-		}
-		Zotero.Date.init(dateFormatsJSON);
+		let xhr = await Zotero.HTTP.request('GET', url, {responseType: 'json'});
+		Zotero.Date.init(xhr.response);
 	};
 
 	this.getSystemInfo = (...args) => Zotero.Errors.getSystemInfo(...args);
@@ -350,12 +339,7 @@ var Zotero = global.Zotero = new function() {
 	};
 	
 	this.getExtensionURL = function(path) {
-		if (Zotero.isSafari) {
-			return `${safari.extension.baseURI}safari/` + path;
-		}
-		else {
-			return browser.runtime.getURL(path);
-		}
+		return browser.runtime.getURL(path);
 	}
 }
 

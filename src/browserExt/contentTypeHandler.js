@@ -63,7 +63,7 @@ Zotero.ContentTypeHandler = {
 	enable: function() {
 		if (!Zotero.Prefs.get('interceptKnownFileTypes')) return;
 		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
-		if (!this._enabled && Zotero.isManifestV3) {
+		if (!this._enabled && !Zotero.isFirefox) {
 			this._addDNRInterceptRules();
 			this._enabled = true;
 		}
@@ -71,7 +71,7 @@ Zotero.ContentTypeHandler = {
 	
 	disable: function() {
 		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
-		if (this._enabled && Zotero.isManifestV3) {
+		if (this._enabled && !Zotero.isFirefox) {
 			this._removeDNRInterceptRules();
 			this._enabled = false;
 		}
@@ -90,7 +90,7 @@ Zotero.ContentTypeHandler = {
 		const contentType = details.responseHeadersObject['content-type'].split(';')[0];
 		const contentDisposition = details.responseHeadersObject['content-disposition'];
 		
-		if (Zotero.isManifestV3) {
+		if (Zotero.isManifestV3 || Zotero.isSafari) {
 			for (let destination in Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp) {
 				const regexp = Zotero.ContentTypeHandler.mv3CSLWhitelistRegexp[destination];
 				let match = details.url.match(regexp);
@@ -110,7 +110,11 @@ Zotero.ContentTypeHandler = {
 					return;
 				}
 			}
-			return;
+			// MV3 relies entirely on the DNR redirect. Safari has no blocking webRequest
+			// and can freeze or trigger native download prompts if we try to handle
+			// content-type-only imports observationally, so it only handles the
+			// URL-matchable CSL cases above.
+			if (Zotero.isManifestV3 || Zotero.isSafari) return;
 		}
 		if (Zotero.ContentTypeHandler._isImportableStyle(details.url, contentType, contentDisposition)) {
 			// No await, because we need to return a navigation cancelling object
@@ -263,7 +267,7 @@ Zotero.ContentTypeHandler = {
 	},
 	
 	_redirectToOriginal: async function(tabId, url) {
-		if (Zotero.isManifestV3) {
+		if (!Zotero.isFirefox) {
 			await this._removeDNRInterceptRules();
 			(async () => {
 				await Zotero.Promise.delay(2000);
@@ -407,9 +411,18 @@ Zotero.ContentTypeHandler = {
 	},
 	
 	async _addDNRInterceptRules() {
+		if (Zotero.isFirefox) return;
+
+		// Static ruleset for github/gitee installation handling
+		await chrome.declarativeNetRequest.updateEnabledRulesets({
+			enableRulesetIds: ['styleIntercept']
+		});
+		
 		// responseHeaders are available on Chromium 128+, but there's no way to feature-guard
-		// for it directly, but Promise.try was also added in the same version
-		if (!Zotero.isManifestV3 || typeof Promise.try === "undefined") return;
+		// for it directly, but Promise.try was also added in the same version.
+		// Safari doesn't support RuleCondition.responseHeaders, so these content-type-based
+		// DNR rules can't be used there.
+		if (Zotero.isSafari || typeof Promise.try === "undefined") return;
 		
 		// Get base confirm URL
 		const confirmURL = Zotero.getExtensionURL('confirm/confirm.html');
@@ -474,20 +487,16 @@ Zotero.ContentTypeHandler = {
 			removeRuleIds: rules.map(r => r.id),
 			addRules: rules
 		});
-
-		// Static ruleset for github/gitee installation handling
-		await chrome.declarativeNetRequest.updateEnabledRulesets({
-			enableRulesetIds: ['styleIntercept']
-		});
 	},
 
 	async _removeDNRInterceptRules() {
-		if (!Zotero.isManifestV3) return;
-		await chrome.declarativeNetRequest.updateDynamicRules({
-			removeRuleIds: [30000, 31000]
-		});
+		if (Zotero.isFirefox) return;
 		await chrome.declarativeNetRequest.updateEnabledRulesets({
 			disableRulesetIds: ['styleIntercept']
+		});
+		if (Zotero.isSafari) return;
+		await chrome.declarativeNetRequest.updateDynamicRules({
+			removeRuleIds: [30000, 31000]
 		});
 	},
 

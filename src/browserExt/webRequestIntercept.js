@@ -42,11 +42,13 @@ Zotero.WebRequestIntercept = {
 
 	init: function() {
 		const types = ["main_frame", "sub_frame"];
-		let extraInfoSpec = ["requestHeaders"].concat(!Zotero.isManifestV3 ? ["blocking"] : []);
+		// Safari (like MV3) has no blocking webRequest; requesting "blocking" is unsupported there.
+		let useBlocking = !Zotero.isManifestV3 && !Zotero.isSafari;
+		let extraInfoSpec = ["requestHeaders"].concat(useBlocking ? ["blocking"] : []);
 		browser.webRequest.onBeforeSendHeaders.addListener(Zotero.WebRequestIntercept.handleRequest('beforeSendHeaders'), {urls: ['<all_urls>'], types}, extraInfoSpec);
 		browser.webRequest.onErrorOccurred.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
 		browser.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
-		extraInfoSpec = ["responseHeaders"].concat(!Zotero.isManifestV3 ? ["blocking"] : []);
+		extraInfoSpec = ["responseHeaders"].concat(useBlocking ? ["blocking"] : []);
 		browser.webRequest.onHeadersReceived.addListener(Zotero.WebRequestIntercept.handleRequest('headersReceived'), {urls: ['<all_urls>'], types}, extraInfoSpec);
 
 		Zotero.WebRequestIntercept.addListener('beforeSendHeaders', Zotero.WebRequestIntercept.storeRequestHeaders)

@@ -59,6 +59,7 @@ if (isTopWindow) {
 		});
 
 		iframe = document.createElement('iframe');
+		Zotero.Messaging.registerFrame(iframe);
 		iframe.id = frameID;
 		iframe.src = frameSrc;
 		var style = {
@@ -112,6 +113,8 @@ if (isTopWindow) {
 			}
 			iframe.style.display = 'block';
 			previousFocus = getActiveElement();
+			// frameId=null - send to the iframe (Safari posts directly to the registered iframe;
+			// see Zotero.Messaging.registerFrame). modalPrompt.show returns the clicked button.
 			let result = await Zotero.Messaging.sendMessage('modalPrompt.show', props, null, null);
 			iframe.style.display = 'none';
 			return result

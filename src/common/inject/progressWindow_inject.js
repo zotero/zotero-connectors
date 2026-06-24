@@ -68,7 +68,8 @@ if (isTopWindow) {
 	var scrollY;
 	
 	async function sendMessage(name, data = {}) {
-		// frameId=null - send message to all frames
+		// frameId=null - send message to all frames (Safari posts directly to the registered
+		// iframe; see Zotero.Messaging.registerFrame)
 		return Zotero.Messaging.sendMessage(name, data, null, null);
 	}
 
@@ -240,6 +241,7 @@ if (isTopWindow) {
 	async function initFrame() {
 		// Create the iframe
 		var iframe = document.createElement('iframe');
+		Zotero.Messaging.registerFrame(iframe);
 		iframe.id = frameID;
 		iframe.src = frameSrc;
 		iframe.title = Zotero.getString('general_saveTo', 'Zotero');

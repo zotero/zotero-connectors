@@ -285,10 +285,10 @@ function processFile() {
 				file.contents = Buffer.from(replaceScriptsHTML(
 					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeManifestV3.map(s => `../../${s}`)));
 			}
-			for (let browser of ['manifestv3', 'firefox', 'safari-webext']) {
+			for (let browser of ['manifestv3', 'firefox', 'safari']) {
 				if (basename === 'manifest.json' && browser === 'manifestv3'
 					|| basename === 'manifest-v3.json' && browser === 'firefox'
-					|| basename === 'manifest-v3.json' && browser === 'safari-webext') {
+					|| basename === 'manifest-v3.json' && browser === 'safari') {
 					continue;
 				}
 				
@@ -328,7 +328,7 @@ function processFile() {
 					contents = replaceBrowser(contents, {
 						browserExt: true,
 						firefox: browser == 'firefox',
-						safari: browser == 'safari-webext',
+						safari: browser == 'safari',
 						manifestV3: browser == 'manifestv3'
 					});
 					f.contents = Buffer.from(contents);
@@ -338,25 +338,8 @@ function processFile() {
 				this.push(f);
 			}
 		}
-		if (type === 'common' || type === 'safari') {
-			f = file.clone({contents: false});
-			f.path = parts.slice(0, i-1).join('/') + '/build/safari/' + parts.slice(i+1).join('/');
-			if (basename == 'zotero.js') {
-				let contents = f.contents.toString()
-					.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
-				contents = replaceBrowser(contents, { safari: true });
-				f.contents = Buffer.from(contents);
-			}
-			console.log(`-> ${f.path.slice(f.cwd.length)}`);
-			this.push(f);
-		}
 		if (type === 'zotero-google-docs-integration') {
-			f = file.clone({contents: false});
-			f.path = parts.slice(0, i-1).join('/') + '/build/safari/zotero-google-docs-integration/'
-				+ parts.slice(i+3).join('/');
-			console.log(`-> ${f.path.slice(f.cwd.length)}`);
-			this.push(f);
-			['manifestv3', 'firefox', 'safari-webext'].forEach((browser) => {
+			['manifestv3', 'firefox', 'safari'].forEach((browser) => {
 				f = file.clone({contents: false});
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/zotero-google-docs-integration/`
 					+ parts.slice(i+3).join('/');
@@ -370,7 +353,7 @@ function processFile() {
 }
 
 gulp.task('watch', function () {
-	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**',
+	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**',
 		'./src/zotero-google-docs-integration/src/connector/**']);
 	watcher.on('change', function(path) {
 		gulp.src(path)
@@ -381,7 +364,7 @@ gulp.task('watch', function () {
 });  
 
 gulp.task('watch-chrome', function () {
-	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**',
+	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**',
 		'./src/zotero-google-docs-integration/src/connector/**']);
 	watcher.on('change', function(event) {
 		gulp.src(event.path)

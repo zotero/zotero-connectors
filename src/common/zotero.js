@@ -46,36 +46,29 @@ var Zotero = global.Zotero = new function() {
 		this.initDeferred.reject = reject;
 	}.bind(this));
 	
-	// Safari  global page detection
-	if (typeof globalThis !== "undefined" && typeof window !== 'undefined' && window === globalThis && typeof browser === "undefined" && typeof chrome === "undefined") {
-		this.isSafari = true;
-		this.isMac = true;
-	}
-	else {
-		// Browser check adopted from:
-		// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
-		/* this.isFirefox = SET IN BUILD SCRIPT */;
-		/* this.isSafari = SET IN BUILD SCRIPT */;
-		/* this.isBrowserExt = SET IN BUILD SCRIPT */;
+	// Browser check adopted from:
+	// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+	/* this.isFirefox = SET IN BUILD SCRIPT */;
+	/* this.isSafari = SET IN BUILD SCRIPT */;
+	/* this.isBrowserExt = SET IN BUILD SCRIPT */;
 
-		this.isChrome = this.isEdge = false;
-		if (this.isBrowserExt && !this.isFirefox && !this.isSafari) {
-			this.isChromium = true;
-			if (global.navigator.userAgent.includes("Edg/")) {
-				this.isEdge = true;
-			} else {
-				// If browser ext is not fx or edge then treat it as Chrome
-				// since it's probably installed with compatible browsers such as Opera from the
-				// Chrome extension store
-				this.isChrome = true;
-			}
+	this.isChrome = this.isEdge = false;
+	if (this.isBrowserExt && !this.isFirefox && !this.isSafari) {
+		this.isChromium = true;
+		if (global.navigator.userAgent.includes("Edg/")) {
+			this.isEdge = true;
+		} else {
+			// If browser ext is not fx or edge then treat it as Chrome
+			// since it's probably installed with compatible browsers such as Opera from the
+			// Chrome extension store
+			this.isChrome = true;
 		}
-		this.isOffscreen = typeof document != 'undefined' && document.location.href.endsWith('offscreenSandbox.html');
-
-		this.isMac = (global.navigator.platform.substr(0, 3) == "Mac");
-		this.isWin = (global.navigator.platform.substr(0, 3) == "Win");
-		this.isLinux = (global.navigator.platform.substr(0, 5) == "Linux");
 	}
+	this.isOffscreen = typeof document != 'undefined' && document.location.href.endsWith('offscreenSandbox.html');
+
+	this.isMac = (global.navigator.platform.substr(0, 3) == "Mac");
+	this.isWin = (global.navigator.platform.substr(0, 3) == "Win");
+	this.isLinux = (global.navigator.platform.substr(0, 5) == "Linux");
 
 	if (this.isFirefox) {
 		this.browser = "g";

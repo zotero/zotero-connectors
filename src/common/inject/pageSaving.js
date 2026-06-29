@@ -303,7 +303,13 @@ let PageSaving = {
 		items = this._processNote(items);
 		this.sessionDetails.items = items;
 		let itemType = translators[0].itemType;
-		let itemSaver = new Zotero.ItemSaver({ sessionID, itemType, baseURI: document.location.href, proxy });
+		let itemSaver = new Zotero.ItemSaver({
+			sessionID,
+			itemType,
+			baseURI: document.location.href,
+			proxy,
+			getTarget: () => this.sessionDetails.target
+		});
 		this.sessionDetails.itemSaver = itemSaver;
 		return itemSaver.saveItems(items, PageSaving._onAttachmentProgress, onItemsSaved)
 	},
@@ -667,6 +673,7 @@ let PageSaving = {
 		// iframe due to how messaging is set up, and we need to ignore it
 		// on all but the frame that has sessionDetails.id - is translating.
 		if (!this.sessionDetails.id) return;
+		this.sessionDetails.target = data.target;
 		await Zotero.Connector.callMethod(
 			"updateSession",
 			{
@@ -698,6 +705,11 @@ let PageSaving = {
 				}
 			}
 		}
+	},
+
+	onTargetChanged(data) {
+		if (data.sessionID != this.sessionDetails.id) return;
+		this.sessionDetails.target = data.target;
 	}
 }
 

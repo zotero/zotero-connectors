@@ -298,6 +298,10 @@ if (isTopWindow) {
 			// If we're making changes, don't close the popup and keep delaying syncs
 			stopCloseTimer();
 			blurred = false;
+			sendMessage("progressWindow.targetChanged", {
+				sessionID: currentSessionID,
+				target: data.target.id
+			});
 			
 			// If the session isn't yet registered or a session update is in progress,
 			// store the data to run after, overwriting any already-queued data

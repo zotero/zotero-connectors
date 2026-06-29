@@ -139,8 +139,10 @@ describe("ItemSaver", function() {
 						savedPayload = payload;
 						return {};
 					});
-					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
+					let lookupPayload;
+					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method, payload) => {
 						if (method == 'findExistingItems') {
+							lookupPayload = payload;
 							return {
 								matches: [{
 									id: 123,
@@ -156,8 +158,10 @@ describe("ItemSaver", function() {
 							filesEditable: false
 						};
 					});
-					sinon.stub(Zotero.Inject, "confirm").resolves({ button: 1 });
 					sinon.stub(Zotero.Messaging, "sendMessage").callsFake((message, data) => {
+						if (message == 'confirm') {
+							return { button: 1 };
+						}
 						if (message == 'progressWindow.itemProgress') {
 							progressUpdates.push(data);
 						}
@@ -174,13 +178,15 @@ describe("ItemSaver", function() {
 					let itemSaver = new Zotero.ItemSaver({
 						sessionID: 'test-session',
 						itemType: 'journalArticle',
-						baseURI: 'https://example.com/article'
+						baseURI: 'https://example.com/article',
+						getTarget: () => 'L123'
 					});
 					await itemSaver.saveItems([item]);
 
 					return {
 						existingItems: item.existingItems,
 						savedPayloadItem: savedPayload.items[0],
+						lookupPayload,
 						progressUpdates
 					};
 				}
@@ -189,7 +195,6 @@ describe("ItemSaver", function() {
 						Zotero.Connector.getPref,
 						Zotero.Connector.callMethodWithCookies,
 						Zotero.Connector.callMethod,
-						Zotero.Inject.confirm,
 						Zotero.Messaging.sendMessage
 					]) {
 						if (stub && stub.restore) {
@@ -201,6 +206,7 @@ describe("ItemSaver", function() {
 
 			assert.equal(result.existingItems[0].id, 123);
 			assert.isUndefined(result.savedPayloadItem.existingItems);
+			assert.equal(result.lookupPayload.target, 'L123');
 			assert.equal(result.progressUpdates[0].existingItems[0].id, 123);
 		});
 
@@ -235,8 +241,10 @@ describe("ItemSaver", function() {
 							filesEditable: false
 						};
 					});
-					sinon.stub(Zotero.Inject, "confirm").resolves({ button: 2 });
 					sinon.stub(Zotero.Messaging, "sendMessage").callsFake((message) => {
+						if (message == 'confirm') {
+							return { button: 2 };
+						}
 						if (message == 'progressWindow.close') {
 							progressClosed = true;
 						}
@@ -274,7 +282,6 @@ describe("ItemSaver", function() {
 						Zotero.Connector.getPref,
 						Zotero.Connector.callMethodWithCookies,
 						Zotero.Connector.callMethod,
-						Zotero.Inject.confirm,
 						Zotero.Messaging.sendMessage
 					]) {
 						if (stub && stub.restore) {

@@ -43,6 +43,7 @@ let ItemSaver = function(options) {
 	this._proxy = options.proxy;
 	this._baseURI = options.baseURI;
 	this._itemType = options.itemType;
+	this._getTarget = options.getTarget;
 	this._items = [];
 	this._singleFile = false;
 	
@@ -228,7 +229,12 @@ ItemSaver.prototype = {
 	async _checkExistingItems(items, payloadItems) {
 		let response;
 		try {
-			response = await Zotero.Connector.callMethod("findExistingItems", { items: payloadItems });
+			let request = { items: payloadItems };
+			let target = this._getTarget && this._getTarget();
+			if (target) {
+				request.target = target;
+			}
+			response = await Zotero.Connector.callMethod("findExistingItems", request);
 		}
 		catch (e) {
 			Zotero.debug(`ItemSaver: Existing item lookup failed: ${e.message}`);
@@ -263,13 +269,23 @@ ItemSaver.prototype = {
 		if (!hasExistingItems || !Zotero.Inject?.confirm) {
 			return true;
 		}
-		let result = await Zotero.Inject.confirm({
+		let result = await this._confirmExistingItems({
 			title: Zotero.getString("duplicateItems_title"),
 			message: Zotero.getString("duplicateItems_message"),
 			button1Text: Zotero.getString("general_continueAnyway"),
 			button2Text: Zotero.getString("general_cancel")
 		});
 		return result.button == 1;
+	},
+
+	async _confirmExistingItems(props) {
+		if (Zotero.Messaging?.sendMessage) {
+			let result = await Zotero.Messaging.sendMessage("confirm", props);
+			if (result) {
+				return result;
+			}
+		}
+		return Zotero.Inject.confirm(props);
 	},
 
 	_itemMatchesExistingItem(item, match) {

@@ -115,6 +115,15 @@
 	"progressWindow_alreadySaved": {
 		"message": "Items from this webpage have already been saved."
 	},
+	"progressWindow_alreadyInLibrary": {
+		"message": "Already in Library"
+	},
+	"duplicateItems_title": {
+		"message": "Already in Library"
+	},
+	"duplicateItems_message": {
+		"message": "One or more items you're saving already exist in your Zotero library. Continue saving anyway?"
+	},
 	"progressWindow_tagPlaceholder": {
 		"message": "Tags"
 	},

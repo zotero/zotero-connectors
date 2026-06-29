@@ -186,6 +186,14 @@ ItemSaver.prototype = {
 		}
 		
 		payload.items = Zotero.Utilities.deepCopy(items);
+		let shouldSave = await this._checkExistingItems(items, payload.items);
+		if (!shouldSave) {
+			Zotero.debug("ItemSaver: Save cancelled after existing item warning");
+			Zotero.Messaging.sendMessage("progressWindow.close", null);
+			let e = new Error("Save cancelled after existing item warning");
+			e.zoteroSaveCancelled = true;
+			throw e;
+		}
 
 		if (zoteroSupportsAttachmentUpload) {
 			// Only pass attachments that are to be saved by linking
@@ -215,6 +223,68 @@ ItemSaver.prototype = {
 		}
 
 		return items;
+	},
+
+	async _checkExistingItems(items, payloadItems) {
+		let response;
+		try {
+			response = await Zotero.Connector.callMethod("findExistingItems", { items: payloadItems });
+		}
+		catch (e) {
+			Zotero.debug(`ItemSaver: Existing item lookup failed: ${e.message}`);
+			return true;
+		}
+
+		let matches = response?.matches || [];
+		if (!matches.length) {
+			return true;
+		}
+
+		let hasExistingItems = false;
+		for (let item of items) {
+			let existingItems = matches.filter(match => this._itemMatchesExistingItem(item, match));
+			if (!existingItems.length) {
+				continue;
+			}
+			hasExistingItems = true;
+			item.existingItems = existingItems;
+			Zotero.Messaging?.sendMessage(
+				"progressWindow.itemProgress",
+				{
+					sessionID: this._sessionID,
+					id: item.id,
+					iconSrc: Zotero.ItemTypes.getImageSrc(item.itemType),
+					title: item.title,
+					existingItems,
+					itemType: item.itemType
+				}
+			);
+		}
+		if (!hasExistingItems || !Zotero.Inject?.confirm) {
+			return true;
+		}
+		let result = await Zotero.Inject.confirm({
+			title: Zotero.getString("duplicateItems_title"),
+			message: Zotero.getString("duplicateItems_message"),
+			button1Text: Zotero.getString("general_continueAnyway"),
+			button2Text: Zotero.getString("general_cancel")
+		});
+		return result.button == 1;
+	},
+
+	_itemMatchesExistingItem(item, match) {
+		let matchedIdentifiers = match.matchedIdentifiers || {};
+		if (matchedIdentifiers.doi && item.DOI) {
+			let itemDOI = Zotero.Utilities.cleanDOI(item.DOI);
+			let matchDOI = Zotero.Utilities.cleanDOI(matchedIdentifiers.doi);
+			if (itemDOI && matchDOI && itemDOI.toLowerCase() == matchDOI.toLowerCase()) {
+				return true;
+			}
+		}
+		if (matchedIdentifiers.url && item.url && item.url == matchedIdentifiers.url) {
+			return true;
+		}
+		return false;
 	},
 
 	/**

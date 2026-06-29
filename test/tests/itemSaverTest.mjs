@@ -122,4 +122,172 @@ describe("ItemSaver", function() {
 			assert.equal(capturedData.url, documentUrl);
 		});
 	});
-}); 
+
+	describe('_checkExistingItems', function() {
+		it('annotates matching items without blocking the subsequent save', async function() {
+			let result = await tab.run(async function () {
+				try {
+					let savedPayload;
+					let progressUpdates = [];
+					sinon.stub(Zotero.Connector, "getPref").callsFake((pref) => {
+						if (pref == 'supportsAttachmentUpload') return true;
+						if (pref == 'automaticSnapshots') return true;
+						if (pref == 'downloadAssociatedFiles') return true;
+						return null;
+					});
+					sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async (method, payload) => {
+						savedPayload = payload;
+						return {};
+					});
+					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
+						if (method == 'findExistingItems') {
+							return {
+								matches: [{
+									id: 123,
+									title: 'Existing Article',
+									matchedFields: ['DOI'],
+									matchedIdentifiers: {
+										doi: '10.1234/example.1'
+									}
+								}]
+							};
+						}
+						return {
+							filesEditable: false
+						};
+					});
+					sinon.stub(Zotero.Inject, "confirm").resolves({ button: 1 });
+					sinon.stub(Zotero.Messaging, "sendMessage").callsFake((message, data) => {
+						if (message == 'progressWindow.itemProgress') {
+							progressUpdates.push(data);
+						}
+					});
+
+					let item = {
+						id: 'item-1',
+						itemType: 'journalArticle',
+						title: 'New Article',
+						DOI: '10.1234/example.1',
+						url: 'https://example.com/article',
+						attachments: []
+					};
+					let itemSaver = new Zotero.ItemSaver({
+						sessionID: 'test-session',
+						itemType: 'journalArticle',
+						baseURI: 'https://example.com/article'
+					});
+					await itemSaver.saveItems([item]);
+
+					return {
+						existingItems: item.existingItems,
+						savedPayloadItem: savedPayload.items[0],
+						progressUpdates
+					};
+				}
+				finally {
+					for (let stub of [
+						Zotero.Connector.getPref,
+						Zotero.Connector.callMethodWithCookies,
+						Zotero.Connector.callMethod,
+						Zotero.Inject.confirm,
+						Zotero.Messaging.sendMessage
+					]) {
+						if (stub && stub.restore) {
+							stub.restore();
+						}
+					}
+				}
+			});
+
+			assert.equal(result.existingItems[0].id, 123);
+			assert.isUndefined(result.savedPayloadItem.existingItems);
+			assert.equal(result.progressUpdates[0].existingItems[0].id, 123);
+		});
+
+		it('cancels saving when the existing item warning is dismissed', async function() {
+			let result = await tab.run(async function () {
+				try {
+					let saveItemsCalled = false;
+					let progressClosed = false;
+					sinon.stub(Zotero.Connector, "getPref").callsFake((pref) => {
+						if (pref == 'supportsAttachmentUpload') return true;
+						if (pref == 'automaticSnapshots') return true;
+						if (pref == 'downloadAssociatedFiles') return true;
+						return null;
+					});
+					sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async () => {
+						saveItemsCalled = true;
+						return {};
+					});
+					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
+						if (method == 'findExistingItems') {
+							return {
+								matches: [{
+									id: 123,
+									title: 'Existing Article',
+									matchedIdentifiers: {
+										doi: '10.1234/example.1'
+									}
+								}]
+							};
+						}
+						return {
+							filesEditable: false
+						};
+					});
+					sinon.stub(Zotero.Inject, "confirm").resolves({ button: 2 });
+					sinon.stub(Zotero.Messaging, "sendMessage").callsFake((message) => {
+						if (message == 'progressWindow.close') {
+							progressClosed = true;
+						}
+					});
+
+					let item = {
+						id: 'item-1',
+						itemType: 'journalArticle',
+						title: 'New Article',
+						DOI: '10.1234/example.1',
+						attachments: []
+					};
+					let itemSaver = new Zotero.ItemSaver({
+						sessionID: 'test-session',
+						itemType: 'journalArticle',
+						baseURI: 'https://example.com/article'
+					});
+					let error;
+					try {
+						await itemSaver.saveItems([item]);
+					}
+					catch (e) {
+						error = e;
+					}
+
+					return {
+						cancelled: !!error?.zoteroSaveCancelled,
+						existingItems: item.existingItems,
+						progressClosed,
+						saveItemsCalled
+					};
+				}
+				finally {
+					for (let stub of [
+						Zotero.Connector.getPref,
+						Zotero.Connector.callMethodWithCookies,
+						Zotero.Connector.callMethod,
+						Zotero.Inject.confirm,
+						Zotero.Messaging.sendMessage
+					]) {
+						if (stub && stub.restore) {
+							stub.restore();
+						}
+					}
+				}
+			});
+
+			assert.isTrue(result.cancelled);
+			assert.equal(result.existingItems[0].id, 123);
+			assert.isFalse(result.saveItemsCalled);
+			assert.isTrue(result.progressClosed);
+		});
+	});
+});

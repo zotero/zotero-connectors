@@ -283,6 +283,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			if (params.itemType) {
 				p.itemType = params.itemType
 			}
+			if (params.existingItems) {
+				p.existingItems = params.existingItems;
+			}
 			return newState;
 		});
 		// Do not being announcing alerts until all top level items are loaded
@@ -988,6 +991,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 				<div className="ProgressWindow-itemIcon" style={iconStyle}></div>
 				<div className="ProgressWindow-itemText">
 					{item.title}
+					{item.existingItems?.length ? (
+						<div className="ProgressWindow-itemStatus">
+							{Zotero.getString("progressWindow_alreadyInLibrary")}
+						</div>
+					) : null}
 				</div>
 			</div>
 		);

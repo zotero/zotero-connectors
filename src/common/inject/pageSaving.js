@@ -598,6 +598,10 @@ let PageSaving = {
 			Zotero.Messaging.sendMessage("progressWindow.done", [true]);
 			return items;
 		} catch (e) {
+			if (e.zoteroSaveCancelled) {
+				this._clearSession();
+				return;
+			}
 			Zotero.logError(e);
 			// Clear session details on failure, so another save click tries again
 			this._clearSession();

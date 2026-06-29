@@ -67,4 +67,39 @@ describe('Connector', function() {
 			assert.isTrue(result);
 		});
 	});
+
+	describe('#findExistingItems()', function() {
+		it('sends translated items to Zotero for duplicate lookup', async function() {
+			let result = await background(async function() {
+				let stub = sinon.stub(Zotero.Connector, 'callMethod').resolves({
+					matches: []
+				});
+				try {
+					let items = [{
+						itemType: 'journalArticle',
+						title: 'New Article',
+						DOI: '10.1234/example.1',
+						url: 'https://example.com/article'
+					}];
+					let response = await Zotero.Connector.findExistingItems(items);
+					return {
+						response,
+						args: stub.firstCall.args
+					};
+				}
+				finally {
+					stub.restore();
+				}
+			});
+
+			assert.deepEqual(result.response, { matches: [] });
+			assert.equal(result.args[0], 'findExistingItems');
+			assert.deepEqual(result.args[1].items[0], {
+				itemType: 'journalArticle',
+				title: 'New Article',
+				DOI: '10.1234/example.1',
+				url: 'https://example.com/article'
+			});
+		});
+	});
 });

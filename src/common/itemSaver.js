@@ -303,7 +303,11 @@ ItemSaver.prototype = {
 				return true;
 			}
 		}
-		if (matchedIdentifiers.url && item.url && item.url == matchedIdentifiers.url) {
+		let itemURL = item.url;
+		if (this._proxy && itemURL) {
+			itemURL = this._proxy.toProper(itemURL);
+		}
+		if (matchedIdentifiers.url && itemURL && itemURL == matchedIdentifiers.url) {
 			return true;
 		}
 		return false;

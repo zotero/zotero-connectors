@@ -214,6 +214,84 @@ describe("ItemSaver", function() {
 			assert.equal(result.progressUpdates[0].existingItems[0].id, 123);
 		});
 
+		it('matches proxied item URLs against deproxified lookup matches', async function() {
+			let result = await tab.run(async function () {
+				try {
+					let progressUpdates = [];
+					sinon.stub(Zotero.Connector, "getPref").callsFake((pref) => {
+						if (pref == 'supportsAttachmentUpload') return true;
+						if (pref == 'automaticSnapshots') return true;
+						if (pref == 'downloadAssociatedFiles') return true;
+						return null;
+					});
+					sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves({});
+					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
+						if (method == 'findExistingItems') {
+							return {
+								matches: [{
+									id: 123,
+									title: 'Existing Proxied Page',
+									matchedFields: ['url'],
+									matchedIdentifiers: {
+										url: 'https://www.example.com/path'
+									}
+								}]
+							};
+						}
+						return {
+							filesEditable: false
+						};
+					});
+					sinon.stub(Zotero.Messaging, "sendMessage").callsFake((message, data) => {
+						if (message == 'confirm') {
+							return { button: 1 };
+						}
+						if (message == 'progressWindow.itemProgress') {
+							progressUpdates.push(data);
+						}
+					});
+
+					let item = {
+						id: 'item-1',
+						itemType: 'webpage',
+						title: 'New Proxied Page',
+						url: 'https://www-example-com.proxy.example.com/path',
+						attachments: []
+					};
+					let itemSaver = new Zotero.ItemSaver({
+						sessionID: 'test-session',
+						itemType: 'webpage',
+						baseURI: 'https://www-example-com.proxy.example.com/path',
+						proxy: {
+							toJSON: () => ({ scheme: 'https://%h.proxy.example.com/%p' }),
+							toProper: (url) => url.replace('www-example-com.proxy.example.com', 'www.example.com')
+						}
+					});
+					await itemSaver.saveItems([item]);
+
+					return {
+						existingItems: item.existingItems,
+						progressUpdates
+					};
+				}
+				finally {
+					for (let stub of [
+						Zotero.Connector.getPref,
+						Zotero.Connector.callMethodWithCookies,
+						Zotero.Connector.callMethod,
+						Zotero.Messaging.sendMessage
+					]) {
+						if (stub && stub.restore) {
+							stub.restore();
+						}
+					}
+				}
+			});
+
+			assert.equal(result.existingItems[0].id, 123);
+			assert.equal(result.progressUpdates[0].existingItems[0].id, 123);
+		});
+
 		it('cancels saving when the existing item warning is dismissed', async function() {
 			let result = await tab.run(async function () {
 				try {

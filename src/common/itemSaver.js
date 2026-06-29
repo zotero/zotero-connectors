@@ -305,7 +305,13 @@ ItemSaver.prototype = {
 		}
 		let itemURL = item.url;
 		if (this._proxy && itemURL) {
-			itemURL = this._proxy.toProper(itemURL);
+			try {
+				itemURL = this._proxy.toProper(itemURL);
+			}
+			catch (e) {
+				Zotero.debug(`ItemSaver: Could not deproxify item URL for duplicate lookup: ${e.message}`);
+				itemURL = null;
+			}
 		}
 		if (matchedIdentifiers.url && itemURL && itemURL == matchedIdentifiers.url) {
 			return true;

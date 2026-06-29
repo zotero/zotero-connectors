@@ -179,6 +179,9 @@ describe("ItemSaver", function() {
 						sessionID: 'test-session',
 						itemType: 'journalArticle',
 						baseURI: 'https://example.com/article',
+						proxy: {
+							toJSON: () => ({ scheme: 'https://%h.proxy.example.com/%p' })
+						},
 						getTarget: () => 'L123'
 					});
 					await itemSaver.saveItems([item]);
@@ -207,6 +210,7 @@ describe("ItemSaver", function() {
 			assert.equal(result.existingItems[0].id, 123);
 			assert.isUndefined(result.savedPayloadItem.existingItems);
 			assert.equal(result.lookupPayload.target, 'L123');
+			assert.equal(result.lookupPayload.proxy.scheme, 'https://%h.proxy.example.com/%p');
 			assert.equal(result.progressUpdates[0].existingItems[0].id, 123);
 		});
 

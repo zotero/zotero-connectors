@@ -234,6 +234,9 @@ ItemSaver.prototype = {
 			if (target) {
 				request.target = target;
 			}
+			if (this._proxy) {
+				request.proxy = this._proxy.toJSON();
+			}
 			response = await Zotero.Connector.callMethod("findExistingItems", request);
 		}
 		catch (e) {

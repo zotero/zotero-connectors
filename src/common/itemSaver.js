@@ -190,6 +190,9 @@ ItemSaver.prototype = {
 		let shouldSave = await this._checkExistingItems(items, payload.items);
 		if (!shouldSave) {
 			Zotero.debug("ItemSaver: Save cancelled after existing item warning");
+			Zotero.Messaging.sendMessage("progressWindow.clearPendingSessionUpdate", {
+				sessionID: this._sessionID
+			});
 			Zotero.Messaging.sendMessage("progressWindow.close", null);
 			let e = new Error("Save cancelled after existing item warning");
 			e.zoteroSaveCancelled = true;

@@ -219,6 +219,7 @@ describe("ItemSaver", function() {
 				try {
 					let saveItemsCalled = false;
 					let progressClosed = false;
+					let pendingSessionUpdateCleared = false;
 					sinon.stub(Zotero.Connector, "getPref").callsFake((pref) => {
 						if (pref == 'supportsAttachmentUpload') return true;
 						if (pref == 'automaticSnapshots') return true;
@@ -252,6 +253,9 @@ describe("ItemSaver", function() {
 						if (message == 'progressWindow.close') {
 							progressClosed = true;
 						}
+						if (message == 'progressWindow.clearPendingSessionUpdate') {
+							pendingSessionUpdateCleared = true;
+						}
 					});
 
 					let item = {
@@ -277,6 +281,7 @@ describe("ItemSaver", function() {
 					return {
 						cancelled: !!error?.zoteroSaveCancelled,
 						existingItems: item.existingItems,
+						pendingSessionUpdateCleared,
 						progressClosed,
 						saveItemsCalled
 					};
@@ -298,6 +303,7 @@ describe("ItemSaver", function() {
 			assert.isTrue(result.cancelled);
 			assert.equal(result.existingItems[0].id, 123);
 			assert.isFalse(result.saveItemsCalled);
+			assert.isTrue(result.pendingSessionUpdateCleared);
 			assert.isTrue(result.progressClosed);
 		});
 	});

@@ -479,6 +479,12 @@ if (isTopWindow) {
 		
 		hideFrame();
 	});
+
+	Zotero.Messaging.addMessageListener("progressWindow.clearPendingSessionUpdate", function (args) {
+		if (!args?.sessionID || args.sessionID == currentSessionID) {
+			nextSessionUpdateData = null;
+		}
+	});
 	
 	Zotero.Messaging.addMessageListener("progressWindow.setSession", function (sessionID) {
 		currentSessionID = sessionID;

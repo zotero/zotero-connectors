@@ -605,6 +605,9 @@ let PageSaving = {
 			return items;
 		} catch (e) {
 			if (e.zoteroSaveCancelled) {
+				Zotero.Messaging.sendMessage("progressWindow.clearPendingSessionUpdate", {
+					sessionID: this.sessionDetails.id
+				});
 				this._clearSession();
 				return;
 			}

@@ -112,12 +112,6 @@ let PageSaving = {
 
 			let translate = await this._initTranslate();
 			let translators = await Zotero.TranslateWeb.detect({ translate });
-			// We check tab content type in bg pages on browser ext, but that's not available on Safari
-			if (!translators.length && Zotero.isSafari) {
-				if (!isTopWindow && document.contentType == 'application/pdf') {
-					return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
-				}
-			}
 			this.translators = translators;
 			Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
 		} catch (e) {

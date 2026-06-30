@@ -111,8 +111,6 @@ Zotero.API = new function() {
 		this._deferred = null;
 		if(Zotero.isBrowserExt) {
 			browser.tabs.remove(tab.id);
-		} else if (Zotero.isSafari) {
-			Zotero.Connector_Browser.closeTab(tab);
 		}
 		
 		if(!_tokenSecret) {

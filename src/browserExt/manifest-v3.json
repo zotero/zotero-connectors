@@ -74,8 +74,8 @@
 	"homepage_url": "https://www.zotero.org/",
 	"icons": {
 		"16": "Icon-16.png",
-		"48": "Icon-48.png",
-		"96": "Icon-96.png",
+		"32": "Icon-32.png",
+		"64": "Icon-64.png",
 		"128": "Icon-128.png"
 	},
 	"options_ui": {

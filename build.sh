@@ -244,7 +244,7 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	rm -rf "$BUILD_DIR/browserExt/images"
 	mkdir "$BUILD_DIR/browserExt/images"
 	cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/browserExt/images"
-	cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
+	cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-64.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
 	
 	copyResources 'browserExt'
 fi

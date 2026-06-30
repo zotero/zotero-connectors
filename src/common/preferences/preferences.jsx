@@ -86,14 +86,7 @@ var Zotero_Preferences = {
 
 		Zotero.initDeferred.resolve();
 		Zotero.isInject = true;
-		
-		if (Zotero.isSafari) {
-			// BrowserExt handles these in the background page
-			window.addEventListener('focus', function() {
-				Zotero.Connector_Browser.onTabFocus();
-			}, true);
-			Zotero.Connector_Browser.onTabFocus();
-		}
+
 		Zotero_Preferences.refreshData();
 		window.setInterval(() => Zotero_Preferences.refreshData(), 1000);
 	},

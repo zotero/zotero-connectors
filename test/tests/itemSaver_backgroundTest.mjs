@@ -314,7 +314,7 @@ describe("ItemSaver Background", function() {
 					}
 				}, attachment, mockTab);
 
-				assert.include(error, 'Attachment MIME type application/pdf does not match specified type application/pdf');
+				assert.include(error, 'Attachment download failed with HTTP status 200 (empty response)');
 			});
 		});
 

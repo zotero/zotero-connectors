@@ -81,12 +81,11 @@ Zotero.BotBypass.bypassAmazonCaptcha = async function(attachment, options) {
 	});
 
 	let xhr = await Zotero.HTTP.request("GET", attachment.url, options);
-	if (Zotero.ItemSaver._validateResponse(attachment, xhr)) {
+	let validationError = Zotero.ItemSaver._validateResponse(attachment, xhr);
+	if (!validationError) {
 		return xhr.response;
 	}
-	let { contentType } = Zotero.Utilities.Connector.getContentTypeFromXHR(xhr);
-	throw new Error("Attachment MIME type "+contentType+
-		" does not match specified type "+attachment.mimeType);
+	throw new Error(validationError);
 };
 
 Zotero.BotBypass.passJSDetectionViaHiddenIframe = async function(url, tab) {

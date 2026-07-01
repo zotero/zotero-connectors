@@ -231,7 +231,8 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 	attemptBotProtectionBypass = attemptBotProtectionBypass && !Zotero.isSafari;
 	
 	let xhr = await Zotero.HTTP.request("GET", attachment.url, options);
-	if (xhr.status >= 200 && xhr.status < 400 && this._validateResponse(attachment, xhr)) {
+	let validationError = this._validateResponse(attachment, xhr);
+	if (xhr.status >= 200 && xhr.status < 400 && !validationError) {
 		return xhr.response;
 	}
 	
@@ -241,13 +242,13 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 		botBypassType = Zotero.BotBypass.canBotBypass(attachment.url, xhr);
 	}
 
+	let errorMessage = `Attachment download failed with HTTP status ${xhr.status}`
+		+ (validationError ? ` (${validationError})` : '');
 	// Only attempt fallback for attachments on whitelisted domains
 	if (!tab || botBypassType === BYPASS_TYPE.NONE) {
-		let { contentType } = Zotero.Utilities.Connector.getContentTypeFromXHR(xhr);
-		throw new Error("Attachment MIME type "+contentType+
-			" does not match specified type "+attachment.mimeType);
+		throw new Error(errorMessage);
 	}
-	Zotero.debug(`Error downloading attachment ${attachment.url} : ${xhr.status}. Attempting bot protection bypass`);
+	Zotero.debug(`Error downloading attachment ${attachment.url}: ${errorMessage}. Attempting bot protection bypass`);
 	
 	if (botBypassType === BYPASS_TYPE.AMAZON_CAPTCHA) {
 		return Zotero.BotBypass.bypassAmazonCaptcha(attachment, options)
@@ -271,7 +272,7 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 Zotero.ItemSaver._validateResponse = function(attachment, xhr, contentType) {
 	let contentLength = xhr.getResponseHeader("Content-Length");
 	if (contentLength !== null && parseInt(contentLength) === 0) {
-		return false;
+		return "empty response";
 	}
 	contentType = contentType || Zotero.Utilities.Connector.getContentTypeFromXHR(xhr).contentType;
 	// If the attachment doesn't specify the mimeType, we accept whatever mimeType we got here.
@@ -282,15 +283,18 @@ Zotero.ItemSaver._validateResponse = function(attachment, xhr, contentType) {
 		if (!xhr.getResponseHeader("Content-Type")) {
 			attachment.mimeType = Zotero.Utilities.Connector.guessAttachmentMimeType(attachment.url);
 		}
-		return true;
+		return null;
 	}
 	if (attachment.mimeType.toLowerCase() === contentType.toLowerCase()) {
-		return true;
+		return null;
 	}
 	// Trust the translator's mimeType when the server returns octet-stream,
 	// since some servers serve all binary files as octet-stream (e.g., OSF, Libraries Tasmania)
-	return contentType.toLowerCase() === 'application/octet-stream';
-	
+	if (contentType.toLowerCase() === 'application/octet-stream') {
+		return null;
+	}
+	return "Attachment MIME type " + contentType
+		+ " does not match specified type " + attachment.mimeType;
 };
 
 Zotero.ItemSaver._unpackSafariAttachmentData = function(data) {

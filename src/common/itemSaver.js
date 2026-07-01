@@ -301,6 +301,7 @@ ItemSaver.prototype = {
 					attachmentCallback(attachment, 100);
 				}
 				catch (e) {
+					Zotero.debug(`ItemSaver.saveAttachmentsToZotero: Failed to save attachment ${attachment.url}: ${e}`);
 					if (attachment.isPrimary && shouldAttemptToDownloadOAAttachments) {
 						attachmentCallback(attachment, 0);
 					}

@@ -292,6 +292,81 @@ describe("ItemSaver", function() {
 			assert.equal(result.progressUpdates[0].existingItems[0].id, 123);
 		});
 
+		it('annotates items matched by server-provided item index', async function() {
+			let result = await tab.run(async function () {
+				try {
+					let progressUpdates = [];
+					sinon.stub(Zotero.Connector, "getPref").callsFake((pref) => {
+						if (pref == 'supportsAttachmentUpload') return true;
+						if (pref == 'automaticSnapshots') return true;
+						if (pref == 'downloadAssociatedFiles') return true;
+						return null;
+					});
+					sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves({});
+					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
+						if (method == 'findExistingItems') {
+							return {
+								matches: [{
+									id: 123,
+									title: 'Existing Extra DOI Article',
+									matchedItemIndex: 0,
+									matchedFields: ['DOI'],
+									matchedIdentifiers: {
+										doi: '10.1234/extra-only'
+									}
+								}]
+							};
+						}
+						return {
+							filesEditable: false
+						};
+					});
+					sinon.stub(Zotero.Messaging, "sendMessage").callsFake((message, data) => {
+						if (message == 'confirm') {
+							return { button: 1 };
+						}
+						if (message == 'progressWindow.itemProgress') {
+							progressUpdates.push(data);
+						}
+					});
+
+					let item = {
+						id: 'item-1',
+						itemType: 'journalArticle',
+						title: 'New Extra DOI Article',
+						extra: 'DOI: 10.1234/extra-only',
+						attachments: []
+					};
+					let itemSaver = new Zotero.ItemSaver({
+						sessionID: 'test-session',
+						itemType: 'journalArticle',
+						baseURI: 'https://example.com/article'
+					});
+					await itemSaver.saveItems([item]);
+
+					return {
+						existingItems: item.existingItems,
+						progressUpdates
+					};
+				}
+				finally {
+					for (let stub of [
+						Zotero.Connector.getPref,
+						Zotero.Connector.callMethodWithCookies,
+						Zotero.Connector.callMethod,
+						Zotero.Messaging.sendMessage
+					]) {
+						if (stub && stub.restore) {
+							stub.restore();
+						}
+					}
+				}
+			});
+
+			assert.equal(result.existingItems[0].id, 123);
+			assert.equal(result.progressUpdates[0].existingItems[0].id, 123);
+		});
+
 		it('continues saving when proxied duplicate URL normalization fails', async function() {
 			let result = await tab.run(async function () {
 				try {

@@ -253,8 +253,8 @@ ItemSaver.prototype = {
 		}
 
 		let hasExistingItems = false;
-		for (let item of items) {
-			let existingItems = matches.filter(match => this._itemMatchesExistingItem(item, match));
+		for (let [index, item] of items.entries()) {
+			let existingItems = matches.filter(match => this._itemMatchesExistingItem(item, match, index));
 			if (!existingItems.length) {
 				continue;
 			}
@@ -294,7 +294,10 @@ ItemSaver.prototype = {
 		return Zotero.Inject.confirm(props);
 	},
 
-	_itemMatchesExistingItem(item, match) {
+	_itemMatchesExistingItem(item, match, itemIndex) {
+		if (typeof match.matchedItemIndex == 'number') {
+			return match.matchedItemIndex == itemIndex;
+		}
 		let matchedIdentifiers = match.matchedIdentifiers || {};
 		if (matchedIdentifiers.doi && item.DOI) {
 			let itemDOI = Zotero.Utilities.cleanDOI(item.DOI);

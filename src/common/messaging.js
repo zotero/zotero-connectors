@@ -126,6 +126,52 @@ Zotero.Messaging = new function() {
 	}
 	
 	/**
+	 * Sends a message only to Zotero extension-origin frames in a tab.
+	 */
+	this.sendToZoteroFrames = async function(messageName, args, tab=null) {
+		if (!tab) {
+			tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
+		}
+		if (typeof tab === 'number') {
+			tab = await browser.tabs.get(tab);
+		}
+
+		if (!Zotero.isSafari) {
+			let response;
+			try {
+				response = await browser.tabs.sendMessage(tab.id, [messageName, args]);
+			}
+			catch (e) {}
+			if (response && response[0] == 'error') {
+				response[1] = JSON.parse(response[1]);
+				let e = new Error(response[1].message);
+				for (let key in response[1]) e[key] = response[1][key];
+				throw e;
+			}
+			return response;
+		}
+
+		let response;
+		try {
+			// We could target specific frames here
+			// but Chromium browsers do not send messages to frames
+			// that load an extension page when specified, only when broadcast. Sigh.
+			response = await browser.tabs.sendMessage(
+				tab.id,
+				['zoteroFrame.sendMessage', [messageName, args]],
+			);
+		}
+		catch (e) {}
+		if (response && response[0] == 'error') {
+			response[1] = JSON.parse(response[1]);
+			let e = new Error(response[1].message);
+			for (let key in response[1]) e[key] = response[1][key];
+			throw e;
+		}
+		return response;
+	}
+	
+	/**
 	 * Adds messaging listener
 	 */
 	this.init = function() {

@@ -66,11 +66,10 @@ if (isTopWindow) {
 	frameSrc = Zotero.getExtensionURL('progressWindow/progressWindow.html');
 	var scrollX;
 	var scrollY;
+	var zoteroFrame;
 	
 	async function sendMessage(name, data = {}) {
-		// frameId=null - send message to all frames (Safari posts directly to the registered
-		// iframe; see Zotero.Messaging.registerFrame)
-		return Zotero.Messaging.sendMessage(name, data, null, null);
+		return Zotero.Messaging.sendToZoteroFrames(name, data);
 	}
 
 	function addMessageListener(name, handler) {
@@ -181,7 +180,7 @@ if (isTopWindow) {
 	function hideFrame() {
 		insideIframe = false;
 		
-		var frame = document.getElementById(frameID);
+		var frame = zoteroFrame?.frame;
 		if (frame) {
 			frame.style.display = 'none';
 			addEvent("hidden");
@@ -200,8 +199,9 @@ if (isTopWindow) {
 	
 	async function destroyFrame() {
 		stopCloseTimer();
-		var frame = await frameReadyDeferred.promise;
-		document.body.removeChild(frame);
+		await frameReadyDeferred.promise;
+		zoteroFrame.remove();
+		zoteroFrame = null;
 		frameReadyDeferred = Zotero.Promise.defer();
 	}
 	
@@ -240,13 +240,12 @@ if (isTopWindow) {
 	
 	async function initFrame() {
 		// Create the iframe
-		var iframe = document.createElement('iframe');
-		Zotero.Messaging.registerFrame(iframe);
-		iframe.id = frameID;
-		iframe.src = frameSrc;
-		iframe.title = Zotero.getString('general_saveTo', 'Zotero');
-		iframe.setAttribute('data-single-file-hidden-frame', '');
-		var style = {
+		zoteroFrame = new Zotero.Frame({
+			id: frameID,
+			src: frameSrc,
+			title: Zotero.getString('general_saveTo', 'Zotero'),
+			'data-single-file-hidden-frame': ''
+		}, {
 			position: 'fixed',
 			top: '15px',
 			left: 'unset',
@@ -261,9 +260,8 @@ if (isTopWindow) {
 			display: 'none',
 			// frame becomes scrollable if the user zooms in (wcag 1.4.10), or half of it will be inaccessible
 			maxHeight: '90vh' 
-		};
-		for (let i in style) iframe.style[i] = style[i];
-		window.top.document.body.appendChild(iframe);
+		});
+		var iframe = zoteroFrame.frame;
 	
 		// Keep track of clicks on the window so that when the iframe document is blurred we can
 		// distinguish between a click on the document and switching to another window

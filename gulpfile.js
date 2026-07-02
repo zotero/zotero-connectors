@@ -78,6 +78,7 @@ var injectInclude = [
 	'cachedTypes.js',
 	'schema.js',
 	'messages.js',
+	'zoteroFrame.js',
 	'messaging_inject.js',
 	'inject/progressWindow_inject.js',
 	'inject/modalPrompt_inject.js',
@@ -95,9 +96,15 @@ if (argv.p) {
 		'tools/testTranslators/translatorTester_inject.js'
 	];
 }
-var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(
+var injectIncludeFirefox = ['browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
+	injectIncludeLast);
+
+var injectIncludeSafari = ['browser-polyfill.js'].concat(
+	injectInclude,
+	['api.js'],
+	['frameMessaging.js'],
 	injectIncludeLast);
 	
 var injectIncludeManifestV3 = ['browser-polyfill.js'].concat(
@@ -306,7 +313,9 @@ function processFile() {
 					}
 					else {
 						let backgroundScripts = backgroundIncludeBrowserExt;
-						let injectScripts = browser == "manifestv3" ? injectIncludeManifestV3 : injectIncludeBrowserExt;
+						let injectScripts = browser == "manifestv3"
+							? injectIncludeManifestV3
+							: browser == "safari" ? injectIncludeSafari : injectIncludeFirefox;
 						contents = contents
 							.replace("/*BACKGROUND SCRIPTS*/",
 								backgroundScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
@@ -320,6 +329,11 @@ function processFile() {
 						contents = contents.replace('_betaBuildExpiration = new Date(2053, 0, 1, 0, 0, 0)',
 							`_betaBuildExpiration = new Date(${process.env.ZOTERO_BETA_BUILD_EXPIRATION})`);
 					}
+					f.contents = Buffer.from(contents);
+				}
+				if (file.path.includes('.html') && browser != 'safari') {
+					let contents = f.contents.toString()
+						.replace(/\s*<!-- SAFARI -->[\s\S]*?<!-- \/SAFARI -->/g, '');
 					f.contents = Buffer.from(contents);
 				}
 				if (basename == 'zotero.js') {

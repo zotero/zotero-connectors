@@ -121,7 +121,7 @@ describe("Translation", function() {
 					assert.equal(items.length, 1);
 					assert.equal(items[0].itemType, 'journalArticle');
 					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-					var frame = await tab.page.waitForFrame(frameURL);
+					var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 					var elem = await frame.waitForSelector('.ProgressWindow-progressBox');
 					var message = await elem.evaluate(node => node.textContent);
 					assert.include(message, items[0].title);
@@ -172,7 +172,7 @@ describe("Translation", function() {
 						assert.equal(items.length, 1);
 						assert.equal(items[0].itemType, 'journalArticle');
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('.ProgressWindow-progressBox');
 						var message = await elem.evaluate(node => node.textContent);
 						assert.include(message, items[0].title);
@@ -191,7 +191,7 @@ describe("Translation", function() {
 						}, tab.tabId);
 						await delay(20);
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('.ProgressWindow-progressBox');
 						var message = await elem.evaluate(node => node.textContent);
 						assert.include(message, "Scarcity or Abundance? Preserving the Past in a Digital Era");
@@ -218,7 +218,7 @@ describe("Translation", function() {
 						}
 					}, tab.tabId);
 					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-					var frame = await tab.page.waitForFrame(frameURL);
+					var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 					var elem = await frame.waitForSelector('.ProgressWindow-error');
 					var message = await elem.evaluate(node => node.textContent);
 					assert.include(message, "An error occurred while saving this item.");
@@ -240,7 +240,7 @@ describe("Translation", function() {
 						
 						assert.isNotOk(result);
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('.ProgressWindow-error');
 						var message = await elem.evaluate(node => node.textContent);
 						assert.include(message, "An error occurred while saving this item.");
@@ -279,7 +279,7 @@ describe("Translation", function() {
 						}, tab.tabId);
 						// Wait for the modal prompt to appear
 						var frameURL = getExtensionURL('modalPrompt/modalPrompt.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('#zotero-modal-prompt');
 						var message = await elem.evaluate(node => node.textContent);
 						assert.include(message, 'The Zotero Connector was unable to communicate with the Zotero desktop application.');
@@ -309,7 +309,7 @@ describe("Translation", function() {
 					
 					try {
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('.ProgressWindow-box');
 						var message = await elem.evaluate(node => node.textContent);
 

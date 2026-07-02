@@ -29,57 +29,29 @@
  */
 Zotero.Messaging = new function() {
 	var _messageListeners = {};
-	// Extension-page iframes (progress window, modal prompt, ...) the content script has injected
-	// into the page. See _sendMessageToFrames().
-	var _frames = [];
-
+	
 	/**
 	 * Add a message listener
 	 */
 	this.addMessageListener = function(messageName, callback) {
 		_messageListeners[messageName] = callback;
 	}
-
-	/**
-	 * Register/unregister an extension-page iframe the content script controls.
-	 *
-	 * On Safari, browser.tabs.sendMessage from the background doesn't reach an extension-origin
-	 * iframe embedded in a web page (it only reaches content scripts in web frames), so messages
-	 * sent to child frames (frameId === null) can't go through the background relay. Since the
-	 * content script and the iframe share a DOM, we post to the iframe directly instead. Registering
-	 * the iframe here lets sendMessage() route to it transparently; other browsers keep the relay.
-	 */
-	this.registerFrame = function(frame) {
-		if (_frames.indexOf(frame) == -1) _frames.push(frame);
+	
+	this.receiveMessage = async function(request) {
+		if (typeof request !== "object" || !request.length || !_messageListeners[request[0]]) return;
+		Zotero.debug(request[0] + " message received in injected page " + window.location.href);
+		try {
+			return await _messageListeners[request[0]](request[1])
+		} catch (err) {
+			// Zotero.logError(err);
+			return ['error', JSON.stringify(Object.assign({
+				name: err.name,
+				message: err.message,
+				stack: err.stack
+			}, err))];
+		}
 	}
-	this.unregisterFrame = function(frame) {
-		let i = _frames.indexOf(frame);
-		if (i != -1) _frames.splice(i, 1);
-	}
-
-	// Post a message to each registered frame and resolve with the first reply. The frame that
-	// has a listener for the message posts back a response (see the 'message' listener in init());
-	// frames without a matching listener stay silent. Works for both fire-and-forget messages
-	// (resolves with undefined) and request/response ones (e.g., modalPrompt.show's button result).
-	function _sendMessageToFrames(messageName, args) {
-		return new Promise(function(resolve) {
-			let responseId = Zotero.Utilities.randomString();
-			let listener = function(event) {
-				let msg = event.data;
-				if (Array.isArray(msg) && msg[0] == 'zotero-frame-response' && msg[1] == responseId) {
-					window.removeEventListener('message', listener);
-					resolve(msg[2]);
-				}
-			};
-			window.addEventListener('message', listener);
-			for (let frame of _frames) {
-				if (frame && frame.contentWindow) {
-					frame.contentWindow.postMessage([messageName, args, responseId], '*');
-				}
-			}
-		});
-	}
-
+	
 	/**
 	 * Adds messaging functions to injected script. This adds Zotero.xxx.yyy functions for all
 	 * entries in MESSAGES. These will send a message to the global script and return a promise.
@@ -155,19 +127,6 @@ Zotero.Messaging = new function() {
 			}
 		}
 
-		// On Safari, route messages addressed to child frames (frameId === null) directly to the
-		// registered extension-page iframes instead of through the background relay, which can't
-		// reach them. The generated proxy above is the relay path used for everything else.
-		if (Zotero.isSafari) {
-			let _relaySendMessage = this.sendMessage;
-			this.sendMessage = function(messageName, args, tab, frameId) {
-				if (frameId === null && _frames.length) {
-					return _sendMessageToFrames(messageName, args);
-				}
-				return _relaySendMessage.apply(this, arguments);
-			};
-		}
-
 		// NOTE: Do not convert to `browser.` API!
 		// If there are message listeners on multiple frames (or multiple listeners on the same frame)
 		// and you need to respond from a specific one, Firefox does not respect the `undefined`
@@ -178,40 +137,11 @@ Zotero.Messaging = new function() {
 		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			if (typeof request !== "object" || !request.length || !_messageListeners[request[0]]) return;
 			(async function messageListener() {
-				Zotero.debug(request[0] + " message received in injected page " + window.location.href);
-				var result;
-				try {
-					result = await _messageListeners[request[0]](request[1])
-				} catch (err) {
-					// Zotero.logError(err);
-					result = ['error', JSON.stringify(Object.assign({
-						name: err.name,
-						message: err.message,
-						stack: err.stack
-					}, err))];
-				}
-				sendResponse(result);
+				sendResponse(await Zotero.Messaging.receiveMessage(request));
 			})();
 			return true;
 		});
 
-		// On Safari, the background relay can't deliver tabs.sendMessage to an extension-page iframe
-		// (e.g., the progress window / modal prompt), so the content script posts directly to the
-		// iframe instead. Dispatch those postMessages through the same listeners. The _messageListeners
-		// check ignores anything not addressed to a registered handler.
-		// Message shape: [name, args, responseId?]. If a responseId is present the sender is awaiting
-		// a reply, so post the handler's result back to it (e.g., modalPrompt.show's button result).
-		if (Zotero.isSafari) {
-			window.addEventListener('message', async function(event) {
-				let request = event.data;
-				if (!Array.isArray(request) || !request.length || !_messageListeners[request[0]]) return;
-				let responseId = request[2];
-				let result = await _messageListeners[request[0]](request[1]);
-				if (responseId && event.source) {
-					event.source.postMessage(['zotero-frame-response', responseId, result], '*');
-				}
-			});
-		}
 	}
 
 	this.sendAsChunks = async function(payload) {

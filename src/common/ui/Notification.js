@@ -103,11 +103,6 @@ Zotero.UI.Notification.prototype = {
 		for (let param in Zotero.UI.Notification.textStyle) {
 			elem.style[param] = Zotero.UI.Notification.textStyle[param];
 		}
-		let margins = ['marginTop', 'marginRight', 'marginLeft'];
-		let bodyStyle = getComputedStyle(doc.body);
-		for (let margin of margins) {
-			elem.style[margin] = '-' + bodyStyle[margin];
-		}
 		this.elems.root = elem;
 		elem.classList.add('zotero-notificaton');
 

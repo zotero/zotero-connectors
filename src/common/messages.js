@@ -344,7 +344,7 @@ if (Zotero.isSafari) {
 	// Safari's i18n.getMessage corrupts messages where a positional placeholder is adjacent to a
 	// double quote (e.g., <a href="$1">): it drops the placeholder and a quote, mangling the markup.
 	// So injected pages/content scripts load the raw strings from the background and substitute $N
-	// themselves. See src/browserExt/i18n.js.
+	// themselves. See src/safari/i18n.js.
 	MESSAGES.i18n = Object.assign(MESSAGES.i18n || {}, { getStrings: true });
 }
 

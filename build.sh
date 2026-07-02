@@ -253,6 +253,7 @@ fi
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/manifestv3/
 	rsync -a $BUILD_DIR/browserExt/ $BUILD_DIR/safari/
+	rsync -r "$SRCDIR/safari/" "$BUILD_DIR/safari/"
 	mv $BUILD_DIR/browserExt $BUILD_DIR/firefox
 fi
 

@@ -298,7 +298,7 @@ if (isTopWindow) {
 			// If we're making changes, don't close the popup and keep delaying syncs
 			stopCloseTimer();
 			blurred = false;
-			sendMessage("progressWindow.targetChanged", {
+			await sendMessage("progressWindow.targetChanged", {
 				sessionID: currentSessionID,
 				target: data.target.id
 			});
@@ -349,7 +349,7 @@ if (isTopWindow) {
 			if (nextSessionUpdateData) {
 				let data = nextSessionUpdateData;
 				nextSessionUpdateData = null;
-				handleUpdated(data)
+				return handleUpdated(data)
 			}
 		});
 		

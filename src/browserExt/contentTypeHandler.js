@@ -68,8 +68,9 @@ Zotero.ContentTypeHandler = {
 			this._enabled = true;
 		}
 		else if (!this._enabled && Zotero.isSafari) {
-			// Same static redirect ruleset MV3 uses; on Safari DNR redirects also need the
-			// declarativeNetRequestWithHostAccess permission (added in build.sh).
+			// Same static redirect ruleset MV3 uses. Safari
+			// doesn't support RuleCondition.responseHeaders, so it can't use the MV3
+			// content-type DNR rules below for arbitrary RIS/BibTeX/CSL responses.
 			chrome.declarativeNetRequest.updateEnabledRulesets({ enableRulesetIds: ['styleIntercept'] });
 			this._enabled = true;
 		}
@@ -420,7 +421,9 @@ Zotero.ContentTypeHandler = {
 	
 	async _addDNRInterceptRules() {
 		// responseHeaders are available on Chromium 128+, but there's no way to feature-guard
-		// for it directly, but Promise.try was also added in the same version
+		// for it directly, but Promise.try was also added in the same version.
+		// Safari doesn't support RuleCondition.responseHeaders, so these content-type-based
+		// DNR rules can't be used there.
 		if (!Zotero.isManifestV3 || typeof Promise.try === "undefined") return;
 		
 		// Get base confirm URL

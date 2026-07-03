@@ -295,8 +295,8 @@ ItemSaver.prototype = {
 	},
 
 	_itemMatchesExistingItem(item, match, itemIndex) {
-		if (typeof match.matchedItemIndex == 'number') {
-			return match.matchedItemIndex == itemIndex;
+		if (typeof match.matchedItemIndex == 'number' && match.matchedItemIndex == itemIndex) {
+			return true;
 		}
 		let matchedIdentifiers = match.matchedIdentifiers || {};
 		if (matchedIdentifiers.doi && item.DOI) {

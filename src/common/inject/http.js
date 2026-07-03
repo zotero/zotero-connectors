@@ -58,6 +58,58 @@ Zotero.HTTP.isLessSecure = function(url) {
 	var location = window.location;
 	return location.protocol.toLowerCase() == 'https:';
 }
+
+Zotero.HTTP.addDefaultReferrer = function(url, options) {
+	if (!options.headers) options.headers = {};
+	if (options.referrer || options.headers['Referer']) {
+		return;
+	}
+	let referrer = Zotero.HTTP.getDefaultReferrer(url);
+	if (referrer) {
+		options.referrer = referrer;
+	}
+}
+
+Zotero.HTTP.getDefaultReferrer = function(url) {
+	let sourceURL;
+	let targetURL;
+	try {
+		sourceURL = new URL(document.location.href);
+		// Use the current document URL as the base so relative request URLs are
+		// resolved the same way they would be from the page.
+		targetURL = new URL(url, sourceURL.href);
+	}
+	catch (e) {
+		return '';
+	}
+
+	let policy = document.referrerPolicy || 'strict-origin-when-cross-origin';
+	let sameOrigin = sourceURL.origin == targetURL.origin;
+	let isDowngrade = sourceURL.protocol == 'https:' && targetURL.protocol != 'https:';
+	let sourceOrigin = sourceURL.origin + '/';
+	let sourceHref = sourceURL.href;
+
+	switch (policy) {
+		case 'no-referrer':
+			return '';
+		case 'origin':
+			return sourceOrigin;
+		case 'same-origin':
+			return sameOrigin ? sourceHref : '';
+		case 'strict-origin':
+			return isDowngrade ? '' : sourceOrigin;
+		case 'origin-when-cross-origin':
+			return sameOrigin ? sourceHref : sourceOrigin;
+		case 'unsafe-url':
+			return sourceHref;
+		case 'no-referrer-when-downgrade':
+			return isDowngrade ? '' : sourceHref;
+		case 'strict-origin-when-cross-origin':
+		default:
+			if (sameOrigin) return sourceHref;
+			return isDowngrade ? '' : sourceOrigin;
+	}
+}
  
 /**
  * Load one or more documents via XMLHttpRequest
@@ -78,12 +130,14 @@ Zotero.HTTP.processDocuments = async function (urls, processor, options = {}) {
 	
 	if (typeof urls == "string") urls = [urls];
 	var funcs = urls.map(url => () => {
+		let requestOptions = {
+			responseType: 'text'
+		};
+		Zotero.HTTP.addDefaultReferrer(url, requestOptions);
 		return Zotero.COHTTP.request(
 			"GET",
 			url,
-			{
-				responseType: 'text'
-			}
+			requestOptions
 		)
 		.then((xhr) => {
 			Zotero.debug("Parsing cross-origin response for " + url);

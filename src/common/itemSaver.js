@@ -286,9 +286,14 @@ ItemSaver.prototype = {
 
 	async _confirmExistingItems(props) {
 		if (Zotero.Messaging?.sendMessage) {
-			let result = await Zotero.Messaging.sendMessage("confirm", props);
-			if (result) {
-				return result;
+			try {
+				let result = await Zotero.Messaging.sendMessage("confirm", props);
+				if (result) {
+					return result;
+				}
+			}
+			catch (e) {
+				Zotero.debug(`ItemSaver: confirm via messaging failed: ${e.message}`);
 			}
 		}
 		return Zotero.Inject.confirm(props);

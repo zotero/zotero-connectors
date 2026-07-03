@@ -242,10 +242,8 @@ Zotero.HTTP = new function() {
 		xmlhttp.open(method, url, true);
 
 		for (let header in options.headers) {
-			// Safari refuses to set forbidden headers (e.g., Referer) on a regular XHR and logs a
-			// console error for each attempt. Unlike Firefox's privileged content-script XHR, it
-			// can't set them anyway, so skip rather than spam the console; the request still goes
-			// through without the header.
+			// Safari logs a warning if you try to set referer (forbidden).
+			// We set it above with DNR anyway.
 			if (Zotero.isSafari && header.toLowerCase() == 'referer') continue;
 			xmlhttp.setRequestHeader(header, options.headers[header]);
 		}

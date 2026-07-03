@@ -290,10 +290,6 @@ Zotero.Connector = new function() {
 		return this.callMethod(options, data);
 	}
 
-	this.findExistingItems = async function(items) {
-		return this.callMethod("findExistingItems", { items });
-	}
-
 	/**
 	 * If running an integration method check if the tab is still available to receive
 	 * a response from Zotero and if not - respond with an error message so that

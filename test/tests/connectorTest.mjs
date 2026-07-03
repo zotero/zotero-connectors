@@ -68,7 +68,7 @@ describe('Connector', function() {
 		});
 	});
 
-	describe('#findExistingItems()', function() {
+	describe('findExistingItems endpoint', function() {
 		it('sends translated items to Zotero for duplicate lookup', async function() {
 			let result = await background(async function() {
 				let stub = sinon.stub(Zotero.Connector, 'callMethod').resolves({
@@ -81,7 +81,7 @@ describe('Connector', function() {
 						DOI: '10.1234/example.1',
 						url: 'https://example.com/article'
 					}];
-					let response = await Zotero.Connector.findExistingItems(items);
+					let response = await Zotero.Connector.callMethod("findExistingItems", { items });
 					return {
 						response,
 						args: stub.firstCall.args

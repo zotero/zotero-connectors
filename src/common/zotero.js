@@ -35,7 +35,8 @@ var Zotero = global.Zotero = new function() {
 	
 	// For autocomplete in IDEs
 	this.allowRepoTranslatorTester = this.isManifestV3
-		= this.isFirefox = this.isSafari = this.isBrowserExt = null;
+		= this.isFirefox = this.isSafari = null;
+	this.isBrowserExt = true;
 	/* this.allowRepoTranslatorTester = SET IN BUILD SCRIPT */;
 	/* this.isManifestV3 = SET IN BUILD SCRIPT */;
 
@@ -50,10 +51,9 @@ var Zotero = global.Zotero = new function() {
 	// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
 	/* this.isFirefox = SET IN BUILD SCRIPT */;
 	/* this.isSafari = SET IN BUILD SCRIPT */;
-	/* this.isBrowserExt = SET IN BUILD SCRIPT */;
 
 	this.isChrome = this.isEdge = false;
-	if (this.isBrowserExt && !this.isFirefox && !this.isSafari) {
+	if (!this.isFirefox && !this.isSafari) {
 		this.isChromium = true;
 		if (global.navigator.userAgent.includes("Edg/")) {
 			this.isEdge = true;
@@ -89,10 +89,8 @@ var Zotero = global.Zotero = new function() {
 	}
 	this.appName = `${ZOTERO_CONFIG.CLIENT_NAME} Connector for ${this.clientName}`;
 	
-	if (this.isBrowserExt) {
-		if (!this.isOffscreen) {
-			this.version = browser.runtime.getManifest().version;
-		}
+	if (!this.isOffscreen) {
+		this.version = browser.runtime.getManifest().version;
 	}
 	
 	// window.Promise and Promise differ (somehow) in Firefox and when certain
@@ -172,24 +170,17 @@ var Zotero = global.Zotero = new function() {
 		}
 		Zotero.isBackground = true;
 		
-		if (Zotero.isBrowserExt) {
-			browser.runtime.getPlatformInfo().then(function (info) {
-				switch (info.os) {
-					case 'mac':
-					case 'win':
-						this.platform = info.os;
-						break;
+		browser.runtime.getPlatformInfo().then(function (info) {
+			switch (info.os) {
+				case 'mac':
+				case 'win':
+					this.platform = info.os;
+					break;
 
-					default:
-						this.platform = 'unix';
-				}
-			}.bind(this));
-		} else if (Zotero.isSafari) {
-			this.platform = 'mac';
-		} else {
-			// IE and the likes? Who knows
-			this.platform = 'win';
-		}
+				default:
+					this.platform = 'unix';
+			}
+		}.bind(this));
 		
 		// Add browser version info
 		if (this.isFirefox) {
@@ -207,11 +198,9 @@ var Zotero = global.Zotero = new function() {
 		let storingDebugOnRestart = Zotero.Prefs.get('debug.store');
 		if (storingDebugOnRestart) Zotero.Debug.setStore(storingDebugOnRestart);
 		Zotero.Prefs.set('debug.store', false);
-		if (Zotero.isBrowserExt) {
-			Zotero.WebRequestIntercept.init();
-			Zotero.ContentTypeHandler.init();
-			await Zotero.Connector_Browser.init();
-		}
+		Zotero.WebRequestIntercept.init();
+		Zotero.ContentTypeHandler.init();
+		await Zotero.Connector_Browser.init();
 		await Zotero.i18n.init();
 		Zotero.Translators.init();
 		await Zotero.Proxies.init();

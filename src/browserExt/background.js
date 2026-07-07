@@ -493,7 +493,7 @@ Zotero.Connector_Browser = new function() {
 		
 		// Fix positioning in Chrome when window is on second monitor
 		// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
-		if (Zotero.isBrowserExt && win.left < options.left) {
+		if (win.left < options.left) {
 			browser.windows.update(win.id, { left: options.left });
 		}
 		// Fix a Firefox bug where content does not appear before resize on linux

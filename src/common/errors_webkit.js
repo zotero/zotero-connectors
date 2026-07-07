@@ -97,7 +97,7 @@ Zotero.Errors = new function() {
 		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());
 		
 		
-		if (Zotero.isBackground && Zotero.isBrowserExt) {
+		if (Zotero.isBackground) {
 			let granted = await browser.permissions.contains({permissions: ['management']});
 			if (granted) {
 				// See https://github.com/zotero/zotero-connectors/issues/476

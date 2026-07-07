@@ -58,7 +58,7 @@ const isAllowedIframeContentType = ['text/html', 'application/pdf'].includes(doc
 // or non-top Safari pages
 const isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
 // Run on test pages
-const isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.runtime.getURL('test'));
+const isTestPage = window.location.href.startsWith(browser.runtime.getURL('test'));
 
 // Not scraping on hidden iframes and only select frames
 const shouldInject = (isWeb || isTestPage) && !isHiddenIFrame && (isTopWindow || isAllowedIframeContentType)

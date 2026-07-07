@@ -151,7 +151,6 @@ Zotero.WebRequestIntercept = {
 	},
 	
 	replaceHeaders: async function(url, headers) {
-		if (!Zotero.isBrowserExt) return;
 		return this.replaceHeadersDNR(url, headers);
 	},
 	

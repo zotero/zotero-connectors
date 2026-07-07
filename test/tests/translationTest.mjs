@@ -347,15 +347,8 @@ describe("Translation", function() {
 					var [translators, instanceID] = await background(async function(tabId) {
 						Zotero.Connector_Browser.onTranslators.restore();
 						
-						let translators, instanceID;
-						if (Zotero.isBrowserExt) {
-							translators = Zotero.Connector_Browser._tabInfo[tabId].translators.map(t => t.label);
-							instanceID = Zotero.Connector_Browser._tabInfo[tabId].instanceID;
-						} else {
-							let tab = await browser.tabs.get(tabId);
-							translators = tab.translators.map(t => t.label);
-							instanceID = tab.instanceID;
-						}
+						let translators = Zotero.Connector_Browser._tabInfo[tabId].translators.map(t => t.label);
+						let instanceID = Zotero.Connector_Browser._tabInfo[tabId].instanceID;
 						return [translators, instanceID];
 					}, tab.tabId);
 					

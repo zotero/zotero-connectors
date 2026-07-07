@@ -190,6 +190,18 @@ function replaceScriptsHTML(string, match, scripts) {
 			.join('\n'));
 }
 
+// Safari needs an explicit UTF-8 BOM or UTF-8 characters are garbled
+function addUTF8BOM(file) {
+	if (!file.path.includes(`${path.sep}build${path.sep}safari${path.sep}`)
+		|| path.extname(file.path) !== '.js') {
+		return;
+	}
+	let bom = Buffer.from([0xEF, 0xBB, 0xBF]);
+	if (!file.contents.slice(0, 3).equals(bom)) {
+		file.contents = Buffer.concat([bom, file.contents]);
+	}
+}
+
 function processFile() {
 	return through.obj(async function(file, enc, cb) {
 		console.log(file.path.slice(file.cwd.length));
@@ -348,15 +360,24 @@ function processFile() {
 					f.contents = Buffer.from(contents);
 				}
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
+				addUTF8BOM(f);
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);
 			}
+		}
+		if (type === 'safari') {
+			f = file.clone({contents: false});
+			f.path = parts.slice(0, i-1).join('/') + `/build/safari/` + parts.slice(i+1).join('/');
+			addUTF8BOM(f);
+			console.log(`-> ${f.path.slice(f.cwd.length)}`);
+			this.push(f);
 		}
 		if (type === 'zotero-google-docs-integration') {
 			['manifestv3', 'firefox', 'safari'].forEach((browser) => {
 				f = file.clone({contents: false});
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/zotero-google-docs-integration/`
 					+ parts.slice(i+3).join('/');
+				addUTF8BOM(f);
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);
 			});
@@ -367,7 +388,7 @@ function processFile() {
 }
 
 gulp.task('watch', function () {
-	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**',
+	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**',
 		'./src/zotero-google-docs-integration/src/connector/**']);
 	watcher.on('change', function(path) {
 		gulp.src(path)
@@ -378,7 +399,7 @@ gulp.task('watch', function () {
 });  
 
 gulp.task('watch-chrome', function () {
-	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**',
+	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**',
 		'./src/zotero-google-docs-integration/src/connector/**']);
 	watcher.on('change', function(event) {
 		gulp.src(event.path)
@@ -403,6 +424,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/schema.js',
 		'./src/common/zotero.js',
 		'./src/common/zotero_config.js',
+		'./src/safari/**',
 		'./src/common/test/**/*',
 		'./src/**/*.jsx',
 		'./src/zotero-google-docs-integration/src/connector/**',

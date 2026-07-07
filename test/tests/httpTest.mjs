@@ -77,6 +77,54 @@ describe("HTTP", function() {
 	});
 	
 	describe('#request()', function() {
+		describe('default injected referrer', function() {
+			beforeEach(async function () {
+				await background(() => {
+					globalThis._testHTTPReferrer = undefined;
+					sinon.stub(Zotero.COHTTP, 'request').callsFake(async (method, url, options) => {
+						globalThis._testHTTPReferrer = options.referrer;
+						return {
+							response: '',
+							responseText: '',
+							responseType: options.responseType || 'text',
+							status: 200,
+							statusText: 'OK',
+							responseURL: url,
+							getAllResponseHeaders: () => '',
+							getResponseHeader: () => null
+						};
+					});
+				});
+			});
+
+			afterEach(async function () {
+				await background(() => {
+					Zotero.COHTTP.request.restore();
+					delete globalThis._testHTTPReferrer;
+				});
+			});
+
+			it('uses the full document URL for same-origin injected requests routed through the background', async function () {
+				await tab.run(async () => {
+					await Zotero.initDeferred.promise;
+					await Zotero.HTTP.request('GET', '/test.html?same-origin-referrer-test');
+				});
+				let referrer = await background(() => globalThis._testHTTPReferrer);
+
+				assert.equal(referrer, url);
+			});
+
+			it('uses the document origin for cross-origin injected requests routed through the background', async function () {
+				await tab.run(async () => {
+					await Zotero.initDeferred.promise;
+					await Zotero.HTTP.request('GET', 'https://example.com/test.html');
+				});
+				let referrer = await background(() => globalThis._testHTTPReferrer);
+
+				assert.equal(referrer, new URL(url).origin + '/');
+			});
+		});
+
 		describe('With { successCodes: null } (default)', function() {
 			it('Throws when the target responds with a non-2xx or non-3xx status code', async function() {
 				const url = "https://zotero-static.s3.amazonaws.com/test.html";

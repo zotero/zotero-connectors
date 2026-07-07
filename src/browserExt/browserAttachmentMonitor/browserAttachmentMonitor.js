@@ -44,6 +44,7 @@ Zotero.BrowserAttachmentMonitor = {
 			resolveSucceeded = resolve;
 			rejectFailed = reject;
 		});
+		this._addAttachmentDetectionListener(ruleId, tabId, resolveSucceeded);
 
 		// Setup message listener for success notification
 		let hasRedirected = false
@@ -108,14 +109,14 @@ Zotero.BrowserAttachmentMonitor = {
 
 		// Remove web request listeners
 		if (ruleId) {
-			if (Zotero.isFirefox) {
-				const listener = this._webRequestListeners.get(ruleId);
-				if (listener) {
+			const listeners = this._webRequestListeners.get(ruleId);
+			if (listeners) {
+				for (let listener of listeners) {
 					browser.webRequest.onHeadersReceived.removeListener(listener);
 				}
 				this._webRequestListeners.delete(ruleId);
 			}
-			else {
+			if (!Zotero.isFirefox) {
 				await browser.declarativeNetRequest.updateSessionRules({
 					removeRuleIds: [ruleId]
 				});
@@ -123,23 +124,51 @@ Zotero.BrowserAttachmentMonitor = {
 		}
 	},
 
+	_isAttachmentResponse: function(details) {
+		let contentType = details.responseHeaders?.find(h => h.name.toLowerCase() === 'content-type')?.value;
+		let contentDisposition = details.responseHeaders?.find(h => h.name.toLowerCase() === 'content-disposition')?.value;
+		let hasAttachmentDisposition = contentDisposition && contentDisposition.toLowerCase().includes('attachment');
+		let hasCorrectContentType = contentType && ['application/pdf', 'application/epub+zip'].some(type => contentType.toLowerCase().includes(type));
+		return hasAttachmentDisposition || hasCorrectContentType;
+	},
+
+	_addAttachmentDetectionListener: function(ruleId, tabId, resolveSucceeded) {
+		let attachmentFound = false;
+		const listener = (details) => {
+			if (!attachmentFound && this._isAttachmentResponse(details)) {
+				attachmentFound = true;
+				Zotero.debug(`BrowserAttachmentMonitor: Attachment response detected for tab: ${tabId}`);
+				resolveSucceeded(details.url);
+			}
+		};
+		browser.webRequest.onHeadersReceived.addListener(
+			listener,
+			{
+				urls: ["<all_urls>"],
+				tabId,
+				types: ["main_frame", "sub_frame"]
+			},
+			["responseHeaders"]
+		);
+		this._addWebRequestListener(ruleId, listener);
+	},
+
+	_addWebRequestListener: function(ruleId, listener) {
+		let listeners = this._webRequestListeners.get(ruleId);
+		if (!listeners) {
+			listeners = [];
+			this._webRequestListeners.set(ruleId, listeners);
+		}
+		listeners.push(listener);
+	},
+
 	// Firefox does not support responseHeaders condition, so we use webRequestBlocking instead
 	_addWebRequestRule: async function(tabId, ruleId) {
-		const redirectUrlBase = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html");
+		const redirectUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html#success");
 	
 		const listener = (details) => {
-			let hasAttachmentDisposition = false;
-			let hasCorrectContentType = false;
-			
-			const contentType = details.responseHeaders.find(h => h.name.toLowerCase() === 'content-type')?.value;
-			const contentDisposition = details.responseHeaders.find(h => h.name.toLowerCase() === 'content-disposition')?.value;
-	
-			hasAttachmentDisposition = contentDisposition && contentDisposition.toLowerCase().includes('attachment');
-			hasCorrectContentType = contentType && (['application/pdf', 'application/epub+zip'].some(type => contentType.toLowerCase().includes(type)));
-	
-			if (hasAttachmentDisposition || hasCorrectContentType) {
-				const finalRedirectUrl = `${redirectUrlBase}#success=${details.url}`;
-				return { redirectUrl: finalRedirectUrl };
+			if (this._isAttachmentResponse(details)) {
+				return { redirectUrl };
 			}
 	
 			// No redirect needed
@@ -156,7 +185,7 @@ Zotero.BrowserAttachmentMonitor = {
 		);
 		
 		// Store listener for removal
-		this._webRequestListeners.set(ruleId, listener);
+		this._addWebRequestListener(ruleId, listener);
 		Zotero.debug(`BrowserAttachmentMonitor: Added listener for tab ${tabId} with ruleId ${ruleId}`);
 	},
 	
@@ -165,7 +194,6 @@ Zotero.BrowserAttachmentMonitor = {
 		// for it directly, but Promise.try was also added in the same version
 		if (typeof Promise.try === "undefined") return;
 		Zotero.debug(`BrowserAttachmentMonitor: Adding DNR rule for tab ${tabId} with ruleId ${ruleId}`);
-		const redirectUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html#success=\\0");
 		await browser.declarativeNetRequest.updateSessionRules({
 			removeRuleIds: [ruleId],
 			addRules: [{
@@ -173,7 +201,7 @@ Zotero.BrowserAttachmentMonitor = {
 				action: {
 					type: 'redirect',
 					redirect: {
-						regexSubstitution: redirectUrl
+						extensionPath: '/browserAttachmentMonitor/browserAttachmentMonitor.html#success'
 					}
 				},
 				condition: {

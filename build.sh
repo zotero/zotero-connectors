@@ -146,6 +146,18 @@ done
 
 echo -n "Building connectors..."
 
+# Safari needs an explicit UTF-8 BOM or UTF-8 characters are garbled
+function addUTF8BOMToSafariScripts {
+	find "$BUILD_DIR/safari" -type f -name '*.js' -print0 | while IFS= read -r -d '' file; do
+		if [ "$(head -c 3 "$file" | od -An -tx1 | tr -d ' \n')" != "efbbbf" ]; then
+			tmp="$(mktemp)"
+			printf '\357\273\277' > "$tmp"
+			cat "$file" >> "$tmp"
+			mv "$tmp" "$file"
+		fi
+	done
+}
+
 function copyResources {
 	browser="$1"
 	browser_builddir="$BUILD_DIR/$browser"
@@ -327,6 +339,7 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 		cp $img `echo $img | sed 's/@48px//'`
 	done
 
+	addUTF8BOMToSafariScripts
 fi
 
 # TODO: Would be better to skip these in gulpfile.js for non-debug builds and remove them in

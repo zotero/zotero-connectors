@@ -109,9 +109,7 @@ Zotero.API = new function() {
 		// this is kinda awful.
 		let deferred = this._deferred;
 		this._deferred = null;
-		if(Zotero.isBrowserExt) {
-			browser.tabs.remove(tab.id);
-		}
+		browser.tabs.remove(tab.id);
 		
 		if(!_tokenSecret) {
 			throw new Error("onAuthenticationComplete called with no outstanding OAuth request");

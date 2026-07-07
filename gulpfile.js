@@ -352,7 +352,6 @@ function processFile() {
 					let contents = f.contents.toString()
 						.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
 					contents = replaceBrowser(contents, {
-						browserExt: true,
 						firefox: browser == 'firefox',
 						safari: browser == 'safari',
 						manifestV3: browser == 'manifestv3'

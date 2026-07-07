@@ -99,30 +99,26 @@ Zotero.Messaging = new function() {
 	 */
 	this.sendMessage = async function(messageName, args, tab=null, frameId=0) {
 		var response;
-		// Use the promise or response callback in BrowserExt for advanced functionality
-		if(Zotero.isBrowserExt) {
-			// Get current tab if not provided
-			if (!tab) {
-				tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
-			}
-			if (typeof tab === 'number') {
-				tab = await browser.tabs.get(tab);
-			}
-			let options = {};
-			if (typeof frameId == 'number') options = {frameId};
-			
-			try {
-				response = await browser.tabs.sendMessage(tab.id, [messageName, args], options);
-			} catch (e) {}
-			if (response && response[0] == 'error') {
-				response[1] = JSON.parse(response[1]);
-				let e = new Error(response[1].message);
-				for (let key in response[1]) e[key] = response[1][key];
-				throw e;
-			}
-			return response;
-		} //else if(Zotero.isSafari) { }
-		// Safari handled in safari/messaging_global.js
+		// Get current tab if not provided
+		if (!tab) {
+			tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
+		}
+		if (typeof tab === 'number') {
+			tab = await browser.tabs.get(tab);
+		}
+		let options = {};
+		if (typeof frameId == 'number') options = {frameId};
+
+		try {
+			response = await browser.tabs.sendMessage(tab.id, [messageName, args], options);
+		} catch (e) {}
+		if (response && response[0] == 'error') {
+			response[1] = JSON.parse(response[1]);
+			let e = new Error(response[1].message);
+			for (let key in response[1]) e[key] = response[1][key];
+			throw e;
+		}
+		return response;
 	}
 	
 	/**
@@ -175,28 +171,24 @@ Zotero.Messaging = new function() {
 	 * Adds messaging listener
 	 */
 	this.init = function() {
-		if (Zotero.isBrowserExt) {
-			browser.runtime.onMessage.addListener(function(request, sender) {
-				// All Zotero messages are arrays so we ignore everything else
-				// SingleFile will pass an object in the message so this ignores those.
-				if (!Array.isArray(request)) {
-					return;
-				}
+		browser.runtime.onMessage.addListener(function(request, sender) {
+			// All Zotero messages are arrays so we ignore everything else
+			// SingleFile will pass an object in the message so this ignores those.
+			if (!Array.isArray(request)) {
+				return;
+			}
 
-				return Zotero.Messaging.receiveMessage(request[0], request[1], sender.tab, sender.frameId)
-				.catch(function(err) {
-					// Zotero.logError(err);
-					err = JSON.stringify(Object.assign({
-						name: err.name,
-						message: err.message,
-						stack: err.stack
-					}, err));
-					return ['error', err];
-				});
+			return Zotero.Messaging.receiveMessage(request[0], request[1], sender.tab, sender.frameId)
+			.catch(function(err) {
+				// Zotero.logError(err);
+				err = JSON.stringify(Object.assign({
+					name: err.name,
+					message: err.message,
+					stack: err.stack
+				}, err));
+				return ['error', err];
 			});
-		} else if (Zotero.isSafari) {
-			// Safari handled in safari/messaging_global.js
-		}
+		});
 		Zotero.Messaging.initialized = true;
 	}
 

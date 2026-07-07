@@ -28,7 +28,6 @@ module.exports = function(filetext, config) {
 	config = Object.assign({
 		firefox: false,
 		safari: false,
-		browserExt: false,
 		manifestV3: false,
 	}, config);
 	for (let browserOption in config) {

@@ -203,11 +203,7 @@ let PageSaving = {
 			// If the handler returns a non-undefined value then it is passed
 			// back to the callback due to backwards compat code in translate.js
 			(async () => {
-				if (Zotero.isBrowserExt) {
-					var returnItems = await Zotero.Connector_Browser.onSelect(items);
-				} else {
-					returnItems = await Zotero.Inject.onSafariSelect(items);
-				}
+				var returnItems = await Zotero.Connector_Browser.onSelect(items);
 
 				// If items were selected, reopen the save popup
 				if (returnItems && !Zotero.Utilities.isEmpty(returnItems)) {

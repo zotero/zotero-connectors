@@ -35,54 +35,31 @@ Tab.prototype = {
 		// await this.setupZoteroProxy();
 	},
 
-	setupZoteroProxy: async function () {
-		await this.page.evaluate(() => {
-			window.__zoteroTestCallbacks = {};
-			// Proxy calls to Zotero and sinon to content scripts via message passing. See testInject.js
-			window.addEventListener('message', (event) => {
-				if (event.data.type === 'zotero-test-callback') {
-					let { result, id, index } = event.data;
-					console.log(`Received callback ${id} ${index} with ${result}`);
-					window.__zoteroTestCallbacks[id][index] = result;
-				}
-			});
-			let fnBuilderProxy = function(fnName = []) {
-				return new Proxy(() => {}, {
-					get(target, prop) {
-						if (prop !== 'fnName') {
-							fnName.push(prop);
-							return fnBuilderProxy(fnName);
-						}
-						else return fnName.join('.');
-					},
-					apply(target, thisArg, args) {
-						// Random 6 char string
-						const id = Math.random().toString(36).substring(2, 8);
-						const { resolve, reject, promise } = Promise.withResolvers();
-						console.log(`Invoking ${fnName.join('.')} with ID ${id}`);
-						window.__zoteroTestCallbacks[id] = { "-1": (result) => {
-								if (result?.error) reject(result.error);
-								resolve(result);
-							}
-						};
-						args.forEach((arg, index) => {
-							if (typeof arg === 'function') {
-								window.__zoteroTestCallbacks[id][index] = arg;
-								args[index] = '__function';
-							}
-						});
-						window.postMessage({ type: 'zotero-test-exec', fnName: fnName.join('.'), args, id }, '*');
-						return promise;
-					}
-				});
-			};
-			window.Zotero = fnBuilderProxy(['Zotero']);
-			window.sinon = fnBuilderProxy(['sinon']);
-		})
-	},
-	
-	run: async function (fn, ...args) {
+	runInPage: async function (fn, ...args) {
 		return await this.page.evaluate(fn, ...args);
+	},
+
+	run: async function(fn, ...args) {
+		if (this.page.url().startsWith(extensionURL)) {
+			return await this.runInPage(fn, ...args);
+		}
+		let extensionRealm;
+		for (let i = 0; i < 50 && !extensionRealm; i++) {
+			for (let realm of this.page.extensionRealms()) {
+				let extension = await realm.extension();
+				if (extension) {
+					extensionRealm = realm;
+					break;
+				}
+			}
+			if (!extensionRealm) {
+				await delay(100);
+			}
+		}
+		if (!extensionRealm) {
+			throw new Error('Extension realm not found');
+		}
+		return await extensionRealm.evaluate(fn, ...args);
 	},
 	
 	runInFrame: async function(frameUrl, fn, ...args) {

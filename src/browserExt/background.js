@@ -677,7 +677,7 @@ Zotero.Connector_Browser = new function() {
 			_showCopyUnproxiedURLCopyContextMenuItem(url);
 		}
 		
-		if (Zotero.isFirefox) {
+		if (!Zotero.isChromium) {
 			_showPreferencesContextMenuItem();
 			_showTabContextMenuItem();
 		}

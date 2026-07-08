@@ -80,10 +80,6 @@ Zotero.Proxies = new function() {
 			}
 			return proxy;
 		});
-		
-		if (this.transparent) {
-			Zotero.Proxies.loadFromClient();
-		}
 	};
 	
 	this.loadPrefs = function() {
@@ -140,35 +136,6 @@ Zotero.Proxies = new function() {
 			}.bind(this));
 		}
 	};
-	
-	this.loadFromClient = function() {
-		if (Zotero.Prefs.get('proxies.clientChecked')) return;
-		return Zotero.Connector.callMethod('proxies', null).then(function(result) {
-			for (let proxy of result) {
-				if (proxy.scheme.includes('://')) {
-					proxy.scheme = proxy.scheme.substr(proxy.scheme.indexOf('://')+3);
-				}
-				let existingProxy;
-				for (let p of Zotero.Proxies.proxies) {
-					if (proxy.scheme == p.scheme) {
-						existingProxy = p;
-						break;
-					}
-				}
-				if (existingProxy) {
-					// Copy hosts from the client if proxy already exists
-					existingProxy.hosts.push.apply(existingProxy.hosts, proxy.hosts);
-					existingProxy.hosts = Array.from(new Set(existingProxy.hosts));
-				} else {
-					// Otherwise add the proxy
-					Zotero.Proxies.save(Zotero.Proxies._createProxyInstance(proxy));
-				}
-			}
-
-			Zotero.Prefs.set('proxies.clientChecked', true);
-			return result;
-		}, () => 0);
-	}
 
 	/**
 	 * Called by the `safari.application` event listener

@@ -63,27 +63,16 @@ Zotero.ContentTypeHandler = {
 	enable: function() {
 		if (!Zotero.Prefs.get('interceptKnownFileTypes')) return;
 		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
-		if (!this._enabled && Zotero.isManifestV3) {
+		if (!this._enabled && !Zotero.isFirefox) {
 			this._addDNRInterceptRules();
-			this._enabled = true;
-		}
-		else if (!this._enabled && Zotero.isSafari) {
-			// Same static redirect ruleset MV3 uses. Safari
-			// doesn't support RuleCondition.responseHeaders, so it can't use the MV3
-			// content-type DNR rules below for arbitrary RIS/BibTeX/CSL responses.
-			chrome.declarativeNetRequest.updateEnabledRulesets({ enableRulesetIds: ['styleIntercept'] });
 			this._enabled = true;
 		}
 	},
 	
 	disable: function() {
 		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.ContentTypeHandler.onHeadersReceived);
-		if (this._enabled && Zotero.isManifestV3) {
+		if (this._enabled && !Zotero.isFirefox) {
 			this._removeDNRInterceptRules();
-			this._enabled = false;
-		}
-		else if (this._enabled && Zotero.isSafari) {
-			chrome.declarativeNetRequest.updateEnabledRulesets({ disableRulesetIds: ['styleIntercept'] });
 			this._enabled = false;
 		}
 	},
@@ -276,7 +265,7 @@ Zotero.ContentTypeHandler = {
 	},
 	
 	_redirectToOriginal: async function(tabId, url) {
-		if (Zotero.isManifestV3) {
+		if (!Zotero.isFirefox) {
 			await this._removeDNRInterceptRules();
 			(async () => {
 				await Zotero.Promise.delay(2000);
@@ -420,11 +409,18 @@ Zotero.ContentTypeHandler = {
 	},
 	
 	async _addDNRInterceptRules() {
+		if (Zotero.isFirefox) return;
+
+		// Static ruleset for github/gitee installation handling
+		await chrome.declarativeNetRequest.updateEnabledRulesets({
+			enableRulesetIds: ['styleIntercept']
+		});
+		
 		// responseHeaders are available on Chromium 128+, but there's no way to feature-guard
 		// for it directly, but Promise.try was also added in the same version.
 		// Safari doesn't support RuleCondition.responseHeaders, so these content-type-based
 		// DNR rules can't be used there.
-		if (!Zotero.isManifestV3 || typeof Promise.try === "undefined") return;
+		if (Zotero.isSafari || typeof Promise.try === "undefined") return;
 		
 		// Get base confirm URL
 		const confirmURL = Zotero.getExtensionURL('confirm/confirm.html');
@@ -489,20 +485,16 @@ Zotero.ContentTypeHandler = {
 			removeRuleIds: rules.map(r => r.id),
 			addRules: rules
 		});
-
-		// Static ruleset for github/gitee installation handling
-		await chrome.declarativeNetRequest.updateEnabledRulesets({
-			enableRulesetIds: ['styleIntercept']
-		});
 	},
 
 	async _removeDNRInterceptRules() {
-		if (!Zotero.isManifestV3) return;
-		await chrome.declarativeNetRequest.updateDynamicRules({
-			removeRuleIds: [30000, 31000]
-		});
+		if (Zotero.isFirefox) return;
 		await chrome.declarativeNetRequest.updateEnabledRulesets({
 			disableRulesetIds: ['styleIntercept']
+		});
+		if (Zotero.isSafari) return;
+		await chrome.declarativeNetRequest.updateDynamicRules({
+			removeRuleIds: [30000, 31000]
 		});
 	},
 

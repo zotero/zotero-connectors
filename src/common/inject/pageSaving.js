@@ -29,14 +29,20 @@ const SITE_ACCESS_LIMIT_TRANSLATORS = new Set([
 	"57a00950-f0d1-4b41-b6ba-44ff0fc30289" // GoogleScholar
 ]);
 
+const CONTENT_TYPE_TO_ICON_NAME = {
+	"application/pdf": "attachment-pdf",
+	"application/epub+zip": "attachment-epub"
+}
 function determineAttachmentIcon(attachment) {
 	if(attachment.linkMode === "linked_url") {
 		return Zotero.ItemTypes.getImageSrc("attachment-web-link");
 	}
 	var contentType = attachment.contentType || attachment.mimeType;
-	return Zotero.ItemTypes.getImageSrc(
-		contentType === "application/pdf" ? "attachment-pdf" : "attachment-snapshot"
-	);
+	let iconName = "attachment-snapshot";
+	if (contentType in CONTENT_TYPE_TO_ICON_NAME) {
+		iconName = CONTENT_TYPE_TO_ICON_NAME[contentType];
+	}
+	return Zotero.ItemTypes.getImageSrc(iconName);
 }
 
 function determineAttachmentType(attachment) {
@@ -272,7 +278,7 @@ let PageSaving = {
 							{
 								sessionID,
 								id: null,
-								iconSrc: Zotero.getExtensionURL("images/treeitem-note.png"),
+								iconSrc: Zotero.ItemTypes.getImageSrc("note"),
 								title: Zotero.Utilities.cleanTags(note.note),
 								parentItem: item.id,
 								progress: 100,

@@ -33,6 +33,11 @@ Options
  -p PLATFORMS        platform(s) (b=browserExt, s=safari; defaults to all)
  -v VERSION          use version VERSION
  -d                  build for debugging (enable translator tester, don't minify)
+
+rsvg-convert is required
+
+brew install librsvg
+sudo apt install librsvg2-bin
 DONE
 	exit 1
 }
@@ -110,14 +115,17 @@ EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 
 SAFARI_EXT="$DISTDIR/Zotero_Connector-$VERSION.safariextz"
 
-ICONS="$EXTENSION_SKIN_DIR/treeitem*png $EXTENSION_SKIN_DIR/treesource-collection.png $EXTENSION_SKIN_DIR/zotero-new-z-16px.png  \
-    $SRCDIR/common/images/*"
-IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png \
-	$EXTENSION_SKIN_DIR/cross.png \
-	$EXTENSION_SKIN_DIR/tick.png $EXTENSION_SKIN_DIR/tick@2x.png \
-	$EXTENSION_SKIN_DIR/spinner-16px.png $EXTENSION_SKIN_DIR/spinner-16px@2x.png \
-	$EXTENSION_SKIN_DIR/treesource-library.png"
-PREFS_IMAGES="$EXTENSION_SKIN_DIR/prefs-general.png $EXTENSION_SKIN_DIR/prefs-advanced.png $EXTENSION_SKIN_DIR/prefs-proxies.png"
+ITEM_IMAGES="$EXTENSION_SKIN_DIR/item-type/16/light/*2x.svg"
+COLLECTION_IMAGES="$EXTENSION_SKIN_DIR/collection-tree/16/light/collection.svg \
+		$EXTENSION_SKIN_DIR/collection-tree/16/light/library.svg"
+TOOLBAR_IMAGES=`ls $CWD/icons/badged/* | grep -v '@2x' | grep -v 'dark.svg'`
+NO_PROGRESS_WINDOW_TOOLBAR_IMAGES="$EXTENSION_SKIN_DIR/16/universal/cross.svg \
+	$EXTENSION_SKIN_DIR/16/universal/tick.svg \
+	$EXTENSION_SKIN_DIR/16/light/loading.svg"
+
+CONNECTOR_COMMON_IMAGES="$SRCDIR/common/images/*"
+IMAGES="$EXTENSION_SKIN_DIR/progress_arcs.png"
+
 
 LIBS=()
 	
@@ -156,11 +164,7 @@ echo -n "Building connectors..."
 
 function copyResources {
 	browser="$1"
-	if [ "$browser" == "safari" ]; then
-		browser_builddir="$BUILD_DIR/safari"
-	else
-		browser_builddir="$BUILD_DIR/$browser"
-	fi
+	browser_builddir="$BUILD_DIR/$browser"
 	browser_srcdir="$SRCDIR/$browser"
 	
 	cp COPYING "$browser_builddir/"
@@ -257,46 +261,67 @@ function copyResources {
 	fi
 }
 
+function makeToolbarIcons {
+	browser="$1"
+	icon_dir="$BUILD_DIR/$browser/images/toolbar"
+	mkdir -p "$icon_dir"
+	
+	# Check for rsvg-convert
+	if ! command -v rsvg-convert --version &> /dev/null ; then
+		echo ""
+		echo "rsvg-convert is not available"
+		usage
+	fi
+	
+	set -e
+	for f in $COLLECTION_IMAGES $TOOLBAR_IMAGES $NO_PROGRESS_WINDOW_TOOLBAR_IMAGES
+	do
+		# Check if @2x version exists for higher resolution icons
+		f_2x="${f/.svg/@2x.svg}"
+		if [ ! -f "$f_2x" ]; then
+			f_2x="$f"
+		fi
+		
+		# Apply specific fill colors for tick and cross icons
+		basename_no_ext=`basename $f .svg`
+		style_opt=""
+		if [ "$basename_no_ext" == "tick" ]; then
+			echo "Applying fill color for tick icon"
+			echo 'path { fill: #39bf68; }' > /tmp/rsvg-style.css
+			style_opt="-s /tmp/rsvg-style.css"
+		elif [ "$basename_no_ext" == "cross" ]; then
+			echo 'path { fill: #db2c3a; }' > /tmp/rsvg-style.css
+			style_opt="-s /tmp/rsvg-style.css"
+		fi
+		
+		rsvg-convert "$f_2x" -w 32 -h 32 $style_opt -o "$icon_dir/$basename_no_ext.png"
+		if [ "$browser" == "browserExt" ]; then
+			rsvg-convert $f -w 16 -h 16 $style_opt -o "$icon_dir/$basename_no_ext@16.png"
+			rsvg-convert "$f_2x" -w 48 -h 48 $style_opt -o "$icon_dir/$basename_no_ext@48.png"
+		fi
+	done
+	set +e
+}
+
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	# Copy images for Chrome
 	rm -rf "$BUILD_DIR/browserExt/images"
 	mkdir "$BUILD_DIR/browserExt/images"
-	cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/browserExt/images"
-	cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-96.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
+	cp -r $ITEM_IMAGES $COLLECTION_IMAGES $CONNECTOR_COMMON_IMAGES $IMAGES "$BUILD_DIR/browserExt/images"
+	cp $CWD/icons/*.png "$BUILD_DIR/browserExt"
 	
+	makeToolbarIcons 'browserExt'
 	copyResources 'browserExt'
 fi
 
 if [[ $BUILD_SAFARI == 1 ]]; then
-	#
-	# Make alpha images
-	#
-	# ImageMagick 7 changes how channels work, so the same command doesn't work properly. Until we
-	# figure out an equivalent command for ImageMagick 7, continue using version 6 from homebrew.
-	IMAGEMAGICK_CONVERT=/usr/local/opt/imagemagick@6/bin/convert
 	rm -rf "$BUILD_DIR/safari/images"
 	mkdir "$BUILD_DIR/safari/images"
-	mkdir "$BUILD_DIR/safari/images/toolbar"
-	set +e
-	$IMAGEMAGICK_CONVERT -version | grep "ImageMagick 6" > /dev/null 2>&1
-	RETVAL=$?
-	set -e
-	if [ $RETVAL == 0 ]; then
-		cp $ICONS $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari/images"
-		for f in $ICONS
-		do
-			$IMAGEMAGICK_CONVERT $f -grayscale Rec709Luminance "$BUILD_DIR/safari/images/toolbar/"`basename $f`
-		done
-	else
-		echo
-		echo "ImageMagick 6 not installed; not creating monochrome Safari icons"
-		cp $ICONS "$BUILD_DIR/safari/images"
-		cp $ICONS "$BUILD_DIR/safari/images/toolbar"
-		cp $IMAGES $PREFS_IMAGES "$BUILD_DIR/safari/images"
-	fi
+	cp -r $ITEM_IMAGES $COLLECTION_IMAGES $CONNECTOR_COMMON_IMAGES $IMAGES "$BUILD_DIR/safari/images"
 	cp "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-48.png" "$CWD/icons/Icon-64.png" \
 		"$BUILD_DIR/safari"
 	
+	makeToolbarIcons 'safari'
 	copyResources 'safari'
 fi
 
@@ -324,32 +349,11 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	
 	# Chrome modifications
 	
-	# Use larger icons where available in Chrome, which actually wants 19px icons
-	# 2x
-	for img in "$BUILD_DIR"/manifestv3/images/*2x.png; do
-		cp $img `echo $img | sed 's/@2x//'`
-	done
-	## 2.5x
-	for img in "$BUILD_DIR"/manifestv3/images/*48px.png; do
-		cp $img `echo $img | sed 's/@48px//'`
-	done
-	
 	# Remove the 'applications' property used by Firefox from the manifest
 	pushd $BUILD_DIR/manifestv3 > /dev/null
 	cat manifest.json | jq '. |= del(.applications)' > manifest.json-tmp
 	mv manifest.json-tmp manifest.json
 	popd > /dev/null
-	
-	# Firefox modifications
-	
-	# TEMP: Copy 2x icons to 1x until getImageSrc() is updated to detect HiDPI
-	for img in "$BUILD_DIR"/firefox/images/*2x.png; do
-		cp $img `echo $img | sed 's/@2x//'`
-	done
-	## 2.5x
-	for img in "$BUILD_DIR"/firefox/images/*48px.png; do
-		cp $img `echo $img | sed 's/@48px//'`
-	done
 
 fi
 

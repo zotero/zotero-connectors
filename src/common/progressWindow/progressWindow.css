@@ -65,6 +65,10 @@ button:active {
 	vertical-align: -3px;
 }
 
+.tree-node.focused .ProgressWindow-targetIcon {
+	background-color: white !important;
+}
+
 .ProgressWindow-disclosure {
 	border-radius: 3px;
 	margin-left: 6px;

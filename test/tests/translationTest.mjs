@@ -31,12 +31,6 @@ describe("Translation", function() {
 	before(async function () {
 		// Make sure translators initialized
 		let translators = await background(async function() {
-			// Failure to init is fine
-			try {
-				await Zotero.Translators.init();
-			} catch (e) {
-				return 0;
-			}
 			return Promise.all([
 				Zotero.Translators.get('05d07af9-105a-4572-99f6-a8e231c0daef'),
 				Zotero.Translators.get('c159dcfe-8a53-4301-a499-30f6549c340d'),

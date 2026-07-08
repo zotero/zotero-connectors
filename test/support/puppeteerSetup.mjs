@@ -24,6 +24,7 @@
 */
 
 import puppeteer from 'puppeteer';
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { assert } from 'chai';
@@ -33,7 +34,80 @@ globalThis.assert = assert;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const EXTENSION_PATH = path.resolve(__dirname, '../../build/manifestv3');
+const PROJECT_ROOT = path.resolve(__dirname, '../..');
+const EXTENSION_PATH = path.resolve(PROJECT_ROOT, 'build/manifestv3');
+const SEEDED_TRANSLATOR_IDS = [
+	'05d07af9-105a-4572-99f6-a8e231c0daef', // DOI
+	'c159dcfe-8a53-4301-a499-30f6549c340d', // Embedded Metadata
+	'951c027d-74ac-47d4-a107-9c3069ab7b48' // COinS
+];
+
+async function getTranslatorSeedData(translatorIDs) {
+	const translatorDir = path.join(PROJECT_ROOT, 'src/zotero/translators');
+	const translatorIDSet = new Set(translatorIDs);
+	const translatorMetadata = [];
+	const translatorCode = {};
+	let files;
+	try {
+		files = await fs.readdir(translatorDir);
+	}
+	catch (e) {
+		throw new Error(`Could not read translators directory at ${translatorDir}: ${e.message}`);
+	}
+	
+	for (let file of files) {
+		if (!file.endsWith('.js')) continue;
+		let code = await fs.readFile(path.join(translatorDir, file), 'utf8');
+		let metadataMatch = /^\s*{[\S\s]*?}\s*?[\r\n]/.exec(code);
+		if (!metadataMatch) continue;
+		let metadata = JSON.parse(metadataMatch[0]);
+		if (!translatorIDSet.has(metadata.translatorID)) continue;
+		translatorMetadata.push(metadata);
+		translatorCode[metadata.translatorID] = code;
+	}
+	
+	let missing = translatorIDs.filter(id => !translatorCode[id]);
+	if (missing.length) {
+		throw new Error(`Could not find translator source code for ${missing.join(', ')} in ${translatorDir}`);
+	}
+	
+	return { translatorMetadata, translatorCode };
+}
+
+async function seedTranslatorPrefs(worker) {
+	let seedData;
+	try {
+		seedData = await getTranslatorSeedData(SEEDED_TRANSLATOR_IDS);
+	}
+	catch (e) {
+		console.warn(`Skipping translator pref seeding: ${e.message}`);
+		return;
+	}
+	await worker.evaluate(async ({ translatorMetadata, translatorCode }) => {
+		let existingMetadata = Zotero.Prefs.get('translatorMetadata');
+		if (!Array.isArray(existingMetadata)) existingMetadata = [];
+		let metadataByID = new Map(existingMetadata.map(metadata => [metadata.translatorID, metadata]));
+		for (let metadata of translatorMetadata) {
+			metadataByID.set(metadata.translatorID, metadata);
+		}
+		await Zotero.Prefs.set('translatorMetadata', [...metadataByID.values()]);
+		for (let [translatorID, code] of Object.entries(translatorCode)) {
+			await Zotero.Prefs.set(Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + translatorID, code);
+		}
+		
+		// Zotero.init() starts Zotero.Translators.init() before tests get a chance to seed prefs,
+		// so update the in-memory translator cache directly.
+		for (let metadata of translatorMetadata) {
+			let translator = await Zotero.Translators.getWithoutCode(metadata.translatorID);
+			if (translator) {
+				translator.init(metadata);
+			}
+			else {
+				Zotero.Translators._loadTranslator(new Zotero.Translator(metadata));
+			}
+		}
+	}, seedData);
+}
 
 export async function mochaGlobalSetup() {
 	console.log('Starting Puppeteer...');
@@ -110,6 +184,7 @@ export async function mochaGlobalSetup() {
 	}
 
 	await worker.evaluate(() => Zotero.initDeferred.promise);
+	await seedTranslatorPrefs(worker);
 
 	const workerURL = workerTarget.url();
 	globalThis.extensionURL = workerURL.substring(0, workerURL.indexOf('background-worker.js'));

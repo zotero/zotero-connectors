@@ -47,6 +47,22 @@ if (isTopWindow) {
 	var previousFocus;
 	frameSrc = Zotero.getExtensionURL('modalPrompt/modalPrompt.html');
 
+	function isExtensionPage() {
+		try {
+			return window.location.href.startsWith(browser.runtime.getURL(''));
+		}
+		catch (e) {
+			return false;
+		}
+	}
+
+	async function sendModalPromptMessage(messageName, args) {
+		if (Zotero.isSafari && isExtensionPage()) {
+			return iframe.contentWindow.Zotero.Messaging.receiveMessage([messageName, args]);
+		}
+		return Zotero.Messaging.sendToZoteroFrames(messageName, args);
+	}
+
 	async function init() {
 		var deferred = Zotero.Promise.defer();
 		Zotero.Messaging.addMessageListener('modalPrompt.init', function () {
@@ -112,7 +128,7 @@ if (isTopWindow) {
 			}
 			iframe.style.display = 'block';
 			previousFocus = getActiveElement();
-			let result = await Zotero.Messaging.sendToZoteroFrames('modalPrompt.show', props);
+			let result = await sendModalPromptMessage('modalPrompt.show', props);
 			iframe.style.display = 'none';
 			return result
 		}

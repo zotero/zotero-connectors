@@ -97,7 +97,8 @@ Zotero.Errors = new function() {
 		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());
 		
 		
-		if (Zotero.isBackground) {
+		// No management permission in Safari
+		if (Zotero.isBackground && !Zotero.isSafari) {
 			let granted = await browser.permissions.contains({permissions: ['management']});
 			if (granted) {
 				// See https://github.com/zotero/zotero-connectors/issues/476

@@ -25,7 +25,6 @@
 
 import { Tab, background } from '../support/utils.mjs';
 
-// Skips due to missing puppeteer ability to run scripts in extension content scripts
 describe("HTTP", function() {
 	var tab = new Tab();
 	let url = 'https://zotero-static.s3.amazonaws.com/test.html';
@@ -38,7 +37,7 @@ describe("HTTP", function() {
 		await tab.close();
 	});
 	
-	describe.skip("#processDocuments()", function() {
+	describe("#processDocuments()", function() {
 		it('succeeds when loading a same-origin page', async function () {
 			let url = 'https://zotero-static.s3.amazonaws.com/test.html?t';
 			let [content, location] = await tab.run(async (url) => {
@@ -156,27 +155,29 @@ describe("HTTP", function() {
 			});
 		});
 
-		describe.skip('POST', function() {
+		describe('POST', function() {
 			it('Adds a Content-Type header if not present', async function () {
-				let args = await tab.run(async function(url) {
-					let spy = await sinon.spy(XMLHttpRequest.prototype, 'setRequestHeader');
+				let headers = await background(async function(url) {
+					let originalFetch = globalThis.fetch;
+					let requestHeaders;
+					globalThis.fetch = async function(url, options) {
+						requestHeaders = options.headers;
+						return new Response('', { status: 200 });
+					};
 					try {
-						await Zotero.HTTP.request("POST", url, {body: 'test=test'})
-					} catch (e) {}
-					let args = await spy.getArgs();
-					spy.restore();
-					return args;
+						await Zotero.HTTP.request("POST", url, { body: 'test=test' });
+						return requestHeaders;
+					}
+					finally {
+						globalThis.fetch = originalFetch;
+					}
 				}, url);
-				let hasContentType = false;
-				for (let arg of args) {
-					hasContentType = hasContentType || arg[0] == 'Content-Type';
-				}
-				assert.isTrue(hasContentType);
+				assert.equal(headers['Content-Type'], 'application/x-www-form-urlencoded');
 			});
 		});
 	});
 	
-	describe.skip("COHTTP", function() {
+	describe("COHTTP", function() {
 		describe('#request()', function() {
 			it('responds with correct XHR signature', async function () {
 				let xhr = await tab.run(async function(url) {
@@ -189,18 +190,16 @@ describe("HTTP", function() {
 		});
 	});
 
-	// Skip due to missing puppeteer ability to run scripts in extension content scripts
-	describe.skip("#wrapDocument()", function () {
+	describe("#wrapDocument()", function () {
 		it("should allow document itself to be passed to document.evaluate()", async function () {
 			var content = await tab.run(function (url) {
-				var url = "https://zotero-static.s3.amazonaws.com/test.html?t";
 				return Zotero.HTTP.request("GET", url, { responseType: 'document' })
 				.then(function (xmlhttp) {
 					var doc = Zotero.HTTP.wrapDocument(xmlhttp.response, url);
 					var div = doc.evaluate('//div', doc, null, XPathResult.ANY_TYPE, null).iterateNext();
 					return div.textContent;
 				});
-			});
+			}, "https://zotero-static.s3.amazonaws.com/test.html?t");
 			assert.include(content, 'Rosenzweig');
 		});
 	});

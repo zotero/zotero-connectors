@@ -285,9 +285,6 @@ Zotero.HTTP = new function() {
 			// DOMParser and returning a Proxy with 'response' set to the parsed document
 			let isDocRequest = options.responseType == 'document';
 			let coOptions = Object.assign({}, options);
-			if (isDocRequest) {
-				coOptions.responseType = 'text';
-			}
 			if (Zotero.isSafari && options.headers['User-Agent']) {
 				coOptions.headers['Cookie'] = document.cookie;
 			}

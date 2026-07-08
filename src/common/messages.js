@@ -334,6 +334,15 @@ MESSAGES.COHTTP = {
 				} else {
 					xhr.responseText = xhr.response;
 				}
+				if (xhr.responseType == 'document') {
+					let contentType = xhr.getResponseHeader("Content-Type");
+					let doc = new DOMParser().parseFromString(xhr.responseText, Zotero.HTTP.determineDOMParserContentType(contentType));
+					xhr = new Proxy(xhr, {
+						get: function (target, name) {
+							return name == 'response' ? doc : target[name];
+						}
+					});
+				}
 				return xhr;
 			}
 		}

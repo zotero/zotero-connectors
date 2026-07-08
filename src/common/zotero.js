@@ -392,7 +392,6 @@ Zotero.Prefs = new function() {
 		
 		"integration.googleDocs.enabled": true,
 		"integration.googleDocs.useV2API": false,
-		"integration.googleDocs.forceDisableV2API": false,
 		
 		"shortcuts.cite": {ctrlKey: true, altKey: true, key: 'c'}
 	};

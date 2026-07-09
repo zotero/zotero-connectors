@@ -110,9 +110,11 @@ Zotero.ContentTypeHandler = {
 					return;
 				}
 			}
-			// MV3 relies entirely on the DNR redirect; Safari also falls through to observational
-			// content-type detection below for imports the static ruleset can't match.
-			if (Zotero.isManifestV3) return;
+			// MV3 relies entirely on the DNR redirect. Safari has no blocking webRequest
+			// and can freeze or trigger native download prompts if we try to handle
+			// content-type-only imports observationally, so it only handles the
+			// URL-matchable CSL cases above.
+			if (Zotero.isManifestV3 || Zotero.isSafari) return;
 		}
 		if (Zotero.ContentTypeHandler._isImportableStyle(details.url, contentType, contentDisposition)) {
 			// No await, because we need to return a navigation cancelling object

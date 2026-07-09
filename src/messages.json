@@ -311,7 +311,14 @@
 	"permissions_siteAccess_openPreferences": {
 		"message": "Open Extension Preferences"
 	},
+	"permissions_siteAccess_message_intro": {
+		"message": "<p>Zotero Connector requires permission to run on all websites to function properly.</p>"
+	},
 	"permissions_siteAccess_message": {
-		"message": "<p>Zotero Connector requires permission to run on all websites to function properly.</p><p>To enable this, change the \"Site Access\" setting to \"On all sites\" in the Extension Preferences page.</p>"
+		"message": "<p>To enable this, change the \"Site Access\" setting to \"On all sites\" in the Extension Preferences page.</p>"
+	},
+	"permissions_siteAccess_message_safari": {
+		"message": "<p>To enable this, open Safari Settings, select <b>Websites</b> at the top, select <b>$1</b> in the sidebar, and change the <b>For other websites</b> option to <b>Allow</b>.</p>",
+		"description": "$1 is the connector name (e.g., Zotero Connector)"
 	}
 }

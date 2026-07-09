@@ -1016,7 +1016,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	async function _checkPermissions(tab) {
 		// Firefox doesn't have per-site permissions in MV2.
-		if (!Zotero.isChromium) {
+		if (Zotero.isFirefox) {
 			return true;
 		}
 
@@ -1029,19 +1029,33 @@ Zotero.Connector_Browser = new function() {
 				return true;
 			}
 
-			const extensionId = browser.runtime.id;
-			const result = await Zotero.Messaging.sendMessage('confirm', {
+			const messageIntro = Zotero.getString("permissions_siteAccess_message_intro");
+			let promptProps = {
 				title: Zotero.getString("permissions_siteAccess_title"),
 				button1Text: Zotero.getString("permissions_siteAccess_openPreferences"),
-				button2Text: Zotero.getString("general_cancel"), 
+				button2Text: Zotero.getString("general_cancel"),
 				button3Text: Zotero.getString("general_continueAnyway"),
-				message: Zotero.getString("permissions_siteAccess_message")
-			}, tab);
+				message: messageIntro + Zotero.getString("permissions_siteAccess_message")
+			};
+			if (Zotero.isSafari) {
+				promptProps = {
+					title: Zotero.getString("permissions_siteAccess_title"),
+					button1Text: Zotero.getString("general_cancel"),
+					button2Text: "",
+					button3Text: Zotero.getString("general_continueAnyway"),
+					message: messageIntro + Zotero.getString(
+						"permissions_siteAccess_message_safari",
+						Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME)
+					)
+				};
+			}
+
+			const result = await Zotero.Messaging.sendMessage('confirm', promptProps, tab);
 
 			if (result) {
-				if (result.button === 1) {
+				if (!Zotero.isSafari && result.button === 1) {
 					browser.tabs.create({
-						url: `about:extensions/?id=${extensionId}`
+						url: `about:extensions/?id=${browser.runtime.id}`
 					});
 				}
 				return result.button === 3;

@@ -203,29 +203,27 @@ Zotero.ItemSaver._createServerAttachmentItem = async function(attachment) {
 
 Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotProtectionBypass=true) {
 	let options = { responseType: "arraybuffer", timeout: 60000, successCodes: false };
-	if (!Zotero.isSafari) {
-		let cookies;
-		try {
-			cookies = await browser.cookies.getAll({
-				url: attachment.url,
-				partitionKey: {},
-			});
-		} catch (e) {
-			// Unavailable with Chrome 118 and below. Last supported version on Win 7/8 is Chrome 109.
-			Zotero.debug(`Error getting cookies for ${attachment.url} with partitionKey.`);
-			cookies = await browser.cookies.getAll({
-				url: attachment.url,
-			});
-		}
-		// Chromium and Firefox will send cookies, but Chrome currently ignores those with partitionKey.
-		// Cloudflare clearance cookies and potentially others in the future are set with a partitionKey.
-		// There's a bug filed for this at https://issues.chromium.org/issues/458071621
-		cookies = cookies.filter(c => c.partitionKey);
-		options.headers = {
-			"Cookie": cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
-		}
-		options.referrer = attachment.referrer;
+	let cookies;
+	try {
+		cookies = await Zotero.Connector_Browser.getAllCookies({
+			url: attachment.url,
+			partitionKey: {},
+		}, tab?.id);
+	} catch (e) {
+		// Unavailable with Chrome 118 and below. Last supported version on Win 7/8 is Chrome 109.
+		Zotero.debug(`Error getting cookies for ${attachment.url} with partitionKey.`);
+		cookies = await Zotero.Connector_Browser.getAllCookies({
+			url: attachment.url,
+		}, tab?.id);
 	}
+	// Chromium and Firefox will send cookies, but Chrome currently ignores those with partitionKey.
+	// Cloudflare clearance cookies and potentially others in the future are set with a partitionKey.
+	// There's a bug filed for this at https://issues.chromium.org/issues/458071621
+	cookies = cookies.filter(c => c.partitionKey);
+	options.headers = {
+		"Cookie": cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
+	}
+	options.referrer = attachment.referrer;
 
 	// Bot bypass is not supported in Safari (cannot intercept file download popup)
 	attemptBotProtectionBypass = attemptBotProtectionBypass && !Zotero.isSafari;

@@ -601,7 +601,11 @@ Zotero.HTTP = new function() {
 	this._augmentCfCookie = async function(url, options) {
 		let cfCookies;
 		try {
-			cfCookies = await browser.cookies.getAll({url, name: 'cf_clearance', partitionKey: {}});
+			cfCookies = await Zotero.Connector_Browser.getAllCookies({
+				url,
+				name: 'cf_clearance',
+				partitionKey: {}
+			});
 		} catch (e) {
 			// partitionKey added in Chrome 118+ (October 2023), some of our users are
 			// on older versions

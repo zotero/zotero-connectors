@@ -105,6 +105,7 @@ var injectIncludeSafari = ['browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
 	['frameMessaging.js'],
+	['historyMonitor.js'],
 	injectIncludeLast);
 	
 var injectIncludeManifestV3 = ['browser-polyfill.js'].concat(

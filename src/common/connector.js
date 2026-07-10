@@ -250,12 +250,12 @@ Zotero.Connector = new function() {
 		}
 		let cookies;
 		try {
-			cookies = await browser.cookies.getAll(cookieParams)
+			cookies = await Zotero.Connector_Browser.getAllCookies(cookieParams, tab.id)
 		} catch {
 			// Unavailable with Chrome 118 and below. Last supported version on Win 7/8 is Chrome 109.
 			Zotero.debug(`Error getting cookies for ${tab.url} with partitionKey.`);
 			delete cookieParams.partitionKey;
-			cookies = await browser.cookies.getAll(cookieParams)
+			cookies = await Zotero.Connector_Browser.getAllCookies(cookieParams, tab.id)
 		}
 		var cookieHeader = '';
 		for(var i=0, n=cookies.length; i<n; i++) {

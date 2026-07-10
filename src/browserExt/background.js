@@ -108,6 +108,36 @@ Zotero.Connector_Browser = new function() {
 		return this.resetTabInfo(tabId);
 	}
 
+	/**
+	 * Gets cookies from the store associated with a tab. In Safari, the default cookie store
+	 * may differ from the store used by browser tabs, so it must be resolved at runtime. If
+	 * no tab is provided, the active tab in the current window is used.
+	 *
+	 * @param {Object} details
+	 * @param {Number} tabId
+	 * @return {Promise<browser.cookies.Cookie[]>}
+	 */
+	this.getAllCookies = async function(details, tabId=null) {
+		details = {...details};
+		if (!Zotero.isSafari || details.storeId) {
+			return browser.cookies.getAll(details);
+		}
+
+		if (tabId === null) {
+			let tabs = await browser.tabs.query({active: true, currentWindow: true});
+			tabId = tabs[0]?.id;
+		}
+
+		let stores = await browser.cookies.getAllCookieStores();
+		let store = stores.find(store => store.tabIds.includes(tabId))
+			|| stores.find(store => store.tabIds.length)
+			|| stores[0];
+		if (store) {
+			details.storeId = store.id;
+		}
+		return browser.cookies.getAll(details);
+	}
+
 	this.executeScript = function(tabId, details) {
 		if (Zotero.isManifestV3) {
 			if (details.hasOwnProperty('code')) {

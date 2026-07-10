@@ -50,6 +50,12 @@ Zotero.WebRequestIntercept = {
 		browser.webRequest.onCompleted.addListener(Zotero.WebRequestIntercept.removeRequestMeta, {urls: ['<all_urls>'], types});
 		extraInfoSpec = ["responseHeaders"].concat(useBlocking ? ["blocking"] : []);
 		browser.webRequest.onHeadersReceived.addListener(Zotero.WebRequestIntercept.handleRequest('headersReceived'), {urls: ['<all_urls>'], types}, extraInfoSpec);
+		if (Zotero.isSafari) {
+			// Safari reports the pre-redirect URL in details.url for all events after
+			// a redirect (FB23657175), so track each request's latest redirect target,
+			// which handleRequest() substitutes into details.url
+			browser.webRequest.onBeforeRedirect.addListener(Zotero.WebRequestIntercept.storeRedirect, {urls: ['<all_urls>'], types});
+		}
 
 		Zotero.WebRequestIntercept.addListener('beforeSendHeaders', Zotero.WebRequestIntercept.storeRequestHeaders)
 		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.WebRequestIntercept.offerSavingPDFInFrame)
@@ -58,6 +64,15 @@ Zotero.WebRequestIntercept = {
 	storeRequestHeaders: function(details, meta) {
 		meta.requestHeadersObject = details.requestHeadersObject;
     },
+
+	storeRedirect: function(details) {
+		let meta = Zotero.WebRequestIntercept.reqIDToReqMeta[details.requestId];
+		if (!meta) {
+			meta = {};
+			Zotero.WebRequestIntercept.reqIDToReqMeta[details.requestId] = meta;
+		}
+		meta.redirectUrl = details.redirectUrl;
+	},
 
 	offerSavingPDFInFrame: function(details) {
 		if (details.frameId === 0) return;
@@ -102,6 +117,10 @@ Zotero.WebRequestIntercept = {
 			if (!meta) {
 				meta = {};
 				Zotero.WebRequestIntercept.reqIDToReqMeta[details.requestId] = meta;
+			}
+
+			if (meta.redirectUrl) {
+				details.url = meta.redirectUrl;
 			}
 
 			if (meta.requestHeadersObject) {

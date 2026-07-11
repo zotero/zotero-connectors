@@ -179,14 +179,6 @@ ItemSaver.prototype = {
 				return true;
 			});
 		}
-
-		if (Zotero.isSafari) {
-			// In some Safari versions and situations, the cookies API might not return
-			// anything, so pass the page cookies as a fallback.
-			// callMethodWithCookies() replaces this with detailedCookies when it
-			// retrieves cookies for the tab.
-			payload.cookie = document.cookie;
-		}
 		
 		payload.items = Zotero.Utilities.deepCopy(items);
 

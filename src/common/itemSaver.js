@@ -181,7 +181,10 @@ ItemSaver.prototype = {
 		}
 
 		if (Zotero.isSafari) {
-			// This is the best in terms of cookies we can do in Safari
+			// In some Safari versions and situations, the cookies API might not return
+			// anything, so pass the page cookies as a fallback.
+			// callMethodWithCookies() replaces this with detailedCookies when it
+			// retrieves cookies for the tab.
 			payload.cookie = document.cookie;
 		}
 		

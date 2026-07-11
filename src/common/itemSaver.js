@@ -179,11 +179,6 @@ ItemSaver.prototype = {
 				return true;
 			});
 		}
-
-		if (Zotero.isSafari) {
-			// This is the best in terms of cookies we can do in Safari
-			payload.cookie = document.cookie;
-		}
 		
 		payload.items = Zotero.Utilities.deepCopy(items);
 

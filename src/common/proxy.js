@@ -1128,7 +1128,7 @@ Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function
 				toProxyScheme: this.toProxy,
 				hosts: [this.properURI.host.replace(/-/g, '.')]
 			});
-			if (proxy.validate()) {
+			if (!proxy.validate()) {
 				Zotero.Proxies.notifyNewProxy(proxy.toJSON(), details.tabId)
 			}
 		}

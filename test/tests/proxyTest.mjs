@@ -423,6 +423,44 @@ describe('Zotero.Proxy', function() {
 			assert.isUndefined(result);
 		});
 	});
+
+	describe('EZProxy listener', function() {
+		it('notifies when a valid proxy is detected after login', async function() {
+			let result = await background(function() {
+				let listener = Object.create(Zotero.Proxies.Detectors.EZProxy.Listener.prototype);
+				listener.tabId = 1;
+				listener.properURI = new URL('https://www.jstor.org/');
+				listener.toProxy = 'https://dclibrary.idm.oclc.org/login?qurl=%u';
+				listener.sniffingLimit = 20;
+				listener.deregister = sinon.spy();
+
+				let notifyNewProxy = sinon.stub(Zotero.Proxies, 'notifyNewProxy');
+				try {
+					listener.onHeadersReceived({
+						url: 'https://www-jstor-org.idm.oclc.org/',
+						tabId: 1,
+						frameId: 0
+					});
+					return {
+						notified: notifyNewProxy.calledOnce,
+						proxy: notifyNewProxy.firstCall?.args[0],
+						tabId: notifyNewProxy.firstCall?.args[1],
+						deregistered: listener.deregister.calledOnce
+					};
+				}
+				finally {
+					notifyNewProxy.restore();
+				}
+			});
+
+			assert.isTrue(result.notified);
+			assert.equal(result.proxy.toProperScheme, '%h.idm.oclc.org/%p');
+			assert.equal(result.proxy.toProxyScheme, 'https://dclibrary.idm.oclc.org/login?qurl=%u');
+			assert.deepEqual(result.proxy.hosts, ['www.jstor.org']);
+			assert.equal(result.tabId, 1);
+			assert.isTrue(result.deregistered);
+		});
+	});
 	
 	describe('OpenAthensProxy', function() {
 		describe('maybeAddHost', function() {

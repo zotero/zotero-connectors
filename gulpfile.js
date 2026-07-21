@@ -164,7 +164,7 @@ var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclu
 	'saveWithoutProgressWindow.js',
 	'messagingGeneric.js',
 	'browserAttachmentMonitor/browserAttachmentMonitor.js',
-	'offscreen/offscreenFunctionOverrides.js', 'background/offscreenManager.js',
+	'translateHost/translateHostFunctionOverrides.js', 'background/offscreenManager.js',
 ]);
 
 var reloadChromiumTimeout;
@@ -301,7 +301,7 @@ function processFile() {
 			case 'preferences.html':
 			case 'progressWindow.html':
 			case 'modalPrompt.html':
-			case 'offscreenSandbox.html':
+			case 'translateHost.html':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/g, argv.p ? '' : '$1'));
 				break;
@@ -441,7 +441,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/preferences/preferences.html',
 		'./src/common/progressWindow/progressWindow.html',
 		'./src/common/modalPrompt/modalPrompt.html',
-		'./src/browserExt/offscreen/offscreenSandbox.html',
+		'./src/browserExt/translateHost/translateHost.html',
 		'./src/common/schema.js',
 		'./src/common/zotero.js',
 		'./src/common/zotero_config.js',

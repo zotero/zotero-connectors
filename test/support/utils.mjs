@@ -8,7 +8,7 @@ export var background = async function (func, ...args) {
 };
 
 export var offscreen = async function (func, ...args) {
-	let frame = offscreenPage.frames().find(f => f.url().endsWith('offscreenSandbox.html'));
+	let frame = offscreenPage.frames().find(f => f.url().endsWith('translateHost.html'));
 	if (!frame) {
 		throw new Error('Could not find offscreen frame.');
 	}

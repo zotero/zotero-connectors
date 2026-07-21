@@ -35,7 +35,7 @@ import {
 let tabHandlers = new Map();
 
 /**
- * Routes non-web translations through the offscreen sandbox.
+ * Routes non-web translations through the offscreen translate host.
  */
 export class ConnectorNonWebTranslationEnvironment extends AbstractNonWebTranslationEnvironment {
 	async runTranslation(test, { tester, signal }) {

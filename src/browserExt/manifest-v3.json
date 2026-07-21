@@ -51,7 +51,7 @@
 		}
 	],
 	"sandbox": {
-		"pages": ["offscreen/offscreenSandbox.html"]
+		"pages": ["translateHost/translateHost.html"]
 	},
 	"web_accessible_resources": [{
 		"resources": [

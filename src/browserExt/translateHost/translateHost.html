@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <!--
     ***** BEGIN LICENSE BLOCK *****
-    
+
     Copyright © 2024 Corporation for Digital Scholarship
                      Vienna, Virginia, USA
 					http://zotero.org
-    
+
     This file is part of Zotero.
-    
+
     Zotero is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-    
+
     Zotero is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU Affero General Public License for more details.
-    
+
     You should have received a copy of the GNU Affero General Public License
     along with Zotero.  If not, see <http://www.gnu.org/licenses/>.
-    
+
     ***** END LICENSE BLOCK *****
 -->
 <html lang="en">
@@ -35,8 +35,8 @@
 		Zotero.HTTP.request, which is overridden in offscreenFunctionOverrides.js
 		to route via messaging to the service worker.
 	-->
-	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-eval'; form-action 'none'; frame-ancestors 'self';">	
-	<title>Zotero - Offscreen Translate Sandbox</title>
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-eval'; form-action 'none'; frame-ancestors 'self';">
+	<title>Zotero - Offscreen Translate Host</title>
 </head>
 <body>
 <script src="../browser-polyfill.js"></script>
@@ -76,9 +76,10 @@
 <script src="../http.js"></script>
 <script src="../inject/http.js"></script>
 <script src="../messagingGeneric.js"></script>
-<script src="./offscreenFunctionOverrides.js"></script>
-<script src="./offscreenSandbox.js"></script>
-<script src="./offscreenTranslate.js"></script>
+<script src="../translateHost/translateHostCore.js"></script>
+<script src="../translateHost/translateHostFunctionOverrides.js"></script>
+<script src="./translateHostMessaging.js"></script>
+<script src="./translateHost.js"></script>
 <!--BEGIN DEBUG-->
 <script type="text/javascript" src="../lib/sinon.js"></script>
 <!--END DEBUG-->

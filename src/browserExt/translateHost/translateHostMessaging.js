@@ -24,31 +24,51 @@
 */
 
 /*
- * A Chrome sandbox iframe that is embedded in an offscreen page. Is allowed to run evals and
- * as such handles translate. This script mainly initializes APIs and messaging.
+ * A browser-extension iframe that is allowed to run evals and handles translation.
+ * In Chrome MV3 it is embedded in an offscreen page; in Firefox MV2 it is embedded in the
+ * background page. This script mainly initializes APIs and messaging.
  */
 Zotero.TranslateHostMessaging = {
 	initialized: false,
 
-	async init(serviceWorkerPort) {
+	async initMV3(backgroundPort) {
+		Zotero.debug('TranslateHostMessaging: initializing for MV3')
+		await this.initMessaging(backgroundPort);
 		if (this.initialized) {
-			await this.initMessaging(serviceWorkerPort);
 			this.sendMessage('offscreen-translate-host-manager-initialized');
-			Zotero.debug('OffscreenTranslateHostManager: reinitialized');
+			Zotero.debug('TranslateHostMessaging: reinitialized');
+			return;
+		}
+		await this.initTranslateHost();
+		this.sendMessage('offscreen-translate-host-manager-initialized');
+		Zotero.debug('TranslateHostMessaging: initialized');
+	},
+
+	async initMV2(backgroundPort) {
+		// Complete the Zotero.Frame handshake
+		backgroundPort.postMessage('offscreen-translate-host-frame-ready');
+
+		await this.initMessaging(backgroundPort);
+		// offscreenManager requests translate host initialization
+		this.addMessageListener('offscreen-translate-host-init', () => this.initTranslateHost());
+	},
+
+	async initTranslateHost() {
+		if (this.initialized) {
+			Zotero.debug('TranslateHostMessaging: translate host already initialized');
+			return;
 		}
 		this.initialized = true;
 
 		Zotero.Debug.init();
-		Zotero.debug('OffscreenTranslateHostManager: initializing');
-		await this.initMessaging(serviceWorkerPort);
+		Zotero.debug('TranslateHostMessaging: initializing');
 		Zotero.OffscreenTranslateHost.init();
-		await Zotero.initOffscreen();
-		this.sendMessage('offscreen-translate-host-manager-initialized');
-		Zotero.debug('OffscreenTranslateHostManager: initialized');
+		await Zotero.initTranslateHost();
+		Zotero.debug('TranslateHostMessaging: initialized');
 	},
 
 	async initMessaging(serviceWorkerPort) {
-		Zotero.debug('OffscreenTranslateHostManager: initializing messaging');
+		Zotero.debug('TranslateHostMessaging: initializing messaging');
 		let messagingOptions = {
 			functionOverrides: TRANSLATE_HOST_FUNCTIONS,
 			overrideTarget: Zotero,
@@ -65,7 +85,7 @@ Zotero.TranslateHostMessaging = {
 		else {
 			this._messaging = new Zotero.MessagingGeneric(messagingOptions);
 		}
-		Zotero.debug('OffscreenTranslateHostManager: messaging with background service worker established');
+		Zotero.debug('TranslateHostMessaging: messaging with background established');
 	},
 
 	async sendMessage(message, payload) {
@@ -79,11 +99,14 @@ Zotero.TranslateHostMessaging = {
 
 document.addEventListener('DOMContentLoaded', () => {
 	// Let the parent know that we're ready to communicate/receive messaging port
-	console.log("OffscreenTranslateHostManager: letting offscreen know we're ready");
+	console.log("TranslateHostMessaging: letting offscreen know we're ready");
 	window.parent.postMessage('offscreen-translate-host-ready', "*")
 });
 window.addEventListener('message', (e) => {
 	if (e.data === "offscreen-port") {
-		Zotero.OffscreenTranslateHostManager.init(e.ports[0])
+		Zotero.TranslateHostMessaging.initMV3(e.ports[0])
+	}
+	else if (e.data === "zoteroChannel") {
+		Zotero.TranslateHostMessaging.initMV2(e.ports[0])
 	}
 })

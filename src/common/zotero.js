@@ -64,7 +64,9 @@ var Zotero = global.Zotero = new function() {
 			this.isChrome = true;
 		}
 	}
-	this.isOffscreen = typeof document != 'undefined' && document.location.href.endsWith('offscreenSandbox.html');
+	// Zotero.Frame appends an authentication nonce as the URL fragment in Firefox and Safari.
+	this.isOffscreen = typeof document != 'undefined'
+		&& document.location.pathname.endsWith('/translateHost.html');
 
 	this.isMac = (global.navigator.platform.substr(0, 3) == "Mac");
 	this.isWin = (global.navigator.platform.substr(0, 3) == "Win");
@@ -244,7 +246,7 @@ var Zotero = global.Zotero = new function() {
 		Zotero.initialized = true;
 	};
 
-	this.initOffscreen = async function() {
+	this.initTranslateHost = async function() {
 		this.version = await Zotero.getVersion();
 		Zotero.Schema.init();
 		await this._initDateFormatsJSON();

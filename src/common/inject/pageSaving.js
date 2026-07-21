@@ -62,7 +62,7 @@ let PageSaving = {
 	 */
 	async _initTranslate(itemType=null) {
 		let translate;
-		if (Zotero.isManifestV3) {
+		if (Zotero.isManifestV3 || Zotero.isFirefox) {
 			try {
 				translate = await Zotero.VirtualOffscreenTranslate.create();
 			} catch (e) {
@@ -77,8 +77,8 @@ let PageSaving = {
 		translate.setHandler('pageModified', () => {
 			Zotero.Messaging.sendMessage("pageModified", true);
 		});
-		// Async in MV3
-		if (Zotero.isManifestV3) {
+		// Async when translation runs in a remote browser-extension frame
+		if (Zotero.isManifestV3 || Zotero.isFirefox) {
 			await translate.setDocument(document, itemType === 'multiple');
 		}
 		else {

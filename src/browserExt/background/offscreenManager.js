@@ -110,9 +110,9 @@ Zotero.OffscreenManager = {
 self.onmessage = async (e) => {
 	if (e.data === 'offscreen-port') {
 		Zotero.debug('OffscreenManager: received the offscreen page port')
-		// Resolve _initMessaging() in offscreenSandbox.js
+		// Resolve _initMessaging() in translateHostMessaging.js
 		let messagingOptions = {
-			handlerFunctionOverrides: OFFSCREEN_BACKGROUND_OVERRIDES,
+			handlerFunctionOverrides: TRANSLATE_HOST_FUNCTIONS,
 			overrideTarget: Zotero,
 		}
 		messagingOptions.sendMessage = (...args) => {
@@ -132,8 +132,8 @@ self.onmessage = async (e) => {
 		}
 		Zotero.debug('OffscreenManager: messaging initialized')
 		e.ports[0].postMessage(null);
-		await new Promise(resolve => Zotero.OffscreenManager._messaging.addMessageListener('offscreen-sandbox-initialized', resolve));
-		Zotero.debug('OffscreenManager: offscreen sandbox initialized message received')
+		await new Promise(resolve => Zotero.OffscreenManager._messaging.addMessageListener('offscreen-translate-host-manager-initialized', resolve));
+		Zotero.debug('OffscreenManager: offscreen translate host manager initialized message received')
 		Zotero.OffscreenManager.messagingDeferred.resolve();
 	}
 }

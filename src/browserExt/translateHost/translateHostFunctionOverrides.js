@@ -78,7 +78,7 @@ const requestOverride = {
 	}
 }
 
-const OFFSCREEN_BACKGROUND_OVERRIDES = {
+const TRANSLATE_HOST_FUNCTIONS = {
 	'Translators.get': {
 		handler: {
 			preSend: async function(translator) {

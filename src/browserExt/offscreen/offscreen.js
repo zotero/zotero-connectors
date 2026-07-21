@@ -27,16 +27,16 @@
  * Entrypoint for offscreen page. Evals are disallowed here and we run them in a sandbox iframe instead.
  * 
  * This script orchestrates establishing a message channel for message passing between the background
- * page and the offscreen translate sandbox page. Also handles possible situations where the background
+ * page and the offscreen translate host page. Also handles possible situations where the background
  * service worker gets killed, but the offscreen page stays alive.
  * 
- * Content scripts then communicate with translate sandbox
+ * Content scripts then communicate with translate host
  * by message passing via background page.
  */
 
-let offscreenSandboxReadyPromise = new Promise((resolve) => {
+let offscreenTranslateHostReadyPromise = new Promise((resolve) => {
 	self.onmessage = async (e) => {
-		if (e.data === 'offscreen-sandbox-ready') {
+		if (e.data === 'offscreen-translate-host-ready') {
 			self.onmessage = null;
 			resolve();
 		}
@@ -44,14 +44,14 @@ let offscreenSandboxReadyPromise = new Promise((resolve) => {
 });
 
 async function init() {
-	console.log('Offscreen: awaiting offscreen sandbox to be ready')
-	await offscreenSandboxReadyPromise;
+	console.log('Offscreen: awaiting offscreen translate host to be ready')
+	await offscreenTranslateHostReadyPromise;
 	
 	let messageChannel = new MessageChannel();
 	const iframe = document.querySelector('iframe');
 	iframe.contentWindow.postMessage('offscreen-port', "*", [messageChannel.port1]);
 
-	console.log('Offscreen: awaiting offscreen sandbox to prepare for service worker connection')
+	console.log('Offscreen: awaiting offscreen translate host to prepare for service worker connection')
 	await new Promise((resolve) => {
 		messageChannel.port2.onmessage = resolve;
 	});

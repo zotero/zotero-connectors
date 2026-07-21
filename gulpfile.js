@@ -96,11 +96,6 @@ if (argv.p) {
 		'tools/testTranslators/translatorTester_inject.js'
 	];
 }
-var injectIncludeFirefox = ['browser-polyfill.js'].concat(
-	injectInclude,
-	['api.js'],
-	injectIncludeLast);
-
 var injectIncludeSafari = ['reinjectGuard.js', 'browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
@@ -108,7 +103,7 @@ var injectIncludeSafari = ['reinjectGuard.js', 'browser-polyfill.js'].concat(
 	['historyMonitor.js'],
 	injectIncludeLast);
 	
-var injectIncludeManifestV3 = ['browser-polyfill.js'].concat(
+var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
 	['inject/virtualOffscreenTranslate.js'],
@@ -155,17 +150,19 @@ if (!argv.p) {
 		'tools/testTranslators/translatorTester_background.js',
 		'lib/sinon.js');
 		
-	injectIncludeManifestV3.push('test/testInject.js');
+	injectIncludeBrowserExt.push('test/testInject.js');
 }
-var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclude, [
+var backgroundIncludeBrowserExt = backgroundInclude.concat([
 	'hostPermissions.js',
 	'webRequestIntercept.js',
 	'contentTypeHandler.js',
 	'saveWithoutProgressWindow.js',
 	'messagingGeneric.js',
 	'browserAttachmentMonitor/browserAttachmentMonitor.js',
-	'translateHost/translateHostFunctionOverrides.js', 'background/offscreenManager.js',
+	'translateHost/translateHostFunctionOverrides.js',
 ]);
+var backgroundIncludeManifestV3 = ['browser-polyfill.js'].concat(backgroundIncludeBrowserExt, ['background/offscreenManager.js']);
+var backgroundIncludeFirefox = backgroundIncludeBrowserExt.concat(['zoteroFrame.js', 'background/firefoxOffscreenManager.js']);
 
 var reloadChromiumTimeout;
 var reloadingChromiumExtension = false;
@@ -305,7 +302,7 @@ function processFile() {
 		if (type === 'common' || type === 'browserExt') {
 			if (file.path.includes('.html')) {
 				file.contents = Buffer.from(replaceScriptsHTML(
-					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeManifestV3.map(s => `../../${s}`)));
+					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeBrowserExt.map(s => `../../${s}`)));
 			}
 			for (let browser of ['manifestv3', 'firefox', 'safari']) {
 				if (basename === 'manifest.json' && browser === 'manifestv3'
@@ -321,16 +318,16 @@ function processFile() {
 						parts[parts.length - 1] = 'manifest.json';
 						contents = contents
 							.replace("/*INJECT SCRIPTS*/",
-								injectIncludeManifestV3.map((s) => `"${s}"`).join(',\n\t\t\t'));
+								injectIncludeBrowserExt.map((s) => `"${s}"`).join(',\n\t\t\t'));
 						if (process.env.CHROME_EXTENSION_KEY && ['manifestv3'].includes(browser)) {
 							contents = contents.replace(/("name": "[^"]*")/, `$1,\n\t"key": "${process.env.CHROME_EXTENSION_KEY}"`);
 						}
 					}
 					else {
-						let backgroundScripts = backgroundIncludeBrowserExt;
-						let injectScripts = browser == "manifestv3"
-							? injectIncludeManifestV3
-							: browser == "safari" ? injectIncludeSafari : injectIncludeFirefox;
+						let backgroundScripts = browser == "firefox"
+							? backgroundIncludeFirefox
+							: backgroundIncludeManifestV3;
+						let injectScripts = browser == "safari" ? injectIncludeSafari : injectIncludeBrowserExt;
 						contents = contents
 							.replace("/*BACKGROUND SCRIPTS*/",
 								backgroundScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))

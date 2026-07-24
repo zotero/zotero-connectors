@@ -62,6 +62,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.done = false;
 		this.canUserAddNote = false;
 		this.supportsTagsAutocomplete = false;
+		this.supportsMetadataUpdates = false;
 		
 		this.text = {
 			more: Zotero.getString('general_more'),
@@ -105,6 +106,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.updateSelectedTags = this.updateSelectedTags.bind(this);
 		this.onTagAutocompleteShown = this.onTagAutocompleteShown.bind(this);
 		this.sendUpdate	= this.sendUpdate.bind(this);
+		this.toggleMetadataDisplay = this.toggleMetadataDisplay.bind(this);
+		this.setItemMetadata = this.setItemMetadata.bind(this);
+		this.onItemBoxChange = this.onItemBoxChange.bind(this);
+		this.onItemBoxInputFocus = this.onItemBoxInputFocus.bind(this);
+		this.onItemBoxInputBlur = this.onItemBoxInputBlur.bind(this);
 	}
 	
 	getInitialState() {
@@ -114,6 +120,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			targets: null,
 			targetSelectorShown: false,
 			itemProgress: new Map(),
+			itemMetadata: new Map(),
+			expandedItemId: null,
+			updatedMetadata: null,
 			errors: [],
 			note: "",
 			selectedTags: new Set(),
@@ -129,6 +138,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		this.addMessageListener('progressWindowIframe.hidden', this.handleHidden.bind(this));
 		this.addMessageListener('progressWindowIframe.reset', () => this.setState(this.getInitialState()));
 		this.addMessageListener('progressWindowIframe.willHide', this.handleHiding.bind(this));
+		this.addMessageListener('progressWindowIframe.setItemMetadata', (data) => this.setItemMetadata(...data));
 		
 		document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 		
@@ -143,6 +153,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		});
 		Zotero.Connector.getPref('supportsTagsAutocomplete').then(res => {
 			this.supportsTagsAutocomplete = res;
+		});
+		Zotero.Connector.getPref('supportsMetadataUpdates').then(res => {
+			this.supportsMetadataUpdates = res;
 		});
 		// Present scrollbar from briefly appearing when tags are being added
 		document.documentElement.style.scrollbarWidth = 'none';
@@ -383,7 +396,11 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (!this.supportsTagsAutocomplete) {
 			tags = tags.join(",");
 		}
-		this.sendMessage('updated', { target: this.target, note: this.state.note, tags });
+		let data = { target: this.target, note: this.state.note, tags };
+		if (this.state.updatedMetadata) {
+			data.updatedMetadata = this.state.updatedMetadata;
+		}
+		this.sendMessage('updated', data);
 	}
 	
 	//
@@ -657,6 +674,37 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		if (event.key == 'Enter' && !event.shiftKey) {
 			event.stopPropagation();
 		}
+	}
+
+	toggleMetadataDisplay(itemId) {
+		this.setState((prevState) => {
+			var isExpanding = prevState.expandedItemId !== itemId;
+			this.sendMessage('itemBoxToggled', { open: isExpanding });
+			return { expandedItemId: isExpanding ? itemId : null };
+		});
+		this.handleUserInteraction();
+	}
+
+	setItemMetadata(meta) {
+		this.setState((prevState) => {
+			var itemMetadata = new Map(prevState.itemMetadata);
+			itemMetadata.set(meta.id, meta);
+			return { itemMetadata };
+		});
+	}
+
+	onItemBoxChange(itemId, updatedItem) {
+		this.setState({ updatedMetadata: { id: itemId, ...updatedItem } }, () => {
+			this.sendUpdate();
+		});
+	}
+
+	onItemBoxInputFocus() {
+		this.sendMessage('disableCloseTimer');
+	}
+
+	onItemBoxInputBlur() {
+		this.sendMessage('enableCloseTimer');
 	}
 
 	handleDone() {
@@ -983,13 +1031,42 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			},
 		);
 		
+		var isTopLevel = !item.parentItem;
+		var hasMetadata = isTopLevel && this.state.itemMetadata.has(item.id);
+		var isExpanded = this.state.expandedItemId === item.id;
+		var meta = hasMetadata ? this.state.itemMetadata.get(item.id) : null;
+
 		return (
-			<div key={item.id} className="ProgressWindow-item" style={itemStyle}>
-				<div className="ProgressWindow-itemIcon" style={iconStyle}></div>
-				<div className="ProgressWindow-itemText">
-					{item.title}
+			<React.Fragment key={item.id}>
+				<div
+					className={"ProgressWindow-item" + (hasMetadata ? " expandable" : "")}
+					style={itemStyle}
+				>
+					<div className="ProgressWindow-itemIcon" style={iconStyle}></div>
+					<div className="ProgressWindow-itemText">
+						{item.title}
+					</div>
+					{hasMetadata && (
+						<button
+							className={"ProgressWindow-itemChevron" + (isExpanded ? " is-expanded" : "")}
+							onClick={() => this.toggleMetadataDisplay(item.id)}
+							aria-expanded={isExpanded}
+							aria-label={isExpanded ? "Collapse metadata" : "Expand metadata"}
+						/>
+					)}
 				</div>
-			</div>
+				{isExpanded && meta && (
+					<Zotero.UI.ItemBox
+						fields={meta.fields}
+						creators={meta.creators}
+						creatorTypes={meta.creatorTypes}
+						readOnly={!this.supportsMetadataUpdates}
+						onChange={(updatedItem) => this.onItemBoxChange(item.id, updatedItem)}
+						onInputFocus={this.onItemBoxInputFocus}
+						onInputBlur={this.onItemBoxInputBlur}
+					/>
+				)}
+			</React.Fragment>
 		);
 	}
 	

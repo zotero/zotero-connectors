@@ -372,3 +372,300 @@ html[dir="rtl"] .arrow svg,
 	margin-left: 4px;
 }
 
+
+/* ---------------------- itemBox.css -------------------------- */
+
+.ItemBox {
+	margin: 4px 0 4px 4px;
+	padding: 6px 0;
+	border-top: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
+}
+
+.ItemBox-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	column-gap: 8px;
+	row-gap: 2px;
+}
+
+.ItemBox-row {
+	display: grid;
+	grid-template-columns: subgrid;
+	grid-column: span 2;
+	align-items: baseline;
+}
+
+.ItemBox-label {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	color: rgba(0, 0, 0, 0.55);
+	font-size: 13px;
+	font-weight: normal;
+	white-space: nowrap;
+}
+
+.ItemBox-label label {
+	cursor: default;
+	user-select: none;
+}
+
+.ItemBox-value {
+	width: 0;
+	min-width: 100%;
+	display: flex;
+	align-items: center;
+	font-size: 13px;
+}
+
+.ItemBox-input {
+	flex: 1;
+	min-width: 0;
+	max-width: 100%;
+	font-family: inherit;
+	font-size: inherit;
+	padding: 1px 4px;
+	border: 1px solid transparent;
+	border-radius: 5px;
+	background: transparent;
+	outline: none;
+	box-sizing: border-box;
+}
+
+.ItemBox-input:not(:read-only):hover {
+	background: rgba(0, 0, 0, 0.05);
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.ItemBox-input:not(:read-only):focus {
+	border-color: var(--theme-selection-background, #0a84ff);
+	background: white;
+	box-shadow: none;
+}
+
+.ItemBox-textarea {
+	resize: none;
+	font: inherit;
+	line-height: 1.4;
+	max-height: calc(1.4em * 5 + 2px + 2px); /* at most 5 lines + padding + border */
+	overflow-y: auto;
+}
+
+.ItemBox-row--multiline .ItemBox-label {
+	padding-top: 3px;
+}
+
+.ItemBox-creatorTypeLabel.disabled {
+	cursor: default;
+}
+
+.ItemBox-creatorTypeLabel.disabled:hover {
+	background: transparent;
+}
+
+/* Creator type selector — custom dropdown matching Zotero desktop */
+.ItemBox-creatorTypeSelector {
+	position: relative;
+}
+
+.ItemBox-creatorTypeLabel {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 1px 4px;
+	border-radius: 5px;
+	cursor: pointer;
+	color: rgba(0, 0, 0, 0.55);
+	font-size: 13px;
+	white-space: nowrap;
+	user-select: none;
+	outline: none;
+}
+
+.ItemBox-creatorTypeLabel:hover {
+	background: rgba(0, 0, 0, 0.05);
+}
+
+.ItemBox-creatorTypeLabel:hover .ItemBox-creatorTypeChevron,
+.ItemBox-creatorTypeLabel:focus .ItemBox-creatorTypeChevron {
+	visibility: visible;
+}
+
+.ItemBox-creatorTypeLabel:focus-visible {
+	box-shadow: 0 0 0 1px var(--theme-selection-background, #0a84ff);
+}
+
+.ItemBox-creatorTypeChevron {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	background-color: #0000008c;
+	-webkit-mask-image: url('chevron-8.svg');
+	mask-image: url('chevron-8.svg');
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	visibility: hidden;
+	flex-shrink: 0;
+}
+
+.ItemBox-creatorTypeMenu {
+	position: absolute;
+	left: 0;
+	top: 100%;
+	z-index: 100;
+	list-style: none;
+	margin: 2px 0 0;
+	padding: 4px 0;
+	background: white;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+	min-width: 100%;
+	white-space: nowrap;
+}
+
+.ItemBox-creatorTypeOption {
+	padding: 2px 12px 2px 8px;
+	font-size: 13px;
+	cursor: default;
+	color: #333;
+}
+
+.ItemBox-creatorTypeOption:hover,
+.ItemBox-creatorTypeOption.focused {
+	background: var(--theme-selection-background, #0a84ff);
+	color: white;
+}
+
+.ItemBox-creatorTypeMenuSeparator {
+	height: 0;
+	margin: 4px 0;
+	border-top: 1px solid #ddd;
+}
+
+.ItemBox-creatorTypeOption.selected {
+	font-weight: 600;
+}
+
+/* Creator name inputs — maxWidth is set by JS to each input's content width.
+   flex-grow distributes remaining space 3:1 in favor of last name, matching
+   Zotero desktop's sizeToContent approach. */
+.ItemBox-creatorInput:first-of-type {
+	flex: 3 1 0;
+	min-width: 0;
+}
+
+.ItemBox-creatorInput:nth-of-type(2) {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+/* Creator +/- buttons — SVG icon buttons matching Zotero desktop.
+   Icon rendered via ::after pseudo-element with mask-image so CSS controls fill color.
+   Button background handles hover effect separately. */
+.ItemBox-creatorBtn {
+	flex: 0 0 auto;
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	margin: 0;
+	margin-left: 1px;
+	cursor: pointer;
+	border: none;
+	border-radius: 6px;
+	background-color: transparent;
+	position: relative;
+	box-sizing: border-box;
+}
+
+.ItemBox-creatorBtn::after {
+	content: '';
+	position: absolute;
+	inset: 1px;
+	background-color: #0000008c;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-size: 16px 16px;
+	mask-size: 16px 16px;
+}
+
+.ItemBox-creatorBtn:not(:disabled):hover {
+	background-color: rgba(0, 0, 0, 0.05);
+}
+
+.ItemBox-creatorBtn:not(:disabled):active {
+	background-color: rgba(0, 0, 0, 0.1);
+}
+
+.ItemBox-creatorBtn:disabled {
+	cursor: default;
+}
+
+.ItemBox-creatorBtn:disabled::after {
+	opacity: 0.3;
+}
+
+.ItemBox-creatorBtn--plus::after {
+	-webkit-mask-image: url('plus-circle.svg');
+	mask-image: url('plus-circle.svg');
+}
+
+.ItemBox-creatorBtn--minus::after {
+	-webkit-mask-image: url('minus-circle.svg');
+	mask-image: url('minus-circle.svg');
+}
+
+.ItemBox-creatorBtn--switch {
+	margin-left: auto;
+}
+
+/* When in dual mode, show icon to switch to single */
+.ItemBox-creatorBtn--switch.is-dual::after {
+	-webkit-mask-image: url('input-single.svg');
+	mask-image: url('input-single.svg');
+	-webkit-mask-size: 20px 16px;
+	mask-size: 20px 16px;
+}
+
+/* When in single mode, show icon to switch to dual */
+.ItemBox-creatorBtn--switch.is-single::after {
+	-webkit-mask-image: url('input-dual.svg');
+	mask-image: url('input-dual.svg');
+	-webkit-mask-size: 20px 16px;
+	mask-size: 20px 16px;
+}
+
+.ProgressWindow-itemChevron {
+	flex: 0 0 auto;
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	margin-left: 4px;
+	border: none;
+	border-radius: 3px;
+	background: url('chevron-8.svg') no-repeat center / 8px 8px transparent;
+	cursor: pointer;
+	transform: rotate(0deg);
+	transition: transform 0.125s ease;
+	opacity: 0.5;
+	align-self: center;
+}
+
+.ProgressWindow-itemChevron.is-expanded {
+	transform: rotate(-180deg);
+}
+
+.ProgressWindow-itemChevron:hover {
+	background-color: rgba(0, 0, 0, 0.05);
+	opacity: 0.8;
+}

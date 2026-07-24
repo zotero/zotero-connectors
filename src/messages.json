@@ -124,6 +124,36 @@
 	"progressWindow_filterPlaceholder": {
 		"message": "Filter Collections"
 	},
+	"progressWindow_itemBox_itemType": {
+		"message": "Item Type"
+	},
+	"progressWindow_itemBox_lastName": {
+		"message": "Last name"
+	},
+	"progressWindow_itemBox_firstName": {
+		"message": "First name"
+	},
+	"progressWindow_itemBox_name": {
+		"message": "Full name"
+	},
+	"progressWindow_itemBox_moveUp": {
+		"message": "Move Up"
+	},
+	"progressWindow_itemBox_moveDown": {
+		"message": "Move Down"
+	},
+	"progressWindow_itemBox_switchToSingle": {
+		"message": "Switch to single field"
+	},
+	"progressWindow_itemBox_switchToDual": {
+		"message": "Switch to two fields"
+	},
+	"progressWindow_itemBox_addCreator": {
+		"message": "Add creator"
+	},
+	"progressWindow_itemBox_removeCreator": {
+		"message": "Remove creator"
+	},
 	"progressWindow_noteEditorPlaceholder": {
 		"message": "Add a note"
 	},

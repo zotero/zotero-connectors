@@ -172,6 +172,16 @@ Zotero.Connector_Types = new function() {
 			this.getItemTypeFields = function(typeIdOrName) {
 				return itemTypes[typeIdOrName][4]/* fields */.slice();
 			};
+
+			this.isMultiline = function(field) {
+				field = this.getName(field);
+				var multilineFields = [
+					'abstractNote',
+					'extra',
+					'address'
+				];
+				return multilineFields.indexOf(field) != -1;
+			};
 		}
 	};
 	

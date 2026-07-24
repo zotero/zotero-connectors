@@ -64,8 +64,9 @@ Zotero.VirtualOffscreenTranslate = class {
 		});
 	}
 	
-	getProxy() {
-		return this.sendMessage('Translate.getProxy');
+	async getProxy() {
+		let proxy = await this.sendMessage('Translate.getProxy');
+		return proxy ? new Zotero.Proxy(proxy) : null;
 	}
 	
 	async setHandler(name, callback) {

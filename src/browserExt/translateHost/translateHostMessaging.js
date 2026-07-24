@@ -45,8 +45,9 @@ Zotero.TranslateHostMessaging = {
 	},
 
 	async initMV2(backgroundPort) {
-		// Complete the Zotero.Frame handshake
-		backgroundPort.postMessage('offscreen-translate-host-frame-ready');
+		// Authenticate the MessageChannel with the nonce added to our URL by Zotero.Frame
+		let nonce = window.location.hash ? decodeURIComponent(window.location.hash.slice(1)) : null;
+		backgroundPort.postMessage(nonce);
 
 		await this.initMessaging(backgroundPort);
 		// offscreenManager requests translate host initialization

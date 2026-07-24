@@ -99,6 +99,7 @@ if (argv.p) {
 var injectIncludeSafari = ['browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
+	['inject/virtualOffscreenTranslate.js'],
 	['frameMessaging.js'],
 	['historyMonitor.js'],
 	injectIncludeLast);
@@ -161,7 +162,7 @@ var backgroundIncludeBrowserExt = backgroundInclude.concat([
 	'translateHost/translateHostFunctionOverrides.js',
 ]);
 var backgroundIncludeManifestV3 = ['browser-polyfill.js'].concat(backgroundIncludeBrowserExt, ['background/offscreenManager.js']);
-var backgroundIncludeFirefox = backgroundIncludeBrowserExt.concat(['zoteroFrame.js', 'background/firefoxOffscreenManager.js']);
+var backgroundIncludeManifestV2 = backgroundIncludeBrowserExt.concat(['zoteroFrame.js', 'background/frameOffscreenManager.js']);
 
 function reloadChromeExtensionsTab(cb) {
 	console.log("Reloading Chrome extensions tab");
@@ -322,8 +323,8 @@ function processFile() {
 						}
 					}
 					else {
-						let backgroundScripts = browser == "firefox"
-							? backgroundIncludeFirefox
+						let backgroundScripts = browser == "firefox" || browser == "safari"
+							? backgroundIncludeManifestV2
 							: backgroundIncludeManifestV3;
 						let injectScripts = browser == "safari" ? injectIncludeSafari : injectIncludeBrowserExt;
 						contents = contents

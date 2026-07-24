@@ -24,8 +24,8 @@
 */
 
 /**
- * Offscreen translate host manager for Firefox MV2 (with direct "sandboxed"
- * frame).
+ * Offscreen translate host manager for MV2 background pages (with direct "sandboxed"
+ * frame). Used by Firefox and Safari.
  *
  * Content scripts talk to Zotero.OffscreenManager through regular
  * extension messaging. This manager forwards those translate RPCs over the
@@ -83,31 +83,31 @@ Zotero.OffscreenManager = {
 		let tabs = await browser.tabs.query({ status: 'complete', windowType: 'normal' });
 		let cleanedUpTabIds = await this.sendMessage('translateCleanup', tabs.map(tab => tab.id));
 		if (cleanedUpTabIds.length > 0) {
-			Zotero.logError(new Error(`FirefoxOffscreenManager: manually cleaned up translates that were kept `
+			Zotero.logError(new Error(`FrameOffscreenManager: manually cleaned up translates that were kept `
 				+ `alive after onTabRemoved ${JSON.stringify(cleanedUpTabIds)}`));
 		}
 	},
 
 	async _initFrame() {
-		Zotero.debug('FirefoxOffscreenManager: creating sandboxed translate host iframe');
+		Zotero.debug('FrameOffscreenManager: creating sandboxed translate host iframe');
 		this.frame = new Zotero.Frame({
 			src: browser.runtime.getURL(this.frameUrl),
-			sandbox: 'allow-scripts'
+			sandbox: 'allow-scripts',
+			hidden: true
 		}, {}, {
-			expectedHandshake: 'offscreen-translate-host-frame-ready',
 			handlerFunctionOverrides: TRANSLATE_HOST_FUNCTIONS,
 			overrideTarget: Zotero
 		});
 		await this.frame.init();
-		Zotero.debug('FirefoxOffscreenManager: sandboxed translate host iframe messaging established');
+		Zotero.debug('FrameOffscreenManager: sandboxed translate host iframe messaging established');
 		this._messaging = this.frame;
 
-		Zotero.debug('FirefoxOffscreenManager: initializing translate host');
+		Zotero.debug('FrameOffscreenManager: initializing translate host');
 		let initializedPromise = this._messaging.sendMessage('offscreen-translate-host-init');
 		let timeoutPromise = new Promise((resolve, reject) => {
-			setTimeout(() => reject(new Error('FirefoxOffscreenManager: timed out waiting for translate host initialization')), 10000);
+			setTimeout(() => reject(new Error('FrameOffscreenManager: timed out waiting for translate host initialization')), 10000);
 		});
 		await Promise.race([initializedPromise, timeoutPromise]);
-		Zotero.debug('FirefoxOffscreenManager: translate host initialized');
+		Zotero.debug('FrameOffscreenManager: translate host initialized');
 	}
 };

@@ -62,28 +62,17 @@ let PageSaving = {
 	 */
 	async _initTranslate(itemType=null) {
 		let translate;
-		if (Zotero.isManifestV3 || Zotero.isFirefox) {
-			try {
-				translate = await Zotero.VirtualOffscreenTranslate.create();
-			} catch (e) {
-				Zotero.logError(new Error(`Inject: Initializing translate failed at ${document.location.href}`));
-				Zotero.logError(e);
-				throw e;
-			}
-		}
-		else {
-			translate = new Zotero.Translate.Web();
+		try {
+			translate = await Zotero.VirtualOffscreenTranslate.create();
+		} catch (e) {
+			Zotero.logError(new Error(`Inject: Initializing translate failed at ${document.location.href}`));
+			Zotero.logError(e);
+			throw e;
 		}
 		translate.setHandler('pageModified', () => {
 			Zotero.Messaging.sendMessage("pageModified", true);
 		});
-		// Async when translation runs in a remote browser-extension frame
-		if (Zotero.isManifestV3 || Zotero.isFirefox) {
-			await translate.setDocument(document, itemType === 'multiple');
-		}
-		else {
-			translate.setDocument(document);
-		}
+		await translate.setDocument(document, itemType === 'multiple');
 		return translate;
 	},
 
@@ -285,10 +274,6 @@ let PageSaving = {
 				return this.saveAsWebpage({ snapshot: true });
 			}
 			throw e;
-		}
-		if (Zotero.isManifestV3) {
-			proxy = await translate.getProxy();
-			if (proxy) proxy = new Zotero.Proxy(proxy);
 		}
 		items = this._processNote(items);
 		this.sessionDetails.items = items;

@@ -269,6 +269,12 @@ button:active {
 	text-overflow: ellipsis
 }
 
+.ProgressWindow-itemStatus {
+	font-size: 11px;
+	color: #6b6b6b;
+	margin-top: 2px;
+}
+
 .ProgressWindow-error {
 	font-size: 13px;
 	line-height: 1.4em;

@@ -119,6 +119,9 @@ Zotero.Inject = {
 		Zotero.Messaging.addMessageListener('updateSession', (data) => {
 			return Zotero.PageSaving.onUpdateSession(data);
 		})
+		Zotero.Messaging.addMessageListener('progressWindow.targetChanged', (data) => {
+			return Zotero.PageSaving.onTargetChanged(data);
+		})
 		// add listener to rerun detection on page modifications
 		Zotero.Messaging.addMessageListener("pageModified", Zotero.Utilities.debounce(function() {
 			Zotero.PageSaving.onPageLoad(true);

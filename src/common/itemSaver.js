@@ -43,6 +43,7 @@ let ItemSaver = function(options) {
 	this._proxy = options.proxy;
 	this._baseURI = options.baseURI;
 	this._itemType = options.itemType;
+	this._getTarget = options.getTarget;
 	this._items = [];
 	this._singleFile = false;
 	
@@ -181,6 +182,17 @@ ItemSaver.prototype = {
 		}
 		
 		payload.items = Zotero.Utilities.deepCopy(items);
+		let shouldSave = await this._checkExistingItems(items, payload.items);
+		if (!shouldSave) {
+			Zotero.debug("ItemSaver: Save cancelled after existing item warning");
+			Zotero.Messaging.sendMessage("progressWindow.clearPendingSessionUpdate", {
+				sessionID: this._sessionID
+			});
+			Zotero.Messaging.sendMessage("progressWindow.close", null);
+			let e = new Error("Save cancelled after existing item warning");
+			e.zoteroSaveCancelled = true;
+			throw e;
+		}
 
 		if (zoteroSupportsAttachmentUpload) {
 			// Only pass attachments that are to be saved by linking
@@ -210,6 +222,104 @@ ItemSaver.prototype = {
 		}
 
 		return items;
+	},
+
+	async _checkExistingItems(items, payloadItems) {
+		let response;
+		try {
+			let request = { items: payloadItems };
+			let target = this._getTarget && this._getTarget();
+			if (target) {
+				request.target = target;
+			}
+			if (this._proxy) {
+				request.proxy = this._proxy.toJSON();
+			}
+			response = await Zotero.Connector.callMethod("findExistingItems", request);
+		}
+		catch (e) {
+			Zotero.debug(`ItemSaver: Existing item lookup failed: ${e.message}`);
+			return true;
+		}
+
+		let matches = response?.matches || [];
+		if (!matches.length) {
+			return true;
+		}
+
+		let hasExistingItems = false;
+		for (let [index, item] of items.entries()) {
+			let existingItems = matches.filter(match => this._itemMatchesExistingItem(item, match, index));
+			if (!existingItems.length) {
+				continue;
+			}
+			hasExistingItems = true;
+			item.existingItems = existingItems;
+			Zotero.Messaging?.sendMessage(
+				"progressWindow.itemProgress",
+				{
+					sessionID: this._sessionID,
+					id: item.id,
+					iconSrc: Zotero.ItemTypes.getImageSrc(item.itemType),
+					title: item.title,
+					existingItems,
+					itemType: item.itemType
+				}
+			);
+		}
+		if (!hasExistingItems || !Zotero.Inject?.confirm) {
+			return true;
+		}
+		let result = await this._confirmExistingItems({
+			title: Zotero.getString("duplicateItems_title"),
+			message: Zotero.getString("duplicateItems_message"),
+			button1Text: Zotero.getString("general_continueAnyway"),
+			button2Text: Zotero.getString("general_cancel")
+		});
+		return result.button == 1;
+	},
+
+	async _confirmExistingItems(props) {
+		if (Zotero.Messaging?.sendMessage) {
+			try {
+				let result = await Zotero.Messaging.sendMessage("confirm", props);
+				if (result) {
+					return result;
+				}
+			}
+			catch (e) {
+				Zotero.debug(`ItemSaver: confirm via messaging failed: ${e.message}`);
+			}
+		}
+		return Zotero.Inject.confirm(props);
+	},
+
+	_itemMatchesExistingItem(item, match, itemIndex) {
+		if (typeof match.matchedItemIndex == 'number' && match.matchedItemIndex == itemIndex) {
+			return true;
+		}
+		let matchedIdentifiers = match.matchedIdentifiers || {};
+		if (matchedIdentifiers.doi && item.DOI) {
+			let itemDOI = Zotero.Utilities.cleanDOI(item.DOI);
+			let matchDOI = Zotero.Utilities.cleanDOI(matchedIdentifiers.doi);
+			if (itemDOI && matchDOI && itemDOI.toLowerCase() == matchDOI.toLowerCase()) {
+				return true;
+			}
+		}
+		let itemURL = item.url;
+		if (this._proxy && itemURL) {
+			try {
+				itemURL = this._proxy.toProper(itemURL);
+			}
+			catch (e) {
+				Zotero.debug(`ItemSaver: Could not deproxify item URL for duplicate lookup: ${e.message}`);
+				itemURL = null;
+			}
+		}
+		if (matchedIdentifiers.url && itemURL && itemURL == matchedIdentifiers.url) {
+			return true;
+		}
+		return false;
 	},
 
 	/**

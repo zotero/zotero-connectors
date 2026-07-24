@@ -108,7 +108,7 @@ let TranslateWeb = {
 				let items = await translate.translate();
 				return {
 					items,
-					proxy: translate._proxy
+					proxy: translate.getProxy ? await translate.getProxy() : translate._proxy
 				};
 			} catch (e) {
 				if (translator.itemType != 'multiple' && translators.length) {

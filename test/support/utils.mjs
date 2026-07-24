@@ -87,6 +87,37 @@ export function getExtensionURL(path) {
 	return `${extensionURL}${path}`;
 }
 
+/**
+ * Stub selected Connector methods while passing all other calls through.
+ * Each method behavior can specify `response`, `returnPayload`, or `error`.
+ *
+ * @param {Object<string, {response?: *, returnPayload?: boolean, error?: {message: string, status?: number}}>} methods
+ * @returns {Promise<Function>} function that restores Connector.callMethod
+ */
+export async function stubConnectorCallMethod(methods) {
+	await background((methods) => {
+		let callMethod = Zotero.Connector.callMethod;
+		sinon.stub(Zotero.Connector, 'callMethod').callsFake(async function(options, payload, ...args) {
+			let method = typeof options === 'string' ? options : options.method;
+			let behavior = methods[method];
+			if (!behavior) {
+				return callMethod.call(this, options, payload, ...args);
+			}
+			if (behavior.error) {
+				throw new Zotero.Connector.CommunicationError(
+					behavior.error.message,
+					behavior.error.status
+				);
+			}
+			if (behavior.returnPayload) {
+				return payload;
+			}
+			return behavior.response;
+		});
+	}, methods);
+	return () => background(() => Zotero.Connector.callMethod.restore());
+}
+
 export async function stubHTTPRequest(requests) {
 	await background((requests) => {
 		const stubFn = async (method, url, options) => {

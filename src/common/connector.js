@@ -79,7 +79,6 @@ Zotero.Connector = new function() {
 			'automaticSnapshots',
 			'googleDocsAddAnnotationEnabled',
 			'googleDocsCitationExplorerEnabled',
-			'supportsAttachmentUpload',
 			'supportsTagsAutocomplete',
 			'canUserAddNote'
 		];
@@ -217,66 +216,6 @@ Zotero.Connector = new function() {
 		}
 	},
 	
-	/**
-	 * Adds detailed cookies to the data before sending "saveItems" request to
-	 *  the server/Standalone
-	 *
-	 * @param {String|Object} options. See documentation above
-	 * @param	{Object} data RPC data. See documentation above.
-	 */
-	this.callMethodWithCookies = async function(options, data, tab) {
-		let cookieParams = {
-			url: tab.url,
-			partitionKey: {} // fetch cookies from partitioned and unpartitioned storage
-		};
-		// When first-party isolation is enabled in Firefox, browser.cookies.getAll()
-		// will fail if firstPartyDomain isn't provided, causing all saves to fail. According
-		// to the document [1], passing null should cause all cookies to be returned, but as
-		// of Fx60.0b7 that doesn't seem to be working, returning no cookies instead. (It
-		// returns all cookies if FPI is disabled.)
-		//
-		// In 60.0b7 it does work to set the domain explicitly (e.g., 'gmu.edu'), but we
-		// can't get that correctly without the public suffix list, which isn't yet available
-		// to WebExtensions [2], so for now we pass null, which will cause attachments that
-		// rely on cookies to fail but will at least allow saves to go through when FPI is
-		// enabled.
-		//
-		// https://github.com/zotero/zotero-connectors/issues/226
-		//
-		// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/cookies/getAll
-		// [2] https://bugzilla.mozilla.org/show_bug.cgi?id=1315558
-		if (Zotero.isFirefox && Zotero.browserMajorVersion >= 59) {
-			cookieParams.firstPartyDomain = null;
-		}
-		let cookies;
-		try {
-			cookies = await Zotero.Connector_Browser.getAllCookies(cookieParams, tab.id)
-		} catch {
-			// Unavailable with Chrome 118 and below. Last supported version on Win 7/8 is Chrome 109.
-			Zotero.debug(`Error getting cookies for ${tab.url} with partitionKey.`);
-			delete cookieParams.partitionKey;
-			cookies = await Zotero.Connector_Browser.getAllCookies(cookieParams, tab.id)
-		}
-		var cookieHeader = '';
-		for(var i=0, n=cookies.length; i<n; i++) {
-			cookieHeader += '\n' + cookies[i].name + '=' + cookies[i].value
-				+ ';Domain=' + cookies[i].domain
-				+ (cookies[i].path ? ';Path=' + cookies[i].path : '')
-				+ (cookies[i].hostOnly ? ';hostOnly' : '') //not a legit flag, but we have to use it internally
-				+ (cookies[i].secure ? ';secure' : '');
-		}
-
-		if(cookieHeader) {
-			data.detailedCookies = cookieHeader.substr(1);
-			delete data.cookie;
-		}
-
-		// Cookie URI needed to set up the cookie sandbox on standalone
-		data.uri = tab.url;
-
-		return this.callMethod(options, data, tab);
-	}
-
 	/**
 	 * Thin wrapper around callMethod that exists as a distinct RPC message so
 	 * messages.js can attach chunking hooks (inject.preSend / background.postReceive)

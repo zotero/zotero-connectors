@@ -139,7 +139,6 @@ var MESSAGES = {
 	Connector: {
 		checkIsOnline: true,
 		callMethod: true,
-		callMethodWithCookies: true,
 		saveSingleFile: {
 			inject: {
 				preSend: async function(args) {

@@ -106,15 +106,9 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		});
 		
 		try {
-			// Make sure we have up to date prefs
+			// Check availability before fetching the attachment
 			await Zotero.Connector.ping();
-			const zoteroSupportsAttachmentUpload = Zotero.Connector.getPref('supportsAttachmentUpload');
-			if (zoteroSupportsAttachmentUpload) {
-				await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(data, data.sessionID, tab);
-			}
-			else {
-				await Zotero.Connector.callMethodWithCookies("saveSnapshot", data, tab);
-			}
+			await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(data, data.sessionID, tab);
 		}
 		catch (e) {
 			if (e.status !== 0 || !pdf) throw e;

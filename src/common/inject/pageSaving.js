@@ -310,35 +310,23 @@ let PageSaving = {
 		var result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
 
-		const isOnline = await Zotero.Connector.checkIsOnline();
-		const supportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
-
 		var isTextLike = document.contentType.startsWith('text')
 			|| document.contentType.includes('html');
-		if (!isTextLike && (supportsAttachmentUpload || !isOnline)) {
+		if (!isTextLike) {
 			return await this._saveAsStandaloneAttachment({title, saveSnapshot});
 		}
 		return await this._saveAsWebpage({title, saveSnapshot});
 	},
 	
 	async _saveAsWebpage({ title, saveSnapshot } = {}) {
-		const supportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
 		const sessionID = this.sessionDetails.id;
 		var translatorID = 'webpage' + (saveSnapshot ? 'WithSnapshot' : '');
-		try {
-			var cookie = document.cookie;
-		} catch (e) {}
 		var data = {
 			sessionID,
 			url: document.location.toString(),
 			referrer: document.referrer,
-			cookie,
 			title: title,
 		};
-		if (!supportsAttachmentUpload) {
-			data.skipSnapshot = !saveSnapshot;
-			data.singleFile = true;
-		}
 
 		var image;
 		if (document.contentType == 'application/pdf') {
@@ -359,7 +347,7 @@ let PageSaving = {
 		Zotero.Messaging.sendMessage("progressWindow.itemProgress", items[0]);
 
 		try {
-			var result = await Zotero.Connector.callMethodWithCookies("saveSnapshot", data);
+			var result = await Zotero.Connector.callMethod("saveSnapshot", data);
 			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
 			items[0] = { ...items[0], progress: 100, itemsLoaded: 1 };
 			Zotero.Messaging.sendMessage("progressWindow.itemProgress", items[0]);

@@ -325,8 +325,11 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	# RuleCondition.responseHeaders, so it can't use DNR for content-type-based interception.
 	# Safari requires declarativeNetRequestWithHostAccess (not plain declarativeNetRequest) for DNR
 	# redirect actions (since Safari 16.4).
+	#
+	# Require Safari 16.6, the newest version available on macOS 11 (Big Sur), the oldest macOS the
+	# extension supports.
 	pushd $BUILD_DIR/safari > /dev/null
-	cat manifest.json | jq '. |= del(.applications) | .declarative_net_request = {"rule_resources":[{"id":"styleIntercept","enabled":false,"path":"styleInterceptRules.json"}]} | .permissions += ["declarativeNetRequestWithHostAccess"]' > manifest.json-tmp
+	cat manifest.json | jq '. |= del(.applications) | .declarative_net_request = {"rule_resources":[{"id":"styleIntercept","enabled":false,"path":"styleInterceptRules.json"}]} | .permissions += ["declarativeNetRequestWithHostAccess"] | .browser_specific_settings = {"safari":{"strict_min_version":"16.6"}}' > manifest.json-tmp
 	mv manifest.json-tmp manifest.json
 	popd > /dev/null
 

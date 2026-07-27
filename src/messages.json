@@ -263,6 +263,9 @@
 		"message": "Your document is over $1 pages long. Citing with $2 in large Google Docs documents is not recommended due to performance issues and difficulty in troubleshooting citation problems. Consider moving your document to LibreOffice or Microsoft Word.<br/><br/>See <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Moving Documents Between Word Processors</a> for more information."
 	},
 	
+	"integration_googleDocs_corruptCitations_alert": {
+		"message": "Some $1 citation data in this document became corrupted. The affected citations have been converted to unlinked citations:"
+	},
 	"integration_googleDocs_orphanedCitations_buttonTooltip": {
 		"message": "Show unlinked $1 citations"
 	},

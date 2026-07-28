@@ -446,6 +446,115 @@ describe("ItemSaver", function() {
 			assert.sameMembers(result.progressUpdates.map(update => update.id), ['item-1', 'item-2']);
 		});
 
+		it('annotates every item index returned for a shared Extra DOI match', async function() {
+			let result = await tab.run(async function () {
+				try {
+					let progressUpdates = [];
+					sinon.stub(Zotero.Connector, "getPref").callsFake((pref) => {
+						if (pref == 'supportsAttachmentUpload') return true;
+						if (pref == 'automaticSnapshots') return true;
+						if (pref == 'downloadAssociatedFiles') return true;
+						return null;
+					});
+					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
+						if (method == 'findExistingItems') {
+							return {
+								matches: [{
+									id: 123,
+									title: 'Existing Shared Extra DOI Article',
+									matchedItemIndex: 0,
+									matchedItemIndexes: [0, 1],
+									matchedFields: ['DOI'],
+									matchedIdentifiers: {
+										doi: '10.1234/shared-extra-doi'
+									}
+								}]
+							};
+						}
+						return {
+							filesEditable: false
+						};
+					});
+					sinon.stub(Zotero.Messaging, "sendMessage").callsFake((message, data) => {
+						if (message == 'confirm') {
+							return { button: 1 };
+						}
+						if (message == 'progressWindow.itemProgress') {
+							progressUpdates.push(data);
+						}
+					});
+
+					let items = [
+						{
+							id: 'item-1',
+							itemType: 'webpage',
+							title: 'First Shared Extra DOI Page',
+							extra: 'DOI: 10.1234/shared-extra-doi',
+							attachments: []
+						},
+						{
+							id: 'item-2',
+							itemType: 'webpage',
+							title: 'Second Shared Extra DOI Page',
+							extra: 'DOI: 10.1234/shared-extra-doi',
+							attachments: []
+						}
+					];
+					let itemSaver = new Zotero.ItemSaver({
+						sessionID: 'test-session',
+						itemType: 'webpage',
+						baseURI: 'https://example.com/article'
+					});
+					await itemSaver.saveItems(items);
+
+					return {
+						firstExistingItems: items[0].existingItems,
+						secondExistingItems: items[1].existingItems,
+						progressUpdates
+					};
+				}
+				finally {
+					for (let stub of [
+						Zotero.Connector.getPref,
+						Zotero.Connector.callMethod,
+						Zotero.Messaging.sendMessage
+					]) {
+						if (stub && stub.restore) {
+							stub.restore();
+						}
+					}
+				}
+			});
+
+			assert.equal(result.firstExistingItems[0].id, 123);
+			assert.equal(result.secondExistingItems[0].id, 123);
+			assert.sameMembers(result.progressUpdates.map(update => update.id), ['item-1', 'item-2']);
+		});
+
+		it('treats matched item indexes as authoritative over identifier fallback', async function() {
+			let result = await tab.run(async function () {
+				let itemSaver = new Zotero.ItemSaver({
+					sessionID: 'test-session',
+					itemType: 'journalArticle'
+				});
+				let match = {
+					matchedItemIndexes: [0],
+					matchedIdentifiers: {
+						doi: '10.1234/shared-doi'
+					}
+				};
+				let items = [
+					{ DOI: '10.1234/shared-doi' },
+					{ DOI: '10.1234/shared-doi' }
+				];
+				return items.map((item, index) =>
+					itemSaver._itemMatchesExistingItem(item, match, index)
+				);
+			});
+
+			assert.deepEqual(result, [true, false]);
+		});
+
 		it('continues saving when proxied duplicate URL normalization fails', async function() {
 			let result = await tab.run(async function () {
 				try {

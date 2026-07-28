@@ -276,6 +276,9 @@ ItemSaver.prototype = {
 	},
 
 	_itemMatchesExistingItem(item, match, itemIndex) {
+		if (Array.isArray(match.matchedItemIndexes) && match.matchedItemIndexes.length) {
+			return match.matchedItemIndexes.includes(itemIndex);
+		}
 		if (typeof match.matchedItemIndex == 'number' && match.matchedItemIndex == itemIndex) {
 			return true;
 		}

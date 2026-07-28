@@ -23,7 +23,15 @@
 	***** END LICENSE BLOCK *****
 */
 
-import { Tab, background, getExtensionURL, delay, offscreen, stubHTTPRequest } from '../support/utils.mjs';
+import {
+	Tab,
+	background,
+	getExtensionURL,
+	delay,
+	offscreen,
+	stubConnectorCallMethod,
+	stubHTTPRequest
+} from '../support/utils.mjs';
 
 describe("Translation", function() {
 	var tab = new Tab();
@@ -31,12 +39,6 @@ describe("Translation", function() {
 	before(async function () {
 		// Make sure translators initialized
 		let translators = await background(async function() {
-			// Failure to init is fine
-			try {
-				await Zotero.Translators.init();
-			} catch (e) {
-				return 0;
-			}
 			return Promise.all([
 				Zotero.Translators.get('05d07af9-105a-4572-99f6-a8e231c0daef'),
 				Zotero.Translators.get('c159dcfe-8a53-4301-a499-30f6549c340d'),
@@ -112,119 +114,118 @@ describe("Translation", function() {
 				});
 
 				it('saves with a translator', async function () {
-					var items = await background(async function(tabId) {
-						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async function(_, payload){
-							return payload;
-						});
-						let tab = await browser.tabs.get(tabId);
-						try {
-							var items = await Zotero.Connector_Browser.saveWithTranslator(tab, 0)
-						} finally {
-							stub.restore();
-						}
-						return items;
-					}, tab.tabId);
+					let restoreStub = await stubConnectorCallMethod({
+						saveItems: { returnPayload: true },
+						getSelectedCollection: { response: {} }
+					});
+					try {
+						var items = await background(async function(tabId) {
+							let tab = await browser.tabs.get(tabId);
+							return Zotero.Connector_Browser.saveWithTranslator(tab, 0);
+						}, tab.tabId);
+					}
+					finally {
+						await restoreStub();
+					}
 					assert.equal(items.length, 1);
 					assert.equal(items[0].itemType, 'journalArticle');
 					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-					var frame = await tab.page.waitForFrame(frameURL);
+					var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 					var elem = await frame.waitForSelector('.ProgressWindow-progressBox');
 					var message = await elem.evaluate(node => node.textContent);
 					assert.include(message, items[0].title);
 				});
 				
 				it('saves with a translator that uses the select dialog', async function () {
-					let restoreStub;
+					let restoreConnectorStub = await stubConnectorCallMethod({
+						saveItems: { returnPayload: true },
+						getSelectedCollection: { response: {} }
+					});
+					let restoreHTTPStub = await stubHTTPRequest({
+						'doi.org/10.1086%2F529596': {
+							DOI: '10.1086/529596',
+							type: 'article-journal',
+							title: 'Scarcity or Abundance? Preserving the Past in a Digital Era',
+							author: [{ given: 'Roy', family: 'Rosenzweig' }],
+							page: '735-762',
+							'container-title': 'The American Historical Review',
+							issued: { 'date-parts': [[2003]] }
+						}
+					});
 					try {
-						/*
-						restoreStub = await stubHTTPRequest({
-							'doi.org': [ { "DOI": "10.1086/529596", "RA": "Crossref" } ],
-							'crossref.org': { "message": {
-								"items": [ {
-									"DOI": "10.1086\/529596",
-									"type": "journal-article",
-									"created": {
-										"date-parts": [ [ 2008, 1, 24 ] ],
-										"date-time": "2008-01-24T16:33:58Z",
-										"timestamp": 1201192438000
-									},
-									"page": "735-762",
-									"source": "Crossref",
-									"title": [ "Scarcity or Abundance? Preserving the Past in a Digital Era" ],
-									"author": [ { "given": "Roy", "family": "Rosenzweig", "sequence": "first", "affiliation": [] } ],
-									"URL": "https:\/\/doi.org\/10.1086\/529596",
-									"ISSN": [ "0002-8762", "1937-5239" ]
-								} ]
-							} }
-						});
-						*/
 						var items = await background(async function(tabId) {
-							var stub1 = sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async function(_, payload){
-								return payload;
-							});
-							var stub2 = sinon.stub(Zotero.Connector_Browser, "onSelect").callsFake(function(items) {
+							var stub = sinon.stub(Zotero.Connector_Browser, "onSelect").callsFake(function(items) {
 								return items;
 							});
 							
 							try {
 								var tab = await browser.tabs.get(tabId);
-								var items = await Zotero.Connector_Browser.saveWithTranslator(tab, 1);
-							} finally {
-								stub1.restore();
-								stub2.restore();
+								return await Zotero.Connector_Browser.saveWithTranslator(tab, 1);
 							}
-							return items;
+							finally {
+								stub.restore();
+							}
 						}, tab.tabId);
 						assert.equal(items.length, 1);
 						assert.equal(items[0].itemType, 'journalArticle');
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('.ProgressWindow-progressBox');
 						var message = await elem.evaluate(node => node.textContent);
 						assert.include(message, items[0].title);
 					}
 					finally {
-						// await restoreStub();
+						await restoreHTTPStub();
+						await restoreConnectorStub();
 					}
 				});
 			
 				it('saves as snapshot', async function () {
+					let restoreStub = await stubConnectorCallMethod({
+						saveSnapshot: { response: [] },
+						saveSingleFile: { response: [] }
+					});
 					try {
 						await background(async function (tabId) {
-							sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves([]);
 							let tab = await browser.tabs.get(tabId);
 							await Zotero.Connector_Browser.saveAsWebpage(tab);
 						}, tab.tabId);
 						await delay(20);
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('.ProgressWindow-progressBox');
 						var message = await elem.evaluate(node => node.textContent);
 						assert.include(message, "Scarcity or Abundance? Preserving the Past in a Digital Era");
 					} finally {
-						await background(() => Zotero.Connector.callMethodWithCookies.restore())
+						await restoreStub();
 					}
 				});
 					
 				it('displays an error message if Zotero responds with an error', async function () {
-					await background(async function(tabId) {
-						var stub = sinon.stub(Zotero.Connector, "callMethodWithCookies")
-							.rejects(new Zotero.Connector.CommunicationError('Err', 500));
-						// prevent reporting translator errors
-						var stub2 = sinon.stub(Zotero.Prefs, 'get').returns(false);
-						var tab = await browser.tabs.get(tabId);
-						try {
-							await Zotero.Connector_Browser.saveWithTranslator(tab, 0);
-						}
-						catch (e) {
-							Zotero.debug(e);
-						}
-						finally {
-							stub.restore(); stub2.restore();	
-						}
-					}, tab.tabId);
+					let restoreStub = await stubConnectorCallMethod({
+						saveItems: { error: { message: 'Err', status: 500 } }
+					});
+					try {
+						await background(async function(tabId) {
+							// prevent reporting translator errors
+							var stub = sinon.stub(Zotero.Prefs, 'get').returns(false);
+							var tab = await browser.tabs.get(tabId);
+							try {
+								await Zotero.Connector_Browser.saveWithTranslator(tab, 0);
+							}
+							catch (e) {
+								Zotero.debug(e);
+							}
+							finally {
+								stub.restore();
+							}
+						}, tab.tabId);
+					}
+					finally {
+						await restoreStub();
+					}
 					var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-					var frame = await tab.page.waitForFrame(frameURL);
+					var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 					var elem = await frame.waitForSelector('.ProgressWindow-error');
 					var message = await elem.evaluate(node => node.textContent);
 					assert.include(message, "An error occurred while saving this item.");
@@ -246,7 +247,7 @@ describe("Translation", function() {
 						
 						assert.isNotOk(result);
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('.ProgressWindow-error');
 						var message = await elem.evaluate(node => node.textContent);
 						assert.include(message, "An error occurred while saving this item.");
@@ -285,7 +286,7 @@ describe("Translation", function() {
 						}, tab.tabId);
 						// Wait for the modal prompt to appear
 						var frameURL = getExtensionURL('modalPrompt/modalPrompt.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('#zotero-modal-prompt');
 						var message = await elem.evaluate(node => node.textContent);
 						assert.include(message, 'The Zotero Connector was unable to communicate with the Zotero desktop application.');
@@ -315,7 +316,7 @@ describe("Translation", function() {
 					
 					try {
 						var frameURL = getExtensionURL('progressWindow/progressWindow.html');
-						var frame = await tab.page.waitForFrame(frameURL);
+						var frame = await tab.page.waitForFrame(frame => frame.url().startsWith(frameURL));
 						var elem = await frame.waitForSelector('.ProgressWindow-box');
 						var message = await elem.evaluate(node => node.textContent);
 
@@ -353,15 +354,8 @@ describe("Translation", function() {
 					var [translators, instanceID] = await background(async function(tabId) {
 						Zotero.Connector_Browser.onTranslators.restore();
 						
-						let translators, instanceID;
-						if (Zotero.isBrowserExt) {
-							translators = Zotero.Connector_Browser._tabInfo[tabId].translators.map(t => t.label);
-							instanceID = Zotero.Connector_Browser._tabInfo[tabId].instanceID;
-						} else {
-							let tab = await browser.tabs.get(tabId);
-							translators = tab.translators.map(t => t.label);
-							instanceID = tab.instanceID;
-						}
+						let translators = Zotero.Connector_Browser._tabInfo[tabId].translators.map(t => t.label);
+						let instanceID = Zotero.Connector_Browser._tabInfo[tabId].instanceID;
 						return [translators, instanceID];
 					}, tab.tabId);
 					

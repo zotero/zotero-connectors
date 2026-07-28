@@ -110,7 +110,6 @@ ItemSaver.prototype = {
 			sessionID: this._sessionID,
 			uri: this._baseURI,
 		};
-		const zoteroSupportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
 		const automaticSnapshots = await Zotero.Connector.getPref('automaticSnapshots');
 		const downloadAssociatedFiles = await Zotero.Connector.getPref('downloadAssociatedFiles');
 
@@ -141,49 +140,35 @@ ItemSaver.prototype = {
 				attachment.parentItem = item.id;
 				this._setAttachmentReferer(attachment);
 
-				if (zoteroSupportsAttachmentUpload) {
-					if (attachment.snapshot === false) {
-						return true;
-					}
-					if (attachment.mimeType === 'text/html' && !automaticSnapshots) {
-						Zotero.debug("saveToZotero: Ignoring snapshot because automaticSnapshots is disabled");
-						return false;
-					}
-					else if (attachment.mimeType !== 'text/html' && !downloadAssociatedFiles) {
-						Zotero.debug(`saveToZotero: Ignoring attachment with type ${attachment.mimeType} because downloadAssociatedFiles is disabled`);
-						return false;
-					}
+				if (attachment.snapshot === false) {
+					return true;
+				}
+				if (attachment.mimeType === 'text/html' && !automaticSnapshots) {
+					Zotero.debug("saveToZotero: Ignoring snapshot because automaticSnapshots is disabled");
+					return false;
+				}
+				else if (attachment.mimeType !== 'text/html' && !downloadAssociatedFiles) {
+					Zotero.debug(`saveToZotero: Ignoring attachment with type ${attachment.mimeType} because downloadAssociatedFiles is disabled`);
+					return false;
 				}
 			
-				// Ignore non-snapshot text/html attachments (saved as link attachments)
 				// Don't save snapshots from search results.
 				// TODO https://github.com/zotero/zotero-connectors/issues/481
-				if (attachment.mimeType === 'text/html' && attachment.snapshot !== false) {
+				if (attachment.mimeType === 'text/html') {
 					if (this._itemType === "multiple") {
 						Zotero.debug("saveToZotero: Ignoring snapshot of text/html attachment for multiple-item save");
 						return false;
 					}
 
-					if (!zoteroSupportsAttachmentUpload) {
-						payload.singleFile = true;
-						attachment.singleFile = true;
-					}
 					this._snapshotAttachment = attachment;
 					this._singleFile = true;
-					// If Zotero doesn't support attachment upload then we need to pass the snapshot
-					// as an attachment to Zotero via saveItems endpoint.
-					return !zoteroSupportsAttachmentUpload;
+					return false;
 				}
 				
 				// Otherwise translate removes attachments from items when you call
 				// itemsDoneCallback
 				return true;
 			});
-		}
-
-		if (Zotero.isSafari) {
-			// This is the best in terms of cookies we can do in Safari
-			payload.cookie = document.cookie;
 		}
 		
 		payload.items = Zotero.Utilities.deepCopy(items);
@@ -199,36 +184,27 @@ ItemSaver.prototype = {
 			throw e;
 		}
 
-		if (zoteroSupportsAttachmentUpload) {
-			// Only pass attachments that are to be saved by linking
-			for (let item of payload.items) {
-				item.attachments = item.attachments.filter((attachment) => {
-					return attachment.snapshot === false
-				});
-			}
+		// Only pass attachments that are to be saved by linking
+		for (let item of payload.items) {
+			item.attachments = item.attachments.filter((attachment) => {
+				return attachment.snapshot === false
+			});
 		}
 		
-		let data = await Zotero.Connector.callMethodWithCookies("saveItems", payload)
-		if (!zoteroSupportsAttachmentUpload) items = data.items;
+		await Zotero.Connector.callMethod("saveItems", payload)
 		// Update UI for top-level items
 		itemsDoneCallback(items);
 
 		Zotero.debug("Translate: Save via Zotero succeeded");
 		Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID: this._sessionID });
 		
-		if (!zoteroSupportsAttachmentUpload) {
-			await this.saveAttachmentsViaZotero(items, attachmentCallback);
-		}
-		else {
-			const response = await Zotero.Connector.callMethod("getSelectedCollection", {})
-			if (response.filesEditable) {
-				await this.saveAttachmentsToZotero(attachmentCallback);
-			}
+		const response = await Zotero.Connector.callMethod("getSelectedCollection", {})
+		if (response.filesEditable) {
+			await this.saveAttachmentsToZotero(attachmentCallback);
 		}
 
 		return items;
 	},
-
 	async _checkExistingItems(items, payloadItems) {
 		let response;
 		try {
@@ -326,26 +302,6 @@ ItemSaver.prototype = {
 		}
 		return false;
 	},
-
-	/**
-	 * Save attachments via Zotero (old workflow before Zotero supported attachment upload)
-	 * @param {Object[]} items
-	 * @param {Function} attachmentCallback
-	 * @returns {Promise}
-	 */
-	async saveAttachmentsViaZotero(items, attachmentCallback) {
-		Zotero.debug("ItemSaver.saveAttachmentsViaZotero: Awaiting for attachments to be saved by Zotero");
-		let promises = []
-		// Save the snapshot if required
-		if (this._singleFile) {
-			// Attachment progress will be monitored via _pollForProgress()
-			// (Zotero is source of truth)
-			promises.push(this._executeSingleFile(() => 0));
-		}
-		// Poll for progress of attachments saved by Zotero
-		promises.push(this._pollForProgress(items, attachmentCallback));
-		await Promise.all(promises);
-	},
 	
 	async saveAttachmentsToZotero(attachmentCallback) {
 		let promises = []
@@ -411,6 +367,7 @@ ItemSaver.prototype = {
 					attachmentCallback(attachment, 100);
 				}
 				catch (e) {
+					Zotero.debug(`ItemSaver.saveAttachmentsToZotero: Failed to save attachment ${attachment.url}: ${e}`);
 					if (attachment.isPrimary && shouldAttemptToDownloadOAAttachments) {
 						attachmentCallback(attachment, 0);
 					}
@@ -439,6 +396,9 @@ ItemSaver.prototype = {
 				});
 			}
 			if (!item.hasAttachmentResolvers) {
+				if (attachment) {
+					attachmentCallback(attachment, false, "PDF fetch failed and no resolvers found");
+				}
 				return;
 			}
 			
@@ -515,61 +475,6 @@ ItemSaver.prototype = {
 
 		return false;
 	},
-
-	/**
-	 * Polls for updates to attachment progress
-	 * @param items Items in Zotero.Item.toArray() format
-	 * @param {Function} attachmentCallback A callback that receives information about attachment
-	 *     save progress. The callback will be called as attachmentCallback(attachment, false, error)
-	 *     on failure or attachmentCallback(attachment, progressPercent) periodically during saving.
-	 *     attachmentCallback() will be called with all attachments that will be saved
-	 */
-	_pollForProgress: async function (items, attachmentCallback) {
-		var attachments = [];
-		for (let item of items) {
-			if (!item.attachments) continue;
-			for (let attachment of item.attachments) {
-				if (attachment.id) {
-					attachments.push(attachment);
-				}
-			}
-		}
-		
-		var nPolls = 0;
-		while (true) {
-			try {
-				var response = await Zotero.Connector.callMethod(
-					"sessionProgress", { sessionID: this._sessionID }
-				)
-			}
-			catch (e) {
-				for (let attachment of attachments) {
-					attachmentCallback(attachment, false, "Lost connection to Zotero");
-				}
-				return;
-			}
-			
-			// Store last version of attachments so we can cancel them if a subsequent request fails
-			let newAttachments = [];
-			for (let item of response.items) {
-				if (!item.attachments) continue;
-				for (let attachment of item.attachments) {
-					attachment.parentItem = item.id;
-					attachmentCallback(attachment, attachment.progress);
-					newAttachments.push(attachment);
-				}
-			}
-			attachments = newAttachments;
-			
-			if (nPolls++ < 60 && !response.done) {
-				await Zotero.Promise.delay(1000);
-			}
-			else {
-				break;
-			}
-		}
-	},
-	
 
 	/**
 	 * Saves items to server

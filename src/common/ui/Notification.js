@@ -92,10 +92,20 @@ Zotero.UI.Notification.buttonStyle = Object.assign({
 	whiteSpace: "nowrap"
 }, Zotero.UI.Notification.textStyle);
 
+// Inject the button hover-color rule once
+function injectStyle() {
+	if (doc.getElementById('zotero-notification-style')) return;
+	var style = doc.createElement('style');
+	style.id = 'zotero-notification-style';
+	style.textContent = '.zotero-notification a:hover { color: rgba(0,0,0,0.8) !important; }';
+	(doc.head || doc.documentElement).appendChild(style);
+}
+
 Zotero.UI.Notification.prototype = {
 	show: function() {
 		if (this.deferred) return deferred.promise;
 		this.deferred = Zotero.Promise.defer();
+		injectStyle();
 		var elem = doc.createElement('div');
 		for (let param in Zotero.UI.Notification.rootStyle) {
 			elem.style[param] = Zotero.UI.Notification.rootStyle[param];
@@ -103,13 +113,8 @@ Zotero.UI.Notification.prototype = {
 		for (let param in Zotero.UI.Notification.textStyle) {
 			elem.style[param] = Zotero.UI.Notification.textStyle[param];
 		}
-		let margins = ['marginTop', 'marginRight', 'marginLeft'];
-		let bodyStyle = getComputedStyle(doc.body);
-		for (let margin of margins) {
-			elem.style[margin] = '-' + bodyStyle[margin];
-		}
 		this.elems.root = elem;
-		elem.classList.add('zotero-notificaton');
+		elem.classList.add('zotero-notification');
 
 		elem = doc.createElement('span');
 		elem.innerHTML = this.text;
@@ -155,12 +160,3 @@ Zotero.UI.Notification.prototype = {
 	}
 };
 })();
-
-window.addEventListener('load', function () {
-	var style = document.createElement('style');
-	style.type = 'text/css';
-	style.innerHTML = `
-	.zotero-notification a:hover { color: rgba(0,0,0,0.95) !important; }
-	`;
-	document.getElementsByTagName('head')[0].appendChild(style);
-});

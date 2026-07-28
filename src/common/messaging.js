@@ -99,21 +99,45 @@ Zotero.Messaging = new function() {
 	 */
 	this.sendMessage = async function(messageName, args, tab=null, frameId=0) {
 		var response;
-		// Use the promise or response callback in BrowserExt for advanced functionality
-		if(Zotero.isBrowserExt) {
-			// Get current tab if not provided
-			if (!tab) {
-				tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
-			}
-			if (typeof tab === 'number') {
-				tab = await browser.tabs.get(tab);
-			}
-			let options = {};
-			if (typeof frameId == 'number') options = {frameId};
-			
+		// Get current tab if not provided
+		if (!tab) {
+			tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
+		}
+		if (typeof tab === 'number') {
+			tab = await browser.tabs.get(tab);
+		}
+		let options = {};
+		if (typeof frameId == 'number') options = {frameId};
+
+		try {
+			response = await browser.tabs.sendMessage(tab.id, [messageName, args], options);
+		} catch (e) {}
+		if (response && response[0] == 'error') {
+			response[1] = JSON.parse(response[1]);
+			let e = new Error(response[1].message);
+			for (let key in response[1]) e[key] = response[1][key];
+			throw e;
+		}
+		return response;
+	}
+	
+	/**
+	 * Sends a message only to Zotero extension-origin frames in a tab.
+	 */
+	this.sendToZoteroFrames = async function(messageName, args, tab=null) {
+		if (!tab) {
+			tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
+		}
+		if (typeof tab === 'number') {
+			tab = await browser.tabs.get(tab);
+		}
+
+		if (!Zotero.isSafari) {
+			let response;
 			try {
-				response = await browser.tabs.sendMessage(tab.id, [messageName, args], options);
-			} catch (e) {}
+				response = await browser.tabs.sendMessage(tab.id, [messageName, args]);
+			}
+			catch (e) {}
 			if (response && response[0] == 'error') {
 				response[1] = JSON.parse(response[1]);
 				let e = new Error(response[1].message);
@@ -121,36 +145,50 @@ Zotero.Messaging = new function() {
 				throw e;
 			}
 			return response;
-		} //else if(Zotero.isSafari) { }
-		// Safari handled in safari/messaging_global.js
+		}
+
+		let response;
+		try {
+			// We could target specific frames here
+			// but Chromium browsers do not send messages to frames
+			// that load an extension page when specified, only when broadcast. Sigh.
+			response = await browser.tabs.sendMessage(
+				tab.id,
+				['zoteroFrame.sendMessage', [messageName, args]],
+			);
+		}
+		catch (e) {}
+		if (response && response[0] == 'error') {
+			response[1] = JSON.parse(response[1]);
+			let e = new Error(response[1].message);
+			for (let key in response[1]) e[key] = response[1][key];
+			throw e;
+		}
+		return response;
 	}
 	
 	/**
 	 * Adds messaging listener
 	 */
 	this.init = function() {
-		if (Zotero.isBrowserExt) {
-			browser.runtime.onMessage.addListener(function(request, sender) {
-				// All Zotero messages are arrays so we ignore everything else
-				// SingleFile will pass an object in the message so this ignores those.
-				if (!Array.isArray(request)) {
-					return;
-				}
+		browser.runtime.onMessage.addListener(function(request, sender) {
+			// All Zotero messages are arrays so we ignore everything else
+			// SingleFile will pass an object in the message so this ignores those.
+			if (!Array.isArray(request)) {
+				return;
+			}
 
-				return Zotero.Messaging.receiveMessage(request[0], request[1], sender.tab, sender.frameId)
-				.catch(function(err) {
-					// Zotero.logError(err);
-					err = JSON.stringify(Object.assign({
-						name: err.name,
-						message: err.message,
-						stack: err.stack
-					}, err));
-					return ['error', err];
-				});
+			return Zotero.Messaging.receiveMessage(request[0], request[1], sender.tab, sender.frameId)
+			.catch(function(err) {
+				// Zotero.logError(err);
+				err = JSON.stringify(Object.assign({
+					name: err.name,
+					message: err.message,
+					stack: err.stack
+				}, err));
+				return ['error', err];
 			});
-		} else if (Zotero.isSafari) {
-			// Safari handled in safari/messaging_global.js
-		}
+		});
 		Zotero.Messaging.initialized = true;
 	}
 
@@ -168,27 +206,4 @@ Zotero.Messaging = new function() {
 		delete _chunkedPayloads[id];
 		return payload;
 	}
-}
-// Used to pass large data like blobs on Chrome
-if (Zotero.isChromium) {
-	// Cannot be added asynchronously
-	self.addEventListener('message', async (e) => {
-		if (!(e.data?.type === "inject-message")) return;
-		let { args } = e.data;
-		// Replace tabId with tab
-		if (args[2]) {
-			args[2] = await browser.tabs.get(args[2]);
-		}
-		let result, error;
-		try {
-			result = await Zotero.Messaging.receiveMessage(...args)
-		} catch (e) {
-			error = JSON.stringify(Object.assign({
-				name: e.name,
-				message: e.message,
-				stack: e.stack
-			}, e));
-		}
-		e.source.postMessage({ result, error });
-	});
 }

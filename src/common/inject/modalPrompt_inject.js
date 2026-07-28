@@ -41,10 +41,27 @@ if (isTopWindow) {
 	//
 	var frameID = 'zotero-modal-prompt';
 	var iframe;
+	var zoteroFrame;
 	var initialized = false;
 	var frameSrc;
 	var previousFocus;
 	frameSrc = Zotero.getExtensionURL('modalPrompt/modalPrompt.html');
+
+	function isExtensionPage() {
+		try {
+			return window.location.href.startsWith(browser.runtime.getURL(''));
+		}
+		catch (e) {
+			return false;
+		}
+	}
+
+	async function sendModalPromptMessage(messageName, args) {
+		if (Zotero.isSafari && isExtensionPage()) {
+			return iframe.contentWindow.Zotero.Messaging.receiveMessage([messageName, args]);
+		}
+		return Zotero.Messaging.sendToZoteroFrames(messageName, args);
+	}
 
 	async function init() {
 		var deferred = Zotero.Promise.defer();
@@ -58,10 +75,10 @@ if (isTopWindow) {
 			previousFocus && previousFocus.ownerDocument.defaultView.focus() && previousFocus.focus();
 		});
 
-		iframe = document.createElement('iframe');
-		iframe.id = frameID;
-		iframe.src = frameSrc;
-		var style = {
+		zoteroFrame = new Zotero.Frame({
+			id: frameID,
+			src: frameSrc
+		}, {
 			position: 'fixed',
 			top: '0px',
 			left: 'unset',
@@ -71,9 +88,8 @@ if (isTopWindow) {
 			border: "none",
 			display: "none",
 			zIndex: 2147483647
-		};
-		for (let i in style) iframe.style[i] = style[i];
-		document.body.appendChild(iframe);
+		});
+		iframe = zoteroFrame.frame;
 		setTimeout(() => deferred.reject(new Error('Timed out while injecting modal prompt')), 800);
 		return deferred.promise;
 	}
@@ -112,7 +128,7 @@ if (isTopWindow) {
 			}
 			iframe.style.display = 'block';
 			previousFocus = getActiveElement();
-			let result = await Zotero.Messaging.sendMessage('modalPrompt.show', props, null, null);
+			let result = await sendModalPromptMessage('modalPrompt.show', props);
 			iframe.style.display = 'none';
 			return result
 		}

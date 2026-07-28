@@ -86,7 +86,10 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		mimeType: tabInfo.contentType,
 		sessionID: Zotero.Utilities.randomString()
 	};
-	if (!pdf) {
+	if (pdf) {
+		data.title = tab.title || new URL(url).pathname.split('/').pop();
+	}
+	else {
 		data.title = url;
 	}
 	try {
@@ -102,14 +105,15 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 			title: "Saving…"
 		});
 		
-		// Make sure we have up to date prefs
-		await Zotero.Connector.ping();
-		const zoteroSupportsAttachmentUpload = Zotero.Connector.getPref('supportsAttachmentUpload');
-		if (zoteroSupportsAttachmentUpload) {
+		try {
+			// Check availability before fetching the attachment
+			await Zotero.Connector.ping();
 			await Zotero.ItemSaver.saveStandaloneAttachmentToZotero(data, data.sessionID, tab);
 		}
-		else {
-			await Zotero.Connector.callMethodWithCookies("saveSnapshot", data, tab);
+		catch (e) {
+			if (e.status !== 0 || !pdf) throw e;
+			data.linkMode = 'imported_url';
+			await Zotero.ItemSaver.saveAttachmentToServer(data, tab);
 		}
 		
 		browser.browserAction.setIcon({
@@ -126,7 +130,9 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		tabInfo.isPDF = false;
 	
 	} catch (e) {
-		Zotero.logError(e);
+		if (e.status !== 0) {
+			Zotero.logError(e);
+		}
 		
 		browser.browserAction.setIcon({
 			tabId:tab.id,

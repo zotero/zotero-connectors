@@ -58,7 +58,7 @@ const isAllowedIframeContentType = ['text/html', 'application/pdf'].includes(doc
 // or non-top Safari pages
 const isWeb = window.location.protocol === "http:" || window.location.protocol === "https:";
 // Run on test pages
-const isTestPage = Zotero.isBrowserExt && window.location.href.startsWith(browser.runtime.getURL('test'));
+const isTestPage = window.location.href.startsWith(browser.runtime.getURL('test'));
 
 // Not scraping on hidden iframes and only select frames
 const shouldInject = (isWeb || isTestPage) && !isHiddenIFrame && (isTopWindow || isAllowedIframeContentType)
@@ -114,12 +114,7 @@ Zotero.Inject = {
 		});
 		// add a listener to save as webpage when translators unavailable
 		Zotero.Messaging.addMessageListener("saveAsWebpage", function(data) {
-			if (Zotero.isSafari) {
-				if (data[0] !== instanceID) return;
-				return Zotero.PageSaving.onSaveAsWebpage(data[1]);
-			} else {
-				return Zotero.PageSaving.onSaveAsWebpage(data);
-			}
+			return Zotero.PageSaving.onSaveAsWebpage(data);
 		});
 		Zotero.Messaging.addMessageListener('updateSession', (data) => {
 			return Zotero.PageSaving.onUpdateSession(data);
@@ -193,7 +188,6 @@ Zotero.Inject = {
 	 * @return {Promise} resolves when components are injected
 	 */
 	async loadReactComponents(components=[]) {
-		if (Zotero.isSafari) return;
 		var toLoad = [];
 		if (typeof ReactDOM === "undefined" || typeof React === "undefined"
 				|| !React.useState) {

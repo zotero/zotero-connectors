@@ -135,10 +135,6 @@ describe("ItemSaver", function() {
 						if (pref == 'downloadAssociatedFiles') return true;
 						return null;
 					});
-					sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async (method, payload) => {
-						savedPayload = payload;
-						return {};
-					});
 					let lookupPayload;
 					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method, payload) => {
 						if (method == 'findExistingItems') {
@@ -153,6 +149,10 @@ describe("ItemSaver", function() {
 									}
 								}]
 							};
+						}
+						if (method == 'saveItems') {
+							savedPayload = payload;
+							return {};
 						}
 						return {
 							filesEditable: false
@@ -196,7 +196,6 @@ describe("ItemSaver", function() {
 				finally {
 					for (let stub of [
 						Zotero.Connector.getPref,
-						Zotero.Connector.callMethodWithCookies,
 						Zotero.Connector.callMethod,
 						Zotero.Messaging.sendMessage
 					]) {
@@ -224,7 +223,6 @@ describe("ItemSaver", function() {
 						if (pref == 'downloadAssociatedFiles') return true;
 						return null;
 					});
-					sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves({});
 					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
 						if (method == 'findExistingItems') {
 							return {
@@ -277,7 +275,6 @@ describe("ItemSaver", function() {
 				finally {
 					for (let stub of [
 						Zotero.Connector.getPref,
-						Zotero.Connector.callMethodWithCookies,
 						Zotero.Connector.callMethod,
 						Zotero.Messaging.sendMessage
 					]) {
@@ -302,7 +299,6 @@ describe("ItemSaver", function() {
 						if (pref == 'downloadAssociatedFiles') return true;
 						return null;
 					});
-					sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves({});
 					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
 						if (method == 'findExistingItems') {
 							return {
@@ -352,7 +348,6 @@ describe("ItemSaver", function() {
 				finally {
 					for (let stub of [
 						Zotero.Connector.getPref,
-						Zotero.Connector.callMethodWithCookies,
 						Zotero.Connector.callMethod,
 						Zotero.Messaging.sendMessage
 					]) {
@@ -377,7 +372,6 @@ describe("ItemSaver", function() {
 						if (pref == 'downloadAssociatedFiles') return true;
 						return null;
 					});
-					sinon.stub(Zotero.Connector, "callMethodWithCookies").resolves({});
 					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
 						if (method == 'findExistingItems') {
 							return {
@@ -437,7 +431,6 @@ describe("ItemSaver", function() {
 				finally {
 					for (let stub of [
 						Zotero.Connector.getPref,
-						Zotero.Connector.callMethodWithCookies,
 						Zotero.Connector.callMethod,
 						Zotero.Messaging.sendMessage
 					]) {
@@ -464,10 +457,6 @@ describe("ItemSaver", function() {
 						if (pref == 'downloadAssociatedFiles') return true;
 						return null;
 					});
-					sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async () => {
-						saveItemsCalled = true;
-						return {};
-					});
 					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
 						if (method == 'findExistingItems') {
 							return {
@@ -480,6 +469,10 @@ describe("ItemSaver", function() {
 									}
 								}]
 							};
+						}
+						if (method == 'saveItems') {
+							saveItemsCalled = true;
+							return {};
 						}
 						return {
 							filesEditable: false
@@ -521,7 +514,6 @@ describe("ItemSaver", function() {
 				finally {
 					for (let stub of [
 						Zotero.Connector.getPref,
-						Zotero.Connector.callMethodWithCookies,
 						Zotero.Connector.callMethod,
 						Zotero.Messaging.sendMessage,
 						Zotero.debug
@@ -550,10 +542,6 @@ describe("ItemSaver", function() {
 						if (pref == 'downloadAssociatedFiles') return true;
 						return null;
 					});
-					sinon.stub(Zotero.Connector, "callMethodWithCookies").callsFake(async () => {
-						saveItemsCalled = true;
-						return {};
-					});
 					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method) => {
 						if (method == 'findExistingItems') {
 							return {
@@ -565,6 +553,10 @@ describe("ItemSaver", function() {
 									}
 								}]
 							};
+						}
+						if (method == 'saveItems') {
+							saveItemsCalled = true;
+							return {};
 						}
 						return {
 							filesEditable: false
@@ -613,7 +605,6 @@ describe("ItemSaver", function() {
 				finally {
 					for (let stub of [
 						Zotero.Connector.getPref,
-						Zotero.Connector.callMethodWithCookies,
 						Zotero.Connector.callMethod,
 						Zotero.Messaging.sendMessage
 					]) {

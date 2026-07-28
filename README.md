@@ -4,12 +4,16 @@
 
 ## Building
 
-1. `git clone --recursive https://github.com/zotero/zotero-connectors.git`
+1. `git clone https://github.com/zotero/zotero-connectors.git`
 1. `cd zotero-connectors`
+1. `git submodule update --init`
 1. `npm install`
 1. `./build.sh -d`
 
 The connectors are built in `build/`.
+
+The build needs only the top-level submodules, so `git submodule update --init`
+(without `--recursive`) is enough.
 
 ## Running from the build directory
 

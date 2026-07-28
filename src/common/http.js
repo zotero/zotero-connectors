@@ -25,7 +25,7 @@
 
 const MAX_BACKOFF = 64e3;
 
-const HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Cookie', 'Referer'];
+const HEADERS_SPECIAL_HANDLING = ['User-Agent', 'Cookie', 'Referer', 'Sec-Fetch-Site'];
 
 /**
  * Functions for performing HTTP requests, both via XMLHTTPRequest and using a hidden browser
@@ -131,63 +131,59 @@ Zotero.HTTP = new function() {
 		}
 	};
 	
+	// Only used by Firefox and Safari
 	this._requestXHR = async function(method, url, options) {
 		var useContentXHR = false;
 		let DNRRuleID;
 		
-		// There is no reason to run xhr not from background page for web extensions since those
-		// requests send full browser cookies.
-		// That is not the case with Safari though and without cookies requests to proxied
-		// resources fail, so we use on-page xhr there.
-		// However, if the request requires replacing user-agent, we still send the request via
-		// the background page since we're unable to replace user-agent via an on-page xhr and
-		// since user-agent option is explicitly set, it takes priority.
-		let sameOriginRequestViaSafari = Zotero.isSafari && Zotero.HTTP.isSameOrigin(url) && !options.headers['User-Agent'];
-		if (Zotero.isInject && !options.forceInject && !sameOriginRequestViaSafari) {
+		// Request routing rules:
+		// If user-agent needs replacing, route via background (cannot replace in content-script)
+		// Firefox: use content xhr for same-origin requests, because that sends the correct
+		// referrer, otherwise route via background
+		// Safari: use extension xhr for same-origin requests, because that sends the correct
+		// referrer, otherwise route via background
+		let shouldRouteViaInject = Zotero.isInject && (options.forceInject
+			|| Zotero.HTTP.isSameOrigin(url) && !options.headers['User-Agent']);
+		let shouldUseContentXHR = shouldRouteViaInject && Zotero.isFirefox;
+		if (shouldUseContentXHR) {
 			// The privileged XHR that Firefox makes available to content scripts so that they
 			// can make cross-domain requests doesn't include the Referer header in requests [1],
 			// so sites that check for it don't work properly. As long as we're not making a
 			// cross-domain request, we can use the content XHR that it provides, which does
 			// include Referer. Chrome's XHR in content scripts includes Referer by default.
 			//
-			// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#XHR_and_Fetch
-			if (Zotero.HTTP.isSameOrigin(url) && !(Zotero.isSafari && options.headers['User-Agent'])) {
-				if (typeof content != 'undefined' && content.XMLHttpRequest) {
-					Zotero.debug("Using content XHR");
-					useContentXHR = true;
-				}
+			// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#XHR_and_Fetch	
+			if (typeof content != 'undefined' && content.XMLHttpRequest) {
+				Zotero.debug("Using content XHR");
+				useContentXHR = true;
 			}
-			else {
-				if (Zotero.isBookmarklet) {
-					Zotero.debug("HTTP: Attempting cross-site request from bookmarklet; this may fail");
-				}
-				else {
-					// Make a cross-origin request via the background page, parsing the responseText with
-					// DOMParser and returning a Proxy with 'response' set to the parsed document
-					let isDocRequest = options.responseType == 'document';
-					let coOptions = Object.assign({}, options);
-					if (isDocRequest) {
-						coOptions.responseType = 'text';
-					}
-					if (Zotero.isSafari && options.headers['User-Agent']) {
-						coOptions.headers['Cookie'] = document.cookie;
-					}
-					return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
-						if (!isDocRequest) return xmlhttp;
-						
-						Zotero.debug("Parsing cross-origin response for " + url);
-						let parser = new DOMParser();
-						let contentType = xmlhttp.getResponseHeader("Content-Type");
-						let doc = parser.parseFromString(xmlhttp.responseText, Zotero.HTTP.determineDOMParserContentType(contentType));
-						
-						return new Proxy(xmlhttp, {
-							get: function (target, name) {
-								return name == 'response' ? doc : target[name];
-							}
-						});
-					});
-				}
+		}
+		else if (Zotero.isInject && !shouldRouteViaInject) {
+			// Make a cross-origin request via the background page, parsing the responseText with
+			// DOMParser and returning a Proxy with 'response' set to the parsed document
+			let isDocRequest = options.responseType == 'document';
+			let coOptions = Object.assign({}, options);
+			Zotero.HTTP.addDefaultReferrer(url, coOptions);
+			if (isDocRequest) {
+				coOptions.responseType = 'text';
 			}
+			if (Zotero.isSafari && options.headers['User-Agent']) {
+				coOptions.headers['Cookie'] = document.cookie;
+			}
+			return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
+				if (!isDocRequest) return xmlhttp;
+				
+				Zotero.debug("Parsing cross-origin response for " + url);
+				let parser = new DOMParser();
+				let contentType = xmlhttp.getResponseHeader("Content-Type");
+				let doc = parser.parseFromString(xmlhttp.responseText, Zotero.HTTP.determineDOMParserContentType(contentType));
+				
+				return new Proxy(xmlhttp, {
+					get: function (target, name) {
+						return name == 'response' ? doc : target[name];
+					}
+				});
+			});
 		}
 		
 		let logBody = '';
@@ -240,6 +236,9 @@ Zotero.HTTP = new function() {
 		xmlhttp.open(method, url, true);
 
 		for (let header in options.headers) {
+			// Safari logs a warning if you try to set referer (forbidden).
+			// We set it above with DNR anyway.
+			if (Zotero.isSafari && header.toLowerCase() == 'referer') continue;
 			xmlhttp.setRequestHeader(header, options.headers[header]);
 		}
 		
@@ -279,21 +278,19 @@ Zotero.HTTP = new function() {
 		}
 	}
 	
+	// Only used by MV3 (Chromium)
 	this._requestFetch = async function(method, url, options) {
 		if (Zotero.isInject) {
 			// Make a cross-origin request via the background page, parsing the responseText with
 			// DOMParser and returning a Proxy with 'response' set to the parsed document
 			let isDocRequest = options.responseType == 'document';
 			let coOptions = Object.assign({}, options);
+			Zotero.HTTP.addDefaultReferrer(url, coOptions);
 			if (isDocRequest) {
 				coOptions.responseType = 'text';
 			}
-			if (Zotero.isSafari && options.headers['User-Agent']) {
-				coOptions.headers['Cookie'] = document.cookie;
-			}
 			return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
-				if (!isDocRequest || Zotero.isManifestV3) {
-					xmlhttp.responseType = options.responseType;
+				if (!isDocRequest) {
 					return xmlhttp;
 				}
 				
@@ -301,6 +298,7 @@ Zotero.HTTP = new function() {
 				let parser = new DOMParser();
 				let contentType = xmlhttp.getResponseHeader("Content-Type");
 				let doc = parser.parseFromString(xmlhttp.responseText, Zotero.HTTP.determineDOMParserContentType(contentType));
+				xmlhttp.responseType = options.responseType;
 				
 				return new Proxy(xmlhttp, {
 					get: function (target, name) {
@@ -603,7 +601,11 @@ Zotero.HTTP = new function() {
 	this._augmentCfCookie = async function(url, options) {
 		let cfCookies;
 		try {
-			cfCookies = await browser.cookies.getAll({url, name: 'cf_clearance', partitionKey: {}});
+			cfCookies = await Zotero.Connector_Browser.getAllCookies({
+				url,
+				name: 'cf_clearance',
+				partitionKey: {}
+			});
 		} catch (e) {
 			// partitionKey added in Chrome 118+ (October 2023), some of our users are
 			// on older versions

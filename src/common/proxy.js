@@ -58,7 +58,6 @@ Zotero.Proxies = new function() {
 	 * @returns Promise{boolean} proxy enabled/disabled status
 	 */
 	this.init = async function() {
-		if (Zotero.isSafari) return;
 		this.transparent = false;
 		this.proxies = [];
 		this.hosts = {};
@@ -80,16 +79,11 @@ Zotero.Proxies = new function() {
 			}
 			return proxy;
 		});
-		
-		if (this.transparent) {
-			Zotero.Proxies.loadFromClient();
-		}
 	};
 	
 	this.loadPrefs = function() {
 		Zotero.Proxies.transparent = Zotero.Prefs.get("proxies.transparent");
-		Zotero.Proxies.autoRecognize = Zotero.isBrowserExt
-			&& Zotero.Proxies.transparent && Zotero.Prefs.get("proxies.autoRecognize");
+		Zotero.Proxies.autoRecognize = Zotero.Proxies.transparent && Zotero.Prefs.get("proxies.autoRecognize");
 		
 		var disableByDomainPref = Zotero.Prefs.get("proxies.disableByDomain");
 		Zotero.Proxies.disableByDomain = (Zotero.Proxies.transparent && disableByDomainPref ? Zotero.Prefs.get("proxies.disableByDomainString") : null);
@@ -104,22 +98,14 @@ Zotero.Proxies = new function() {
 	};
 	
 	this.enable = function() {
-		if (Zotero.isBrowserExt) {
-			Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onHeadersReceived);
-			browser.webNavigation.onCommitted.addListener(Zotero.Proxies.onNavigationCommitted)
-		} else {
-			safari.application.addEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
-		}
+		Zotero.WebRequestIntercept.addListener('headersReceived', Zotero.Proxies.onHeadersReceived);
+		browser.webNavigation.onCommitted.addListener(Zotero.Proxies.onNavigationCommitted)
 	};
-	
-	
+
+
 	this.disable = function() {
-		if (Zotero.isBrowserExt) {
-			Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onHeadersReceived);
-			browser.webNavigation.onCommitted.removeListener(Zotero.Proxies.onNavigationCommitted)
-		} else {
-			safari.application.removeEventListener('beforeNavigate', this.onBeforeNavigateSafari, false);
-		}
+		Zotero.WebRequestIntercept.removeListener('headersReceived', Zotero.Proxies.onHeadersReceived);
+		browser.webNavigation.onCommitted.removeListener(Zotero.Proxies.onNavigationCommitted)
 	};
 	
 	
@@ -140,61 +126,7 @@ Zotero.Proxies = new function() {
 			}.bind(this));
 		}
 	};
-	
-	this.loadFromClient = function() {
-		if (Zotero.Prefs.get('proxies.clientChecked')) return;
-		return Zotero.Connector.callMethod('proxies', null).then(function(result) {
-			for (let proxy of result) {
-				if (proxy.scheme.includes('://')) {
-					proxy.scheme = proxy.scheme.substr(proxy.scheme.indexOf('://')+3);
-				}
-				let existingProxy;
-				for (let p of Zotero.Proxies.proxies) {
-					if (proxy.scheme == p.scheme) {
-						existingProxy = p;
-						break;
-					}
-				}
-				if (existingProxy) {
-					// Copy hosts from the client if proxy already exists
-					existingProxy.hosts.push.apply(existingProxy.hosts, proxy.hosts);
-					existingProxy.hosts = Array.from(new Set(existingProxy.hosts));
-				} else {
-					// Otherwise add the proxy
-					Zotero.Proxies.save(Zotero.Proxies._createProxyInstance(proxy));
-				}
-			}
 
-			Zotero.Prefs.set('proxies.clientChecked', true);
-			return result;
-		}, () => 0);
-	}
-
-	/**
-	 * Called by the `safari.application` event listener
-	 * @param e {Event}
-	 */
-	this.onBeforeNavigateSafari = function(e) {
-		// Safari calls onBeforeNavigate from default tab while typing the url
-		// so if you type a proxied url you immediately get redirected without pressing enter.
-		// Not cool.
-		if (!e.target.url) return;
-		let details = {url: e.url || '', originUrl: e.target.url, frameId: 0,
-			requestHeadersObject: {}, tabId: e.target};
-
-		Zotero.Proxies.updateDisabledByDomain();
-		if (Zotero.Proxies.disabledByDomain) return;
-		let redirect;
-		for (let proxy of Zotero.Proxies.proxies) {
-			if (typeof proxy.maybeRedirect === 'function') {
-				redirect = proxy.maybeRedirect(details);
-				if (redirect) break;
-			}
-		}
-		if (redirect) {
-			e.target.url = redirect.redirectUrl;
-		}
-	};
 
 	/**
 	 * Called from the Safari global page
@@ -1196,7 +1128,7 @@ Zotero.Proxies.Detectors.EZProxy.Listener.prototype.onHeadersReceived = function
 				toProxyScheme: this.toProxy,
 				hosts: [this.properURI.host.replace(/-/g, '.')]
 			});
-			if (proxy.validate()) {
+			if (!proxy.validate()) {
 				Zotero.Proxies.notifyNewProxy(proxy.toJSON(), details.tabId)
 			}
 		}

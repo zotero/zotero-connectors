@@ -1,8 +1,8 @@
 /*
 	***** BEGIN LICENSE BLOCK *****
 	
-	Copyright © 2018 Center for History and New Media
-					George Mason University, Fairfax, Virginia, USA
+	Copyright © 2026 Corporation for Digital Scholarship
+					Vienna, Virginia, USA
 					http://zotero.org
 	
 	This file is part of Zotero.
@@ -23,43 +23,61 @@
 	***** END LICENSE BLOCK *****
 */
 
-/**
- * This is a trivial class for BrowserExt, but we need a non-trivial one for Safari
- */
 Zotero.i18n = {
-	init: async function() {
-		if (Zotero.isBackground) {
-			const defaultLocale = JSON.parse(await Zotero.Messaging.sendMessage('Swift.getDefaultLocale'));
-			const currentLocale = JSON.parse(await Zotero.Messaging.sendMessage('Swift.getCurrentLocale'));
-			this.localeJSON = Object.assign({}, defaultLocale, currentLocale);
-		} else {
-			this.localeJSON = await Zotero.i18n.getStrings();
-		}
-	},
-	getString: function(name, substitutions) {
-		if (!this.localeJSON) {
-			Zotero.logError(new Error(`i18n.getString called for ${name} before i18n.localeJSON was loaded.`));
-			return '{' + name + '}';
-		}
-		var str = this.localeJSON[name] && this.localeJSON[name].message;
-		if (!str) {
-			Zotero.logError(new Error(`Localized string '${name}' is not defined.`));
-			return '{' + name + '}';
-		}
-		if (substitutions != undefined) {
-			if (!Array.isArray(substitutions)) {
-				substitutions = [substitutions];
-			}
-			for (let i = 0; i < substitutions.length; i++) {
-				let sub = substitutions[i];
-				str = str.replace(new RegExp(`\\$${i+1}`, 'g'), sub)
-			}
-		}
+	// Raw bundled strings, loaded to avoid Safari's browser.i18n.getMessage bug with positional
+	// placeholders inside quotes (e.g., <a href="$1">), where Safari drops the placeholder and a
+	// quote and mangles the markup.
+	_strings: null,
 
-		return str;
+	init: async function() {
+		if (Zotero.i18n._strings) return;
+		if (Zotero.isBackground) {
+			// Only the background can read _locales/ (it's not web-accessible). Injected pages and
+			// content scripts fetch the strings from the background via the getStrings message.
+			Zotero.i18n._strings = await Zotero.i18n._loadStrings();
+		}
+		else {
+			Zotero.i18n._strings = await Zotero.i18n.getStrings();
+		}
 	},
-	// Used to load the localeJSON in the injected pages
+
+	_loadStrings: async function() {
+		let ui = browser.i18n.getUILanguage() || 'en';
+		let tried = [];
+		// Try the full locale, then language-only, then English. Locale folder names mirror the
+		// _locales/ directory (mostly 2-letter, plus a few like pt-PT/zh-TW).
+		for (let code of [ui, ui.replace('-', '_'), ui.split(/[-_]/)[0], 'en']) {
+			if (!code || tried.includes(code)) continue;
+			tried.push(code);
+			try {
+				let resp = await fetch(browser.runtime.getURL(`_locales/${code}/messages.json`));
+				if (resp.ok) return await resp.json();
+			} catch (e) {}
+		}
+		return {};
+	},
+
+	// Background-only message handler; injected pages call this (via messaging) to get the strings
+	// the background loaded. Overwritten by the messaging proxy in injected pages/content scripts.
 	getStrings: function() {
-		return this.localeJSON;
+		return Zotero.i18n._strings;
+	},
+
+	getString: function(name, substitutions) {
+		if (substitutions != undefined && !Array.isArray(substitutions)) {
+			substitutions = [substitutions];
+		}
+		let str = Zotero.i18n._strings[name].message;
+		if (!str) {
+			Zotero.logError(new Error(`Localized string '${name}' not defined`));
+			return '{' + name + '}';
+		}
+		if (substitutions) {
+			str = str.replace(/\$(\d+)/g, function(match, n) {
+				let i = parseInt(n) - 1;
+				return i < substitutions.length ? substitutions[i] : match;
+			});
+		}
+		return str;
 	}
 };

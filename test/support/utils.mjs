@@ -35,54 +35,31 @@ Tab.prototype = {
 		// await this.setupZoteroProxy();
 	},
 
-	setupZoteroProxy: async function () {
-		await this.page.evaluate(() => {
-			window.__zoteroTestCallbacks = {};
-			// Proxy calls to Zotero and sinon to content scripts via message passing. See testInject.js
-			window.addEventListener('message', (event) => {
-				if (event.data.type === 'zotero-test-callback') {
-					let { result, id, index } = event.data;
-					console.log(`Received callback ${id} ${index} with ${result}`);
-					window.__zoteroTestCallbacks[id][index] = result;
-				}
-			});
-			let fnBuilderProxy = function(fnName = []) {
-				return new Proxy(() => {}, {
-					get(target, prop) {
-						if (prop !== 'fnName') {
-							fnName.push(prop);
-							return fnBuilderProxy(fnName);
-						}
-						else return fnName.join('.');
-					},
-					apply(target, thisArg, args) {
-						// Random 6 char string
-						const id = Math.random().toString(36).substring(2, 8);
-						const { resolve, reject, promise } = Promise.withResolvers();
-						console.log(`Invoking ${fnName.join('.')} with ID ${id}`);
-						window.__zoteroTestCallbacks[id] = { "-1": (result) => {
-								if (result?.error) reject(result.error);
-								resolve(result);
-							}
-						};
-						args.forEach((arg, index) => {
-							if (typeof arg === 'function') {
-								window.__zoteroTestCallbacks[id][index] = arg;
-								args[index] = '__function';
-							}
-						});
-						window.postMessage({ type: 'zotero-test-exec', fnName: fnName.join('.'), args, id }, '*');
-						return promise;
-					}
-				});
-			};
-			window.Zotero = fnBuilderProxy(['Zotero']);
-			window.sinon = fnBuilderProxy(['sinon']);
-		})
-	},
-	
-	run: async function (fn, ...args) {
+	runInPage: async function (fn, ...args) {
 		return await this.page.evaluate(fn, ...args);
+	},
+
+	run: async function(fn, ...args) {
+		if (this.page.url().startsWith(extensionURL)) {
+			return await this.runInPage(fn, ...args);
+		}
+		let extensionRealm;
+		for (let i = 0; i < 50 && !extensionRealm; i++) {
+			for (let realm of this.page.extensionRealms()) {
+				let extension = await realm.extension();
+				if (extension) {
+					extensionRealm = realm;
+					break;
+				}
+			}
+			if (!extensionRealm) {
+				await delay(100);
+			}
+		}
+		if (!extensionRealm) {
+			throw new Error('Extension realm not found');
+		}
+		return await extensionRealm.evaluate(fn, ...args);
 	},
 	
 	runInFrame: async function(frameUrl, fn, ...args) {
@@ -108,6 +85,37 @@ export function delay(ms) {
 
 export function getExtensionURL(path) {
 	return `${extensionURL}${path}`;
+}
+
+/**
+ * Stub selected Connector methods while passing all other calls through.
+ * Each method behavior can specify `response`, `returnPayload`, or `error`.
+ *
+ * @param {Object<string, {response?: *, returnPayload?: boolean, error?: {message: string, status?: number}}>} methods
+ * @returns {Promise<Function>} function that restores Connector.callMethod
+ */
+export async function stubConnectorCallMethod(methods) {
+	await background((methods) => {
+		let callMethod = Zotero.Connector.callMethod;
+		sinon.stub(Zotero.Connector, 'callMethod').callsFake(async function(options, payload, ...args) {
+			let method = typeof options === 'string' ? options : options.method;
+			let behavior = methods[method];
+			if (!behavior) {
+				return callMethod.call(this, options, payload, ...args);
+			}
+			if (behavior.error) {
+				throw new Zotero.Connector.CommunicationError(
+					behavior.error.message,
+					behavior.error.status
+				);
+			}
+			if (behavior.returnPayload) {
+				return payload;
+			}
+			return behavior.response;
+		});
+	}, methods);
+	return () => background(() => Zotero.Connector.callMethod.restore());
 }
 
 export async function stubHTTPRequest(requests) {

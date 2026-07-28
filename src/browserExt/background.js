@@ -108,6 +108,36 @@ Zotero.Connector_Browser = new function() {
 		return this.resetTabInfo(tabId);
 	}
 
+	/**
+	 * Gets cookies from the store associated with a tab. In Safari, the default cookie store
+	 * may differ from the store used by browser tabs, so it must be resolved at runtime. If
+	 * no tab is provided, the active tab in the current window is used.
+	 *
+	 * @param {Object} details
+	 * @param {Number} tabId
+	 * @return {Promise<browser.cookies.Cookie[]>}
+	 */
+	this.getAllCookies = async function(details, tabId=null) {
+		details = {...details};
+		if (!Zotero.isSafari || details.storeId) {
+			return browser.cookies.getAll(details);
+		}
+
+		if (tabId === null) {
+			let tabs = await browser.tabs.query({active: true, currentWindow: true});
+			tabId = tabs[0]?.id;
+		}
+
+		let stores = await browser.cookies.getAllCookieStores();
+		let store = stores.find(store => store.tabIds.includes(tabId))
+			|| stores.find(store => store.tabIds.length)
+			|| stores[0];
+		if (store) {
+			details.storeId = store.id;
+		}
+		return browser.cookies.getAll(details);
+	}
+
 	this.executeScript = function(tabId, details) {
 		if (Zotero.isManifestV3) {
 			if (details.hasOwnProperty('code')) {
@@ -216,7 +246,7 @@ Zotero.Connector_Browser = new function() {
 		if (version) {
 			Zotero.Prefs.set('firstSaveToServer', true);
 			// TODO: Enable once 5.0 is out, so that ContentTypeHandlers show an upgradeClient message instead
-			parseInt(version[0]) >= 5 && Zotero.ContentTypeHandler.enable();
+			parseInt(version) >= 5 && Zotero.ContentTypeHandler.enable();
 		} else {
 			Zotero.ContentTypeHandler.disable();
 		}
@@ -493,7 +523,7 @@ Zotero.Connector_Browser = new function() {
 		
 		// Fix positioning in Chrome when window is on second monitor
 		// https://bugs.chromium.org/p/chromium/issues/detail?id=137681
-		if (Zotero.isBrowserExt && win.left < options.left) {
+		if (win.left < options.left) {
 			browser.windows.update(win.id, { left: options.left });
 		}
 		// Fix a Firefox bug where content does not appear before resize on linux
@@ -677,7 +707,7 @@ Zotero.Connector_Browser = new function() {
 			_showCopyUnproxiedURLCopyContextMenuItem(url);
 		}
 		
-		if (Zotero.isFirefox) {
+		if (!Zotero.isChromium) {
 			_showPreferencesContextMenuItem();
 			_showTabContextMenuItem();
 		}
@@ -1016,7 +1046,7 @@ Zotero.Connector_Browser = new function() {
 	 */
 	async function _checkPermissions(tab) {
 		// Firefox doesn't have per-site permissions in MV2.
-		if (!Zotero.isChromium) {
+		if (Zotero.isFirefox) {
 			return true;
 		}
 
@@ -1029,19 +1059,33 @@ Zotero.Connector_Browser = new function() {
 				return true;
 			}
 
-			const extensionId = browser.runtime.id;
-			const result = await Zotero.Messaging.sendMessage('confirm', {
+			const messageIntro = Zotero.getString("permissions_siteAccess_message_intro");
+			let promptProps = {
 				title: Zotero.getString("permissions_siteAccess_title"),
 				button1Text: Zotero.getString("permissions_siteAccess_openPreferences"),
-				button2Text: Zotero.getString("general_cancel"), 
+				button2Text: Zotero.getString("general_cancel"),
 				button3Text: Zotero.getString("general_continueAnyway"),
-				message: Zotero.getString("permissions_siteAccess_message")
-			}, tab);
+				message: messageIntro + Zotero.getString("permissions_siteAccess_message")
+			};
+			if (Zotero.isSafari) {
+				promptProps = {
+					title: Zotero.getString("permissions_siteAccess_title"),
+					button1Text: Zotero.getString("general_cancel"),
+					button2Text: "",
+					button3Text: Zotero.getString("general_continueAnyway"),
+					message: messageIntro + Zotero.getString(
+						"permissions_siteAccess_message_safari",
+						Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME)
+					)
+				};
+			}
+
+			const result = await Zotero.Messaging.sendMessage('confirm', promptProps, tab);
 
 			if (result) {
-				if (result.button === 1) {
+				if (!Zotero.isSafari && result.button === 1) {
 					browser.tabs.create({
-						url: `about:extensions/?id=${extensionId}`
+						url: `about:extensions/?id=${browser.runtime.id}`
 					});
 				}
 				return result.button === 3;
@@ -1233,6 +1277,9 @@ Zotero.Connector_Browser = new function() {
 		var tab = await browser.tabs.get(details.tabId);
 		if (!tab) return;
 		const url = tab.url || tab.pendingUrl;
+		// ??? I am seeing logged errors with url === undefined. Either way, if a tab with
+		// no url gets activated, there's nothing for us to do.
+		if (!url) return;
 		// Ignore item selector
 		if (url.indexOf(browser.runtime.getURL("itemSelector/itemSelector.html")) === 0) return;
 		Zotero.debug("Connector_Browser: onActivated for " + url);
@@ -1242,7 +1289,16 @@ Zotero.Connector_Browser = new function() {
 	
 	browser.webNavigation.onCommitted.addListener(waitForInit(logListenerErrors(onNavigation)));
 	browser.webNavigation.onDOMContentLoaded.addListener(waitForInit(logListenerErrors(onDOMContentLoaded)))
-	browser.webNavigation.onHistoryStateUpdated.addListener(waitForInit(logListenerErrors(details => onNavigation(details, true))));
+	// Safari doesn't implement webNavigation.onHistoryStateUpdated, so feature-detect it. Where it's
+	// missing, the historyMonitor content script reports same-document navigations instead.
+	if (browser.webNavigation.onHistoryStateUpdated) {
+		browser.webNavigation.onHistoryStateUpdated.addListener(waitForInit(logListenerErrors(details => onNavigation(details, true))));
+	}
+	else {
+		this.onHistoryStateUpdated = waitForInit(logListenerErrors(
+			(url, tab) => onNavigation({url, tabId: tab.id, frameId: 0}, true)
+		));
+	}
 }
 
 Zotero.initGlobal();

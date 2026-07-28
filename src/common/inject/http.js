@@ -58,6 +58,58 @@ Zotero.HTTP.isLessSecure = function(url) {
 	var location = window.location;
 	return location.protocol.toLowerCase() == 'https:';
 }
+
+Zotero.HTTP.addDefaultReferrer = function(url, options) {
+	if (!options.headers) options.headers = {};
+	if (options.referrer || options.headers['Referer']) {
+		return;
+	}
+	let referrer = Zotero.HTTP.getDefaultReferrer(url);
+	if (referrer) {
+		options.referrer = referrer;
+	}
+}
+
+Zotero.HTTP.getDefaultReferrer = function(url) {
+	let sourceURL;
+	let targetURL;
+	try {
+		sourceURL = new URL(document.location.href);
+		// Use the current document URL as the base so relative request URLs are
+		// resolved the same way they would be from the page.
+		targetURL = new URL(url, sourceURL.href);
+	}
+	catch (e) {
+		return '';
+	}
+
+	let policy = document.referrerPolicy || 'strict-origin-when-cross-origin';
+	let sameOrigin = sourceURL.origin == targetURL.origin;
+	let isDowngrade = sourceURL.protocol == 'https:' && targetURL.protocol != 'https:';
+	let sourceOrigin = sourceURL.origin + '/';
+	let sourceHref = sourceURL.href;
+
+	switch (policy) {
+		case 'no-referrer':
+			return '';
+		case 'origin':
+			return sourceOrigin;
+		case 'same-origin':
+			return sameOrigin ? sourceHref : '';
+		case 'strict-origin':
+			return isDowngrade ? '' : sourceOrigin;
+		case 'origin-when-cross-origin':
+			return sameOrigin ? sourceHref : sourceOrigin;
+		case 'unsafe-url':
+			return sourceHref;
+		case 'no-referrer-when-downgrade':
+			return isDowngrade ? '' : sourceHref;
+		case 'strict-origin-when-cross-origin':
+		default:
+			if (sameOrigin) return sourceHref;
+			return isDowngrade ? '' : sourceOrigin;
+	}
+}
  
 /**
  * Load one or more documents via XMLHttpRequest
@@ -78,12 +130,14 @@ Zotero.HTTP.processDocuments = async function (urls, processor, options = {}) {
 	
 	if (typeof urls == "string") urls = [urls];
 	var funcs = urls.map(url => () => {
+		let requestOptions = {
+			responseType: 'text'
+		};
+		Zotero.HTTP.addDefaultReferrer(url, requestOptions);
 		return Zotero.COHTTP.request(
 			"GET",
 			url,
-			{
-				responseType: 'text'
-			}
+			requestOptions
 		)
 		.then((xhr) => {
 			Zotero.debug("Parsing cross-origin response for " + url);
@@ -121,33 +175,3 @@ Zotero.HTTP.processDocuments = async function (urls, processor, options = {}) {
 	
 	return results;
 }
-
-Zotero.Browser = {
-	createHiddenBrowser: function() {
-		var hiddenBrowser = document.createElement("iframe");
-		hiddenBrowser.style.display = "none";
-		if(document.domain == document.location.hostname) {
-			// Since sandboxed iframes cannot set document.domain, if
-			// document.domain is set on this page, then SOP will
-			// definitely prevent us from accessing the document
-			// in a sandboxed iframe. On the other hand, if we don't
-			// sandbox the iframe, it is possible it will navigate the
-			// top-level page. So we set the sandbox attribute only if
-			// we are not certain that document.domain has been set.
-			// This is not perfect, since if a page sets
-			// document.domain = document.domain, it is still a 
-			// different origin and we will not be able to access pages
-			// loaded in the iframe. Additionally, if a page sets
-			// document.domain to a different hostname, since we don't
-			// sandbox, it is possible that it will navigate the
-			// top-level page.
-			// TODO: consider HTML XHR
-			hiddenBrowser.sandbox = "allow-same-origin allow-forms allow-scripts";
-		}
-		document.body.appendChild(hiddenBrowser);
-		return hiddenBrowser;
-	},
-	deleteHiddenBrowser: function(hiddenBrowser) {
-		document.body.removeChild(hiddenBrowser);
-	}
-};

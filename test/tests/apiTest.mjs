@@ -46,6 +46,8 @@ describe("API", function() {
 						};
 					});
 					sinon.spy(Zotero.API, 'clearCredentials');
+					// Stub _revokeKey to avoid an extra HTTP request and make the test deterministic
+					sinon.stub(Zotero.API, '_revokeKey').resolves();
 
 					sinon.stub(Zotero.HTTP, 'request');
 					Zotero.HTTP.request.onFirstCall().rejects(Object.assign(new Error('Forbidden'), { status: 403 }));
@@ -57,6 +59,8 @@ describe("API", function() {
 						clearCredentialsCalled: Zotero.API.clearCredentials.calledOnce,
 						authorizeCalled: Zotero.API.authorize.calledOnce,
 						httpRequestCallCount: Zotero.HTTP.request.callCount,
+						revokeKeyCalled: Zotero.API._revokeKey.calledOnce,
+						revokeKeyToken: Zotero.API._revokeKey.firstCall && Zotero.API._revokeKey.firstCall.args[0],
 						firstAPIKey: Zotero.HTTP.request.firstCall.args[2].headers['Zotero-API-Key'],
 						secondAPIKey: Zotero.HTTP.request.secondCall.args[2].headers['Zotero-API-Key']
 					};
@@ -64,6 +68,7 @@ describe("API", function() {
 				finally {
 					if (Zotero.API.authorize.restore) Zotero.API.authorize.restore();
 					if (Zotero.API.clearCredentials.restore) Zotero.API.clearCredentials.restore();
+					if (Zotero.API._revokeKey.restore) Zotero.API._revokeKey.restore();
 					if (Zotero.HTTP.request.restore) Zotero.HTTP.request.restore();
 
 					for (let key of authPrefKeys) {
@@ -80,6 +85,8 @@ describe("API", function() {
 			assert.equal(result.responseText, '{"success":["ABC12345"]}');
 			assert.isTrue(result.clearCredentialsCalled);
 			assert.isTrue(result.authorizeCalled);
+			assert.isTrue(result.revokeKeyCalled);
+			assert.equal(result.revokeKeyToken, 'revoked-key');
 			assert.equal(result.httpRequestCallCount, 2);
 			assert.equal(result.firstAPIKey, 'revoked-key');
 			assert.equal(result.secondAPIKey, 'new-key');

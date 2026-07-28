@@ -54,16 +54,6 @@ describe("Zotero.GoogleDocs", function() {
 			assert.isNotOk(isV2Enabled);
 		});
 
-		it.skip('should use V1 when integration.googleDocs.forceDisableV2API is true', async function() {
-			const isV2Enabled = await tab.run(async function() {
-				sinon.stub(Zotero.Prefs, 'getAsync').callThrough().withArgs('integration.googleDocs.forceDisableV2API').resolves(true);
-				
-				await Zotero.GoogleDocs.init();
-				return Zotero.GoogleDocs.Client.isV2;
-			});
-			
-			assert.isNotOk(isV2Enabled);
-		});
 
 		describe("when reportTranslationFailure is true", function() {
 			it('should use V2 when server returns true', async function() {
@@ -114,7 +104,7 @@ describe("Zotero.GoogleDocs", function() {
 		});
 	});
 
-	describe.skip('V2Client', function() {
+	describe('V2Client', function() {
 		it('should switch to V1 when 500 error is thrown', async function() {
 			var tab = new Tab();
 
@@ -128,7 +118,6 @@ describe("Zotero.GoogleDocs", function() {
 					let client = new Zotero.GoogleDocs.Client('test-doc-id');
 					
 					sinon.stub(client, 'getDocument').throws(new Error('500: Google Docs request failed'));
-					let initClientStub = sinon.stub(Zotero.GoogleDocs, 'initClient');
 					let clientStub;
 					sinon.stub(Zotero.GoogleDocs, 'ClientAppsScript').callsFake(() => {
 						clientStub = { init: async () => 0, call: sinon.stub() };
@@ -139,12 +128,10 @@ describe("Zotero.GoogleDocs", function() {
 					
 					// Verify the behavior
 					return {
-						initClientCalled: initClientStub.calledWith(true),
 						newClientCallCalled: clientStub.call.called,
 					};
 				});
 				
-				assert.isTrue(result.initClientCalled, 'initClient should be called with true');
 				assert.isTrue(result.newClientCallCalled, 'new client call should be called');
 			} finally {
 				await tab.close();

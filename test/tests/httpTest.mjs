@@ -25,7 +25,6 @@
 
 import { Tab, background } from '../support/utils.mjs';
 
-// Skips due to missing puppeteer ability to run scripts in extension content scripts
 describe("HTTP", function() {
 	var tab = new Tab();
 	let url = 'https://zotero-static.s3.amazonaws.com/test.html';
@@ -38,7 +37,7 @@ describe("HTTP", function() {
 		await tab.close();
 	});
 	
-	describe.skip("#processDocuments()", function() {
+	describe("#processDocuments()", function() {
 		it('succeeds when loading a same-origin page', async function () {
 			let url = 'https://zotero-static.s3.amazonaws.com/test.html?t';
 			let [content, location] = await tab.run(async (url) => {
@@ -78,6 +77,54 @@ describe("HTTP", function() {
 	});
 	
 	describe('#request()', function() {
+		describe('default injected referrer', function() {
+			beforeEach(async function () {
+				await background(() => {
+					globalThis._testHTTPReferrer = undefined;
+					sinon.stub(Zotero.COHTTP, 'request').callsFake(async (method, url, options) => {
+						globalThis._testHTTPReferrer = options.referrer;
+						return {
+							response: '',
+							responseText: '',
+							responseType: options.responseType || 'text',
+							status: 200,
+							statusText: 'OK',
+							responseURL: url,
+							getAllResponseHeaders: () => '',
+							getResponseHeader: () => null
+						};
+					});
+				});
+			});
+
+			afterEach(async function () {
+				await background(() => {
+					Zotero.COHTTP.request.restore();
+					delete globalThis._testHTTPReferrer;
+				});
+			});
+
+			it('uses the full document URL for same-origin injected requests routed through the background', async function () {
+				await tab.run(async () => {
+					await Zotero.initDeferred.promise;
+					await Zotero.HTTP.request('GET', '/test.html?same-origin-referrer-test');
+				});
+				let referrer = await background(() => globalThis._testHTTPReferrer);
+
+				assert.equal(referrer, url);
+			});
+
+			it('uses the document origin for cross-origin injected requests routed through the background', async function () {
+				await tab.run(async () => {
+					await Zotero.initDeferred.promise;
+					await Zotero.HTTP.request('GET', 'https://example.com/test.html');
+				});
+				let referrer = await background(() => globalThis._testHTTPReferrer);
+
+				assert.equal(referrer, new URL(url).origin + '/');
+			});
+		});
+
 		describe('With { successCodes: null } (default)', function() {
 			it('Throws when the target responds with a non-2xx or non-3xx status code', async function() {
 				const url = "https://zotero-static.s3.amazonaws.com/test.html";
@@ -156,27 +203,29 @@ describe("HTTP", function() {
 			});
 		});
 
-		describe.skip('POST', function() {
+		describe('POST', function() {
 			it('Adds a Content-Type header if not present', async function () {
-				let args = await tab.run(async function(url) {
-					let spy = await sinon.spy(XMLHttpRequest.prototype, 'setRequestHeader');
+				let headers = await background(async function(url) {
+					let originalFetch = globalThis.fetch;
+					let requestHeaders;
+					globalThis.fetch = async function(url, options) {
+						requestHeaders = options.headers;
+						return new Response('', { status: 200 });
+					};
 					try {
-						await Zotero.HTTP.request("POST", url, {body: 'test=test'})
-					} catch (e) {}
-					let args = await spy.getArgs();
-					spy.restore();
-					return args;
+						await Zotero.HTTP.request("POST", url, { body: 'test=test' });
+						return requestHeaders;
+					}
+					finally {
+						globalThis.fetch = originalFetch;
+					}
 				}, url);
-				let hasContentType = false;
-				for (let arg of args) {
-					hasContentType = hasContentType || arg[0] == 'Content-Type';
-				}
-				assert.isTrue(hasContentType);
+				assert.equal(headers['Content-Type'], 'application/x-www-form-urlencoded');
 			});
 		});
 	});
 	
-	describe.skip("COHTTP", function() {
+	describe("COHTTP", function() {
 		describe('#request()', function() {
 			it('responds with correct XHR signature', async function () {
 				let xhr = await tab.run(async function(url) {
@@ -189,18 +238,16 @@ describe("HTTP", function() {
 		});
 	});
 
-	// Skip due to missing puppeteer ability to run scripts in extension content scripts
-	describe.skip("#wrapDocument()", function () {
+	describe("#wrapDocument()", function () {
 		it("should allow document itself to be passed to document.evaluate()", async function () {
 			var content = await tab.run(function (url) {
-				var url = "https://zotero-static.s3.amazonaws.com/test.html?t";
 				return Zotero.HTTP.request("GET", url, { responseType: 'document' })
 				.then(function (xmlhttp) {
 					var doc = Zotero.HTTP.wrapDocument(xmlhttp.response, url);
 					var div = doc.evaluate('//div', doc, null, XPathResult.ANY_TYPE, null).iterateNext();
 					return div.textContent;
 				});
-			});
+			}, "https://zotero-static.s3.amazonaws.com/test.html?t");
 			assert.include(content, 'Rosenzweig');
 		});
 	});

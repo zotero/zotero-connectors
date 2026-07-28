@@ -112,12 +112,6 @@ let PageSaving = {
 
 			let translate = await this._initTranslate();
 			let translators = await Zotero.TranslateWeb.detect({ translate });
-			// We check tab content type in bg pages on browser ext, but that's not available on Safari
-			if (!translators.length && Zotero.isSafari) {
-				if (!isTopWindow && document.contentType == 'application/pdf') {
-					return Zotero.Connector_Browser.onPDFFrame(document.location.href, instanceID);
-				}
-			}
 			this.translators = translators;
 			Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
 		} catch (e) {
@@ -209,11 +203,7 @@ let PageSaving = {
 			// If the handler returns a non-undefined value then it is passed
 			// back to the callback due to backwards compat code in translate.js
 			(async () => {
-				if (Zotero.isBrowserExt) {
-					var returnItems = await Zotero.Connector_Browser.onSelect(items);
-				} else {
-					returnItems = await Zotero.Inject.onSafariSelect(items);
-				}
+				var returnItems = await Zotero.Connector_Browser.onSelect(items);
 
 				// If items were selected, reopen the save popup
 				if (returnItems && !Zotero.Utilities.isEmpty(returnItems)) {
@@ -326,35 +316,23 @@ let PageSaving = {
 		var result = await Zotero.Inject.checkActionToServer();
 		if (!result) return;
 
-		const isOnline = await Zotero.Connector.checkIsOnline();
-		const supportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
-
 		var isTextLike = document.contentType.startsWith('text')
 			|| document.contentType.includes('html');
-		if (!isTextLike && (supportsAttachmentUpload || !isOnline)) {
+		if (!isTextLike) {
 			return await this._saveAsStandaloneAttachment({title, saveSnapshot});
 		}
 		return await this._saveAsWebpage({title, saveSnapshot});
 	},
 	
 	async _saveAsWebpage({ title, saveSnapshot } = {}) {
-		const supportsAttachmentUpload = await Zotero.Connector.getPref('supportsAttachmentUpload');
 		const sessionID = this.sessionDetails.id;
 		var translatorID = 'webpage' + (saveSnapshot ? 'WithSnapshot' : '');
-		try {
-			var cookie = document.cookie;
-		} catch (e) {}
 		var data = {
 			sessionID,
 			url: document.location.toString(),
 			referrer: document.referrer,
-			cookie,
 			title: title,
 		};
-		if (!supportsAttachmentUpload) {
-			data.skipSnapshot = !saveSnapshot;
-			data.singleFile = true;
-		}
 
 		var image;
 		if (document.contentType == 'application/pdf') {
@@ -375,7 +353,7 @@ let PageSaving = {
 		Zotero.Messaging.sendMessage("progressWindow.itemProgress", items[0]);
 
 		try {
-			var result = await Zotero.Connector.callMethodWithCookies("saveSnapshot", data);
+			var result = await Zotero.Connector.callMethod("saveSnapshot", data);
 			Zotero.Messaging.sendMessage("progressWindow.sessionCreated", { sessionID });
 			items[0] = { ...items[0], progress: 100, itemsLoaded: 1 };
 			Zotero.Messaging.sendMessage("progressWindow.itemProgress", items[0]);

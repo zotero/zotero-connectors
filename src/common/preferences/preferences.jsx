@@ -77,23 +77,14 @@ var Zotero_Preferences = {
 		Zotero_Preferences.General.init();
 		Zotero_Preferences.Advanced.init();
 
-		if (Zotero.isBrowserExt) {
-			Zotero.Prefs.loadNamespace('proxies').then(function() {
-				Zotero_Preferences.Proxies.init();
-			});
-		}
+		Zotero.Prefs.loadNamespace('proxies').then(function() {
+			Zotero_Preferences.Proxies.init();
+		});
 
 
 		Zotero.initDeferred.resolve();
 		Zotero.isInject = true;
-		
-		if (Zotero.isSafari) {
-			// BrowserExt handles these in the background page
-			window.addEventListener('focus', function() {
-				Zotero.Connector_Browser.onTabFocus();
-			}, true);
-			Zotero.Connector_Browser.onTabFocus();
-		}
+
 		Zotero_Preferences.refreshData();
 		window.setInterval(() => Zotero_Preferences.refreshData(), 1000);
 	},
@@ -151,12 +142,10 @@ var Zotero_Preferences = {
 Zotero_Preferences.General = {
 	init: function() {
 
-		if (Zotero.isBrowserExt) {
-			let elem = document.getElementById('intercept-and-import');
-			elem.style.display = null;
-			this.mimeTypeHandlingComponent = React.createElement(Zotero_Preferences.Components.MIMETypeHandling, null);
-			ReactDOM.render(this.mimeTypeHandlingComponent, elem.querySelectorAll('.group-content')[0]);
-		}
+		let elem = document.getElementById('intercept-and-import');
+		elem.style.display = null;
+		this.mimeTypeHandlingComponent = React.createElement(Zotero_Preferences.Components.MIMETypeHandling, null);
+		ReactDOM.render(this.mimeTypeHandlingComponent, elem.querySelectorAll('.group-content')[0]);
 
 		ReactDOM.render(React.createElement(Zotero_Preferences.Components.ClientStatus, null),
 			document.getElementById("client-status"));
@@ -294,7 +283,7 @@ Zotero_Preferences.Advanced = {
 		toggleDisabled(submitOutputButton, true);
 
 		// We have to request permissions within a user gesture (even though we use this in Zotero.getSystemInfo())
-		if (Zotero.isBrowserExt && !Zotero.isDebug) {
+		if (!Zotero.isDebug) {
 			try {
 				await browser.permissions.request({permissions: ['management']});
 			} catch (e) {
@@ -329,7 +318,7 @@ Zotero_Preferences.Advanced = {
 		toggleDisabled(reportErrorsButton, true);
 		
 		// We have to request permissions within a user gesture (even though we use this in Zotero.getSystemInfo())
-		if (Zotero.isBrowserExt && !Zotero.isDebug) {
+		if (!Zotero.isDebug) {
 			try {
 				await browser.permissions.request({permissions: ['management']});
 			} catch (e) {
@@ -464,10 +453,7 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 	}
 	
 	render() {
-		let autoRecognise = '';
-		if (Zotero.isBrowserExt) {
-			autoRecognise = <label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label>;
-		}
+		let autoRecognise = <label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label>;
 		let redirectLoopPrevention = ''
 		if (this.state.loopPreventionTimestamp > Date.now() && this.state.transparent) {
 			redirectLoopPrevention = (

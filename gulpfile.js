@@ -78,6 +78,7 @@ var injectInclude = [
 	'cachedTypes.js',
 	'schema.js',
 	'messages.js',
+	'zoteroFrame.js',
 	'messaging_inject.js',
 	'inject/progressWindow_inject.js',
 	'inject/modalPrompt_inject.js',
@@ -95,9 +96,16 @@ if (argv.p) {
 		'tools/testTranslators/translatorTester_inject.js'
 	];
 }
-var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(
+var injectIncludeFirefox = ['browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
+	injectIncludeLast);
+
+var injectIncludeSafari = ['browser-polyfill.js'].concat(
+	injectInclude,
+	['api.js'],
+	['frameMessaging.js'],
+	['historyMonitor.js'],
 	injectIncludeLast);
 	
 var injectIncludeManifestV3 = ['browser-polyfill.js'].concat(
@@ -131,6 +139,7 @@ var backgroundInclude = [
 	'translate/debug.js',
 	'translate/tlds.js',
 	'translate/translator.js',
+	'botBypass.js',
 	'itemSaver_background.js',
 	'translators.js',
 	'cachedTypes.js',
@@ -180,6 +189,18 @@ function replaceScriptsHTML(string, match, scripts) {
 	return string.replace(match,
 		scripts.map((s) => '<script type="text/javascript" src="' + s + '"></script>')
 			.join('\n'));
+}
+
+// Safari needs an explicit UTF-8 BOM or UTF-8 characters are garbled
+function addUTF8BOM(file) {
+	if (!file.path.includes(`${path.sep}build${path.sep}safari${path.sep}`)
+		|| path.extname(file.path) !== '.js') {
+		return;
+	}
+	let bom = Buffer.from([0xEF, 0xBB, 0xBF]);
+	if (!file.contents.slice(0, 3).equals(bom)) {
+		file.contents = Buffer.concat([bom, file.contents]);
+	}
 }
 
 function processFile() {
@@ -284,9 +305,10 @@ function processFile() {
 				file.contents = Buffer.from(replaceScriptsHTML(
 					file.contents.toString(), "<!--SCRIPTS-->", injectIncludeManifestV3.map(s => `../../${s}`)));
 			}
-			for (let browser of ['manifestv3', 'firefox']) {
+			for (let browser of ['manifestv3', 'firefox', 'safari']) {
 				if (basename === 'manifest.json' && browser === 'manifestv3'
-					|| basename === 'manifest-v3.json' && browser === 'firefox') {
+					|| basename === 'manifest-v3.json' && browser === 'firefox'
+					|| basename === 'manifest-v3.json' && browser === 'safari') {
 					continue;
 				}
 				
@@ -304,7 +326,9 @@ function processFile() {
 					}
 					else {
 						let backgroundScripts = backgroundIncludeBrowserExt;
-						let injectScripts = browser == "manifestv3" ? injectIncludeManifestV3 : injectIncludeBrowserExt;
+						let injectScripts = browser == "manifestv3"
+							? injectIncludeManifestV3
+							: browser == "safari" ? injectIncludeSafari : injectIncludeFirefox;
 						contents = contents
 							.replace("/*BACKGROUND SCRIPTS*/",
 								backgroundScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
@@ -320,43 +344,40 @@ function processFile() {
 					}
 					f.contents = Buffer.from(contents);
 				}
+				if (file.path.includes('.html') && browser != 'safari') {
+					let contents = f.contents.toString()
+						.replace(/\s*<!-- SAFARI -->[\s\S]*?<!-- \/SAFARI -->/g, '');
+					f.contents = Buffer.from(contents);
+				}
 				if (basename == 'zotero.js') {
 					let contents = f.contents.toString()
 						.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
 					contents = replaceBrowser(contents, {
-						browserExt: true,
 						firefox: browser == 'firefox',
+						safari: browser == 'safari',
 						manifestV3: browser == 'manifestv3'
 					});
 					f.contents = Buffer.from(contents);
 				}
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/` + parts.slice(i+1).join('/');
+				addUTF8BOM(f);
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);
 			}
 		}
-		if (type === 'common' || type === 'safari') {
+		if (type === 'safari') {
 			f = file.clone({contents: false});
-			f.path = parts.slice(0, i-1).join('/') + '/build/safari/' + parts.slice(i+1).join('/');
-			if (basename == 'zotero.js') {
-				let contents = f.contents.toString()
-					.replace('this.version = [^;]*', `this.version = "${argv.version}";`);
-				contents = replaceBrowser(contents, { safari: true });
-				f.contents = Buffer.from(contents);
-			}
+			f.path = parts.slice(0, i-1).join('/') + `/build/safari/` + parts.slice(i+1).join('/');
+			addUTF8BOM(f);
 			console.log(`-> ${f.path.slice(f.cwd.length)}`);
 			this.push(f);
 		}
 		if (type === 'zotero-google-docs-integration') {
-			f = file.clone({contents: false});
-			f.path = parts.slice(0, i-1).join('/') + '/build/safari/zotero-google-docs-integration/'
-				+ parts.slice(i+3).join('/');
-			console.log(`-> ${f.path.slice(f.cwd.length)}`);
-			this.push(f);
-			['manifestv3', 'firefox'].forEach((browser) => {
+			['manifestv3', 'firefox', 'safari'].forEach((browser) => {
 				f = file.clone({contents: false});
 				f.path = parts.slice(0, i-1).join('/') + `/build/${browser}/zotero-google-docs-integration/`
 					+ parts.slice(i+3).join('/');
+				addUTF8BOM(f);
 				console.log(`-> ${f.path.slice(f.cwd.length)}`);
 				this.push(f);
 			});
@@ -403,6 +424,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/schema.js',
 		'./src/common/zotero.js',
 		'./src/common/zotero_config.js',
+		'./src/safari/**',
 		'./src/common/test/**/*',
 		'./src/**/*.jsx',
 		'./src/zotero-google-docs-integration/src/connector/**',

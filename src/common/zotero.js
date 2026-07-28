@@ -35,7 +35,8 @@ var Zotero = global.Zotero = new function() {
 	
 	// For autocomplete in IDEs
 	this.allowRepoTranslatorTester = this.isManifestV3
-		= this.isFirefox = this.isSafari = this.isBrowserExt = null;
+		= this.isFirefox = this.isSafari = null;
+	this.isBrowserExt = true;
 	/* this.allowRepoTranslatorTester = SET IN BUILD SCRIPT */;
 	/* this.isManifestV3 = SET IN BUILD SCRIPT */;
 
@@ -46,36 +47,28 @@ var Zotero = global.Zotero = new function() {
 		this.initDeferred.reject = reject;
 	}.bind(this));
 	
-	// Safari  global page detection
-	if (typeof globalThis !== "undefined" && typeof window !== 'undefined' && window === globalThis && typeof browser === "undefined" && typeof chrome === "undefined") {
-		this.isSafari = true;
-		this.isMac = true;
-	}
-	else {
-		// Browser check adopted from:
-		// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
-		/* this.isFirefox = SET IN BUILD SCRIPT */;
-		/* this.isSafari = SET IN BUILD SCRIPT */;
-		/* this.isBrowserExt = SET IN BUILD SCRIPT */;
+	// Browser check adopted from:
+	// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+	/* this.isFirefox = SET IN BUILD SCRIPT */;
+	/* this.isSafari = SET IN BUILD SCRIPT */;
 
-		this.isChrome = this.isEdge = false;
-		if (this.isBrowserExt && !this.isFirefox) {
-			this.isChromium = true;
-			if (global.navigator.userAgent.includes("Edg/")) {
-				this.isEdge = true;
-			} else {
-				// If browser ext is not fx or edge then treat it as Chrome
-				// since it's probably installed with compatible browsers such as Opera from the
-				// Chrome extension store
-				this.isChrome = true;
-			}
+	this.isChrome = this.isEdge = false;
+	if (!this.isFirefox && !this.isSafari) {
+		this.isChromium = true;
+		if (global.navigator.userAgent.includes("Edg/")) {
+			this.isEdge = true;
+		} else {
+			// If browser ext is not fx or edge then treat it as Chrome
+			// since it's probably installed with compatible browsers such as Opera from the
+			// Chrome extension store
+			this.isChrome = true;
 		}
-		this.isOffscreen = typeof document != 'undefined' && document.location.href.endsWith('offscreenSandbox.html');
-
-		this.isMac = (global.navigator.platform.substr(0, 3) == "Mac");
-		this.isWin = (global.navigator.platform.substr(0, 3) == "Win");
-		this.isLinux = (global.navigator.platform.substr(0, 5) == "Linux");
 	}
+	this.isOffscreen = typeof document != 'undefined' && document.location.href.endsWith('offscreenSandbox.html');
+
+	this.isMac = (global.navigator.platform.substr(0, 3) == "Mac");
+	this.isWin = (global.navigator.platform.substr(0, 3) == "Win");
+	this.isLinux = (global.navigator.platform.substr(0, 5) == "Linux");
 
 	if (this.isFirefox) {
 		this.browser = "g";
@@ -96,10 +89,8 @@ var Zotero = global.Zotero = new function() {
 	}
 	this.appName = `${ZOTERO_CONFIG.CLIENT_NAME} Connector for ${this.clientName}`;
 	
-	if (this.isBrowserExt) {
-		if (!this.isOffscreen) {
-			this.version = browser.runtime.getManifest().version;
-		}
+	if (!this.isOffscreen) {
+		this.version = browser.runtime.getManifest().version;
 	}
 	
 	// window.Promise and Promise differ (somehow) in Firefox and when certain
@@ -111,6 +102,11 @@ var Zotero = global.Zotero = new function() {
 	
 	this.migrate = async function() {
 		let lastVersion = Zotero.Prefs.get('lastVersion') || Zotero.version;
+		if (Zotero.Utilities.semverCompare(lastVersion, Zotero.version) > 0) {
+			Zotero.debug(`Zotero.migrate: implausible stored lastVersion ${lastVersion} `
+				+ `> ${Zotero.version}; resetting for migration evaluation`);
+			lastVersion = "5.0.100";
+		}
 		// Skip first-use dialog for existing users when enabled for non-Firefox browsers
 		if (Zotero.Utilities.semverCompare(lastVersion, "5.0.87") < 0 && !this.isFirefox) {
 			Zotero.Prefs.set('firstUse', false);
@@ -131,6 +127,26 @@ var Zotero = global.Zotero = new function() {
 			}
 			if (ruleIDs.length) {
 				await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ruleIDs });
+			}
+		}
+		if (Zotero.isChromium) {
+			let done = false;
+			try { done = !!Zotero.Prefs.get('migration.resetTranslators'); } catch (e) {}
+			if (!done) {
+				Zotero.debug("Migration: resetting translator caches");
+				try {
+					Zotero.Prefs.clear('translatorMetadata');
+					Zotero.Prefs.clear('connector.repo.lastCheck.localTime');
+					Zotero.Prefs.clear('connector.repo.lastCheck.repoTime');
+					await Zotero.Prefs.removeAllCachedTranslators();
+					await Zotero.Translators.updateFromRemote(true);
+				}
+				catch (e) {
+					Zotero.logError(e);
+					return;
+				}
+				await Zotero.API.clearCredentials();
+				Zotero.Prefs.set('migration.resetTranslators', true);
 			}
 		}
 		Zotero.Prefs.set('lastVersion', Zotero.version);
@@ -154,24 +170,17 @@ var Zotero = global.Zotero = new function() {
 		}
 		Zotero.isBackground = true;
 		
-		if (Zotero.isBrowserExt) {
-			browser.runtime.getPlatformInfo().then(function (info) {
-				switch (info.os) {
-					case 'mac':
-					case 'win':
-						this.platform = info.os;
-						break;
+		browser.runtime.getPlatformInfo().then(function (info) {
+			switch (info.os) {
+				case 'mac':
+				case 'win':
+					this.platform = info.os;
+					break;
 
-					default:
-						this.platform = 'unix';
-				}
-			}.bind(this));
-		} else if (Zotero.isSafari) {
-			this.platform = 'mac';
-		} else {
-			// IE and the likes? Who knows
-			this.platform = 'win';
-		}
+				default:
+					this.platform = 'unix';
+			}
+		}.bind(this));
 		
 		// Add browser version info
 		if (this.isFirefox) {
@@ -182,10 +191,6 @@ var Zotero = global.Zotero = new function() {
 		}
 
 		Zotero.Messaging.init();
-		if (Zotero.isSafari) {
-			this.version = await Zotero.Connector_Browser.getExtensionVersion();
-			window.safari = {extension: {baseURI: await Zotero.Messaging.sendMessage('Swift.getBaseURI')}};
-		}
 		Zotero.Connector_Types.init();
 		await Zotero.Prefs.init();
 		
@@ -193,11 +198,9 @@ var Zotero = global.Zotero = new function() {
 		let storingDebugOnRestart = Zotero.Prefs.get('debug.store');
 		if (storingDebugOnRestart) Zotero.Debug.setStore(storingDebugOnRestart);
 		Zotero.Prefs.set('debug.store', false);
-		if (Zotero.isBrowserExt) {
-			Zotero.WebRequestIntercept.init();
-			Zotero.ContentTypeHandler.init();
-			await Zotero.Connector_Browser.init();
-		}
+		Zotero.WebRequestIntercept.init();
+		Zotero.ContentTypeHandler.init();
+		await Zotero.Connector_Browser.init();
 		await Zotero.i18n.init();
 		Zotero.Translators.init();
 		await Zotero.Proxies.init();
@@ -209,6 +212,13 @@ var Zotero = global.Zotero = new function() {
 		Zotero.initialized = true;
 
 		await Zotero.migrate();
+
+		// Flush any previously-failed server-side API key revocation.
+		// Fire-and-forget: a network failure here just means we try again on
+		// the next startup (pref stays set).
+		if (Zotero.API && Zotero.API.retryPendingRevocation) {
+			Zotero.API.retryPendingRevocation().catch(e => Zotero.logError(e));
+		}
 	};
 	
 	/**
@@ -217,6 +227,7 @@ var Zotero = global.Zotero = new function() {
 	this.initInject = async function() {
 		Zotero.isInject = true;
 		Zotero.Messaging.init();
+		// Safari loads raw localized strings here (getMessage mangles some); harmless elsewhere.
 		if (Zotero.isSafari) {
 			await Zotero.i18n.init();
 		}
@@ -242,19 +253,12 @@ var Zotero = global.Zotero = new function() {
 	};
 
 	this._initDateFormatsJSON = async function() {
-		let dateFormatsJSON;
-		if (Zotero.isSafari) {
-			dateFormatsJSON = await Zotero.Messaging.sendMessage('Swift.getDateFormatsJSON');
+		let url = Zotero.getExtensionURL('utilities/resource/dateFormats.json');
+		if (Zotero.isOffscreen) {
+			url = await url;
 		}
-		else {
-			let url = Zotero.getExtensionURL('utilities/resource/dateFormats.json');
-			if (Zotero.isOffscreen) {
-				url = await url;
-			}
-			let xhr = await Zotero.HTTP.request('GET', url, {responseType: 'json'});
-			dateFormatsJSON = xhr.response;
-		}
-		Zotero.Date.init(dateFormatsJSON);
+		let xhr = await Zotero.HTTP.request('GET', url, {responseType: 'json'});
+		Zotero.Date.init(xhr.response);
 	};
 
 	this.getSystemInfo = (...args) => Zotero.Errors.getSystemInfo(...args);
@@ -318,12 +322,7 @@ var Zotero = global.Zotero = new function() {
 	};
 	
 	this.getExtensionURL = function(path) {
-		if (Zotero.isSafari) {
-			return `${safari.extension.baseURI}safari/` + path;
-		}
-		else {
-			return browser.runtime.getURL(path);
-		}
+		return browser.runtime.getURL(path);
 	}
 }
 
@@ -355,12 +354,10 @@ Zotero.Prefs = new function() {
 		"proxies.disableByDomain": false,
 		"proxies.disableByDomainString": '.edu',
 		"proxies.proxies": [],
-		"proxies.clientChecked": false,
 		"proxies.loopPreventionTimestamp": 0,
 		
 		"integration.googleDocs.enabled": true,
 		"integration.googleDocs.useV2API": false,
-		"integration.googleDocs.forceDisableV2API": false,
 		
 		"shortcuts.cite": {ctrlKey: true, altKey: true, key: 'c'}
 	};

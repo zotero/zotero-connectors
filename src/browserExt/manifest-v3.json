@@ -12,7 +12,7 @@
 		},
 		"default_title": "Save to Zotero"
 	},
-	"host_permissions": ["http://*/*", "https://*/*"],
+	"host_permissions": ["http://127.0.0.1/*", "https://repo.zotero.org/*", "https://api.zotero.org/*", "http://*/*", "https://*/*"],
 	"permissions": ["tabs", "contextMenus", "cookies", "scripting", "offscreen",
 		"webRequest", "declarativeNetRequest", "webNavigation", "storage"],
 	"declarative_net_request": {

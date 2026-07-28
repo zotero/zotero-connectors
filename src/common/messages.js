@@ -137,7 +137,9 @@ var MESSAGES = {
 		setStore: false
 	},
 	Connector: {
-		checkIsOnline: true,
+		checkIsOnline: {
+			background: {minArgs: 1}
+		},
 		callMethod: true,
 		saveSingleFile: {
 			inject: {
@@ -157,9 +159,15 @@ var MESSAGES = {
 				}
 			}
 		},
-		getClientVersion: true,
+		getClientVersion: {
+			background: {minArgs: 1}
+		},
 		reportActiveURL: false,
 		getPref: true
+	},
+	HostPermissions: {
+		onPageLoad: true,
+		prompt: true,
 	},
 	Connector_Browser: {
 		onSelect: true,

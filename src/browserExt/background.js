@@ -761,7 +761,7 @@ Zotero.Connector_Browser = new function() {
 			// it's not treated like we do it within a gesture
 			await browser.permissions.request({permissions: ['clipboardWrite']});
 		}
-		const shouldContinue = await _checkPermissions(tab);
+		const shouldContinue = await Zotero.HostPermissions.checkChromiumActionPermissions(tab);
 		if (!shouldContinue) {
 			return;
 		}
@@ -1038,66 +1038,8 @@ Zotero.Connector_Browser = new function() {
 		return false;
 	}
 	
-	/**
-	 * Check if we have permission to run on all sites.
-	 * Prompts the user if permissions are insufficient.
-	 * @param {Object} tab - The current tab object
-	 * @returns {Promise<boolean>} - Returns false if the action should not proceed 
-	 */
-	async function _checkPermissions(tab) {
-		// Firefox doesn't have per-site permissions in MV2.
-		if (Zotero.isFirefox) {
-			return true;
-		}
-
-		try {
-			const hasPermissions = await browser.permissions.contains({
-				origins: ["https://*/*"]
-			});
-
-			if (hasPermissions) {
-				return true;
-			}
-
-			const messageIntro = Zotero.getString("permissions_siteAccess_message_intro");
-			let promptProps = {
-				title: Zotero.getString("permissions_siteAccess_title"),
-				button1Text: Zotero.getString("permissions_siteAccess_openPreferences"),
-				button2Text: Zotero.getString("general_cancel"),
-				button3Text: Zotero.getString("general_continueAnyway"),
-				message: messageIntro + Zotero.getString("permissions_siteAccess_message")
-			};
-			if (Zotero.isSafari) {
-				promptProps = {
-					title: Zotero.getString("permissions_siteAccess_title"),
-					button1Text: Zotero.getString("general_cancel"),
-					button2Text: "",
-					button3Text: Zotero.getString("general_continueAnyway"),
-					message: messageIntro + Zotero.getString(
-						"permissions_siteAccess_message_safari",
-						Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME)
-					)
-				};
-			}
-
-			const result = await Zotero.Messaging.sendMessage('confirm', promptProps, tab);
-
-			if (result) {
-				if (!Zotero.isSafari && result.button === 1) {
-					browser.tabs.create({
-						url: `about:extensions/?id=${browser.runtime.id}`
-					});
-				}
-				return result.button === 3;
-			}
-		} catch (e) {
-			Zotero.debug('Error checking permissions: ' + e.message);
-			return true;
-		}
-	}
-	
 	async function _browserAction(tab) {
-		const shouldContinue = await _checkPermissions(tab);
+		const shouldContinue = await Zotero.HostPermissions.checkChromiumActionPermissions(tab);
 		if (!shouldContinue) {
 			return;
 		}

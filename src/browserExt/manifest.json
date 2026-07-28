@@ -13,7 +13,7 @@
 		"default_title": "Save to Zotero"
 	},
 	"permissions": [
-		"http://*/*", "https://*/*",
+		"http://127.0.0.1/*", "https://repo.zotero.org/*", "https://api.zotero.org/*", "http://*/*", "https://*/*",
 		"tabs", "contextMenus", "cookies", "storage", "scripting",
 		"webRequest", "webRequestBlocking", "webNavigation", "declarativeNetRequest"
 	],

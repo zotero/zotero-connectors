@@ -193,6 +193,11 @@ var Zotero = global.Zotero = new function() {
 		Zotero.Messaging.init();
 		Zotero.Connector_Types.init();
 		await Zotero.Prefs.init();
+		// The Safari extension is bundled with the Zotero app, so the generic first-use prompt
+		// telling users to install Zotero is unnecessary.
+		if (Zotero.isSafari) {
+			Zotero.Prefs.set('firstUse', false);
+		}
 		
 		Zotero.Debug.init();
 		let storingDebugOnRestart = Zotero.Prefs.get('debug.store');
@@ -344,6 +349,7 @@ Zotero.Prefs = new function() {
 		"allowedCSLExtensionHosts": ["^https://raw\\.githubusercontent\\.com/", "^https://gitee\\.com/.+/raw/"],
 		"allowedInterceptHosts": [],
 		"firstUse": true,
+		"firstSafariAllHostPermissionPrompt": true,
 		"firstSaveToServer": true,
 		"reportTranslationFailure": true,
 		"translatorMetadata": [],

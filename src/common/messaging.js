@@ -135,6 +135,8 @@ Zotero.Messaging = new function() {
 		if (!Zotero.isSafari) {
 			let response;
 			try {
+				// Chromium delivers messages to extension-origin frames only when broadcasting, and
+				// fails if a specific frame is targeted.
 				response = await browser.tabs.sendMessage(tab.id, [messageName, args]);
 			}
 			catch (e) {}
@@ -149,12 +151,13 @@ Zotero.Messaging = new function() {
 
 		let response;
 		try {
-			// We could target specific frames here
-			// but Chromium browsers do not send messages to frames
-			// that load an extension page when specified, only when broadcast. Sigh.
+			// The extension UI frames are owned by the top-page content script. Target it explicitly so
+			// an injected child frame without a registered UI frame cannot return first and make the
+			// caller think the modal has already closed.
 			response = await browser.tabs.sendMessage(
 				tab.id,
 				['zoteroFrame.sendMessage', [messageName, args]],
+				{frameId: 0}
 			);
 		}
 		catch (e) {}

@@ -42,6 +42,7 @@ var Zotero_Preferences = {
 	init: async function() {
 		Zotero.isPreferences = true;
 		Zotero.Messaging.init();
+		Zotero.Messaging.addMessageListener('confirm', props => Zotero.ModalPrompt.confirm(props));
 		await Zotero.i18n.init();
 
 		await Zotero.Prefs.loadNamespace(['interceptKnownFileTypes', 'allowedInterceptHosts']);
@@ -87,6 +88,12 @@ var Zotero_Preferences = {
 
 		Zotero_Preferences.refreshData();
 		window.setInterval(() => Zotero_Preferences.refreshData(), 1000);
+
+		if (Zotero.isSafari) {
+			// Let the initialized preferences pane render before displaying a modal over it.
+			await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+			await Zotero.HostPermissions.prompt({recommendAllHosts: true});
+		}
 	},
 
 	/**
@@ -358,7 +365,7 @@ Zotero_Preferences.Components.ClientStatus = class ClientStatus extends React.Co
 	}
 	
 	checkStatus() {
-		return Zotero.Connector.checkIsOnline().then(function(status) {
+		return Zotero.Connector.checkIsOnline({active: true}).then(function(status) {
 			this.setState({available: status});
 		}.bind(this));
 	}

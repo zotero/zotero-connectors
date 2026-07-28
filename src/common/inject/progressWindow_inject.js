@@ -298,6 +298,10 @@ if (isTopWindow) {
 			// If we're making changes, don't close the popup and keep delaying syncs
 			stopCloseTimer();
 			blurred = false;
+			await sendMessage("progressWindow.targetChanged", {
+				sessionID: currentSessionID,
+				target: data.target.id
+			});
 			
 			// If the session isn't yet registered or a session update is in progress,
 			// store the data to run after, overwriting any already-queued data
@@ -345,7 +349,7 @@ if (isTopWindow) {
 			if (nextSessionUpdateData) {
 				let data = nextSessionUpdateData;
 				nextSessionUpdateData = null;
-				handleUpdated(data)
+				return handleUpdated(data)
 			}
 		});
 		
@@ -474,6 +478,12 @@ if (isTopWindow) {
 		frameIsHidden = true;
 		
 		hideFrame();
+	});
+
+	Zotero.Messaging.addMessageListener("progressWindow.clearPendingSessionUpdate", function (args) {
+		if (!args?.sessionID || args.sessionID == currentSessionID) {
+			nextSessionUpdateData = null;
+		}
 	});
 	
 	Zotero.Messaging.addMessageListener("progressWindow.setSession", function (sessionID) {

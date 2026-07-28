@@ -208,15 +208,26 @@ ItemSaver.prototype = {
 	async _checkExistingItems(items, payloadItems) {
 		let response;
 		try {
-			let request = { items: payloadItems };
-			let target = this._getTarget && this._getTarget();
-			if (target) {
-				request.target = target;
+			for (let attempt = 0; attempt < 2; attempt++) {
+				let request = { items: payloadItems };
+				let target = this._getTarget && this._getTarget();
+				if (target) {
+					request.target = target;
+				}
+				if (this._proxy) {
+					request.proxy = this._proxy.toJSON();
+				}
+				response = await Zotero.Connector.callMethod("findExistingItems", request);
+				let currentTarget = this._getTarget && this._getTarget();
+				if (currentTarget == target) {
+					break;
+				}
+				if (attempt == 1) {
+					Zotero.debug("ItemSaver: Save target kept changing during existing item lookup; skipping warning");
+					return true;
+				}
+				Zotero.debug("ItemSaver: Save target changed during existing item lookup; retrying");
 			}
-			if (this._proxy) {
-				request.proxy = this._proxy.toJSON();
-			}
-			response = await Zotero.Connector.callMethod("findExistingItems", request);
 		}
 		catch (e) {
 			Zotero.debug(`ItemSaver: Existing item lookup failed: ${e.message}`);

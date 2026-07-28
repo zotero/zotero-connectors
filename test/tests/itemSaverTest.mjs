@@ -213,6 +213,164 @@ describe("ItemSaver", function() {
 			assert.equal(result.progressUpdates[0].existingItems[0].id, 123);
 		});
 
+		it('rechecks existing items when the save target changes during lookup', async function() {
+			let result = await tab.run(async function () {
+				try {
+					let target = 'L1';
+					let lookupTargets = [];
+					let progressUpdates = [];
+					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method, payload) => {
+						if (method != 'findExistingItems') {
+							return {};
+						}
+						lookupTargets.push(payload.target);
+						if (lookupTargets.length == 1) {
+							target = 'L2';
+							return {
+								matches: [{
+									id: 111,
+									matchedIdentifiers: {
+										doi: '10.1234/target-change'
+									}
+								}]
+							};
+						}
+						return {
+							matches: [{
+								id: 222,
+								matchedIdentifiers: {
+									doi: '10.1234/target-change'
+								}
+							}]
+						};
+					});
+					sinon.stub(Zotero.Messaging, "sendMessage").callsFake((message, data) => {
+						if (message == 'confirm') {
+							return { button: 1 };
+						}
+						if (message == 'progressWindow.itemProgress') {
+							progressUpdates.push(data);
+						}
+					});
+
+					let items = [{
+						id: 'item-1',
+						itemType: 'journalArticle',
+						title: 'Target Change Article',
+						DOI: '10.1234/target-change',
+						attachments: []
+					}];
+					let itemSaver = new Zotero.ItemSaver({
+						sessionID: 'test-session',
+						itemType: 'journalArticle',
+						getTarget: () => target
+					});
+					let shouldSave = await itemSaver._checkExistingItems(
+						items,
+						Zotero.Utilities.deepCopy(items)
+					);
+
+					return {
+						shouldSave,
+						lookupTargets,
+						existingItems: items[0].existingItems,
+						progressUpdates
+					};
+				}
+				finally {
+					for (let stub of [
+						Zotero.Connector.callMethod,
+						Zotero.Messaging.sendMessage
+					]) {
+						if (stub && stub.restore) {
+							stub.restore();
+						}
+					}
+				}
+			});
+
+			assert.isTrue(result.shouldSave);
+			assert.deepEqual(result.lookupTargets, ['L1', 'L2']);
+			assert.equal(result.existingItems[0].id, 222);
+			assert.equal(result.progressUpdates[0].existingItems[0].id, 222);
+		});
+
+		it('skips a stale warning when the save target changes during the retry', async function() {
+			let result = await tab.run(async function () {
+				try {
+					let target = 'L1';
+					let lookupTargets = [];
+					let progressUpdates = [];
+					let confirmCount = 0;
+					sinon.stub(Zotero.Connector, "callMethod").callsFake(async (method, payload) => {
+						if (method != 'findExistingItems') {
+							return {};
+						}
+						lookupTargets.push(payload.target);
+						target = lookupTargets.length == 1 ? 'L2' : 'L3';
+						return {
+							matches: [{
+								id: lookupTargets.length,
+								matchedIdentifiers: {
+									doi: '10.1234/repeated-target-change'
+								}
+							}]
+						};
+					});
+					sinon.stub(Zotero.Messaging, "sendMessage").callsFake((message, data) => {
+						if (message == 'confirm') {
+							confirmCount++;
+							return { button: 1 };
+						}
+						if (message == 'progressWindow.itemProgress') {
+							progressUpdates.push(data);
+						}
+					});
+
+					let items = [{
+						id: 'item-1',
+						itemType: 'journalArticle',
+						title: 'Repeated Target Change Article',
+						DOI: '10.1234/repeated-target-change',
+						attachments: []
+					}];
+					let itemSaver = new Zotero.ItemSaver({
+						sessionID: 'test-session',
+						itemType: 'journalArticle',
+						getTarget: () => target
+					});
+					let shouldSave = await itemSaver._checkExistingItems(
+						items,
+						Zotero.Utilities.deepCopy(items)
+					);
+
+					return {
+						shouldSave,
+						lookupTargets,
+						existingItems: items[0].existingItems,
+						progressUpdates,
+						confirmCount
+					};
+				}
+				finally {
+					for (let stub of [
+						Zotero.Connector.callMethod,
+						Zotero.Messaging.sendMessage
+					]) {
+						if (stub && stub.restore) {
+							stub.restore();
+						}
+					}
+				}
+			});
+
+			assert.isTrue(result.shouldSave);
+			assert.deepEqual(result.lookupTargets, ['L1', 'L2']);
+			assert.isUndefined(result.existingItems);
+			assert.isEmpty(result.progressUpdates);
+			assert.equal(result.confirmCount, 0);
+		});
+
 		it('matches proxied item URLs against deproxified lookup matches', async function() {
 			let result = await tab.run(async function () {
 				try {

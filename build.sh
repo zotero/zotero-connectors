@@ -326,10 +326,11 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	# Safari requires declarativeNetRequestWithHostAccess (not plain declarativeNetRequest) for DNR
 	# redirect actions (since Safari 16.4).
 	#
-	# Require Safari 16.6, the newest version available on macOS 11 (Big Sur), the oldest macOS the
-	# extension supports.
+	# Require Safari 18.4, the first version that can load Developer ID-signed web extensions.
+	# Older Safari blocks the extension at the code-signing layer before reading the manifest,
+	# so this is for accurate messaging rather than gating.
 	pushd $BUILD_DIR/safari > /dev/null
-	cat manifest.json | jq '. |= del(.applications) | .declarative_net_request = {"rule_resources":[{"id":"styleIntercept","enabled":false,"path":"styleInterceptRules.json"}]} | .permissions += ["declarativeNetRequestWithHostAccess"] | .browser_specific_settings = {"safari":{"strict_min_version":"16.6"}}' > manifest.json-tmp
+	cat manifest.json | jq '. |= del(.applications) | .declarative_net_request = {"rule_resources":[{"id":"styleIntercept","enabled":false,"path":"styleInterceptRules.json"}]} | .permissions += ["declarativeNetRequestWithHostAccess"] | .browser_specific_settings = {"safari":{"strict_min_version":"18.4"}}' > manifest.json-tmp
 	mv manifest.json-tmp manifest.json
 	popd > /dev/null
 

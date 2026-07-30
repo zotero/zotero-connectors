@@ -1,0 +1,76 @@
+#!/bin/bash -e
+
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+if [ ! -f "$ROOT_DIR/config.sh" ]; then
+	echo "Missing $ROOT_DIR/config.sh; copy config.sh-sample and configure CHROMIUM_PROFILE_PATH" >&2
+	exit 1
+fi
+
+. "$ROOT_DIR/config.sh"
+
+if [ -z "$CHROMIUM_PROFILE_PATH" ]; then
+	echo "CHROMIUM_PROFILE_PATH is not set in $ROOT_DIR/config.sh" >&2
+	exit 1
+fi
+
+if [ -z "$BUILD_DIR" ]; then
+	BUILD_DIR="$ROOT_DIR/build"
+fi
+
+DEVTOOLS_ACTIVE_PORT="$CHROMIUM_PROFILE_PATH/DevToolsActivePort"
+EXTENSION_PATH="${1:-$BUILD_DIR/manifestv3}"
+
+if [ ! -f "$DEVTOOLS_ACTIVE_PORT" ]; then
+	echo "Cannot connect to Chromium: $DEVTOOLS_ACTIVE_PORT does not exist." >&2
+	echo "Enable remote debugging at chrome://inspect/#remote-debugging (or the browser-specific equivalent)." >&2
+	exit 1
+fi
+
+if [ ! -f "$EXTENSION_PATH/manifest.json" ]; then
+	echo "Cannot load extension: $EXTENSION_PATH/manifest.json does not exist" >&2
+	exit 1
+fi
+
+cd "$ROOT_DIR"
+node - "$DEVTOOLS_ACTIVE_PORT" "$EXTENSION_PATH" <<'NODE'
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer');
+
+const devtoolsActivePort = process.argv[2];
+const extensionPath = path.resolve(process.argv[3]);
+const [port, webSocketPath] = fs.readFileSync(devtoolsActivePort, 'utf8')
+	.trim()
+	.split(/\r?\n/);
+
+if (!port || !webSocketPath) {
+	throw new Error(`Invalid DevToolsActivePort file: ${devtoolsActivePort}`);
+}
+
+console.log('Connecting to Chromium; allow the remote debugging prompt in the browser if shown.');
+const connectionTimeout = setTimeout(() => {
+	console.error('Could not connect to Chromium within 30 seconds. Allow the remote debugging prompt in the browser.');
+	process.exit(1);
+}, 30000);
+
+(async () => {
+	const browser = await puppeteer.connect({
+		browserWSEndpoint: `ws://127.0.0.1:${port}${webSocketPath}`,
+		protocolTimeout: 10000,
+	});
+	try {
+		const id = await browser.installExtension(extensionPath);
+		console.log(`Reloaded Chromium extension ${id} from ${extensionPath}`);
+	}
+	finally {
+		await browser.disconnect();
+	}
+})().then(() => {
+	clearTimeout(connectionTimeout);
+}).catch((error) => {
+	clearTimeout(connectionTimeout);
+	console.error(`Could not reload Chromium extension: ${error.message}`);
+	process.exitCode = 1;
+});
+NODE

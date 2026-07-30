@@ -1,6 +1,10 @@
 #!/bin/sh
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# Chromium user data directory containing DevToolsActivePort. Enable remote debugging at
+# chrome://inspect/#remote-debugging (or the browser-specific equivalent) before using watch-chromium.
+CHROMIUM_PROFILE_PATH=
+
 FIREFOX_UPDATE_URL="https://example.com/download/connector/firefox/CHANNEL/updates.json"
 
 export WEB_EXT_API_KEY=""

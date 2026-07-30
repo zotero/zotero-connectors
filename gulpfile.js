@@ -27,7 +27,7 @@
 
 const path = require('path');
 const replaceBrowser = require('./scripts/replace_browser');
-const exec = require('child_process').exec;
+const execFile = require('child_process').execFile;
 const through = require('through2');
 const gulp = require('gulp');
 const plumber = require('gulp-plumber');
@@ -167,23 +167,24 @@ var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclu
 	'offscreen/offscreenFunctionOverrides.js', 'background/offscreenManager.js',
 ]);
 
-function reloadChromeExtensionsTab(cb) {
-	console.log("Reloading Chrome extensions tab");
-
-
-	exec('chrome-cli list tabs', function (err, stdout) {
-		if (err) cb(err);
-
-		var extensionsTabMatches = stdout.match(/\[\d{1,5}:(\d{1,5})\] Extensions/);
-		if (extensionsTabMatches) {
-			var extensionsTabID = extensionsTabMatches[1];
-
-			exec('chrome-cli reload -t ' + extensionsTabID)
-		}
-		else {
-			exec('chrome-cli open chrome://extensions && chrome-cli reload')
-		}
-	});
+var reloadChromiumTimeout;
+var reloadingChromiumExtension = false;
+var reloadChromiumExtensionPending = false;
+function reloadChromiumExtension() {
+	reloadChromiumExtensionPending = true;
+	clearTimeout(reloadChromiumTimeout);
+	reloadChromiumTimeout = setTimeout(function () {
+		if (reloadingChromiumExtension) return;
+		reloadingChromiumExtension = true;
+		reloadChromiumExtensionPending = false;
+		execFile(path.join(__dirname, 'scripts/reload-chromium-extension'), function (error, stdout, stderr) {
+			reloadingChromiumExtension = false;
+			if (stdout) process.stdout.write(stdout);
+			if (stderr) process.stderr.write(stderr);
+			if (error) console.error(`Failed to reload Chromium extension: ${error.message}`);
+			if (reloadChromiumExtensionPending) reloadChromiumExtension();
+		});
+	}, 250);
 }
 
 function replaceScriptsHTML(string, match, scripts) {
@@ -410,15 +411,15 @@ gulp.task('watch', function () {
 	});
 });  
 
-gulp.task('watch-chrome', function () {
+gulp.task('watch-chromium', function () {
 	var watcher = gulp.watch(['./src/browserExt/**', './src/common/**', './src/safari/**',
 		'./src/zotero-google-docs-integration/src/connector/**']);
-	watcher.on('change', function(event) {
-		gulp.src(event.path)
+	watcher.on('change', function(filePath) {
+		gulp.src(filePath)
 			.pipe(plumber())
 			.pipe(processFile())
 			.pipe(gulp.dest((data) => data.base))
-			.on('close', reloadChromeExtensionsTab);
+			.on('end', reloadChromiumExtension);
 	});
 });
 

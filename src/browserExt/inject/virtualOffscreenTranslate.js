@@ -50,16 +50,7 @@ Zotero.VirtualOffscreenTranslate = class {
 	static async create() {
 		let translate = new Zotero.VirtualOffscreenTranslate();
 		await translate.sendMessage('Translate.new');
-		return new Proxy(translate, {
-			get: (target, property, ...args) => {
-				if (!target[property] && (property in Zotero.Translate.Web.prototype)) {
-					return (...args) => {
-						return target.sendMessage(`Translate.${property}`, args);
-					}
-				}
-				return Reflect.get(target, property, ...args);
-			}
-		});
+		return translate;
 	}
 	
 	constructor() {
@@ -152,6 +143,18 @@ Zotero.VirtualOffscreenTranslate = class {
 	async getTranslators(...args) {
 		let translators = await this.sendMessage('Translate.getTranslators', args);
 		return translators.map(translator => new Zotero.Translator(translator));
+	}
+
+	setCookieSandbox(cookieSandbox) {
+		return this.sendMessage('Translate.setCookieSandbox', [cookieSandbox]);
+	}
+
+	setLocation(...args) {
+		return this.sendMessage('Translate.setLocation', args);
+	}
+
+	translate(...args) {
+		return this.sendMessage('Translate.translate', args);
 	}
 	
 	sendMessage(message, payload=[]) {

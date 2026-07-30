@@ -57,7 +57,7 @@ let PageSaving = {
 	
 	/**
 	 * @param itemType
-	 * @returns {Promise<Zotero.Translate.Web>}
+	 * @returns {Promise<Zotero.VirtualOffscreenTranslate>}
 	 * @private
 	 */
 	async _initTranslate(itemType=null) {

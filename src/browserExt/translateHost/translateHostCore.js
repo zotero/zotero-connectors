@@ -28,7 +28,7 @@
  */
 Zotero.TranslateHostCore = {
 	init(translateHost) {
-		for (let method in Zotero.Translate.Web.prototype) {
+		for (let method of ['setCookieSandbox', 'setLocation', 'translate']) {
 			translateHost.addMessageListener(`Translate.${method}`, (translate, args) => {
 				return translate[method](...args);
 			});

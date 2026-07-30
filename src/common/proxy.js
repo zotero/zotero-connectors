@@ -917,7 +917,7 @@ Zotero.Proxy.OpenAthensProxy = class extends Zotero.Proxy {
 		super(json);
 		this.type = 'openathens';
 		// Regexp to match the redirect URL and capture the destination to add to hosts
-		this.toProxyRegexp = new RegExp(XRegExp.escape(this.toProxyScheme).replace('%u', '([^&]+)'));
+		this.toProxyRegexp = new RegExp(Zotero.Utilities.quotemeta(this.toProxyScheme).replace('%u', '([^&]+)'));
 	}
 
 	get domain() {

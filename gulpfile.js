@@ -335,6 +335,17 @@ function processFile() {
 								backgroundScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
 							.replace("/*INJECT SCRIPTS*/",
 								injectScripts.map((s) => `"${s}"`).join(',\n\t\t\t'))
+						if (basename == 'manifest.json' && browser == 'safari') {
+							// Safari runs content scripts only on sites where the user has granted
+							// access, so the pre-detection gray webpage icon can show indefinitely --
+							// default to the Z instead
+							let manifest = JSON.parse(contents);
+							manifest.browser_action.default_icon = {
+								16: "images/zotero-z-16px.png",
+								32: "images/zotero-z-32px.png"
+							};
+							contents = JSON.stringify(manifest, null, '\t');
+						}
 					}
 					
 					contents = contents

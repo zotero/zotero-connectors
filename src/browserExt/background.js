@@ -664,6 +664,14 @@ Zotero.Connector_Browser = new function() {
 		var isPDF = tabInfo.isPDF;
 		var translators = tabInfo.translators;
 		
+		// Safari runs content scripts only on sites where the user has granted access, and
+		// clicking the button on other sites enables the Connector on the site instead of
+		// saving. Until a content script reports detection results, keep the default Z icon
+		// rather than showing a save action that hasn't been determined.
+		if (Zotero.isSafari && !translators && !isPDF) {
+			return;
+		}
+		
 		// Show the save menu if we have more than one save option to show, which is true in all cases
 		// other than for PDFs with no translator
 		var showSaveMenu = (translators && translators.length) || !isPDF;

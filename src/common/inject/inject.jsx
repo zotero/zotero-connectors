@@ -297,15 +297,29 @@ Zotero.Inject = {
 		});
 	},
 	
-	async firstSaveToServerPrompt() {
+	/**
+	 * @param {Boolean} localhostDenied - Zotero is unreachable because Safari denies the
+	 *     Connector access to 127.0.0.1, rather than because Zotero isn't running
+	 */
+	async firstSaveToServerPrompt(localhostDenied=false) {
 		var clientName = ZOTERO_CONFIG.CLIENT_NAME;
 		
-		var result = await this.confirm({
-			button1Text: Zotero.getString('general_tryAgain'),
-			button2Text: Zotero.getString('general_cancel'),
-			button3Text: Zotero.getString('error_connection_enableSavingToOnlineLibrary'),
-			title: Zotero.getString('error_connection_isAppRunning', clientName),
-			message: Zotero.getString(
+		let title, message;
+		if (localhostDenied) {
+			title = Zotero.getString('permissions_siteAccess_title');
+			message = Zotero.getString('permissions_siteAccess_message_localhost_required')
+				+ Zotero.getString(
+					'permissions_siteAccess_message_domains_safari',
+					[Zotero.getString('appConnector', clientName), '<b>127.0.0.1</b>']
+				)
+				+ Zotero.getString(
+					'permissions_siteAccess_message_saveToServer',
+					[Zotero.getString('appConnector', clientName), ZOTERO_CONFIG.DOMAIN_NAME]
+				);
+		}
+		else {
+			title = Zotero.getString('error_connection_isAppRunning', clientName);
+			message = Zotero.getString(
 					'error_connection_save',
 					[
 						Zotero.getString('appConnector', clientName),
@@ -314,7 +328,14 @@ Zotero.Inject = {
 					]
 				)
 				+ '<br /><br />'
-				+ Zotero.Inject.getConnectionErrorTroubleshootingString()
+				+ Zotero.Inject.getConnectionErrorTroubleshootingString();
+		}
+		var result = await this.confirm({
+			button1Text: Zotero.getString('general_tryAgain'),
+			button2Text: Zotero.getString('general_cancel'),
+			button3Text: Zotero.getString('error_connection_enableSavingToOnlineLibrary'),
+			title,
+			message
 		});
 		
 		switch (result.button) {
@@ -344,35 +365,39 @@ Zotero.Inject = {
 	 * If Zotero is offline and attempting action fallback to zotero.org for first time: prompts about it
 	 * Prompt only available on BrowserExt which supports programmatic injection
 	 * Otherwise just resolves to true
-	 * 
+	 *
+	 * @param {Boolean} permissionPromptShown - Skip the localhost permission explanation before
+	 *     the status check, e.g., on a retry after it has already been displayed
 	 * return {Promise<Boolean>} whether the action should proceed
 	 */
-	async checkActionToServer() {
+	async checkActionToServer(permissionPromptShown=false) {
 		var [firstSaveToServer, zoteroIsOnline] = await Zotero.Promise.all([
-			Zotero.Prefs.getAsync('firstSaveToServer'), 
-			Zotero.Connector.checkIsOnline({active: true})
+			Zotero.Prefs.getAsync('firstSaveToServer'),
+			Zotero.Connector.checkIsOnline({active: true, permissionPromptShown})
 		]);
-		// Safari may have blocked the localhost request, so don't report Zotero as offline.
-		if (zoteroIsOnline === null) {
-			return false;
+		if (zoteroIsOnline) {
+			return true;
 		}
-		if (!zoteroIsOnline && Zotero.isSafari) {
+		// null means Safari blocked the localhost request, leaving Zotero's status unknown
+		let localhostDenied = zoteroIsOnline === null;
+		if (!localhostDenied && Zotero.isSafari) {
 			await Zotero.HostPermissions.prompt({
 				domains: ['repo.zotero.org', 'api.zotero.org']
 			});
 		}
-		if (zoteroIsOnline || !firstSaveToServer) {
+		if (!firstSaveToServer) {
 			return true;
 		}
-		var result = await this.firstSaveToServerPrompt();
+		var result = await this.firstSaveToServerPrompt(localhostDenied);
 		if (result == 'server') {
 			Zotero.Prefs.set('firstSaveToServer', false);
 			return true;
-		} else if (result == 'retry') {
+		}
+		else if (result == 'retry') {
 			// If we perform the retry immediately and Zotero is still unavailable the prompt returns instantly
 			// making the user interaction confusing so we wait a bit first
 			await Zotero.Promise.delay(500);
-			return this.checkActionToServer();
+			return this.checkActionToServer(true);
 		}
 		return false;
 	},

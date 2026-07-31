@@ -59,6 +59,9 @@ Zotero.HostPermissions = new function() {
 	 * @param {Object} options
 	 * @param {String[]} [options.domains] - Specific required domains
 	 * @param {Boolean} [options.recommendAllHosts] - Recommend access to all websites
+	 * @param {Boolean} [options.nativePromptToFollow] - A request that can trigger Safari's own
+	 *     permission dialog for the domains follows this prompt, so point to that dialog instead
+	 *     of Safari Settings
 	 * @param {Object} tab - The current tab object
 	 * @returns {Promise<Boolean>} - Whether a prompt was displayed
 	 */
@@ -82,7 +85,7 @@ Zotero.HostPermissions = new function() {
 		return promise;
 	}
 
-	async function showPrompt({domains=[], recommendAllHosts=false}={}, tab) {
+	async function showPrompt({domains=[], recommendAllHosts=false, nativePromptToFollow=false}={}, tab) {
 		// Resolve all requested permissions first so the user sees one combined prompt containing only
 		// the access that is actually missing.
 		const permissionChecks = domains.map(domain => hasPermission(domain));
@@ -94,20 +97,27 @@ Zotero.HostPermissions = new function() {
 		const missingAllHosts = recommendAllHosts && !results[results.length - 1];
 		if (!missingDomains.length && !missingAllHosts) return false;
 
-		// Explanations of the missing access come first, followed by a single Safari Settings
-		// instructions paragraph covering everything being requested.
+		// Explanations of the missing access come first. Domains that Safari's own dialog is about
+		// to cover get a pointer to that dialog; everything else gets Safari Settings
+		// instructions.
 		let message = missingDomains
 			.map(domain => Zotero.getString(DOMAIN_CONFIG[domain].message))
 			.join('');
-		if (missingAllHosts) {
-			message += Zotero.getString("permissions_siteAccess_message_safari_functionality");
-		}
 		let connectorName = Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME);
 		// e.g., "<b>repo.zotero.org</b> and <b>api.zotero.org</b>", with a locale-appropriate
 		// conjunction
 		let domainList = new Intl.ListFormat(browser.i18n.getUILanguage(), { type: 'conjunction' })
 			.format(missingDomains.map(domain => `<b>${domain}</b>`));
-		if (missingDomains.length && missingAllHosts) {
+		if (nativePromptToFollow && missingDomains.length) {
+			message += Zotero.getString("permissions_siteAccess_message_nativePrompt_safari");
+			if (missingAllHosts) {
+				// Safari's dialog can also grant all-websites access via its "Remember for other
+				// websites" checkbox
+				message += Zotero.getString("permissions_siteAccess_message_allHosts_nativePrompt_safari");
+			}
+		}
+		else if (missingDomains.length && missingAllHosts) {
+			message += Zotero.getString("permissions_siteAccess_message_safari_functionality");
 			message += Zotero.getString(
 				"permissions_siteAccess_message_domains_allHosts_safari",
 				[connectorName, domainList]
@@ -120,6 +130,7 @@ Zotero.HostPermissions = new function() {
 			);
 		}
 		else {
+			message += Zotero.getString("permissions_siteAccess_message_safari_functionality");
 			message += Zotero.getString("permissions_siteAccess_message_safari", connectorName);
 		}
 
@@ -153,10 +164,12 @@ Zotero.HostPermissions = new function() {
 				this._localhostPromptDisplayed = true;
 				markLocalhostPromptShown = true;
 			}
-			// Prompt for localhost access and also recommend all hosts
+			// Prompt for localhost access and also recommend all hosts. The ping below can trigger
+			// Safari's own permission dialog for localhost.
 			await this.prompt({
 				domains: showLocalhostPrompt ? [LOCALHOST_DOMAIN] : [],
-				recommendAllHosts
+				recommendAllHosts,
+				nativePromptToFollow: showLocalhostPrompt
 			}, tab);
 
 			let localhostAllowed = hasLocalhostPermission;

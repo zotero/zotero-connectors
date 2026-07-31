@@ -126,6 +126,50 @@ describe('Connector', function() {
 			assert.isTrue(result.prompted);
 			assert.isTrue(result.requested);
 		});
+		
+		it("pings again when localhost access is granted in Safari's permission dialog", async function() {
+			let result = await background(async function() {
+				let isSafari = Zotero.isSafari;
+				Zotero.isSafari = true;
+				let contains = sinon.stub(browser.permissions, 'contains');
+				// Missing for the pre-ping check and the request gate, then granted in Safari's
+				// permission dialog triggered by the blocked request
+				contains.resolves(true);
+				contains.onCall(0).resolves(false);
+				contains.onCall(1).resolves(false);
+				sinon.stub(Zotero.HostPermissions, 'prompt').resolves();
+				let request = sinon.stub(Zotero.HTTP, 'request');
+				request.onCall(0).resolves({
+					status: 0,
+					getResponseHeader: () => null,
+					responseText: '',
+					response: ''
+				});
+				request.onCall(1).resolves({
+					status: 200,
+					getResponseHeader: () => 'application/json',
+					responseText: '{}'
+				});
+				try {
+					let online = await Zotero.Connector.checkIsOnline({active: true});
+					return {
+						online,
+						requestCount: Zotero.HTTP.request.callCount,
+						promptCount: Zotero.HostPermissions.prompt.callCount
+					};
+				}
+				finally {
+					browser.permissions.contains.restore();
+					Zotero.HostPermissions.prompt.restore();
+					Zotero.HTTP.request.restore();
+					Zotero.isSafari = isSafari;
+				}
+			});
+			
+			assert.isTrue(result.online);
+			assert.equal(result.requestCount, 2);
+			assert.equal(result.promptCount, 1);
+		});
 	});
 
 	describe('Safari repository permissions', function() {

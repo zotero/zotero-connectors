@@ -192,7 +192,8 @@ Zotero.HostPermissions = new function() {
 				button1Text: Zotero.getString("permissions_siteAccess_openPreferences"),
 				button2Text: Zotero.getString("general_cancel"),
 				button3Text: Zotero.getString("general_continueAnyway"),
-				message: Zotero.getString("permissions_siteAccess_message")
+				message: Zotero.getString("permissions_siteAccess_message_intro")
+					+ Zotero.getString("permissions_siteAccess_message")
 			}, tab);
 			if (result?.button === 1) {
 				browser.tabs.create({

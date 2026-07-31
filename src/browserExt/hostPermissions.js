@@ -45,6 +45,8 @@ Zotero.HostPermissions = new function() {
 	this._localhostPromptDisplayed = false;
 	this._repoPromptDisplayed = false;
 
+	let promptQueues = new Map();
+
 	async function hasPermission(domain) {
 		const config = DOMAIN_CONFIG[domain];
 		if (!config) throw new Error(`Unknown host-permission domain ${domain}`);
@@ -60,9 +62,27 @@ Zotero.HostPermissions = new function() {
 	 * @param {Object} tab - The current tab object
 	 * @returns {Promise<Boolean>} - Whether a prompt was displayed
 	 */
-	this.prompt = async function({domains=[], recommendAllHosts=false}={}, tab) {
+	this.prompt = async function(options={}, tab) {
 		if (!Zotero.isSafari) return false;
 
+		// Serialize prompts so concurrent callers cannot display overlapping modals in the same
+		// tab, and prevent a modal left open in one tab from blocking prompts in other tabs.
+		// Permissions are checked when a queued prompt runs, so access granted during an earlier
+		// prompt is respected.
+		let key = tab?.id ?? null;
+		let queue = promptQueues.get(key) || Promise.resolve();
+		let promise = queue.then(() => showPrompt(options, tab));
+		let tail = promise.then(() => {}, () => {});
+		promptQueues.set(key, tail);
+		tail.then(() => {
+			if (promptQueues.get(key) === tail) {
+				promptQueues.delete(key);
+			}
+		});
+		return promise;
+	}
+
+	async function showPrompt({domains=[], recommendAllHosts=false}={}, tab) {
 		// Resolve all requested permissions first so the user sees one combined prompt containing only
 		// the access that is actually missing.
 		const permissionChecks = domains.map(domain => hasPermission(domain));

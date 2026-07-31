@@ -806,7 +806,13 @@ Zotero.Connector_Browser = new function() {
 			if (isOnline) {
 				icon = "images/zotero-new-z-16px.png";
 				title = "Zotero is Online";
-			} else {
+			}
+			else if (isOnline === null) {
+				// Zotero's status is unknown without localhost access, so don't claim it's offline
+				icon = "images/zotero-new-z-16px.png";
+				title = "Zotero Connector";
+			}
+			else {
 				icon = "images/zotero-z-16px-offline.png";
 				title = "Zotero is Offline";
 			}

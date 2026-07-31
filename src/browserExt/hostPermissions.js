@@ -94,26 +94,33 @@ Zotero.HostPermissions = new function() {
 		const missingAllHosts = recommendAllHosts && !results[results.length - 1];
 		if (!missingDomains.length && !missingAllHosts) return false;
 
-		// Required-domain explanations come first, followed by the appropriate Safari Settings
-		// instructions at the bottom.
+		// Explanations of the missing access come first, followed by a single Safari Settings
+		// instructions paragraph covering everything being requested.
 		let message = missingDomains
 			.map(domain => Zotero.getString(DOMAIN_CONFIG[domain].message))
 			.join('');
-		if (missingDomains.length) {
-			message += Zotero.getString(
-				"permissions_siteAccess_message_domains_safari",
-				[
-					Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME),
-					missingDomains.join(', ')
-				]
-			);
-		}
 		if (missingAllHosts) {
 			message += Zotero.getString("permissions_siteAccess_message_safari_functionality");
+		}
+		let connectorName = Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME);
+		// e.g., "<b>repo.zotero.org</b> and <b>api.zotero.org</b>", with a locale-appropriate
+		// conjunction
+		let domainList = new Intl.ListFormat(browser.i18n.getUILanguage(), { type: 'conjunction' })
+			.format(missingDomains.map(domain => `<b>${domain}</b>`));
+		if (missingDomains.length && missingAllHosts) {
 			message += Zotero.getString(
-				"permissions_siteAccess_message_safari",
-				Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME)
+				"permissions_siteAccess_message_domains_allHosts_safari",
+				[connectorName, domainList]
 			);
+		}
+		else if (missingDomains.length) {
+			message += Zotero.getString(
+				"permissions_siteAccess_message_domains_safari",
+				[connectorName, domainList]
+			);
+		}
+		else {
+			message += Zotero.getString("permissions_siteAccess_message_safari", connectorName);
 		}
 
 		await Zotero.Messaging.sendMessage('confirm', {

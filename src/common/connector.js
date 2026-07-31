@@ -26,6 +26,7 @@
 // TODO: refactor this class
 Zotero.Connector = new function() {
 	const CONNECTOR_API_VERSION = 3;
+	const PASSIVE_METHODS = new Set(['ping', 'getTranslatorCode', 'getTranslators', 'getClientHostnames']);
 	
 	this.isOnline = (Zotero.isSafari || Zotero.isFirefox) ? false : null;
 	this.clientVersion = '';
@@ -36,15 +37,24 @@ Zotero.Connector = new function() {
 	/**
 	 * Checks if Zotero is online and passes current status to callback
 	 */
-	this.checkIsOnline = async function() {
+	this.checkIsOnline = async function({active=false, permissionPromptShown=false}={}, tab=null) {
 		try {
-			await this.ping({});
+			await this.ping({}, {active, permissionPromptShown}, tab);
 			return true;
 		} catch (e) {
 			if (e.status != 0) {
 				Zotero.debug("Checking if Zotero is online returned a non-zero HTTP status.");
 				Zotero.logError(e);
 				return true;
+			}
+			if (Zotero.isSafari && active) {
+				const hasLocalhostPermission = await browser.permissions.contains({
+					origins: ["http://127.0.0.1/*"]
+				});
+				if (!hasLocalhostPermission) {
+					// Zotero's status is unknown when Safari blocked the request.
+					return null;
+				}
 			}
 			return false;
 		}
@@ -106,8 +116,8 @@ Zotero.Connector = new function() {
 		}
 	}
 	
-	this.ping = async function(payload={}) {
-		let response = await Zotero.Connector.callMethod("ping", payload);
+	this.ping = async function(payload={}, options={}, tab=null) {
+		let response = await Zotero.Connector.callMethod({method: "ping", ...options}, payload, tab);
 		if (response && 'prefs' in response) {
 			this._processPreferences(response.prefs);
 			this._processTranslatorHash(response.prefs);
@@ -115,8 +125,8 @@ Zotero.Connector = new function() {
 		return response || {};
 	}
 	
-	this.getClientVersion = async function() {
-		let isOnline = await this.checkIsOnline();
+	this.getClientVersion = async function(options={}, tab=null) {
+		let isOnline = await this.checkIsOnline({...options, active: options.active ?? !!tab}, tab);
 		return isOnline && this.clientVersion;
 	}
 	
@@ -137,6 +147,22 @@ Zotero.Connector = new function() {
 			options = {method: options};
 		}
 		var method = options.method;
+		if (Zotero.isSafari) {
+			const hasLocalhostPermission = await browser.permissions.contains({
+				origins: ["http://127.0.0.1/*"]
+			});
+			if (!hasLocalhostPermission) {
+				const isActive = options.active || !PASSIVE_METHODS.has(method);
+				if (!isActive) {
+					throw new Zotero.Connector.CommunicationError(
+						`Connector: Skipping passive ${method} request without localhost permission`
+					);
+				}
+				if (!options.permissionPromptShown) {
+					await Zotero.HostPermissions.prompt({domains: ['127.0.0.1']}, tab);
+				}
+			}
+		}
 		var headers = Object.assign({
 				"Content-Type":"application/json",
 				"X-Zotero-Version":Zotero.version,

@@ -158,6 +158,7 @@ if (!argv.p) {
 	injectIncludeManifestV3.push('test/testInject.js');
 }
 var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclude, [
+	'hostPermissions.js',
 	'webRequestIntercept.js',
 	'contentTypeHandler.js',
 	'saveWithoutProgressWindow.js',

@@ -67,4 +67,89 @@ describe('Connector', function() {
 			assert.isTrue(result);
 		});
 	});
+
+	describe('Safari localhost permissions', function() {
+		it('skips passive Connector requests when localhost access is missing', async function() {
+			let result = await background(async function() {
+				let isSafari = Zotero.isSafari;
+				Zotero.isSafari = true;
+				sinon.stub(browser.permissions, 'contains').resolves(false);
+				sinon.stub(Zotero.HTTP, 'request');
+				sinon.stub(Zotero.HostPermissions, 'prompt');
+				try {
+					let online = await Zotero.Connector.checkIsOnline();
+					return {
+						online,
+						requested: Zotero.HTTP.request.called,
+						prompted: Zotero.HostPermissions.prompt.called
+					};
+				}
+				finally {
+					browser.permissions.contains.restore();
+					Zotero.HTTP.request.restore();
+					Zotero.HostPermissions.prompt.restore();
+					Zotero.isSafari = isSafari;
+				}
+			});
+
+			assert.isFalse(result.online);
+			assert.isFalse(result.requested);
+			assert.isFalse(result.prompted);
+		});
+
+		it('warns before an active Connector request when localhost access is missing', async function() {
+			let result = await background(async function() {
+				let isSafari = Zotero.isSafari;
+				Zotero.isSafari = true;
+				sinon.stub(browser.permissions, 'contains').resolves(false);
+				sinon.stub(Zotero.HostPermissions, 'prompt').resolves();
+				sinon.stub(Zotero.HTTP, 'request').resolves({
+					status: 200,
+					getResponseHeader: () => 'application/json',
+					responseText: '{}'
+				});
+				try {
+					await Zotero.Connector.callMethod('saveSnapshot', {});
+					return {
+						requested: Zotero.HTTP.request.called,
+						prompted: Zotero.HostPermissions.prompt.calledWithMatch({domains: ['127.0.0.1']})
+					};
+				}
+				finally {
+					browser.permissions.contains.restore();
+					Zotero.HostPermissions.prompt.restore();
+					Zotero.HTTP.request.restore();
+					Zotero.isSafari = isSafari;
+				}
+			});
+
+			assert.isTrue(result.prompted);
+			assert.isTrue(result.requested);
+		});
+	});
+
+	describe('Safari repository permissions', function() {
+		it('does not request translator metadata without repo.zotero.org permission', async function() {
+			let requested = await background(async function() {
+				let isSafari = Zotero.isSafari;
+				Zotero.isSafari = true;
+				sinon.stub(browser.permissions, 'contains').resolves(false);
+				sinon.stub(Zotero.HTTP, 'request');
+				try {
+					try {
+						await Zotero.Repo.getTranslatorMetadataFromServer();
+					}
+					catch (e) {}
+					return Zotero.HTTP.request.called;
+				}
+				finally {
+					browser.permissions.contains.restore();
+					Zotero.HTTP.request.restore();
+					Zotero.isSafari = isSafari;
+				}
+			});
+
+			assert.isFalse(requested);
+		});
+	});
 });

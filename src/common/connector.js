@@ -37,9 +37,9 @@ Zotero.Connector = new function() {
 	/**
 	 * Checks if Zotero is online and passes current status to callback
 	 */
-	this.checkIsOnline = async function({active=false}={}, tab=null) {
+	this.checkIsOnline = async function({active=false, permissionPromptShown=false}={}, tab=null) {
 		try {
-			await this.ping({}, {active}, tab);
+			await this.ping({}, {active, permissionPromptShown}, tab);
 			return true;
 		} catch (e) {
 			if (e.status != 0) {

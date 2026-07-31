@@ -41,6 +41,9 @@ var Zotero_Preferences = {
 	visiblePaneName: null,
 	init: async function() {
 		Zotero.isPreferences = true;
+		// Resolved once the pane's host-permission prompt has been dismissed (immediately on
+		// browsers where no prompt is displayed)
+		Zotero_Preferences.permissionsPromptDeferred = Zotero.Promise.defer();
 		Zotero.Messaging.init();
 		Zotero.Messaging.addMessageListener('confirm', props => Zotero.ModalPrompt.confirm(props));
 		await Zotero.i18n.init();
@@ -92,7 +95,17 @@ var Zotero_Preferences = {
 		if (Zotero.isSafari) {
 			// Let the initialized preferences pane render before displaying a modal over it.
 			await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-			await Zotero.HostPermissions.prompt({recommendAllHosts: true});
+			try {
+				// A single combined prompt covers missing localhost access and the all-hosts
+				// recommendation. The client status check suppresses its own localhost prompt.
+				await Zotero.HostPermissions.prompt({domains: ['127.0.0.1'], recommendAllHosts: true});
+			}
+			finally {
+				Zotero_Preferences.permissionsPromptDeferred.resolve();
+			}
+		}
+		else {
+			Zotero_Preferences.permissionsPromptDeferred.resolve();
 		}
 	},
 
@@ -356,16 +369,22 @@ Zotero_Preferences.Components = {};
 Zotero_Preferences.Components.ClientStatus = class ClientStatus extends React.Component {
 	constructor(props) {
 		super(props);
-		this.checkStatus();
 		this.state = {
 			available: false
 		};
 		
 		this.checkStatus = this.checkStatus.bind(this);
+		// Run the initial status check only after the pane's host-permission prompt has been
+		// dismissed, so the request cannot trigger Safari's native permission dialog while the
+		// explanation is still displayed
+		Zotero_Preferences.permissionsPromptDeferred.promise.then(this.checkStatus);
 	}
 	
 	checkStatus() {
-		return Zotero.Connector.checkIsOnline({active: true}).then(function(status) {
+		// The preferences pane explains missing localhost access in its combined permission
+		// prompt, so don't show another one here. The request itself still triggers Safari's
+		// native permission dialog where possible.
+		return Zotero.Connector.checkIsOnline({active: true, permissionPromptShown: true}).then(function(status) {
 			this.setState({available: status});
 		}.bind(this));
 	}

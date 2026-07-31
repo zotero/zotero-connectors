@@ -36,8 +36,8 @@ Zotero.Connector = new function() {
 	
 	/**
 	 * Checks if Zotero is online
-	 * @returns {Promise<Boolean|null>} - null if Safari blocked the localhost request, leaving
-	 *     Zotero's status unknown
+	 * @returns {Promise<Boolean|null>} - null if Safari blocked the localhost request or the
+	 *     request was skipped without localhost access, leaving Zotero's status unknown
 	 */
 	this.checkIsOnline = async function({active=false, permissionPromptShown=false}={}, tab=null) {
 		let hadLocalhostPermission = true;
@@ -55,15 +55,16 @@ Zotero.Connector = new function() {
 				Zotero.logError(e);
 				return true;
 			}
-			if (Zotero.isSafari && active) {
+			if (Zotero.isSafari) {
 				const hasLocalhostPermission = await browser.permissions.contains({
 					origins: ["http://127.0.0.1/*"]
 				});
 				if (!hasLocalhostPermission) {
-					// Zotero's status is unknown when Safari blocked the request.
+					// Zotero's status is unknown when the request was blocked or skipped without
+					// localhost access.
 					return null;
 				}
-				if (!hadLocalhostPermission) {
+				if (active && !hadLocalhostPermission) {
 					// The user granted access in Safari's permission dialog after the request had
 					// already been blocked, so the failure says nothing about Zotero's status --
 					// ping again

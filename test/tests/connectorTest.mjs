@@ -92,7 +92,7 @@ describe('Connector', function() {
 				}
 			});
 
-			assert.isFalse(result.online);
+			assert.isNull(result.online);
 			assert.isFalse(result.requested);
 			assert.isFalse(result.prompted);
 		});

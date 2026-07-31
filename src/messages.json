@@ -337,7 +337,11 @@
 		"message": "<p>Access to <b>api.zotero.org</b> is required to save to your online Zotero library when Zotero is unavailable.</p>"
 	},
 	"permissions_siteAccess_message_domains_safari": {
-		"message": "<p>To enable this, open Safari Settings, select <b>Websites</b> at the top, select <b>$1</b> in the sidebar, and set <b>$2</b> to <b>Allow</b>.</p>",
-		"description": "$1 is the connector name (e.g., Zotero Connector); $2 is a comma-separated list of required domains"
+		"message": "<p>To enable this, open Safari Settings, select <b>Websites</b> at the top, select <b>$1</b> in the sidebar, and set $2 to <b>Allow</b>.</p>",
+		"description": "$1 is the connector name (e.g., Zotero Connector); $2 is a list of required domains with markup (e.g., \"<b>repo.zotero.org</b> and <b>api.zotero.org</b>\")"
+	},
+	"permissions_siteAccess_message_domains_allHosts_safari": {
+		"message": "<p>To enable these, open Safari Settings, select <b>Websites</b> at the top, select <b>$1</b> in the sidebar, set $2 to <b>Allow</b>, and change the <b>For other websites</b> option to <b>Allow</b>.</p>",
+		"description": "$1 is the connector name (e.g., Zotero Connector); $2 is a list of required domains with markup (e.g., \"<b>repo.zotero.org</b> and <b>api.zotero.org</b>\")"
 	}
 }

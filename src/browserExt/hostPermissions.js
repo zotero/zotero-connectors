@@ -52,6 +52,7 @@ Zotero.HostPermissions = new function() {
 		if (!config) throw new Error(`Unknown host-permission domain ${domain}`);
 		return browser.permissions.contains({ origins: [config.origin] });
 	}
+	this.hasPermission = hasPermission;
 
 	/**
 	 * Display a Safari host-permission prompt. All prompts end with instructions for enabling the

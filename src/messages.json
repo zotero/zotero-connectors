@@ -328,7 +328,7 @@
 		"description": "$1 is the connector name (e.g., Zotero Connector)"
 	},
 	"permissions_siteAccess_message_localhost_required": {
-		"message": "<p>Access to <b>127.0.0.1</b> is required for Zotero Connector to save to Zotero.</p>"
+		"message": "<p>To communicate with Zotero, Zotero Connector requires access to <b>127.0.0.1</b>, an address that refers to your own computer.</p>"
 	},
 	"permissions_siteAccess_message_repo_required": {
 		"message": "<p>Access to <b>repo.zotero.org</b> is required to download translators when Zotero is unavailable.</p>"

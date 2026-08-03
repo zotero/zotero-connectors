@@ -83,16 +83,31 @@ Zotero.ConnectorIntegration = {
 			}
 			else if (e.status == 0) {
 				var connectorName = Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME);
-				Zotero.Inject.confirm({
-					title: Zotero.getString('error_connection_isAppRunning', ZOTERO_CONFIG.CLIENT_NAME),
-					message: Zotero.getString(
-							'integration_error_connection',
-							[connectorName, ZOTERO_CONFIG.CLIENT_NAME]
-						)
-						+ '<br /><br />'
-						+ Zotero.Inject.getConnectionErrorTroubleshootingString(),
-					button2Text: "", 
-				});
+				if (Zotero.isSafari && !await Zotero.HostPermissions.hasPermission('127.0.0.1')) {
+					// Safari denies the Connector access to Zotero, so whether Zotero is running
+					// is unknown
+					Zotero.Inject.confirm({
+						title: Zotero.getString('permissions_siteAccess_title'),
+						message: Zotero.getString('permissions_siteAccess_message_localhost_required')
+							+ Zotero.getString(
+								'permissions_siteAccess_message_domains_safari',
+								[connectorName, '<b>127.0.0.1</b>']
+							),
+						button2Text: "",
+					});
+				}
+				else {
+					Zotero.Inject.confirm({
+						title: Zotero.getString('error_connection_isAppRunning', ZOTERO_CONFIG.CLIENT_NAME),
+						message: Zotero.getString(
+								'integration_error_connection',
+								[connectorName, ZOTERO_CONFIG.CLIENT_NAME]
+							)
+							+ '<br /><br />'
+							+ Zotero.Inject.getConnectionErrorTroubleshootingString(),
+						button2Text: "",
+					});
+				}
 			}
 			Zotero.logError(e);
 			return;

@@ -168,6 +168,7 @@ var MESSAGES = {
 	HostPermissions: {
 		onPageLoad: true,
 		prompt: true,
+		hasPermission: true,
 	},
 	Connector_Browser: {
 		onSelect: true,

@@ -61,7 +61,6 @@ var injectInclude = [
 	'utilities/schema.js',
 	'translate/translator.js',
 	'inject/http.js',
-	'translateWeb.js',
 	'itemSaver.js',
 	'inject/pageSaving.js',
 	'integration/connectorIntegration.js',
@@ -89,7 +88,7 @@ if (argv.p) {
 var injectIncludeSafari = ['reinjectGuard.js', 'browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
-	['inject/virtualOffscreenTranslate.js'],
+	['inject/remoteTranslate.js'],
 	['frameMessaging.js'],
 	['historyMonitor.js'],
 	injectIncludeLast);
@@ -97,7 +96,7 @@ var injectIncludeSafari = ['reinjectGuard.js', 'browser-polyfill.js'].concat(
 var injectIncludeBrowserExt = ['browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
-	['inject/virtualOffscreenTranslate.js'],
+	['inject/remoteTranslate.js'],
 	injectIncludeLast);
 
 var backgroundInclude = [
@@ -151,9 +150,10 @@ var backgroundIncludeBrowserExt = backgroundInclude.concat([
 	'messagingGeneric.js',
 	'browserAttachmentMonitor/browserAttachmentMonitor.js',
 	'translateHost/translateHostFunctionOverrides.js',
+	'translateHost/translateHostFrameManager.js',
 ]);
 var backgroundIncludeManifestV3 = ['browser-polyfill.js'].concat(backgroundIncludeBrowserExt, ['background/offscreenManager.js']);
-var backgroundIncludeManifestV2 = backgroundIncludeBrowserExt.concat(['zoteroFrame.js', 'background/frameOffscreenManager.js']);
+var backgroundIncludeManifestV2 = backgroundIncludeBrowserExt.concat(['zoteroFrame.js']);
 
 var reloadChromiumTimeout;
 var reloadingChromiumExtension = false;
@@ -282,6 +282,7 @@ function processFile() {
 			case 'progressWindow.html':
 			case 'modalPrompt.html':
 			case 'translateHost.html':
+			case 'offscreen.html':
 				file.contents = Buffer.from(file.contents.toString()
 					.replace(/<!--BEGIN DEBUG-->([\s\S]*?)<!--END DEBUG-->/g, argv.p ? '' : '$1'));
 				break;
@@ -422,6 +423,7 @@ gulp.task('process-custom-scripts', function() {
 		'./src/common/progressWindow/progressWindow.html',
 		'./src/common/modalPrompt/modalPrompt.html',
 		'./src/browserExt/translateHost/translateHost.html',
+		'./src/browserExt/offscreen/offscreen.html',
 		'./src/common/schema.js',
 		'./src/common/zotero.js',
 		'./src/common/zotero_config.js',

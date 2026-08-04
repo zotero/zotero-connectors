@@ -66,7 +66,8 @@ var Zotero = global.Zotero = new function() {
 	}
 	// Zotero.Frame appends an authentication nonce as the URL fragment in Firefox and Safari.
 	this.isOffscreen = typeof document != 'undefined'
-		&& document.location.pathname.endsWith('/translateHost.html');
+		&& (document.location.pathname.endsWith('/translateHost.html')
+			|| document.location.pathname.endsWith('/offscreen.html'));
 
 	this.isMac = (global.navigator.platform.substr(0, 3) == "Mac");
 	this.isWin = (global.navigator.platform.substr(0, 3) == "Win");
@@ -249,14 +250,6 @@ var Zotero = global.Zotero = new function() {
 		Zotero.Debug.init();
 		Zotero.initDeferred.resolve();
 		Zotero.initialized = true;
-	};
-
-	this.initTranslateHost = async function() {
-		this.version = await Zotero.getVersion();
-		Zotero.Schema.init();
-		await this._initDateFormatsJSON();
-		await Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
-			'reportTranslationFailure', 'capitalizeTitles']);
 	};
 
 	this._initDateFormatsJSON = async function() {

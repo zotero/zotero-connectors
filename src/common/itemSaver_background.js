@@ -234,8 +234,8 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 		return xhr.response;
 	}
 	
-	let botBypassType;
 	const BYPASS_TYPE = Zotero.BotBypass.BYPASS_TYPE;
+	let botBypassType = BYPASS_TYPE.NONE;
 	if (attemptBotProtectionBypass) {
 		botBypassType = Zotero.BotBypass.canBotBypass(attachment.url, xhr);
 	}

@@ -78,16 +78,16 @@ const requestOverride = {
 	}
 }
 
-const OFFSCREEN_BACKGROUND_OVERRIDES = {
+const translatorFunctions = {
 	'Translators.get': {
 		handler: {
 			preSend: async function(translator) {
-				return serializeTranslator(translator, TRANSLATOR_PASSING_PROPERTIES);
+				return translator && serializeTranslator(translator, TRANSLATOR_PASSING_PROPERTIES);
 			}
 		},
 		local: {
 			postReceive: async function(translator) {
-				return new Zotero.Translator(translator);
+				return translator && new Zotero.Translator(translator);
 			}
 		}
 	},
@@ -126,6 +126,21 @@ const OFFSCREEN_BACKGROUND_OVERRIDES = {
 			}
 		},
 	},
+};
+
+// Operations proxied from the MV3 service worker to the offscreen frame manager.
+const FRAME_MANAGER_MESSAGE_FUNCTIONS = {
+	'TranslateHostFrameManager.detect': true,
+	'TranslateHostFrameManager.translate': true,
+	'TranslateHostFrameManager.runNonWeb': true,
+	'TranslateHostFrameManager.destroyFramesForTab': true,
+	'TranslateHostFrameManager.cleanup': true,
+};
+
+// Trusted frame-manager-to-background surface. In MV2 these calls are local to the
+// background page; in MV3 offscreen.js installs proxies for them.
+const FRAME_MANAGER_FUNCTIONS = {
+	...translatorFunctions,
 	'getVersion': true,
 	'getExtensionURL': true,
 	'Debug.log': true,
@@ -135,8 +150,25 @@ const OFFSCREEN_BACKGROUND_OVERRIDES = {
 	// Translator error reporting
 	'Connector_Browser.isIncognito': true,
 	'Prefs.getAll': true,
-	'Prefs.getAsync': true,
 	// Translator HTTP requests
 	'COHTTP.request': requestOverride,
 	'HTTP.request': requestOverride,
+};
+
+// Untrusted translate-host surfaces. Detection intentionally has no HTTP capability.
+const HOST_FUNCTIONS = {
+	detect: {
+		...translatorFunctions,
+		'Debug.log': true,
+		'debug': true,
+		'Errors.log': true,
+	},
+	translate: {
+		...translatorFunctions,
+		'Debug.log': true,
+		'debug': true,
+		'Errors.log': true,
+		'COHTTP.request': requestOverride,
+		'HTTP.request': requestOverride,
+	}
 };

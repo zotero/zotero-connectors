@@ -25,14 +25,12 @@
 
 /**
  * @typedef {Object} InitTranslateOptions
- * @property {Document} [doc] - The document to translate.
- * @property {Zotero.Translate.Web} [translate] - Optionally pass in a preconfigured translate
- * @property {Object} [cookieSandbox] - The cookie sandbox.
- * @property {string|Location} [location] - The URL of the document being translated.
+ * @property {Document} [document] - The document to translate.
  * @property {Translator[]} [translators] - The translators to use.
  * @property {Function} [onSelect] - The 'select' event handler for multiple translate items.
  * @property {Function} [onItemSaving] - The 'itemSaving' event handler for multiple translate items.
  * @property {Function} [onDebug] - Custom translate debug line handler.
+ * @property {Function} [onError] - Translation error handler.
  * @property {Function} [onTranslatorFallback] - Handler for failed translator fallback.
  * 		Params are oldTranslator and newTranslator.
  */
@@ -44,7 +42,7 @@
  */
 
 /**
- * A wrapper around Zotero.Translate.Web that is less insane
+ * A wrapper around the Zotero.Translate.Web instance that is less insane
  * Only handles item translation and not:
  *  - item saving
  *  - attachment saving
@@ -56,19 +54,14 @@ let TranslateWeb = {
 	 * @param {InitTranslateOptions} options
 	 * @returns {Zotero.Translate.Web} - The initialized translate object
 	 */
-	async _initTranslate({ translate, doc, cookieSandbox, location, onSelect, onItemSaving, onDebug } = {}) {
-		if (!translate) {
-			translate = new Zotero.Translate.Web();
-			if (!doc) throw new Error(`TranslateWeb: No document provided for translation`);
-		}
-		// Support for "remote" translate where all these commands could potentially be async
+	async _initTranslate({ document, onSelect, onItemSaving, onDebug, onError } = {}) {
+		let translate = new Zotero.Translate.Web();
 		await Promise.all([
-			doc && translate.setDocument(doc),
-			cookieSandbox && translate.setCookieSandbox(cookieSandbox),
-			location && translate.setLocation(location, location),
+			document && translate.setDocument(document),
 			onSelect && translate.setHandler('select', onSelect),
 			onItemSaving && translate.setHandler('itemSaving', onItemSaving),
-			onDebug && translate.setHandler('debug', onDebug)
+			onDebug && translate.setHandler('debug', onDebug),
+			onError && translate.setHandler('error', onError)
 		]);
 
 		return translate;
@@ -83,7 +76,7 @@ let TranslateWeb = {
 		let translate = await this._initTranslate(options);
 		
 		if (options.translators) {
-			translate.setTranslator(options.translators);
+			await translate.setTranslator(options.translators);
 		}
 		return translate.getTranslators(true, !!options.translators);
 	},
@@ -96,14 +89,14 @@ let TranslateWeb = {
 	 */
 	async translate(options) {
 		let translate = await this._initTranslate(options);
-		let translators = options.translators;
+		let translators = options.translators?.slice();
 		if (!translators) {
 			translators = await translate.getTranslators(true);
 		}
 		
 		while (true) {
 			let translator = translators.shift();
-			translate.setTranslator(translator);
+			await translate.setTranslator(translator);
 			try {
 				let items = await translate.translate();
 				return {
@@ -125,13 +118,6 @@ let TranslateWeb = {
 			}
 		}
 	}
-}
-
-// Couple with translate/translation/translate_item.js for a mock ItemSaver
-// Other code, post-translation should handle item and attachment saving and progress notifications/UI.
-Zotero.Translate.ItemSaver.prototype.saveItems = async function (jsonItems) {
-	this.items = (this.items || []).concat(jsonItems);
-	return jsonItems
 }
 
 Zotero.TranslateWeb = TranslateWeb;

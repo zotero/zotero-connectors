@@ -24,7 +24,8 @@
 */
 
 /**
- * Part of background page. Manages the offscreen page
+ * Part of the MV3 service worker. Manages the offscreen page and proxies
+ * TranslateHostFrameManager operations to it.
  */
 Zotero.OffscreenManager = {
 	offscreenPageInitialized: false,
@@ -40,7 +41,7 @@ Zotero.OffscreenManager = {
 			await browser.offscreen.createDocument({
 				url: this.offscreenUrl,
 				reasons: ['DOM_PARSER'],
-				justification: 'Scraping the document with Zotero Translators',
+				justification: 'Running Zotero Translators in isolated frames',
 			});
 		}
 		else {
@@ -56,35 +57,16 @@ Zotero.OffscreenManager = {
 
 		// Watch for browserext event of tab close and inform the offscreen page translate
 		browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
-			this.sendMessage('tabClosed', [tabId]);
+			Zotero.TranslateHostFrameManager.destroyFramesForTab(tabId);
 		});
 		
 		// Run cleanup every 15min
 		setInterval(() => this.cleanup(), 15*60e3);
-		Zotero.debug('OffscreenManager: offscreen page initialized');
-	},
-
-	async sendMessage(message, payload, tab, frameId) {
-		const offscreenPage = await this.getOffscreenPage();
-		if (!offscreenPage) {
-			await this.init();
-		}
-		if (tab) {
-			payload.push(tab.id, frameId);
-		}
-		return await this._messaging.sendMessage(message, payload);
-	},
-
-	async addMessageListener(...args) {
-		const offscreenPage = await this.getOffscreenPage();
-		if (!offscreenPage) {
-			await this.init();
-		}
-		return this._messaging.addMessageListener(...args);
+		Zotero.debug('OffscreenManager: translate host frame manager initialized');
 	},
 
 	/**
-	 * onTabRemoved handler should make sure offscreen doesn't hold translate instances
+	 * tabs.onRemoved handler should make sure offscreen doesn't hold translate frames
 	 * that are dead and moreover the offscreen page should get killed every now and then by the browser,
 	 * but we want to be extra sure we're not leaking memory
 	 */
@@ -92,17 +74,16 @@ Zotero.OffscreenManager = {
 		const offscreenPage = await this.getOffscreenPage();
 		if (!offscreenPage) return false;
 		let tabs = await browser.tabs.query({status: "complete", windowType: "normal"});
-		let cleanedUpTabIds = await this.sendMessage('translateCleanup', tabs.map(tab => tab.id));
+		let cleanedUpTabIds = await Zotero.TranslateHostFrameManager.cleanup(tabs.map(tab => tab.id));
 		if (cleanedUpTabIds.length > 0) {
-			Zotero.logError(new Error(`OffscreenManager: manually cleaned up translates that were kept `
-				+ `alive after onTabRemoved ${JSON.stringif(cleanedUpTabIds)}`));
+			Zotero.logError(new Error(`OffscreenManager: manually cleaned up frames that were kept `
+				+ `alive after tabs.onRemoved ${JSON.stringify(cleanedUpTabIds)}`));
 		}
 	},
 	
 	async getOffscreenPage() {
 		const matchedClients = await self.clients.matchAll();
 		return matchedClients.find(client => client.url.includes(this.offscreenUrl));
-
 	}
 }
 
@@ -110,9 +91,9 @@ Zotero.OffscreenManager = {
 self.onmessage = async (e) => {
 	if (e.data === 'offscreen-port') {
 		Zotero.debug('OffscreenManager: received the offscreen page port')
-		// Resolve _initMessaging() in translateHostMessaging.js
 		let messagingOptions = {
-			handlerFunctionOverrides: TRANSLATE_HOST_FUNCTIONS,
+			functionOverrides: FRAME_MANAGER_MESSAGE_FUNCTIONS,
+			handlerFunctionOverrides: FRAME_MANAGER_FUNCTIONS,
 			overrideTarget: Zotero,
 		}
 		messagingOptions.sendMessage = (...args) => {
@@ -130,12 +111,13 @@ self.onmessage = async (e) => {
 		else {
 			Zotero.OffscreenManager._messaging = new Zotero.MessagingGeneric(messagingOptions);
 		}
-		let initializedPromise = new Promise(resolve => {
-			Zotero.OffscreenManager._messaging.addMessageListener('offscreen-translate-host-manager-initialized', resolve);
-		});
+		Zotero.OffscreenManager._messaging.addMessageListener(
+			'TranslateHostFrameManager.initialized',
+			() => {
+				Zotero.debug('OffscreenManager: offscreen translate host frame manager initialized');
+				Zotero.OffscreenManager.messagingDeferred.resolve();
+			}
+		);
 		Zotero.debug('OffscreenManager: messaging initialized')
-		await initializedPromise;
-		Zotero.debug('OffscreenManager: offscreen translate host manager initialized message received')
-		Zotero.OffscreenManager.messagingDeferred.resolve();
 	}
 }

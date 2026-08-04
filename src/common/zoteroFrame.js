@@ -75,7 +75,9 @@ Zotero.Frame = class ZoteroFrame {
 		this._frame = document.createElement('iframe');
 		root.appendChild(this._frame);
 		this._setFrameAttributes(attributes, style);
-		Zotero.Messaging.registerFrame?.(this);
+		// Frame registration is only required for Safari as a workaround for messaging API issues.
+		// But it's not required for frames loaded by offscreen where Messaging is not available
+		Zotero.Messaging?.registerFrame?.(this);
 		await new Promise((resolve, reject) => {
 			this._frame.onload = resolve;
 			this._frame.onerror = reject;
@@ -107,7 +109,8 @@ Zotero.Frame = class ZoteroFrame {
 	}
 
 	remove() {
-		Zotero.Messaging.unregisterFrame?.(this);
+		// See the optional Zotero.Messaging explanation in _init().
+		Zotero.Messaging?.unregisterFrame?.(this);
 		this.parentDiv?.parentNode?.removeChild(this.parentDiv);
 	}
 

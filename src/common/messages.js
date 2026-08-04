@@ -121,8 +121,9 @@ var MESSAGES = {
 			}
 		}
 	},
-	OffscreenManager: {
-		sendMessage: true
+	TranslateHostFrameManager: {
+		detect: true,
+		translate: true
 	},
 	Debug: {
 		get: true,

@@ -25,14 +25,12 @@
 
 /**
  * @typedef {Object} InitTranslateOptions
- * @property {Document} [doc] - The document to translate.
- * @property {Zotero.VirtualOffscreenTranslate} translate - The remote translate instance.
- * @property {Object} [cookieSandbox] - The cookie sandbox.
- * @property {string|Location} [location] - The URL of the document being translated.
+ * @property {Document} [document] - The document to translate.
  * @property {Translator[]} [translators] - The translators to use.
  * @property {Function} [onSelect] - The 'select' event handler for multiple translate items.
  * @property {Function} [onItemSaving] - The 'itemSaving' event handler for multiple translate items.
  * @property {Function} [onDebug] - Custom translate debug line handler.
+ * @property {Function} [onError] - Translation error handler.
  * @property {Function} [onTranslatorFallback] - Handler for failed translator fallback.
  * 		Params are oldTranslator and newTranslator.
  */
@@ -44,7 +42,7 @@
  */
 
 /**
- * A wrapper around the remote Zotero.Translate.Web instance that is less insane
+ * A wrapper around the Zotero.Translate.Web instance that is less insane
  * Only handles item translation and not:
  *  - item saving
  *  - attachment saving
@@ -54,17 +52,16 @@
 let TranslateWeb = {
 	/**
 	 * @param {InitTranslateOptions} options
-	 * @returns {Zotero.VirtualOffscreenTranslate} - The initialized translate object
+	 * @returns {Zotero.Translate.Web} - The initialized translate object
 	 */
-	async _initTranslate({ translate, doc, cookieSandbox, location, onSelect, onItemSaving, onDebug } = {}) {
-		if (!translate) throw new Error(`TranslateWeb: No translate instance provided`);
+	async _initTranslate({ document, onSelect, onItemSaving, onDebug, onError } = {}) {
+		let translate = new Zotero.Translate.Web();
 		await Promise.all([
-			doc && translate.setDocument(doc),
-			cookieSandbox && translate.setCookieSandbox(cookieSandbox),
-			location && translate.setLocation(location, location),
+			document && translate.setDocument(document),
 			onSelect && translate.setHandler('select', onSelect),
 			onItemSaving && translate.setHandler('itemSaving', onItemSaving),
-			onDebug && translate.setHandler('debug', onDebug)
+			onDebug && translate.setHandler('debug', onDebug),
+			onError && translate.setHandler('error', onError)
 		]);
 
 		return translate;
@@ -92,7 +89,7 @@ let TranslateWeb = {
 	 */
 	async translate(options) {
 		let translate = await this._initTranslate(options);
-		let translators = options.translators;
+		let translators = options.translators?.slice();
 		if (!translators) {
 			translators = await translate.getTranslators(true);
 		}
@@ -104,7 +101,7 @@ let TranslateWeb = {
 				let items = await translate.translate();
 				return {
 					items,
-					proxy: await translate.getProxy()
+					proxy: translate._proxy
 				};
 			} catch (e) {
 				if (translator.itemType != 'multiple' && translators.length) {

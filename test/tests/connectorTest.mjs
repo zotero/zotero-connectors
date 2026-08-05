@@ -127,6 +127,43 @@ describe('Connector', function() {
 			assert.isTrue(result.requested);
 		});
 		
+		it('warns only once when Safari blocks requests with localhost access missing', async function() {
+			let result = await background(async function() {
+				let isSafari = Zotero.isSafari;
+				Zotero.isSafari = true;
+				sinon.stub(browser.permissions, 'contains').resolves(false);
+				sinon.stub(Zotero.HostPermissions, 'prompt').resolves();
+				sinon.stub(Zotero.HTTP, 'request').resolves({
+					status: 0,
+					getResponseHeader: () => null,
+					responseText: '',
+					response: ''
+				});
+				try {
+					for (let i = 0; i < 2; i++) {
+						try {
+							await Zotero.Connector.callMethod('saveSnapshot', {});
+						}
+						catch (e) {}
+					}
+					return {
+						promptCount: Zotero.HostPermissions.prompt.callCount,
+						requestCount: Zotero.HTTP.request.callCount
+					};
+				}
+				finally {
+					browser.permissions.contains.restore();
+					Zotero.HostPermissions.prompt.restore();
+					Zotero.HTTP.request.restore();
+					Zotero.HostPermissions.localhostRequestBlocked = false;
+					Zotero.isSafari = isSafari;
+				}
+			});
+
+			assert.equal(result.promptCount, 1);
+			assert.equal(result.requestCount, 2);
+		});
+
 		it("pings again when localhost access is granted in Safari's permission dialog", async function() {
 			let result = await background(async function() {
 				let isSafari = Zotero.isSafari;

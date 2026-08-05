@@ -162,18 +162,23 @@ Zotero.Connector = new function() {
 			options = {method: options};
 		}
 		var method = options.method;
+		let localhostPermissionMissing = false;
 		if (Zotero.isSafari) {
 			const hasLocalhostPermission = await browser.permissions.contains({
 				origins: ["http://127.0.0.1/*"]
 			});
 			if (!hasLocalhostPermission) {
+				localhostPermissionMissing = true;
 				const isActive = options.active || !PASSIVE_METHODS.has(method);
 				if (!isActive) {
 					throw new Zotero.Connector.CommunicationError(
 						`Connector: Skipping passive ${method} request without localhost permission`
 					);
 				}
-				if (!options.permissionPromptShown) {
+				// Skip the explanation once a blocked request has shown that Safari won't
+				// display its permission dialog -- the error handling for the failed request
+				// points to Safari Settings instead
+				if (!options.permissionPromptShown && !Zotero.HostPermissions.localhostRequestBlocked) {
 					// This request can trigger Safari's own permission dialog for localhost
 					await Zotero.HostPermissions.prompt(
 						{domains: ['127.0.0.1'], nativePromptToFollow: true},
@@ -250,6 +255,10 @@ Zotero.Connector = new function() {
 				return val;
 			}
 		} catch (e) {
+			if (localhostPermissionMissing && e.status == 0
+					&& !await browser.permissions.contains({origins: ["http://127.0.0.1/*"]})) {
+				Zotero.HostPermissions.localhostRequestBlocked = true;
+			}
 			if (!(e instanceof Zotero.Connector.CommunicationError) && !(e instanceof Zotero.HTTP.StatusError)){
 				// Unexpected error, including a timeout
 				Zotero.logError(e);

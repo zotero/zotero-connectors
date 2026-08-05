@@ -44,6 +44,9 @@ Zotero.HostPermissions = new function() {
 	this._permissionsPromptDisplayed = false;
 	this._localhostPromptDisplayed = false;
 	this._repoPromptDisplayed = false;
+	// Set when a request was blocked with localhost access still missing, meaning Safari is
+	// treating the access as denied and won't show its permission dialog
+	this.localhostRequestBlocked = false;
 
 	let promptQueues = new Map();
 

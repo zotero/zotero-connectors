@@ -143,9 +143,6 @@ Zotero.HostPermissions = new function() {
 			button2Text: "",
 			message
 		}, tab);
-		if (missingAllHosts) {
-			Zotero.Prefs.set('firstSafariAllHostPermissionPrompt', false);
-		}
 		return true;
 	}
 
@@ -162,7 +159,6 @@ Zotero.HostPermissions = new function() {
 		try {
 			const hasLocalhostPermission = await hasPermission(LOCALHOST_DOMAIN);
 			const showLocalhostPrompt = !hasLocalhostPermission && !this._localhostPromptDisplayed;
-			const recommendAllHosts = Zotero.Prefs.get('firstSafariAllHostPermissionPrompt');
 
 			if (showLocalhostPrompt) {
 				this._localhostPromptDisplayed = true;
@@ -172,7 +168,7 @@ Zotero.HostPermissions = new function() {
 			// Safari's own permission dialog for localhost.
 			await this.prompt({
 				domains: showLocalhostPrompt ? [LOCALHOST_DOMAIN] : [],
-				recommendAllHosts,
+				recommendAllHosts: true,
 				nativePromptToFollow: showLocalhostPrompt
 			}, tab);
 

@@ -179,9 +179,10 @@ Zotero.Connector = new function() {
 				// display its permission dialog -- the error handling for the failed request
 				// points to Safari Settings instead
 				if (!options.permissionPromptShown && !Zotero.HostPermissions.localhostRequestBlocked) {
-					// This request can trigger Safari's own permission dialog for localhost
+					// This request can trigger Safari's own permission dialog for localhost, where
+					// the user can also grant all-websites access
 					await Zotero.HostPermissions.prompt(
-						{domains: ['127.0.0.1'], nativePromptToFollow: true},
+						{domains: ['127.0.0.1'], recommendAllHosts: true, nativePromptToFollow: true},
 						tab
 					);
 				}

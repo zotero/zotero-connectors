@@ -101,7 +101,7 @@ var injectIncludeFirefox = ['browser-polyfill.js'].concat(
 	['api.js'],
 	injectIncludeLast);
 
-var injectIncludeSafari = ['browser-polyfill.js'].concat(
+var injectIncludeSafari = ['reinjectGuard.js', 'browser-polyfill.js'].concat(
 	injectInclude,
 	['api.js'],
 	['frameMessaging.js'],

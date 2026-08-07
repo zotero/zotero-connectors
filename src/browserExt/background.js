@@ -356,12 +356,12 @@ Zotero.Connector_Browser = new function() {
 		}
 		deferred = Zotero.Promise.defer();
 		this.injectTranslationScripts[key] = deferred;
-		
-		let response = await Zotero.Messaging.sendMessage('ping', null, tab, frameId)
-		if (response && frameId == 0) return deferred.resolve();
-		url = url ? `${url} - ${tab.url}` : tab.url
-		Zotero.debug(`Injecting translation scripts into ${frameId} ${url}`);
+
 		try {
+			let response = await Zotero.Messaging.sendMessage('ping', null, tab, frameId)
+			if (response && frameId == 0) return deferred.resolve();
+			url = url ? `${url} - ${tab.url}` : tab.url
+			Zotero.debug(`Injecting translation scripts into ${frameId} ${url}`);
 			return await Zotero.Connector_Browser.injectScripts(_injectTranslationScripts, tab, frameId);
 		} catch (e) {
 			Zotero.debug(`Translation Inject: Script injection rejected ${key}`);

@@ -309,7 +309,7 @@ Zotero.Inject = {
 			title = Zotero.getString('permissions_siteAccess_title');
 			message = Zotero.getString('permissions_siteAccess_message_localhost_required')
 				+ Zotero.getString(
-					'permissions_siteAccess_message_domains_safari',
+					'permissions_siteAccess_message_domain_safari',
 					[Zotero.getString('appConnector', clientName), '<b>127.0.0.1</b>']
 				)
 				+ Zotero.getString(

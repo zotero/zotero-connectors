@@ -47,8 +47,11 @@ Zotero.HostPermissions = new function() {
 	// Set when a request was blocked with localhost access still missing, meaning Safari is
 	// treating the access as denied and won't show its permission dialog
 	this.localhostRequestBlocked = false;
+	// When the user last granted a host permission, e.g., in Safari's permission dialog
+	this.permissionsGrantedAt = 0;
 
 	let promptQueues = new Map();
+	let knownPermissions = null;
 
 	async function hasPermission(domain) {
 		const config = DOMAIN_CONFIG[domain];
@@ -56,6 +59,43 @@ Zotero.HostPermissions = new function() {
 		return browser.permissions.contains({ origins: [config.origin] });
 	}
 	this.hasPermission = hasPermission;
+
+	// Safari doesn't notify the extension of grants made in its permission dialog or Safari
+	// Settings, so track the permission state and record when a permission appears that the
+	// last seen state lacked. Refreshing on an interval also records revocations, so a
+	// revoked-and-regranted permission is still detected as a grant.
+	async function updateTrackedPermissions() {
+		const current = {
+			localhost: await hasPermission(LOCALHOST_DOMAIN),
+			allHosts: await browser.permissions.contains({ origins: ["https://*/*"] })
+		};
+		if (knownPermissions
+				&& ((current.localhost && !knownPermissions.localhost)
+				|| (current.allHosts && !knownPermissions.allHosts))) {
+			Zotero.HostPermissions.permissionsGrantedAt = Date.now();
+			if (current.localhost) {
+				Zotero.HostPermissions.localhostRequestBlocked = false;
+			}
+		}
+		knownPermissions = current;
+	}
+	if (Zotero.isSafari) {
+		updateTrackedPermissions();
+		setInterval(updateTrackedPermissions, 15e3);
+	}
+
+	// Detect grants made via a browser event, where the browser supports it
+	browser.permissions.onAdded?.addListener(() => {
+		this.permissionsGrantedAt = Date.now();
+	});
+
+	// Tell the content script re-injection guard whether a grant explains the repeated injection
+	Zotero.Messaging.addMessageListener('reinjectGuard.shouldReload', async () => {
+		if (Date.now() - this.permissionsGrantedAt < 60e3) return true;
+		// The interval may not have run since the grant, so check directly
+		await updateTrackedPermissions();
+		return Date.now() - this.permissionsGrantedAt < 60e3;
+	});
 
 	/**
 	 * Display a Safari host-permission prompt. All prompts end with instructions for enabling the

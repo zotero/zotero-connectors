@@ -169,7 +169,9 @@ Zotero.HostPermissions = new function() {
 		}
 		else if (missingDomains.length) {
 			message += Zotero.getString(
-				"permissions_siteAccess_message_domains_safari",
+				missingDomains.length > 1
+					? "permissions_siteAccess_message_domains_safari"
+					: "permissions_siteAccess_message_domain_safari",
 				[connectorName, domainList]
 			);
 		}

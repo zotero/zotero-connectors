@@ -1066,12 +1066,13 @@ Zotero.Connector_Browser = new function() {
 	async function _ensureScriptsInjected(tab) {
 		if (!Zotero.isSafari) return true;
 		await Zotero.Connector_Browser.injectTranslationScripts(tab);
+		let startURL = Zotero.Connector_Browser.getTabInfo(tab.id).url;
 		// The tabInfo object is replaced when the tab navigates, so look it up on each check
 		for (let i = 0; i < 30; i++) {
 			let tabInfo = Zotero.Connector_Browser.getTabInfo(tab.id);
 			// The tab navigated elsewhere, so the action no longer applies to the page it was
 			// invoked on, and the new page gets content scripts from the manifest
-			if (tabInfo.url && tabInfo.url !== tab.url) {
+			if (startURL && tabInfo.url && tabInfo.url !== startURL) {
 				return false;
 			}
 			if (tabInfo.translators) {

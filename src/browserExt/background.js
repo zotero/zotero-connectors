@@ -1061,8 +1061,8 @@ Zotero.Connector_Browser = new function() {
 	async function _ensureScriptsInjected(tab) {
 		if (!Zotero.isSafari) return;
 		await Zotero.Connector_Browser.injectTranslationScripts(tab);
-		let tabInfo = Zotero.Connector_Browser.getTabInfo(tab.id);
-		for (let i = 0; i < 30 && !tabInfo.translators; i++) {
+		// The tabInfo object is replaced when the tab navigates, so look it up on each check
+		for (let i = 0; i < 30 && !Zotero.Connector_Browser.getTabInfo(tab.id).translators; i++) {
 			await Zotero.Promise.delay(100);
 		}
 	}

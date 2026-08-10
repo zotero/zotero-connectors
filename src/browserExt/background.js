@@ -773,7 +773,9 @@ Zotero.Connector_Browser = new function() {
 		if (!shouldContinue) {
 			return;
 		}
-		await _ensureScriptsInjected(tab);
+		if (!await _ensureScriptsInjected(tab)) {
+			return;
+		}
 
 		// The PDF viewer in Chromium is apparently implemented as a special extension.
 		// If you right-click on the pdf-reader UI and select a Zotero option, the handler
@@ -1057,14 +1059,27 @@ Zotero.Connector_Browser = new function() {
 	 * Safari doesn't run content scripts in tabs that are already open when the user grants
 	 * site access, so inject them on demand before performing a user action, and give
 	 * translator detection a moment to report before a save mode is chosen
+	 *
+	 * @param tab {Object}
+	 * @returns {Promise<Boolean>} False if the action should be abandoned
 	 */
 	async function _ensureScriptsInjected(tab) {
-		if (!Zotero.isSafari) return;
+		if (!Zotero.isSafari) return true;
 		await Zotero.Connector_Browser.injectTranslationScripts(tab);
 		// The tabInfo object is replaced when the tab navigates, so look it up on each check
-		for (let i = 0; i < 30 && !Zotero.Connector_Browser.getTabInfo(tab.id).translators; i++) {
+		for (let i = 0; i < 30; i++) {
+			let tabInfo = Zotero.Connector_Browser.getTabInfo(tab.id);
+			// The tab navigated elsewhere, so the action no longer applies to the page it was
+			// invoked on, and the new page gets content scripts from the manifest
+			if (tabInfo.url && tabInfo.url !== tab.url) {
+				return false;
+			}
+			if (tabInfo.translators) {
+				break;
+			}
 			await Zotero.Promise.delay(100);
 		}
+		return true;
 	}
 
 	async function _browserAction(tab) {
@@ -1072,7 +1087,9 @@ Zotero.Connector_Browser = new function() {
 		if (!shouldContinue) {
 			return;
 		}
-		await _ensureScriptsInjected(tab);
+		if (!await _ensureScriptsInjected(tab)) {
+			return;
+		}
 
 		let tabInfo = Zotero.Connector_Browser.getTabInfo(tab.id);
 		if (_isBetaBuildBeyondExpiration) {

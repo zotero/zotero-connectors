@@ -24,11 +24,12 @@
 */
 
 (function() {
-// Safari injects the extension's content scripts into already-loaded matching pages when the
-// user grants new host permissions. The scripts run in the same content world as the first
-// copy, which recreates the Zotero namespace and throws on top-level let and const
-// redeclarations, breaking the page. Reload it for a clean single injection, which is also
-// how Safari itself enables the extension on a page via the toolbar button.
+// When the user grants a host permission whose scope covers already-loaded pages -- by
+// checking "Remember for other websites" in Safari's permission prompt -- Safari injects the
+// extension's content scripts into those pages, including ones where they're already running.
+// The second copy runs in the same content world, where it replaces the Zotero namespace and
+// throws on top-level let/const redeclarations, breaking the extension on the page, so reload
+// the page for a clean single injection.
 //
 // Safari can also inject the scripts twice while a page is loading, which a reload cannot
 // fix, so reload only when the background page confirms that the user just granted a host

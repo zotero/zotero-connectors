@@ -45,6 +45,9 @@ Zotero.BotBypass.canBotBypass = function(url, xhr) {
 	if (this.isAmazonCaptchaResponse(xhr)) {
 		return this.BYPASS_TYPE.AMAZON_CAPTCHA;
 	}
+	if (xhr && xhr.status === 404) {
+		return this.BYPASS_TYPE.NONE;
+	}
 	if (this.isUrlWhitelisted(url)) {
 		return this.BYPASS_TYPE.FRAME_OR_WINDOW;
 	}

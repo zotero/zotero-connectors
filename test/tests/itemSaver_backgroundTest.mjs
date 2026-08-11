@@ -225,6 +225,37 @@ describe("ItemSaver Background", function() {
 			});
 		});
 
+		describe('When HTTP.request returns 404', function() {
+			it('should not attempt bot bypass', async function() {
+				attachment.url = 'https://sciencedirect.com/missing.pdf';
+
+				const result = await background(async function(attachment, mockTab) {
+					Zotero.HTTP.request.resolves({
+						response: new ArrayBuffer(0),
+						status: 404,
+						getResponseHeader: (header) => header.toLowerCase() == 'content-length' ? '0' : null
+					});
+
+					let error;
+					try {
+						await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					}
+					catch (e) {
+						error = e.message;
+					}
+					return {
+						error,
+						iframeCalled: Zotero.BotBypass.passJSDetectionViaHiddenIframe.called,
+						windowPromptCalled: Zotero.BotBypass.passJSDetectionViaWindowPrompt.called,
+					};
+				}, attachment, mockTab);
+
+				assert.include(result.error, 'Attachment download failed with HTTP status 404');
+				assert.isFalse(result.iframeCalled);
+				assert.isFalse(result.windowPromptCalled);
+			});
+		});
+
 		describe('When attachment mime type is not provided by the translator', function () {
 			it('should fetch mime type from the content type header', async function () {
 				attachment = {

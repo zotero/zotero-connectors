@@ -595,6 +595,17 @@
 	"integration_googleDocs_updating": {
 		"message": "$1 is updating your document."
 	},
+	"integration_googleDocs_tabNotActive": {
+		"message": "$1 needs the Google Docs tab to stay active for the current operation. Please do not switch away from the browser until the operation is complete.",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"integration_googleDocs_uiChanged": {
+		"message": "Google Docs has changed in a way that affects Zotero integration. Please submit a <a href=\"https://www.zotero.org/support/reporting_problems\">Report ID</a> from the Zotero Connector on the <a href=\"https://forums.zotero.org\">Zotero Forums</a>."
+	},
+	"integration_googleDocs_unexpectedError": {
+		"message": "An unexpected error occurred while working with your document. Please try again. If the problem persists, restart your browser and $1.",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
 	"integration_googleDocs_docxAlert": {
 		"message": "$1 integration is not available when editing Microsoft Word .docx files directly in Google Docs. Choose File → Save as Google Docs to enable this functionality.<br/><br/>If you want to transfer a Word document with $1 citations to Google Docs, see <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Moving Documents Between Word Processors</a>."
 	},

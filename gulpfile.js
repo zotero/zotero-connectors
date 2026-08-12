@@ -27,7 +27,7 @@
 
 const path = require('path');
 const replaceBrowser = require('./scripts/replace_browser');
-const execFile = require('child_process').execFile;
+const spawn = require('child_process').spawn;
 const through = require('through2');
 const gulp = require('gulp');
 const plumber = require('gulp-plumber');
@@ -168,22 +168,30 @@ var backgroundIncludeBrowserExt = ['browser-polyfill.js'].concat(backgroundInclu
 ]);
 
 var reloadChromiumTimeout;
-var reloadingChromiumExtension = false;
-var reloadChromiumExtensionPending = false;
+var chromiumReloadProcess;
 function reloadChromiumExtension() {
-	reloadChromiumExtensionPending = true;
 	clearTimeout(reloadChromiumTimeout);
 	reloadChromiumTimeout = setTimeout(function () {
-		if (reloadingChromiumExtension) return;
-		reloadingChromiumExtension = true;
-		reloadChromiumExtensionPending = false;
-		execFile(path.join(__dirname, 'scripts/reload-chromium-extension'), function (error, stdout, stderr) {
-			reloadingChromiumExtension = false;
-			if (stdout) process.stdout.write(stdout);
-			if (stderr) process.stderr.write(stderr);
-			if (error) console.error(`Failed to reload Chromium extension: ${error.message}`);
-			if (reloadChromiumExtensionPending) reloadChromiumExtension();
-		});
+		if (!chromiumReloadProcess) {
+			chromiumReloadProcess = spawn(
+				path.join(__dirname, 'scripts/reload-chromium-extension'),
+				['--persistent'],
+				{ stdio: ['pipe', 'inherit', 'inherit'] }
+			);
+			chromiumReloadProcess.on('error', function (error) {
+				console.error(`Failed to start Chromium extension reloader: ${error.message}`);
+			});
+			chromiumReloadProcess.stdin.on('error', function (error) {
+				if (error.code !== 'EPIPE') {
+					console.error(`Failed to request Chromium extension reload: ${error.message}`);
+				}
+			});
+			chromiumReloadProcess.on('close', function (code) {
+				chromiumReloadProcess = null;
+				if (code) console.error(`Chromium extension reloader exited with code ${code}`);
+			});
+		}
+		chromiumReloadProcess.stdin.write('\n');
 	}, 250);
 }
 

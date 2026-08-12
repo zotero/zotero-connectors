@@ -257,16 +257,16 @@ Zotero.Connector_Browser = new function() {
 	};
 	
 	/**
-	 * Called if Zotero version is determined to be incompatible with Standalone
+	 * Called if the Zotero Connector version is incompatible with the Zotero client
 	 */
-	this.onIncompatibleStandaloneVersion = function(zoteroVersion, standaloneVersion) {
-		if(_incompatibleVersionMessageShown) return;
-		alert('Zotero Connector for Chrome '+zoteroVersion+' is incompatible with the running '+
-			'version of Zotero Standalone'+(standaloneVersion ? " ("+standaloneVersion+")" : "")+
-			'. Zotero Connector will continue to operate, but functionality that relies upon '+
-			'Zotero Standalone may be unavailable.\n\n'+
-			'Please ensure that you have installed the latest version of these components. See '+
-			'https://www.zotero.org/download for more details.');
+	this.onIncompatibleStandaloneVersion = function(connectorVersion, clientVersion) {
+		if (_incompatibleVersionMessageShown) return;
+		alert('Zotero Connector ' + connectorVersion + ' is incompatible with the running '
+			+ 'version of the Zotero client' + (clientVersion ? " (" + clientVersion + ")" : "")
+			+ '. Zotero Connector will continue to operate, but functionality that relies upon '
+			+ 'the Zotero client may be unavailable.\n\n'
+			+ 'Please ensure that you have installed the latest version of these components. See '
+			+ 'https://www.zotero.org/download for more details.');
 		_incompatibleVersionMessageShown = true;
 	}
 

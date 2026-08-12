@@ -240,20 +240,20 @@ Zotero.Proxies = new function() {
 	
 	this.notifyNewProxy = async function(proxy, tabId) {
 		let instance = Zotero.Proxies._createProxyInstance(proxy);
+		let host = proxy.hosts[proxy.hosts.length - 1];
+		let proxyName = instance.toDisplayName();
 		let response = await Zotero.Proxies.showNotification(
-			'New Zotero Proxy',
-			`Zotero detected that you are accessing ${proxy.hosts[proxy.hosts.length-1]} through a proxy. Would you like to automatically redirect future requests to ${proxy.hosts[proxy.hosts.length-1]} through ${instance.toDisplayName()}?`,
-			['✕', 'Proxy Settings', 'Accept'],
+			Zotero.getString('proxy_newProxy_title'),
+			Zotero.getString('proxy_newProxy_message', [ZOTERO_CONFIG.CLIENT_NAME, host, proxyName]),
+			['✕', Zotero.getString('proxy_settings'), Zotero.getString('proxy_accept')],
 			tabId
 		);
 		if (response == 2) {
 			let result = await Zotero.Messaging.sendMessage('confirm', {
-				title: 'Only add proxies linked from your library, school, or corporate website',
-				message: 'Adding other proxies allows malicious sites to masquerade as sites you trust.<br/></br>'
-				+ 'Adding this proxy will allow Zotero to recognize items from proxied pages and will automatically '
-				+ `redirect future requests to ${proxy.hosts[proxy.hosts.length - 1]} through ${instance.toDisplayName()}.`,
-				button1Text: 'Add Proxy',
-				button2Text: 'Cancel'
+				title: Zotero.getString('proxy_addProxy_title'),
+				message: Zotero.getString('proxy_addProxy_message', [ZOTERO_CONFIG.CLIENT_NAME, host, proxyName]),
+				button1Text: Zotero.getString('proxy_addProxy'),
+				button2Text: Zotero.getString('general_cancel')
 			}, tabId);
 			if (result.button == 1) {
 				return Zotero.Proxies.save(proxy);
@@ -828,9 +828,9 @@ Zotero.Proxy = class {
 		Zotero.Proxies.toggleRedirectLoopPrevention(false);
 
 		Zotero.Proxies.showNotification(
-			'New Zotero Proxy Host',
-			`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected through ${this.toDisplayName()}.`,
-			["✕", "Proxy Settings", "Don’t Proxy This Site"],
+			Zotero.getString('proxy_newHost_title'),
+			Zotero.getString('proxy_newHost_message', [ZOTERO_CONFIG.CLIENT_NAME, host, this.toDisplayName()]),
+			["✕", Zotero.getString('proxy_settings'), Zotero.getString('proxy_dontProxy')],
 			details.tabId
 		)
 		.then((response) => {
@@ -869,9 +869,9 @@ Zotero.Proxy = class {
 		// Otherwise, redirect.
 		if (Zotero.Proxies.showRedirectNotification && details.frameId === 0) {
 			Zotero.Proxies.showNotification(
-				'Zotero Proxy Redirection',
-				`Zotero automatically redirected your request to ${uri.host} through the proxy at ${this.toDisplayName()}.`,
-				['✕', 'Proxy Settings', "Don’t Proxy This Site"],
+				Zotero.getString('proxy_redirect_title', ZOTERO_CONFIG.CLIENT_NAME),
+				Zotero.getString('proxy_redirect_message', [ZOTERO_CONFIG.CLIENT_NAME, uri.host, this.toDisplayName()]),
+				['✕', Zotero.getString('proxy_settings'), Zotero.getString('proxy_dontProxy')],
 				details.tabId
 			).then((response) => {
 				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");
@@ -951,9 +951,9 @@ Zotero.Proxy.OpenAthensProxy = class extends Zotero.Proxy {
 		Zotero.Proxies.toggleRedirectLoopPrevention(false);
 
 		Zotero.Proxies.showNotification(
-			'New Zotero Proxy Host',
-			`Zotero automatically associated ${host} with a previously defined proxy. Future requests to this site will be redirected through ${this.toDisplayName()}.`,
-			["✕", "Proxy Settings", "Don’t Proxy This Site"],
+			Zotero.getString('proxy_newHost_title'),
+			Zotero.getString('proxy_newHost_message', [ZOTERO_CONFIG.CLIENT_NAME, host, this.toDisplayName()]),
+			["✕", Zotero.getString('proxy_settings'), Zotero.getString('proxy_dontProxy')],
 			details.tabId
 		)
 		.then((response) => {
@@ -977,9 +977,9 @@ Zotero.Proxy.OpenAthensProxy = class extends Zotero.Proxy {
 
 		if (Zotero.Proxies.showRedirectNotification && details.frameId === 0) {
 			Zotero.Proxies.showNotification(
-				'Zotero Proxy Redirection',
-				`Zotero automatically redirected your request to ${uri.host} through the proxy at ${this.toDisplayName()}.`,
-				['✕', 'Proxy Settings', "Don’t Proxy This Site"],
+				Zotero.getString('proxy_redirect_title', ZOTERO_CONFIG.CLIENT_NAME),
+				Zotero.getString('proxy_redirect_message', [ZOTERO_CONFIG.CLIENT_NAME, uri.host, this.toDisplayName()]),
+				['✕', Zotero.getString('proxy_settings'), Zotero.getString('proxy_dontProxy')],
 				details.tabId
 			).then((response) => {
 				if (response == 1) Zotero.Connector_Browser.openPreferences("proxies");

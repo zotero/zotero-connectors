@@ -43,18 +43,25 @@ Zotero.i18n = {
 
 	_loadStrings: async function() {
 		let ui = browser.i18n.getUILanguage() || 'en';
+		let fallback = {};
+		try {
+			let resp = await fetch(browser.runtime.getURL('_locales/en/messages.json'));
+			if (resp.ok) fallback = await resp.json();
+		} catch (e) {}
+
 		let tried = [];
-		// Try the full locale, then language-only, then English. Locale folder names mirror the
-		// _locales/ directory (mostly 2-letter, plus a few like pt-PT/zh-TW).
-		for (let code of [ui, ui.replace('-', '_'), ui.split(/[-_]/)[0], 'en']) {
-			if (!code || tried.includes(code)) continue;
+		// Try the full locale, then language-only. Locale folder names mirror the _locales/
+		// directory (mostly 2-letter, plus a few like pt-PT/zh-TW). Merge with English so new
+		// strings remain available while translations are being updated.
+		for (let code of [ui, ui.replace('-', '_'), ui.split(/[-_]/)[0]]) {
+			if (!code || code == 'en' || tried.includes(code)) continue;
 			tried.push(code);
 			try {
 				let resp = await fetch(browser.runtime.getURL(`_locales/${code}/messages.json`));
-				if (resp.ok) return await resp.json();
+				if (resp.ok) return Object.assign(fallback, await resp.json());
 			} catch (e) {}
 		}
-		return {};
+		return fallback;
 	},
 
 	// Background-only message handler; injected pages call this (via messaging) to get the strings

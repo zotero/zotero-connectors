@@ -261,12 +261,11 @@ Zotero.Connector_Browser = new function() {
 	 */
 	this.onIncompatibleStandaloneVersion = function(connectorVersion, clientVersion) {
 		if (_incompatibleVersionMessageShown) return;
-		alert('Zotero Connector ' + connectorVersion + ' is incompatible with the running '
-			+ 'version of the Zotero client' + (clientVersion ? " (" + clientVersion + ")" : "")
-			+ '. Zotero Connector will continue to operate, but functionality that relies upon '
-			+ 'the Zotero client may be unavailable.\n\n'
-			+ 'Please ensure that you have installed the latest version of these components. See '
-			+ 'https://www.zotero.org/download for more details.');
+		alert(Zotero.getString('browserAction_incompatibleVersion', [
+			ZOTERO_CONFIG.CLIENT_NAME,
+			connectorVersion,
+			clientVersion ? " (" + clientVersion + ")" : ""
+		]));
 		_incompatibleVersionMessageShown = true;
 	}
 
@@ -808,16 +807,16 @@ Zotero.Connector_Browser = new function() {
 			var icon, title;
 			if (isOnline) {
 				icon = "images/zotero-new-z-16px.png";
-				title = "Zotero is Online";
+				title = Zotero.getString('browserAction_status_online', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			else if (isOnline === null) {
 				// Zotero's status is unknown without localhost access, so don't claim it's offline
 				icon = "images/zotero-new-z-16px.png";
-				title = "Zotero Connector";
+				title = Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			else {
 				icon = "images/zotero-z-16px-offline.png";
-				title = "Zotero is Offline";
+				title = Zotero.getString('browserAction_status_offline', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			if (typeof message === 'string') {
 				title = message;
@@ -867,7 +866,9 @@ Zotero.Connector_Browser = new function() {
 		});
 		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.prefs.automaticSnapshots :
 			Zotero.Prefs.get('automaticSnapshots');
-		let title = `Save to Zotero (Web Page ${withSnapshot ? 'with' : 'without'} Snapshot)`;
+		let title = Zotero.getString(withSnapshot
+			? 'browserAction_saveWebpageWithSnapshot'
+			: 'browserAction_saveWebpageWithoutSnapshot', ZOTERO_CONFIG.CLIENT_NAME);
 		browser.action.setTitle({tabId: tab.id, title});
 	}
 
@@ -878,7 +879,7 @@ Zotero.Connector_Browser = new function() {
 		});
 		browser.action.setTitle({
 			tabId: tab.id,
-			title: "Save to Zotero (PDF)"
+			title: Zotero.getString('browserAction_savePDF', ZOTERO_CONFIG.CLIENT_NAME)
 		});
 	}
 
@@ -897,7 +898,7 @@ Zotero.Connector_Browser = new function() {
 		if (translators[0].itemType == "multiple") return;
 		browser.contextMenus.create({
 			id: "zotero-context-menu-translator-save-with-selection-note",
-			title: "Create Zotero Item and Note from Selection",
+			title: Zotero.getString('contextMenu_saveWithNote', ZOTERO_CONFIG.CLIENT_NAME),
 			parentId: parentID,
 			contexts: ['selection']
 		});
@@ -907,13 +908,13 @@ Zotero.Connector_Browser = new function() {
 		var fns = [];
 		fns.push(() => browser.contextMenus.create({
 			id: "zotero-context-menu-webpage-withSnapshot-save",
-			title: "Save to Zotero (Web Page with Snapshot)",
+			title: Zotero.getString('browserAction_saveWebpageWithSnapshot', ZOTERO_CONFIG.CLIENT_NAME),
 			parentId: parentID,
 			contexts: ['page', ...buttonContext]
 		}));
 		fns.push(() => browser.contextMenus.create({
 			id: "zotero-context-menu-webpage-withoutSnapshot-save",
-			title: "Save to Zotero (Web Page without Snapshot)",
+			title: Zotero.getString('browserAction_saveWebpageWithoutSnapshot', ZOTERO_CONFIG.CLIENT_NAME),
 			parentId: parentID,
 			contexts: ['page', ...buttonContext]
 		}));
@@ -929,7 +930,7 @@ Zotero.Connector_Browser = new function() {
 	function _showPDFContextMenuItem(parentID) {
 		browser.contextMenus.create({
 			id: "zotero-context-menu-pdf-save",
-			title: "Save to Zotero (PDF)",
+			title: Zotero.getString('browserAction_savePDF', ZOTERO_CONFIG.CLIENT_NAME),
 			parentId: parentID,
 			contexts: ['all']
 		});
@@ -992,7 +993,7 @@ Zotero.Connector_Browser = new function() {
 		});
 		browser.contextMenus.create({
 			id: "zotero-context-menu-preferences",
-			title: "Preferences",
+			title: Zotero.getString('general_preferences'),
 			contexts: ['page', ...buttonContext]
 		});
 	}
@@ -1006,7 +1007,7 @@ Zotero.Connector_Browser = new function() {
 		});
 		browser.action.setTitle({
 			tabId: tab.id,
-			title: "Zotero Connector"
+			title: Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME)
 		});
 		browser.action.enable(tab.id);
 	}
@@ -1167,7 +1168,9 @@ Zotero.Connector_Browser = new function() {
 	
 	function _getTranslatorLabel(translator) {
 		var translatorName = translator.label;
-		return "Save to Zotero (" + translatorName + ")";
+		return Zotero.getString('browserAction_saveWithTranslator', [
+			ZOTERO_CONFIG.CLIENT_NAME, translatorName
+		]);
 	}
 	
 	Zotero.Messaging.addMessageListener("selectDone", function(data) {

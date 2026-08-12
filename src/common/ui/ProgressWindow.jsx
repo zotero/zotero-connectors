@@ -1025,17 +1025,13 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			contents = <span dangerouslySetInnerHTML={html}/>;
 		}
 		else if (err === "noTranslator") {
-			contents = "No items could be saved because this website "
-				+ "is not supported by any Zotero translator. If Zotero is not open, try opening "
-				+ "it to increase the number of supported sites.";
+			contents = Zotero.getString('progressWindow_error_noTranslator', ZOTERO_CONFIG.CLIENT_NAME);
 		}
 		else if (err === "collectionNotEditable") {
-			contents = "The currently selected collection is not editable. "
-				+ "Please select a different collection in Zotero.";
+			contents = Zotero.getString('progressWindow_error_collectionNotEditable', ZOTERO_CONFIG.CLIENT_NAME);
 		}
 		else if (err === "clientRequired") {
-			contents = "This item could not be saved because Zotero is not open or is unreachable. "
-				+ "Please open Zotero and try again.";
+			contents = Zotero.getString('progressWindow_error_clientRequired', ZOTERO_CONFIG.CLIENT_NAME);
 		}
 		else if (err === "upgradeClient") {
 			let clientName = ZOTERO_CONFIG.CLIENT_NAME;
@@ -1059,10 +1055,9 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 		}
 		else if (err === "unexpectedError") {
 			let url = "https://www.zotero.org/support/getting_help";
-			contents = <span>
-				An error occurred while saving this item. Try again, and if the issue persists
-				see <a href={url} title={url}>Getting Help</a> for more information.
-			</span>;
+			contents = <span dangerouslySetInnerHTML={{
+				__html: Zotero.getString('progressWindow_error_unexpected', url)
+			}}/>;
 		}
 
 		return (

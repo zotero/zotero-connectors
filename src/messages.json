@@ -53,6 +53,84 @@
 	"general_copyToClipboard": {
 		"message": "Copy to Clipboard"
 	},
+	"general_preferences": {
+		"message": "Preferences"
+	},
+
+	"extension_description": {
+		"message": "Save references to Zotero from your web browser"
+	},
+	"extension_defaultTitle": {
+		"message": "Save to Zotero"
+	},
+	"browserAction_status_online": {
+		"message": "$1 is Online",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"browserAction_status_offline": {
+		"message": "$1 is Offline",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"browserAction_saveWebpageWithSnapshot": {
+		"message": "Save to $1 (Web Page with Snapshot)",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"browserAction_saveWebpageWithoutSnapshot": {
+		"message": "Save to $1 (Web Page without Snapshot)",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"browserAction_savePDF": {
+		"message": "Save to $1 (PDF)",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"browserAction_saveWithTranslator": {
+		"message": "Save to $1 ($2)",
+		"description": "$1 is the client name (e.g., Zotero); $2 is the name of a translator"
+	},
+	"browserAction_saving": {
+		"message": "Saving…"
+	},
+	"browserAction_saved": {
+		"message": "Saved!"
+	},
+	"browserAction_saveFailed": {
+		"message": "Saving failed. Is $1 running?",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"contextMenu_saveWithNote": {
+		"message": "Create $1 Item and Note from Selection",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"confirmImport_title": {
+		"message": "$1 - Confirm Import",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"browserAction_incompatibleVersion": {
+		"message": "$1 Connector $2 is incompatible with the running version of the $1 client$3. $1 Connector will continue to operate, but functionality that relies upon the $1 client may be unavailable.\n\nPlease ensure that you have installed the latest version of these components. See https://www.zotero.org/download for more details.",
+		"description": "$1 is the client name (e.g., Zotero); $2 is the Connector version; $3 is the client version in parentheses or an empty string"
+	},
+
+	"expiredBetaBuild_title": {
+		"message": "Build Expired"
+	},
+	"expiredBetaBuild_message": {
+		"message": "This $1 Connector beta build has expired. Please download the latest version from zotero.org.",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"contentTypeHandler_addStyle": {
+		"message": "Add citation style to $1?",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"contentTypeHandler_import": {
+		"message": "Import items from $2 into $1?<br/><br/>You can manage automatic file importing in $1 Connector preferences.",
+		"description": "$1 is the client name (e.g., Zotero); $2 is a website hostname"
+	},
+	"contentTypeHandler_import_allow": {
+		"message": "Always allow for this site"
+	},
+	"contentTypeHandler_installingStyle": {
+		"message": "Installing Style"
+	},
 	
 	"itemType_webpage": {
 		"message": "Web Page"
@@ -78,6 +156,12 @@
 	
 	"progressWindow_savingTo": {
 		"message": "Saving to"
+	},
+	"progressWindow_savingToOnlineLibrary": {
+		"message": "Saving to zotero.org"
+	},
+	"progressWindow_saveAsWebpage": {
+		"message": "Save as Webpage"
 	},
 	"progressWindow_detailsBtnView": {
 		"message": "View details"
@@ -151,6 +235,21 @@
 	"progressWindow_error_upgradeClient_latestVersion": {
 		"message": "latest version"
 	},
+	"progressWindow_error_noTranslator": {
+		"message": "No items could be saved because this website is not supported by any $1 translator. If $1 is not open, try opening it to increase the number of supported sites.",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"progressWindow_error_collectionNotEditable": {
+		"message": "The currently selected collection is not editable. Please select a different collection in $1.",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"progressWindow_error_clientRequired": {
+		"message": "This item could not be saved because $1 is not open or is unreachable. Please open $1 and try again."
+	},
+	"progressWindow_error_unexpected": {
+		"message": "An error occurred while saving this item. Try again, and if the issue persists see <a href=\"$1\" title=\"$1\">Getting Help</a> for more information.",
+		"description": "$1 is the URL of the Getting Help page"
+	},
 	"progressWindow_OA_searching": {
 		"message": "Searching for open-access version…"
 	},
@@ -161,6 +260,261 @@
 	},
 	"itemSelector_pattern": {
 		"message": "Pattern"
+	},
+	"itemSelector_windowTitle": {
+		"message": "$1 Item Selector",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+
+	"preferences_title": {
+		"message": "$1 Connector Preferences",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"preferences_general": {
+		"message": "General"
+	},
+	"preferences_proxies": {
+		"message": "Proxies"
+	},
+	"preferences_advanced": {
+		"message": "Advanced"
+	},
+	"preferences_zoteroStatus": {
+		"message": "$1 Status"
+	},
+	"preferences_zoteroStatus_available": {
+		"message": "$1 is currently available."
+	},
+	"preferences_zoteroStatus_unavailable": {
+		"message": "$1 is currently unavailable. If $1 is open, see the <a href=\"$2\">troubleshooting page</a>.",
+		"description": "$1 is the client name (e.g., Zotero); $2 is the URL of the troubleshooting page"
+	},
+	"preferences_zoteroStatus_update": {
+		"message": "Update Status"
+	},
+	"preferences_saveToOnlineLibrary": {
+		"message": "Save to Zotero.org"
+	},
+	"preferences_onlineLibrary_notAuthorized": {
+		"message": "$1 Connector is not currently authorized to save items to zotero.org. You will be prompted for authorization if you try to save items while $1 is not open.",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"preferences_onlineLibrary_authorized": {
+		"message": "$1 Connector will save items to zotero.org as $2 when $1 is not open.",
+		"description": "$1 is the client name (e.g., Zotero); $2 is a username"
+	},
+	"preferences_onlineLibrary_clearCredentials": {
+		"message": "Clear Credentials"
+	},
+	"preferences_onlineLibrary_automaticSnapshots": {
+		"message": "Automatically take snapshots when saving items"
+	},
+	"preferences_onlineLibrary_downloadAssociatedFiles": {
+		"message": "Automatically download associated PDFs and other files when saving items"
+	},
+	"preferences_onlineLibrary_automaticTags": {
+		"message": "Automatically tag items with keywords and subject headings"
+	},
+	"preferences_fileImporting": {
+		"message": "Automatic File Importing"
+	},
+	"preferences_fileImporting_clientRequired": {
+		"message": "Available when $1 is running"
+	},
+	"preferences_fileImporting_enable": {
+		"message": "Import BibTeX/RIS/Refer files into $1",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"preferences_fileImporting_hostnames": {
+		"message": "Enabled Hostnames"
+	},
+	"preferences_fileImporting_remove": {
+		"message": "Remove"
+	},
+	"preferences_reportErrors": {
+		"message": "Report Errors"
+	},
+	"preferences_reportErrors_none": {
+		"message": "No errors have been logged."
+	},
+	"preferences_reportErrors_subtitle": {
+		"message": "The following errors have occurred since the $1 Connector was started:",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"preferences_reportErrors_submit": {
+		"message": "Submit Report"
+	},
+	"preferences_debugOutput": {
+		"message": "Debug Output Logging"
+	},
+	"preferences_debugOutput_description": {
+		"message": "Debug output can help $1 developers diagnose problems. Debug logging may slow down your browser, so you should generally leave it disabled unless a $1 developer requests debug output.",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"preferences_debugOutput_enable": {
+		"message": "Enable Logging"
+	},
+	"preferences_debugOutput_enableAtStartup": {
+		"message": "Enable at Startup"
+	},
+	"preferences_debugOutput_linesLogged": {
+		"message": "$1 lines logged"
+	},
+	"preferences_debugOutput_view": {
+		"message": "View Output"
+	},
+	"preferences_debugOutput_clear": {
+		"message": "Clear Output"
+	},
+	"preferences_debugOutput_submit": {
+		"message": "Submit Output"
+	},
+	"preferences_translators": {
+		"message": "Translators"
+	},
+	"preferences_translators_reportErrors": {
+		"message": "Report broken site translators to zotero.org"
+	},
+	"preferences_translators_reset": {
+		"message": "Reset Translators"
+	},
+	"preferences_translators_resetting": {
+		"message": "Resetting translators…"
+	},
+	"preferences_translators_updated": {
+		"message": "Translators updated!"
+	},
+	"preferences_translators_updateFailed": {
+		"message": "Translator update failed"
+	},
+	"preferences_googleDocs": {
+		"message": "Google Docs Integration"
+	},
+	"preferences_googleDocs_enable": {
+		"message": "Enable Google Docs Integration"
+	},
+	"preferences_googleDocs_shortcut": {
+		"message": "Add/Edit Citation Shortcut"
+	},
+	"preferences_proxySettings": {
+		"message": "Proxy Settings"
+	},
+	"preferences_proxySettings_description": {
+		"message": "$1 will transparently redirect requests through saved proxies. See the <a href=\"$2\">proxy documentation</a> for more information.",
+		"description": "$1 is the client name (e.g., Zotero); $2 is the URL of the proxy documentation"
+	},
+	"preferences_proxySettings_configured": {
+		"message": "Configured Proxies"
+	},
+	"preferences_proxySettings_enable": {
+		"message": "Enable proxy redirection"
+	},
+	"preferences_proxySettings_showRedirectNotification": {
+		"message": "Show a notification when redirecting through a proxy"
+	},
+	"preferences_proxySettings_autoRecognize": {
+		"message": "Automatically detect new proxies"
+	},
+	"preferences_proxySettings_disableByDomain": {
+		"message": "Disable proxy redirection when my domain name contains (available when $1 is running)",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"preferences_proxySettings_redirectLoop": {
+		"message": "$1 detected a proxy redirect loop and has temporarily suspended automatic proxy redirection.",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"preferences_proxySettings_reenable": {
+		"message": "Re-enable proxy redirection"
+	},
+	"preferences_proxySettings_urlRewritingProxy": {
+		"message": "URL-rewriting proxy (e.g., EZproxy)"
+	},
+	"preferences_proxySettings_openAthens": {
+		"message": "OpenAthens"
+	},
+	"preferences_proxySettings_loginURLScheme": {
+		"message": "Login URL Scheme:"
+	},
+	"preferences_proxySettings_proxiedURLScheme": {
+		"message": "Proxied URL Scheme:"
+	},
+	"preferences_proxySettings_openAthensDomain": {
+		"message": "OpenAthens Redirector Domain:"
+	},
+	"preferences_proxySettings_autoAssociate": {
+		"message": "Automatically associate new hosts"
+	},
+	"preferences_proxySettings_variables": {
+		"message": "You may use the following variables in your proxy schemes:"
+	},
+	"preferences_proxySettings_variableHost": {
+		"message": "%h - The hostname of the proxied site (e.g., www.example.com)"
+	},
+	"preferences_proxySettings_variablePath": {
+		"message": "%p - The path of the proxied page excluding the leading slash (e.g., about/index.html)"
+	},
+	"preferences_proxySettings_variableURL": {
+		"message": "%u - Full encoded proxied site url (e.g. https://www.example.com/about/index.html)"
+	},
+	"preferences_proxySettings_hostnames": {
+		"message": "Hostnames"
+	},
+	"preferences_proxySettings_hostname": {
+		"message": "Hostname:"
+	},
+	"preferences_proxySettings_addHostname": {
+		"message": "Add Hostname"
+	},
+	"preferences_proxySettings_removeHostname": {
+		"message": "Remove Hostname"
+	},
+	"preferences_proxySettings_addProxy": {
+		"message": "Add Proxy"
+	},
+	"preferences_proxySettings_removeProxy": {
+		"message": "Remove Proxy"
+	},
+
+	"proxy_settings": {
+		"message": "Proxy Settings"
+	},
+	"proxy_accept": {
+		"message": "Accept"
+	},
+	"proxy_dontProxy": {
+		"message": "Don’t Proxy This Site"
+	},
+	"proxy_newProxy_title": {
+		"message": "New Proxy"
+	},
+	"proxy_newProxy_message": {
+		"message": "$1 detected that you are accessing $2 through a proxy. Would you like to automatically redirect future requests to $2 through $3?",
+		"description": "$1 is the client name (e.g., Zotero); $2 is a website hostname; $3 is a proxy name"
+	},
+	"proxy_addProxy_title": {
+		"message": "Only add proxies linked from your library, school, or corporate website"
+	},
+	"proxy_addProxy_message": {
+		"message": "Adding other proxies allows malicious sites to masquerade as sites you trust.<br/><br/>Adding this proxy will allow $1 to recognize items from proxied pages and will automatically redirect future requests to $2 through $3.",
+		"description": "$1 is the client name (e.g., Zotero); $2 is a website hostname; $3 is a proxy name"
+	},
+	"proxy_addProxy": {
+		"message": "Add Proxy"
+	},
+	"proxy_newHost_title": {
+		"message": "New Proxy Host"
+	},
+	"proxy_newHost_message": {
+		"message": "$1 automatically associated $2 with a previously defined proxy. Future requests to this site will be redirected through $3.",
+		"description": "$1 is the client name (e.g., Zotero); $2 is a website hostname; $3 is a proxy name"
+	},
+	"proxy_redirect_title": {
+		"message": "$1 Proxy Redirection",
+		"description": "$1 is the client name (e.g., Zotero)"
+	},
+	"proxy_redirect_message": {
+		"message": "$1 automatically redirected your request to $2 through the proxy at $3.",
+		"description": "$1 is the client name (e.g., Zotero); $2 is a website hostname; $3 is a proxy name"
 	},
 	
 	"extensionIsDisabled": {

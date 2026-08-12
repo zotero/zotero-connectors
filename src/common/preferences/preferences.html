@@ -20,49 +20,49 @@
 	<head>
 		<meta charset="UTF-8">
 		<link rel="stylesheet" type="text/css" media="screen" href="preferences.css" />
-		<title>Zotero Connector Preferences</title>
+		<title data-l10n-id="preferences_title" data-l10n-client-name>Zotero Connector Preferences</title>
 	</head>
 	<body>
 		<div id="panes">
 			<div id="pane-general" class="pane">
 				<div class="pane-image"><img src="../images/prefs-general.png" alt=""/></div>
-				<a href="#general" class="pane-label">General</a>
+				<a href="#general" class="pane-label" data-l10n-id="preferences_general">General</a>
 			</div>
 			<div id="pane-proxies" class="pane" style="display: none">
 				<div class="pane-image"><img src="../images/prefs-proxies.png" alt=""/></div>
-				<a href="#proxies" class="pane-label">Proxies</a>
+				<a href="#proxies" class="pane-label" data-l10n-id="preferences_proxies">Proxies</a>
 			</div>
 			<div id="pane-advanced" class="pane">
 				<div class="pane-image"><img src="../images/prefs-advanced.png" alt=""/></div>
-				<a href="#advanced" class="pane-label">Advanced</a>
+				<a href="#advanced" class="pane-label" data-l10n-id="preferences_advanced">Advanced</a>
 			</div>
 		</div>
 		<div id="content-general" class="content">
 			<div class="group">
-				<div class="group-title">Zotero Status</div>
+				<div class="group-title" data-l10n-id="preferences_zoteroStatus" data-l10n-client-name>Zotero Status</div>
 				<div class="group-content" id="client-status"></div>
 			</div>
 			<div class="group">
-				<div class="group-title">Save to Zotero.org</div>
+				<div class="group-title" data-l10n-id="preferences_saveToOnlineLibrary">Save to Zotero.org</div>
 				<div class="group-content">
 					<div id="general-authorization-not-authorized">
-						<p>Zotero Connector is not currently authorized to save items to zotero.org. You will be prompted for authorization if you try to save items while Zotero is not open.</p>
+						<p data-l10n-id="preferences_onlineLibrary_notAuthorized" data-l10n-client-name>Zotero Connector is not currently authorized to save items to zotero.org. You will be prompted for authorization if you try to save items while Zotero is not open.</p>
 					</div>
 					<div id="general-authorization-authorized" style="display:none">
-						<p>Zotero Connector will save items to zotero.org as <span id="general-span-authorization-username"></span> when Zotero is not open.</p>
+						<p id="general-authorization-authorized-message"></p>
 						<p>
-							<input type="button" value="Clear Credentials" id="general-button-clear-credentials"/>
+							<input type="button" value="Clear Credentials" id="general-button-clear-credentials" data-l10n-id="preferences_onlineLibrary_clearCredentials"/>
 						</p>
 						<p>
-							<label><input type="checkbox" data-pref="automaticSnapshots"/>&nbsp;Automatically take snapshots when saving items</label>
-							<label><input type="checkbox" data-pref="downloadAssociatedFiles"/>&nbsp;Automatically download associated PDFs and other files when saving items</label>
-							<label><input type="checkbox" data-pref="automaticTags"/>&nbsp;Automatically tag items with keywords and subject headings</label>
+							<label><input type="checkbox" data-pref="automaticSnapshots"/>&nbsp;<span data-l10n-id="preferences_onlineLibrary_automaticSnapshots">Automatically take snapshots when saving items</span></label>
+							<label><input type="checkbox" data-pref="downloadAssociatedFiles"/>&nbsp;<span data-l10n-id="preferences_onlineLibrary_downloadAssociatedFiles">Automatically download associated PDFs and other files when saving items</span></label>
+							<label><input type="checkbox" data-pref="automaticTags"/>&nbsp;<span data-l10n-id="preferences_onlineLibrary_automaticTags">Automatically tag items with keywords and subject headings</span></label>
 						</p>
 					</div>
 				</div>
 			</div>
 			<div class="group" style="display: none" id="intercept-and-import">
-				<div class="group-title">Automatic File Importing</div>
+				<div class="group-title" data-l10n-id="preferences_fileImporting">Automatic File Importing</div>
 				<!-- React Component -->
 				<div class="group-content"></div>
 			</div>
@@ -71,43 +71,43 @@
 		<div id="content-proxies" class="content"></div>
 		<div id="content-advanced" class="content">
 			<div class="group">
-				<div class="group-title">Report Errors</div>
+				<div class="group-title" data-l10n-id="preferences_reportErrors">Report Errors</div>
 				<div class="group-content">
 					<div id="advanced-no-errors">
-						No errors have been logged.
+						<span data-l10n-id="preferences_reportErrors_none">No errors have been logged.</span>
 					</div>
 					<div id="advanced-have-errors" style="display:none">
-						<p>The following errors have occurred since the Zotero Connector was started:</p>
+						<p data-l10n-id="preferences_reportErrors_subtitle" data-l10n-client-name>The following errors have occurred since the Zotero Connector was started:</p>
 						<p><textarea id="advanced-textarea-errors" style="width:100%; height:10em;" readonly="true"></textarea></p>
 					</div>
-					<p><input type="button" id="advanced-button-report-errors" value="Submit Report"/></p>
+					<p><input type="button" id="advanced-button-report-errors" value="Submit Report" data-l10n-id="preferences_reportErrors_submit"/></p>
 				</div>
 			</div>
 			<div class="group">
-				<div class="group-title">Debug Output Logging</div>
+				<div class="group-title" data-l10n-id="preferences_debugOutput">Debug Output Logging</div>
 				<div class="group-content">
-					<p>Debug output can help Zotero developers diagnose problems. Debug logging may slow down your browser, so you should generally leave it disabled unless a Zotero developer requests debug output.</p>
+					<p data-l10n-id="preferences_debugOutput_description" data-l10n-client-name>Debug output can help Zotero developers diagnose problems. Debug logging may slow down your browser, so you should generally leave it disabled unless a Zotero developer requests debug output.</p>
 					<p>
-						<label><input type="checkbox" id="advanced-checkbox-enable-logging"/>&nbsp;Enable Logging</label>
-						<label><input type="checkbox" id="advanced-checkbox-enable-at-startup"/>&nbsp;Enable at Startup</label>
+						<label><input type="checkbox" id="advanced-checkbox-enable-logging"/>&nbsp;<span data-l10n-id="preferences_debugOutput_enable">Enable Logging</span></label>
+						<label><input type="checkbox" id="advanced-checkbox-enable-at-startup"/>&nbsp;<span data-l10n-id="preferences_debugOutput_enableAtStartup">Enable at Startup</span></label>
 					</p>
 					<p>
-						<span id="advanced-span-lines-logged"></span> lines logged
+						<span id="advanced-span-lines-logged">0 lines logged</span>
 					</p>
 					<p>
-						<input type="button" id="advanced-button-view-output" value="View Output"/>
-						<input type="button" id="advanced-button-clear-output" value="Clear Output"/>
-						<input type="button" id="advanced-button-submit-output" value="Submit Output"/>
+						<input type="button" id="advanced-button-view-output" value="View Output" data-l10n-id="preferences_debugOutput_view"/>
+						<input type="button" id="advanced-button-clear-output" value="Clear Output" data-l10n-id="preferences_debugOutput_clear"/>
+						<input type="button" id="advanced-button-submit-output" value="Submit Output" data-l10n-id="preferences_debugOutput_submit"/>
 					</p>
 					<p><textarea id="advanced-textarea-debug" style="width:100%; height:10em; display:none" readonly="true"></textarea></p>
 				</div>
 			</div>
 			<div class="group">
-				<div class="group-title">Translators</div>
+				<div class="group-title" data-l10n-id="preferences_translators">Translators</div>
 				<div class="group-content">
-					<label><input type="checkbox" id="advanced-checkbox-report-translator-failure"/> Report broken site translators to zotero.org</label>
+					<label><input type="checkbox" id="advanced-checkbox-report-translator-failure"/> <span data-l10n-id="preferences_translators_reportErrors">Report broken site translators to zotero.org</span></label>
 					<p>
-						<input type="button" id="advanced-button-reset-translators" value="Reset Translators" title="Reset Translators"/>
+						<input type="button" id="advanced-button-reset-translators" value="Reset Translators" data-l10n-id="preferences_translators_reset"/>
 						<!--BEGIN DEBUG-->
 						<input type="button" id="advanced-button-open-translator-tester" value="Open Translator Tester"/>
 						<!--END DEBUG-->
@@ -115,15 +115,15 @@
 				</div>
 			</div>
 			<div class="group" id="advanced-group-google-docs">
-				<div class="group-title">Google Docs Integration</div>
+				<div class="group-title" data-l10n-id="preferences_googleDocs">Google Docs Integration</div>
 				<div class="group-content">
 					<div id="google-docs-pref">
 						<p>
-							<label><input id="advanced-checkbox-google-docs-enabled" type="checkbox" data-pref="integration.googleDocs.enabled"/>Enable Google Docs Integration</label>
+							<label><input id="advanced-checkbox-google-docs-enabled" type="checkbox" data-pref="integration.googleDocs.enabled"/><span data-l10n-id="preferences_googleDocs_enable">Enable Google Docs Integration</span></label>
 						</p>
 						<div id="advanced-google-docs-subprefs" style="margin-left: 1em">
 <!--							<label style="margin-top: -7px; margin-bottom: 5px"><input type="checkbox" data-pref="integration.googleDocs.useGoogleDocsAPI"/>Enable Google Docs Integration v2 (NEW)</label>-->
-							<label>Add/Edit Citation Shortcut<input is="shortcut-input" type="text" class="shortcut-input" data-pref="shortcuts.cite"></label>
+							<label><span data-l10n-id="preferences_googleDocs_shortcut">Add/Edit Citation Shortcut</span><input is="shortcut-input" type="text" class="shortcut-input" data-pref="shortcuts.cite"></label>
 						</div>
 					</div>
 				</div>
@@ -160,6 +160,7 @@
 		<script type="text/javascript" src="../zoteroFrame.js"></script>
 		<script type="text/javascript" src="../inject/modalPrompt_inject.js"></script>
 		<script type="text/javascript" src="../i18n.js"></script>
+		<script type="text/javascript" src="../i18n_common.js"></script>
 		<script type="text/javascript" src="preferences.js"></script>
 		<!--BEGIN DEBUG-->
 		<script type="text/javascript" src="../lib/sinon.js"></script>

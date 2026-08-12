@@ -47,6 +47,7 @@ var Zotero_Preferences = {
 		Zotero.Messaging.init();
 		Zotero.Messaging.addMessageListener('confirm', props => Zotero.ModalPrompt.confirm(props));
 		await Zotero.i18n.init();
+		Zotero.i18n.translateFragment(document);
 
 		await Zotero.Prefs.loadNamespace(['interceptKnownFileTypes', 'allowedInterceptHosts']);
 		
@@ -151,7 +152,8 @@ var Zotero_Preferences = {
 			// get debug logging info
 			return Zotero.Connector_Debug.count();
 		}).then(function(count) {
-			document.getElementById('advanced-span-lines-logged').textContent = count.toString();
+			document.getElementById('advanced-span-lines-logged').textContent
+				= Zotero.getString('preferences_debugOutput_linesLogged', count);
 			toggleDisabled(document.getElementById('advanced-button-view-output'), !count);
 			toggleDisabled(document.getElementById('advanced-button-clear-output'), !count);
 			toggleDisabled(document.getElementById('advanced-button-submit-output'), !count);
@@ -182,7 +184,10 @@ Zotero_Preferences.General = {
 		document.getElementById('general-authorization-not-authorized').style.display = (userInfo ? 'none' : 'block');
 		document.getElementById('general-authorization-authorized').style.display = (!userInfo ? 'none' : 'block');
 		if(userInfo) {
-			document.getElementById('general-span-authorization-username').textContent = userInfo.username;
+			document.getElementById('general-authorization-authorized-message').textContent
+					= Zotero.getString('preferences_onlineLibrary_authorized', [
+						ZOTERO_CONFIG.CLIENT_NAME, userInfo.username
+					]);
 		}
 	},
 
@@ -224,16 +229,16 @@ Zotero_Preferences.Advanced = {
 		document.getElementById("advanced-button-clear-output").onclick = Zotero_Preferences.Advanced.clearDebugOutput;
 		document.getElementById("advanced-button-submit-output").onclick = Zotero_Preferences.Advanced.submitDebugOutput;
 		document.getElementById("advanced-button-reset-translators").addEventListener('click', async (event) => { 
-			event.target.value = "Resetting translators…";
+			event.target.value = Zotero.getString('preferences_translators_resetting');
 			try {
 				// Otherwise "Resetting translators..." flash-appears and it looks glitchy
 				await Promise.all([Zotero.Promise.delay(1000), (async () => {
 					await Zotero.Prefs.removeAllCachedTranslators();
 					return Zotero.Translators.updateFromRemote(true)
 				})()]);
-				event.target.value = "Translators updated!";
+				event.target.value = Zotero.getString('preferences_translators_updated');
 			} catch (e) {
-				event.target.value = "Translator update failed";
+				event.target.value = Zotero.getString('preferences_translators_updateFailed');
 			}
 		});
 		document.getElementById("advanced-button-report-errors").onclick = Zotero_Preferences.Advanced.submitErrors;
@@ -315,7 +320,7 @@ Zotero_Preferences.Advanced = {
 			let reportID = await Zotero.Connector_Debug.submitReport();
 			let result = await Zotero.ModalPrompt.confirm({
 				message: Zotero.getString('reports_debug_output_submitted', 'D' + reportID).replace(/\n/g, '<br/>'),
-				button1Text: "OK",
+				button1Text: Zotero.getString('general_ok'),
 				button2Text: !Zotero.isSafari ? Zotero.getString("general_copyToClipboard") : "",
 			});
 			if (result.button == 2) {
@@ -350,7 +355,7 @@ Zotero_Preferences.Advanced = {
 			var reportID = await Zotero.Errors.sendErrorReport();
 			let result = await Zotero.ModalPrompt.confirm({
 				message: Zotero.getString('reports_report_submitted', reportID).replace(/\n/g, '<br/>'),
-				button1Text: "OK",
+				button1Text: Zotero.getString('general_ok'),
 				button2Text: !Zotero.isSafari ? Zotero.getString("general_copyToClipboard") : "",
 			});
 			if (result.button == 2) {
@@ -390,13 +395,14 @@ Zotero_Preferences.Components.ClientStatus = class ClientStatus extends React.Co
 	}
 	
 	render() {
-		let available = <span>available.</span>;
-		if (!this.state.available) {
-			available = <span>unavailable. If Zotero is open, see the <a href="https://www.zotero.org/support/kb/connector_zotero_unavailable">troubleshooting page</a>.</span>
-		}
+		let status = this.state.available
+			? Zotero.getString('preferences_zoteroStatus_available', ZOTERO_CONFIG.CLIENT_NAME)
+			: Zotero.getString('preferences_zoteroStatus_unavailable',
+				[ZOTERO_CONFIG.CLIENT_NAME,
+					'https://www.zotero.org/support/kb/connector_zotero_unavailable']);
 		return (<div>
-			<p>Zotero is currently {available}</p>
-			<p><input type="button" value="Update Status" onClick={this.checkStatus}/></p>
+			<p dangerouslySetInnerHTML={{__html: status}}/>
+			<p><input type="button" value={Zotero.getString('preferences_zoteroStatus_update')} onClick={this.checkStatus}/></p>
 		</div>)
 	}
 };
@@ -420,14 +426,18 @@ Zotero_Preferences.Components.ProxySettings = class ProxySettings extends React.
 		return (
 			<div>
 				<div className="group">
-					<div className="group-title">Proxy Settings</div>
+					<div className="group-title">{Zotero.getString('preferences_proxySettings')}</div>
 					<div className="group-content">
-						<p>Zotero will transparently redirect requests through saved proxies. See the <a href="https://www.zotero.org/support/connector_preferences#proxies">proxy documentation</a> for more information.</p>
+						<p dangerouslySetInnerHTML={{__html: Zotero.getString(
+							'preferences_proxySettings_description',
+							[ZOTERO_CONFIG.CLIENT_NAME,
+								'https://www.zotero.org/support/connector_preferences#proxies'])
+						}}/>
 						<Zotero_Preferences.Components.ProxyPreferences onTransparentChange={this.handleTransparentChange}/>
 					</div>
 				</div>
 				<div className="group">
-					<div className="group-title">Configured Proxies</div>
+					<div className="group-title">{Zotero.getString('preferences_proxySettings_configured')}</div>
 					<div className="group-content">
 						<Zotero_Preferences.Components.Proxies transparent={this.state.transparent}/>
 					</div>
@@ -479,12 +489,12 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 	}
 	
 	render() {
-		let autoRecognise = <label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;Automatically detect new proxies</label>;
+		let autoRecognise = <label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="autoRecognize" defaultChecked={this.state.autoRecognize}/>&nbsp;{Zotero.getString('preferences_proxySettings_autoRecognize')}</label>;
 		let redirectLoopPrevention = ''
 		if (this.state.loopPreventionTimestamp > Date.now() && this.state.transparent) {
 			redirectLoopPrevention = (
 				<div className="group">
-					<b>Zotero detected a proxy redirect loop and has temporarily suspended automatic proxy redirection.</b> <input type="button" onClick={this.reenableProxyRedirection} value="Re-enable proxy redirection"/>
+					<b>{Zotero.getString('preferences_proxySettings_redirectLoop', ZOTERO_CONFIG.CLIENT_NAME)}</b> <input type="button" onClick={this.reenableProxyRedirection} value={Zotero.getString('preferences_proxySettings_reenable')}/>
 				</div>
 			)
 		}
@@ -492,13 +502,13 @@ Zotero_Preferences.Components.ProxyPreferences = class ProxyPreferences extends 
 			<div>
 				{redirectLoopPrevention}
 				<div>
-					<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;Enable proxy redirection</label>
+					<label><input type="checkbox" name="transparent" onChange={this.handleCheckboxChange} defaultChecked={this.state.transparent}/>&nbsp;{Zotero.getString('preferences_proxySettings_enable')}</label>
 					<div style={{marginLeft: "1em"}}>
-						<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;Show a notification when redirecting through a proxy</label>
+						<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="showRedirectNotification" defaultChecked={this.state.showRedirectNotification}/>&nbsp;{Zotero.getString('preferences_proxySettings_showRedirectNotification')}</label>
 						<br/>
 						{autoRecognise}
 						<p>
-							<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;Disable proxy redirection when my domain name contains (available when Zotero is running)</label>
+							<label><input type="checkbox" disabled={!this.state.transparent} onChange={this.handleCheckboxChange} name="disableByDomain" defaultChecked={this.state.disableByDomain}/>&nbsp;{Zotero.getString('preferences_proxySettings_disableByDomain', ZOTERO_CONFIG.CLIENT_NAME)}</label>
 							<br/>
 							<input style={{marginTop: "0.5em", marginLeft: "1.5em"}} type="text" onChange={this.handleTextInputChange} disabled={!this.state.transparent || !this.state.disableByDomain} name="disableByDomainString" defaultValue={this.state.disableByDomainString}/>
 						</p>
@@ -663,9 +673,9 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 	function _renderProxyInput() {
 		return (
 			<div className="proxy-grid">
-				<label htmlFor="to-proxy-scheme-input">Login URL Scheme:</label>
+				<label htmlFor="to-proxy-scheme-input">{Zotero.getString('preferences_proxySettings_loginURLScheme')}</label>
 				<input id="to-proxy-scheme-input" style={{flexGrow: "1"}} type="text" name="toProxyScheme" onChange={handleSchemeChange} value={toProxyScheme || ""} ref={toProxyInputRef}/>
-				<label htmlFor="to-proper-scheme-input">Proxied URL Scheme:</label>
+				<label htmlFor="to-proper-scheme-input">{Zotero.getString('preferences_proxySettings_proxiedURLScheme')}</label>
 				<input id="to-proper-scheme-input" style={{flexGrow: "1"}} type="text" name="toProperScheme" onChange={handleSchemeChange} value={toProperScheme || ""}/>
 			</div>
 		)
@@ -674,7 +684,7 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 	function _renderOpenAthensInput() {
 		return (
 			<div className="proxy-grid">
-				<label htmlFor="openathens-domain-input">OpenAthens Redirector Domain:</label>
+				<label htmlFor="openathens-domain-input">{Zotero.getString('preferences_proxySettings_openAthensDomain')}</label>
 				<input id="openathens-domain-input" style={{flexGrow: "1"}} type="text" name="openathensDomain" onChange={handleOpenAthensDomainChange} value={getOpenAthensDomain() || ""} placeholder="yourinstitution.ac.uk"/>
 			</div>
 		)
@@ -683,13 +693,13 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 	return (
 		<div className="group" style={{marginTop: "10px"}}>
 			<p>
-				<label><input type="radio" name="proxyType" value="ezproxy" checked={!isOpenAthens} onChange={handleTypeChange}/>URL-rewriting proxy (e.g., EZproxy)</label>
-				<label><input type="radio" name="proxyType" value="openathens" checked={isOpenAthens} onChange={handleTypeChange}/>OpenAthens</label>
+				<label><input type="radio" name="proxyType" value="ezproxy" checked={!isOpenAthens} onChange={handleTypeChange}/>{Zotero.getString('preferences_proxySettings_urlRewritingProxy')}</label>
+				<label><input type="radio" name="proxyType" value="openathens" checked={isOpenAthens} onChange={handleTypeChange}/>{Zotero.getString('preferences_proxySettings_openAthens')}</label>
 			</p>
 
 			{multiHost && !isOpenAthens &&
 				<p>
-					<label><input type="checkbox" name="autoAssociate" onChange={handleCheckboxChange} checked={autoAssociate}/>&nbsp;Automatically associate new hosts</label>
+					<label><input type="checkbox" name="autoAssociate" onChange={handleCheckboxChange} checked={autoAssociate}/>&nbsp;{Zotero.getString('preferences_proxySettings_autoAssociate')}</label>
 				</p>
 			}
 			{isOpenAthens ? _renderOpenAthensInput() : _renderProxyInput()}
@@ -698,15 +708,15 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 
 			{!isOpenAthens &&
 				<p>
-					You may use the following variables in your proxy schemes:<br/>
-					&#37;h - The hostname of the proxied site (e.g., www.example.com)<br/>
-					&#37;p - The path of the proxied page excluding the leading slash (e.g., about/index.html)<br/>
-					&#37;u - Full encoded proxied site url (e.g. https://www.example.com/about/index.html)
+					{Zotero.getString('preferences_proxySettings_variables')}<br/>
+					{Zotero.getString('preferences_proxySettings_variableHost')}<br/>
+					{Zotero.getString('preferences_proxySettings_variablePath')}<br/>
+					{Zotero.getString('preferences_proxySettings_variableURL')}
 				</p>
 			}
 			
 			<div style={{display: "flex", flexDirection: "column", marginTop: "10px"}}>
-				<label>Hostnames</label>
+				<label>{Zotero.getString('preferences_proxySettings_hostnames')}</label>
 				<select className="Preferences-Proxies-hostSelect" size="8" multiple
 						value={[currentHostIdx != -1 ? currentHostIdx : '']}
 						onChange={handleHostSelectChange}>
@@ -714,12 +724,12 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 						<option key={i} value={i}>{host}</option>)}
 				</select>
 				<p>
-					<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleAddHost} value="+"/>
-					<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleRemoveHost} disabled={disableRemoveHost} value="-"/>
+					<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleAddHost} value="+" aria-label={Zotero.getString('preferences_proxySettings_addHostname')}/>
+					<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleRemoveHost} disabled={disableRemoveHost} value="-" aria-label={Zotero.getString('preferences_proxySettings_removeHostname')}/>
 				</p>
 				
 				<p style={{display: currentHostIdx === -1 ? 'none' : 'flex'}}>
-					<label>Hostname:
+					<label>{Zotero.getString('preferences_proxySettings_hostname')}
 						<input style={{flexGrow: '1'}}
 							type="text"
 							value={hosts[currentHostIdx] || ""}
@@ -782,8 +792,8 @@ Zotero_Preferences.Components.Proxies = function Proxies(props) {
 				})}
 			</select>
 			<p style={{display: props.transparent ? null : 'none'}}>
-				<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleProxyAdd} value="+"/>
-				<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleProxyRemove} disabled={!canRemoveProxy} value="-"/>
+				<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleProxyAdd} value="+" aria-label={Zotero.getString('preferences_proxySettings_addProxy')}/>
+				<input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={handleProxyRemove} disabled={!canRemoveProxy} value="-" aria-label={Zotero.getString('preferences_proxySettings_removeProxy')}/>
 			</p>
 			
 			<Zotero_Preferences.Components.ProxyDetails
@@ -866,7 +876,7 @@ Zotero_Preferences.Components.MIMETypeHandling = class MIMETypeHandling extends 
 		let hostname = '';
 		if (this.state.currentHostIdx != -1) {
 			hostname = <p style={{display: this.state.currentHostIdx === -1 ? 'none' : 'flex'}}>
-				<label style={{alignSelf: 'center'}}>Hostname: </label>
+				<label style={{alignSelf: 'center'}}>{Zotero.getString('preferences_proxySettings_hostname')} </label>
 				<input style={{flexGrow: '1'}} type="text" defaultValue={this.state.hosts[this.state.currentHostIdx] || ''} onChange={this.handleHostnameChange}/>
 			</p>
 		}
@@ -875,18 +885,18 @@ Zotero_Preferences.Components.MIMETypeHandling = class MIMETypeHandling extends 
 		
 		return (
 			<div>
-				<p>Available when Zotero is running</p>
+				<p>{Zotero.getString('preferences_fileImporting_clientRequired', ZOTERO_CONFIG.CLIENT_NAME)}</p>
 				<p>
-					<label><input type="checkbox" onChange={this.handleCheckboxChange} name="enabled" defaultChecked={this.state.enabled}/>&nbsp;Import BibTeX/RIS/Refer files into Zotero</label>
+					<label><input type="checkbox" onChange={this.handleCheckboxChange} name="enabled" defaultChecked={this.state.enabled}/>&nbsp;{Zotero.getString('preferences_fileImporting_enable', ZOTERO_CONFIG.CLIENT_NAME)}</label>
 				</p>
 				<div style={{display: this.state.enabled ? 'flex' : 'none', flexDirection: "column", marginTop: "10px"}}>
-					<label>Enabled Hostnames</label>
+					<label>{Zotero.getString('preferences_fileImporting_hostnames')}</label>
 					<select className="Preferences-MIMETypeHandling-hostSelect" size="8" multiple
 							value={this.state.currentHostIdx}
 							onChange={this.handleSelectChange}>
 						{hosts}
 					</select>
-					<p> <input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostRemove} disabled={disabled} value="Remove"/> </p>
+					<p> <input style={{minWidth: "80px", marginRight: "10px"}} type="button" onClick={this.handleHostRemove} disabled={disabled} value={Zotero.getString('preferences_fileImporting_remove')}/> </p>
 					{hostname}
 				</div>
 

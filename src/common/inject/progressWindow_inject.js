@@ -103,7 +103,7 @@ if (isTopWindow) {
 		}
 		catch (e) {
 			// TODO: Shouldn't this be coupled to the actual save process?
-			changeHeadline("Saving to zotero.org");
+			changeHeadline(Zotero.getString('progressWindow_savingToOnlineLibrary'));
 			return;
 		}
 		

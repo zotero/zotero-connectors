@@ -2,7 +2,7 @@
 	"name": "Zotero Connector",
 	"manifest_version": 3,
 	"version": "AUTOFILLED",
-	"description": "Save references to Zotero from your web browser",
+	"description": "__MSG_extension_description__",
 	"default_locale": "en",
 	"action": {
 		"default_icon": {
@@ -10,7 +10,7 @@
 			"32": "images/treeitem-webpage-gray@2x.png",
 			"48": "images/treeitem-webpage-gray@48px.png"
 		},
-		"default_title": "Save to Zotero"
+		"default_title": "__MSG_extension_defaultTitle__"
 	},
 	"host_permissions": ["http://127.0.0.1/*", "https://repo.zotero.org/*", "https://api.zotero.org/*", "http://*/*", "https://*/*"],
 	"permissions": ["tabs", "contextMenus", "cookies", "scripting", "offscreen",

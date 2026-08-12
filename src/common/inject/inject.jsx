@@ -265,10 +265,10 @@ Zotero.Inject = {
 	
 	async expiredBetaBuildPrompt() {
 		return this.confirm({
-			title: "Build Expired",
-			button1Text: "OK",
+			title: Zotero.getString('expiredBetaBuild_title'),
+			button1Text: Zotero.getString('general_ok'),
 			button2Text: "",
-			message: `This Zotero Connector beta build has expired. Please download the latest version from zotero.org.`
+			message: Zotero.getString('expiredBetaBuild_message', ZOTERO_CONFIG.CLIENT_NAME)
 		});
 	},
 

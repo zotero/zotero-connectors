@@ -102,7 +102,7 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		});
 		browser.browserAction.setTitle({
 			tabId:tab.id,
-			title: "Saving…"
+			title: Zotero.getString('browserAction_saving')
 		});
 		
 		try {
@@ -125,7 +125,7 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		});
 		browser.browserAction.setTitle({
 			tabId:tab.id,
-			title: "Saved!"
+			title: Zotero.getString('browserAction_saved')
 		});
 		tabInfo.isPDF = false;
 	
@@ -141,7 +141,7 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		
 		browser.browserAction.setTitle({
 			tabId:tab.id,
-			title: "Saving failed. Is Zotero running?"
+			title: Zotero.getString('browserAction_saveFailed', ZOTERO_CONFIG.CLIENT_NAME)
 		});
 	}
 }

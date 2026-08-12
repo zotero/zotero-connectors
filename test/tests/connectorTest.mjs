@@ -55,16 +55,31 @@ describe('Connector', function() {
 			assert.isNotOk(status);
 		});
 		
-		it('returns true if Zotero responds with a non-200 status', async function () {
+		it('returns true if an error response contains the Zotero version header', async function () {
 			let result = await background(async function() {
-				Zotero.HTTP.request.resolves({status: 500, getResponseHeader: () => '', responseText: 'Error'});
+				Zotero.HTTP.request.resolves({
+					status: 500,
+					getResponseHeader: header => ({
+						'Content-Type': 'text/plain',
+						'X-Zotero-Version': '9.0.6'
+					})[header] || null,
+					responseText: 'Error'
+				});
+				return Zotero.Connector.checkIsOnline();
+			});
+			assert.isTrue(result);
+		});
+
+		it('returns false if an unrelated server responds with an error status', async function () {
+			let result = await background(async function() {
+				Zotero.HTTP.request.resolves({status: 404, getResponseHeader: () => '', responseText: 'Error'});
 				try {
 					return await Zotero.Connector.checkIsOnline();
 				} catch (e) {
 					return false;
 				}
 			});
-			assert.isTrue(result);
+			assert.isFalse(result);
 		});
 	});
 

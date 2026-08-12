@@ -232,7 +232,11 @@ Zotero.Connector = new function() {
 					val = xhr.responseText;
 				}
 			}
-			if (xhr.status === 0) {
+			// Zotero error responses bear an identifying header. If it's missing, treat the
+			// response like a connection failure so existing save flows show their "Is Zotero
+			// Running?" prompt instead of reporting an error from an unrelated localhost server.
+			if (xhr.status === 0 || (xhr.status >= 400
+					&& !xhr.getResponseHeader('X-Zotero-Version'))) {
 				if (Zotero.Connector.isOnline !== false) {
 					Zotero.Connector.isOnline = false;
 					Zotero.Connector.onStateChange(Zotero.Connector.clientVersion)

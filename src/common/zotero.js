@@ -240,7 +240,7 @@ var Zotero = global.Zotero = new function() {
 		Zotero.Connector_Types.init();
 		Zotero.Schema.init();
 		await this._initDateFormatsJSON();
-		Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
+		Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots', 'automaticTags',
 			'reportTranslationFailure', 'capitalizeTitles']);
 		await Zotero.Prefs.loadNamespace('debug');
 		
@@ -253,7 +253,7 @@ var Zotero = global.Zotero = new function() {
 		this.version = await Zotero.getVersion();
 		Zotero.Schema.init();
 		await this._initDateFormatsJSON();
-		await Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots',
+		await Zotero.Prefs.loadNamespace(['translators.', 'downloadAssociatedFiles', 'automaticSnapshots', 'automaticTags',
 			'reportTranslationFailure', 'capitalizeTitles']);
 	};
 
@@ -341,6 +341,7 @@ Zotero.Prefs = new function() {
 		"lastVersion": "",
 		"downloadAssociatedFiles": true,
 		"automaticSnapshots": true, // only affects saves to zotero.org. saves to client governed by pref in the client
+		"automaticTags": true, // only affects saves to zotero.org. saves to client governed by pref in the client
 		"connector.repo.lastCheck.localTime": 0,
 		"connector.repo.lastCheck.repoTime": 0,
 		"connector.url": 'http://127.0.0.1:23119/',

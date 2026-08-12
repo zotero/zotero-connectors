@@ -122,4 +122,62 @@ describe("ItemSaver", function() {
 			assert.equal(capturedData.url, documentUrl);
 		});
 	});
-}); 
+
+	describe('_saveToServer', function() {
+		async function saveWithAutomaticTags(automaticTags) {
+			return tab.run(async function (automaticTags) {
+				let submittedItems;
+				try {
+					sinon.stub(Zotero.Prefs, 'getAsync').callsFake(async pref => {
+						if (pref === 'automaticTags') return automaticTags;
+						return {
+							downloadAssociatedFiles: false,
+							automaticSnapshots: false,
+						};
+					});
+					sinon.stub(Zotero.API, 'createItem').callsFake(async items => {
+						submittedItems = items;
+						return JSON.stringify({ success: [1] });
+					});
+
+					let item = {
+						itemType: 'journalArticle',
+						title: 'Tagged Item',
+						tags: [
+							{ tag: 'Automatic', type: 1 },
+							{ tag: 'Manual', type: 0 },
+						],
+						attachments: [],
+					};
+					let itemSaver = new Zotero.ItemSaver({ sessionID: 'test-session' });
+					await itemSaver._saveToServer([item], () => 0);
+
+					return { submittedItems, originalTags: item.tags };
+				}
+				finally {
+					Zotero.Prefs.getAsync.restore();
+					Zotero.API.createItem.restore();
+				}
+			}, automaticTags);
+		}
+
+		it('omits automatic tags from server saves when automatic tagging is disabled', async function() {
+			let { submittedItems, originalTags } = await saveWithAutomaticTags(false);
+
+			assert.deepEqual(submittedItems[0].tags, [{ tag: 'Manual', type: 1 }]);
+			assert.deepEqual(originalTags, [
+				{ tag: 'Automatic', type: 1 },
+				{ tag: 'Manual', type: 0 },
+			]);
+		});
+
+		it('includes automatic tags in server saves when automatic tagging is enabled', async function() {
+			let { submittedItems } = await saveWithAutomaticTags(true);
+
+			assert.deepEqual(submittedItems[0].tags, [
+				{ tag: 'Automatic', type: 1 },
+				{ tag: 'Manual', type: 1 },
+			]);
+		});
+	});
+});

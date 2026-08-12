@@ -378,6 +378,7 @@ ItemSaver.prototype = {
 	_saveToServer: async function (items, attachmentCallback, itemsDoneCallback=()=>0) {
 		Zotero.debug(`ItemSaver._saveToServer: Saving ${items.length} items to server`);
 		var newItems = [], itemIndices = [];
+		const automaticTags = await Zotero.Prefs.getAsync("automaticTags");
 		
 		for(var i=0, n=items.length; i<n; i++) {
 			var item = items[i];
@@ -386,7 +387,11 @@ ItemSaver.prototype = {
 				item.url = this._proxy.toProper(item.url);
 			}
 			itemIndices[i] = newItems.length;
-			newItems = newItems.concat(Zotero.Utilities.Item.itemToAPIJSON(item));
+			let apiItem = Zotero.Utilities.deepCopy(item);
+			if (!automaticTags && Array.isArray(apiItem.tags)) {
+				apiItem.tags = apiItem.tags.filter(tag => typeof tag !== 'object' || tag.type !== 1);
+			}
+			newItems = newItems.concat(Zotero.Utilities.Item.itemToAPIJSON(apiItem));
 			for (let attachment of item.attachments) {
 				attachment.id = Zotero.Utilities.randomString();
 			}

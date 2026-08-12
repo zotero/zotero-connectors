@@ -135,17 +135,24 @@ Zotero.UI.ModalPrompt = class ModalPrompt extends React.Component {
 			message = DOMPurify.sanitize(message);
 			message = <span dangerouslySetInnerHTML={{__html: message}}/>
 		}
+		let platform = Zotero.isMac ? "mac" : Zotero.isWin ? "win" : "unix";
 		return (<div className="ModalPrompt-overlay" onClick={onClickOutside}>
-			<div className="ModalPrompt" role="dialog" aria-labelledby="zotero-modal-prompt-title"
+			<div className={`ModalPrompt ModalPrompt--${platform}`} role="dialog"
+					aria-labelledby="zotero-modal-prompt-title"
 					aria-describedby="zotero-modal-prompt-message">
-				<h2 id="zotero-modal-prompt-title" className="ModalPrompt-title">
-					{this.props.title}
-				</h2>
-				<p id="zotero-modal-prompt-message" className="ModalPrompt-body">
-					{message}
-				</p>
-				{checkbox}
-				{input}
+				<div className="ModalPrompt-content">
+					<img className="ModalPrompt-icon" src={`../images/zotero-app-${platform}.png`} alt=""/>
+					<div>
+						<h2 id="zotero-modal-prompt-title" className="ModalPrompt-title">
+							{this.props.title}
+						</h2>
+						<p id="zotero-modal-prompt-message" className="ModalPrompt-body">
+							{message}
+						</p>
+						{checkbox}
+						{input}
+					</div>
+				</div>
 				<div className="ModalPrompt-buttons">
 					{buttons[2]}
 					<span style={{flexGrow: 1}}/>

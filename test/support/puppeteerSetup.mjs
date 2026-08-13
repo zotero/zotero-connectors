@@ -218,4 +218,4 @@ export async function mochaGlobalTeardown() {
 	else if (noQuit) {
 		console.log('Skipping browser close due to NO_QUIT=true.');
 	}
-} 
+}

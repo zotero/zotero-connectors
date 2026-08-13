@@ -177,11 +177,17 @@ Zotero.WebRequestIntercept = {
 		const requestHeaders = headers.map((headerObj) => {
 			if (headerObj.name.toLowerCase() === 'cookie') {
 				// Chrome bug: 'append' op is checked against an allow-list and fails if header name is not lowercase
-				return { header: headerObj.name.toLowerCase(), value: headerObj.value, operation: 'append' };
+				// FPI cookies replace the background request's native jar. Partitioned cookies
+				// are appended to the ordinary cookies the browser sends itself.
+				let operation = headerObj.operation || 'append';
+				return { header: headerObj.name.toLowerCase(), value: headerObj.value, operation };
 			}
 			return { header: headerObj.name, value: headerObj.value, operation: 'set' }
 		});
 		const ruleID = Math.floor(Math.random() * 100000);
+		let requestURL = new URL(url);
+		requestURL.hash = '';
+		let regexFilter = `^${requestURL.href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`;
 		const rules = [{
 			id: ruleID,
 			action: {
@@ -191,6 +197,8 @@ Zotero.WebRequestIntercept = {
 			condition: {
 				resourceTypes: ['xmlhttprequest'],
 				initiatorDomains: [new URL(browser.runtime.getURL('')).hostname],
+				// Do not expose special headers to concurrent extension requests or redirects.
+				regexFilter,
 			}
 		}];
 		// Keep the service worker alive while the rule is active

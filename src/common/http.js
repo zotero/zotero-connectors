@@ -220,6 +220,9 @@ Zotero.HTTP = new function() {
 			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
 				.map(header => {
 					const val = { name: header, value: options.headers[header] }
+					if (header === 'Cookie' && options.cookieHeaderOperation) {
+						val.operation = options.cookieHeaderOperation;
+					}
 					delete options.headers['User-Agent'];
 					return val;
 				});
@@ -357,6 +360,9 @@ Zotero.HTTP = new function() {
 			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
 				.map(header => {
 					const val = { name: header, value: options.headers[header] }
+					if (header === 'Cookie' && options.cookieHeaderOperation) {
+						val.operation = options.cookieHeaderOperation;
+					}
 					delete options.headers[header];
 					return val;
 				});

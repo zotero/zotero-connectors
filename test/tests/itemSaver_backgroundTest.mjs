@@ -35,7 +35,7 @@ describe("ItemSaver Background", function() {
 				mimeType: 'application/pdf',
 				referrer: 'https://example.com'
 			};
-			mockTab = { id: 123 };
+			mockTab = { id: 123, url: 'https://example.com/article' };
 
 			// Set up default stubs
 			await background(function() {
@@ -89,6 +89,119 @@ describe("ItemSaver Background", function() {
 				}, attachment, mockTab);
 				
 				assert.equal(result, 1024);
+			});
+
+			it('should fall back when partitionKey is unsupported', async function() {
+				const result = await background(async function(attachment, mockTab) {
+					browser.cookies.getAll.onFirstCall().rejects(new Error('Unexpected property partitionKey'));
+					browser.cookies.getAll.onSecondCall().resolves([
+						{name: 'ordinary', value: 'sent-by-browser'},
+					]);
+					await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return {
+						calls: browser.cookies.getAll.getCalls().map(call => call.args[0]),
+						hasCookieHeader: !!Zotero.HTTP.request.firstCall.args[2].headers?.Cookie,
+						cookieOperation: Zotero.HTTP.request.firstCall.args[2].cookieHeaderOperation,
+					};
+				}, attachment, mockTab);
+
+				assert.deepEqual(result.calls, [
+					{url: attachment.url, partitionKey: {}},
+					{url: attachment.url},
+				]);
+				assert.isFalse(result.hasCookieHeader);
+				assert.isUndefined(result.cookieOperation);
+			});
+
+			it('should append cookies from the matching partition', async function() {
+				const result = await background(async function(attachment, mockTab) {
+					browser.cookies.getAll.resolves([{
+						name: 'clearance',
+						value: 'allowed',
+						partitionKey: {topLevelSite: 'https://example.com'},
+					}]);
+					await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return {
+						cookieHeader: Zotero.HTTP.request.firstCall.args[2].headers.Cookie,
+						cookieOperation: Zotero.HTTP.request.firstCall.args[2].cookieHeaderOperation,
+					};
+				}, attachment, mockTab);
+
+				assert.equal(result.cookieHeader, 'clearance=allowed');
+				assert.equal(result.cookieOperation, 'append');
+			});
+
+			it('should send cookies from the selected Firefox FPI jar', async function() {
+				const result = await background(async function(attachment, mockTab) {
+					browser.cookies.getAll.resolves([
+						{name: 'session', value: 'authenticated', firstPartyDomain: 'example.com'},
+					]);
+					await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return {
+						cookieHeader: Zotero.HTTP.request.firstCall.args[2].headers.Cookie,
+						cookieOperation: Zotero.HTTP.request.firstCall.args[2].cookieHeaderOperation,
+					};
+				}, attachment, mockTab);
+
+				assert.equal(result.cookieHeader, 'session=authenticated');
+				assert.equal(result.cookieOperation, 'set');
+			});
+
+			it('should not combine cookies from unrelated partition keys', async function() {
+				const cookieHeader = await background(async function(attachment, mockTab) {
+					browser.cookies.getAll.resolves([
+						{
+							name: 'correct',
+							value: 'allowed',
+							partitionKey: {topLevelSite: 'https://example.com'},
+						},
+						{
+							name: 'unrelated',
+							value: 'blocked',
+							partitionKey: {topLevelSite: 'https://unrelated.example'},
+						},
+					]);
+					await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return Zotero.HTTP.request.firstCall.args[2].headers.Cookie;
+				}, attachment, mockTab);
+
+				assert.equal(cookieHeader, 'correct=allowed');
+			});
+
+			it('should preserve SameSite restrictions for cross-site FPI cookies', async function() {
+				attachment.url = 'https://attachments.example.net/file.pdf';
+				const cookieHeader = await background(async function(attachment, mockTab) {
+					browser.cookies.getAll.resolves([
+						{
+							name: 'strict', value: 'blocked', firstPartyDomain: 'example.com',
+							sameSite: 'strict', secure: true,
+						},
+						{
+							name: 'crossSite', value: 'allowed', firstPartyDomain: 'example.com',
+							sameSite: 'no_restriction', secure: true,
+						},
+					]);
+					await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return Zotero.HTTP.request.firstCall.args[2].headers.Cookie;
+				}, attachment, mockTab);
+
+				assert.equal(cookieHeader, 'crossSite=allowed');
+			});
+
+			it('should continue without a Cookie header when both cookie lookups fail', async function() {
+				const result = await background(async function(attachment, mockTab) {
+					browser.cookies.getAll.rejects(new Error('Cookie API unavailable'));
+					let response = await Zotero.ItemSaver._fetchAttachment(attachment, mockTab);
+					return {
+						byteLength: response.byteLength,
+						cookieCalls: browser.cookies.getAll.callCount,
+						hasCookieHeader: !!Zotero.HTTP.request.firstCall.args[2].headers?.Cookie,
+					};
+				}, attachment, mockTab);
+
+				assert.equal(result.byteLength, 1024);
+				assert.equal(result.cookieCalls, 2);
+				assert.isFalse(result.hasCookieHeader);
 			});
 		});
 

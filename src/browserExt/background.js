@@ -109,21 +109,72 @@ Zotero.Connector_Browser = new function() {
 	}
 
 	/**
-	 * Gets cookies from the store associated with a tab. In Safari, the default cookie store
-	 * may differ from the store used by browser tabs, so it must be resolved at runtime. If
-	 * no tab is provided, the active tab in the current window is used.
+	 * Gets cookies from the store associated with a tab. Firefox container tabs and Safari tabs
+	 * may use a different store from the extension default, so it must be resolved at runtime.
+	 * In Safari, if no tab is provided, the active tab in the current window is used.
 	 *
 	 * @param {Object} details
-	 * @param {Number} tabId
+	 * @param {Number|Object} tabOrId A snapshot of the originating tab is preferred so that a
+	 * navigation while saving cannot change the cookie context.
 	 * @return {Promise<browser.cookies.Cookie[]>}
 	 */
-	this.getAllCookies = async function(details, tabId=null) {
+	this.getAllCookies = async function(details, tabOrId=null) {
 		details = {...details};
+		let tab = typeof tabOrId === 'object' ? tabOrId : null;
+		let tabId = tab?.id ?? tabOrId;
+		if (Zotero.isFirefox && tabId != null && !tab) {
+			tab = await browser.tabs.get(tabId);
+		}
+		if (Zotero.isFirefox && !details.storeId) {
+			if (tab?.cookieStoreId) {
+				details.storeId = tab.cookieStoreId;
+			}
+		}
+		if (Zotero.isFirefox
+				&& !Object.prototype.hasOwnProperty.call(details, 'firstPartyDomain')) {
+			try {
+				return await browser.cookies.getAll(details);
+			}
+			catch (e) {
+				// With legacy First-Party Isolation enabled, Firefox requires a
+				// firstPartyDomain for every cookies.getAll() call. Querying with null
+				// returns all jars, so only expose cookies from the jar associated with
+				// the originating top-level tab.
+				// Without an originating tab, the correct FPI jar is unknowable. Do
+				// not guess based on whichever tab happens to be active.
+				if (!tab?.url) throw e;
+
+				let hostname;
+				try {
+					hostname = new URL(tab.url).hostname;
+				}
+				catch (urlError) {
+					throw e;
+				}
+				if (!hostname) throw e;
+
+				let cookies = await browser.cookies.getAll({
+					...details,
+					firstPartyDomain: null,
+				});
+				let firstPartyDomain = cookies
+					.map(cookie => cookie.firstPartyDomain)
+					.filter(domain => domain
+						&& (hostname === domain || hostname.endsWith(`.${domain}`)))
+					.sort((a, b) => b.length - a.length)[0];
+				if (!firstPartyDomain) return [];
+				return browser.cookies.getAll({
+					...details,
+					firstPartyDomain,
+				});
+			}
+		}
+
 		if (!Zotero.isSafari || details.storeId) {
 			return browser.cookies.getAll(details);
 		}
 
-		if (tabId === null) {
+		if (tabId == null) {
 			let tabs = await browser.tabs.query({active: true, currentWindow: true});
 			tabId = tabs[0]?.id;
 		}

@@ -400,24 +400,23 @@ TranslatorTestStats.prototype.update = function() {
 /**
  * Called when loaded
  */
-function load() {
+async function load() {
 	try {
 		viewerMode = !Zotero;
-	} catch(e) {};
+	} catch(e) {}
 	
 	if(!viewerMode && (window.chrome || window.safari)) {
 		// initialize injection
 		Zotero.initInject();
 		// make sure that connector is online
-		Zotero.Connector.checkIsOnline(function (status) {
-			if (status || Zotero.allowRepoTranslatorTester) {
-				init();
-			} else {
-				document.body.textContent = "To avoid excessive repo requests, the translator tester may only be used when Zotero Standalone is running.";
-			}
-		});
+		let status = await Zotero.Connector.checkIsOnline();
+		if (status || Zotero.allowRepoTranslatorTester) {
+			await init();
+		} else {
+			document.body.textContent = "To avoid excessive repo requests, the translator tester may only be used when Zotero Standalone is running.";
+		}
 	} else {
-		init();
+		await init();
 	}
 }
 

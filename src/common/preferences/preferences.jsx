@@ -437,7 +437,7 @@ Zotero_Preferences.Components.ProxySettings = class ProxySettings extends React.
 					</div>
 				</div>
 				<div className="group">
-					<div className="group-title">{Zotero.getString('preferences_proxySettings_configured')}</div>
+					<label className="group-title" htmlFor="proxies-proxy-select">{Zotero.getString('preferences_proxySettings_configured')}</label>
 					<div className="group-content">
 						<Zotero_Preferences.Components.Proxies transparent={this.state.transparent}/>
 					</div>
@@ -716,8 +716,8 @@ Zotero_Preferences.Components.ProxyDetails = function ProxyDetails(props) {
 			}
 			
 			<div style={{display: "flex", flexDirection: "column", marginTop: "10px"}}>
-				<label>{Zotero.getString('preferences_proxySettings_hostnames')}</label>
-				<select className="Preferences-Proxies-hostSelect" size="8" multiple
+				<label htmlFor="proxies-host-select">{Zotero.getString('preferences_proxySettings_hostnames')}</label>
+				<select id="proxies-host-select" className="Preferences-Proxies-hostSelect" size="8" multiple
 						value={[currentHostIdx != -1 ? currentHostIdx : '']}
 						onChange={handleHostSelectChange}>
 					{hosts.map((host, i) =>
@@ -783,7 +783,7 @@ Zotero_Preferences.Components.Proxies = function Proxies(props) {
 
 	return (
 		<div style={{display: "flex", flexDirection: "column"}}>
-			<select className="Preferences-Proxies-proxySelect" size="8" multiple
+			<select id="proxies-proxy-select" className="Preferences-Proxies-proxySelect" size="8" multiple
 					value={[canRemoveProxy ? proxies[currentProxyIdx].id : '']}
 					onChange={handleProxySelectChange}
 					disabled={!props.transparent}>

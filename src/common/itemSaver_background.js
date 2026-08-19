@@ -208,18 +208,23 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 		cookies = await Zotero.Connector_Browser.getAllCookies({
 			url: attachment.url,
 			partitionKey: {},
-		}, tab?.id);
+		}, tab);
 	} catch (e) {
 		// Unavailable with Chrome 118 and below. Last supported version on Win 7/8 is Chrome 109.
 		Zotero.debug(`Error getting cookies for ${attachment.url} with partitionKey.`);
 		cookies = await Zotero.Connector_Browser.getAllCookies({
 			url: attachment.url,
-		}, tab?.id);
+		}, tab);
 	}
-	// Chromium and Firefox will send cookies, but Chrome currently ignores those with partitionKey.
+	// Browsers send cookies already, but Chrome currently ignores those with partitionKey.
 	// Cloudflare clearance cookies and potentially others in the future are set with a partitionKey.
 	// There's a bug filed for this at https://issues.chromium.org/issues/458071621
-	cookies = cookies.filter(c => c.partitionKey);
+	// Also Firefox with FPI enabled will not send any cookies, but getAllCookies above will
+	// retrieve them with firstPartyDomain property.
+	cookies = cookies.filter(cookie => {
+		if (cookie.partitionKey) return true;
+		if (Zotero.isFirefox && cookie.firstPartyDomain) return true;
+	});
 	options.headers = {
 		"Cookie": cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
 	}
@@ -256,14 +261,14 @@ Zotero.ItemSaver._fetchAttachment = async function(attachment, tab, attemptBotPr
 	try {
 		let pdfURL = await Zotero.BotBypass.passJSDetectionViaHiddenIframe(attachment.url, tab);
 		attachment.url = pdfURL;
-		return await this._fetchAttachment(attachment, false);
+		return await this._fetchAttachment(attachment, tab);
 	}
 	catch (e) {
 		Zotero.debug(`Failed to pass JS bot detection via hidden iframe for URL: ${attachment.url}`);
 		Zotero.debug(e);
 		let pdfURL = await Zotero.BotBypass.passJSDetectionViaWindowPrompt(originalUrl, tab);
 		attachment.url = pdfURL;
-		return this._fetchAttachment(attachment, false);
+		return this._fetchAttachment(attachment, tab);
 	}
 };
 

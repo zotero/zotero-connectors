@@ -109,32 +109,87 @@ Zotero.Connector_Browser = new function() {
 	}
 
 	/**
-	 * Gets cookies from the store associated with a tab. In Safari, the default cookie store
-	 * may differ from the store used by browser tabs, so it must be resolved at runtime. If
-	 * no tab is provided, the active tab in the current window is used.
+	 * Gets cookies from the store associated with a tab.
+	 * 
+	 * In Safari, the default cookie store may differ from the store used by browser tabs,
+	 * so it must be resolved at runtime.
+	 * 
+	 * In Firefox First Party Isolation requires additional properties to correctly return
+	 * only the relevant cookies
+	 * 
+	 * If no tab is provided, the active tab in the current window is used.
 	 *
 	 * @param {Object} details
-	 * @param {Number} tabId
+	 * @param {browser.tabs.Tab} tab
 	 * @return {Promise<browser.cookies.Cookie[]>}
 	 */
-	this.getAllCookies = async function(details, tabId=null) {
-		details = {...details};
-		if (!Zotero.isSafari || details.storeId) {
+	this.getAllCookies = async function(details, tab=null) {
+		if (!Zotero.isFirefox && !Zotero.isSafari) {
 			return browser.cookies.getAll(details);
 		}
-
-		if (tabId === null) {
+		
+		if (Zotero.isSafari && details.storeId) {
+			return browser.cookies.getAll(details);
+		}
+		
+		details = {...details};
+		
+		if (tab == null) {
 			let tabs = await browser.tabs.query({active: true, currentWindow: true});
-			tabId = tabs[0]?.id;
+			tab = tabs[0];
 		}
 
-		let stores = await browser.cookies.getAllCookieStores();
-		let store = stores.find(store => store.tabIds.includes(tabId))
-			|| stores.find(store => store.tabIds.length)
-			|| stores[0];
-		if (store) {
-			details.storeId = store.id;
+		if (Zotero.isFirefox) {
+			if (tab.cookieStoreId) {
+				details.storeId = tab.cookieStoreId;
+			}
 		}
+		else {
+			let stores = await browser.cookies.getAllCookieStores();
+			let store = stores.find(store => store.tabIds.includes(tab.id))
+				|| stores.find(store => store.tabIds.length)
+				|| stores[0];
+			if (store) {
+				details.storeId = store.id;
+			}
+		}
+		
+		if (Zotero.isFirefox && !details.hasOwnProperty('firstPartyDomain')) {
+			try {
+				return await browser.cookies.getAll(details);
+			}
+			catch (_) {
+				// Throws if First-Party Isolation is enabled. We have to set a 
+				// firstPartyDomain property that makes sense.
+				let hostname;
+				try {
+					hostname = new URL(tab.url).hostname;
+				}
+				catch (error) {
+					// Tab url doesn't have a hostname that parses
+					// so we return empty cookies
+					Zotero.logError(error);
+					return [];
+				}
+
+				let cookies = await browser.cookies.getAll({
+					...details,
+					firstPartyDomain: null,
+				});
+				let firstPartyDomain = cookies
+					.map(cookie => cookie.firstPartyDomain)
+					.filter(domain => domain
+						&& (hostname === domain || hostname.endsWith(`.${domain}`)))
+					.sort((a, b) => b.length - a.length)[0];
+				if (!firstPartyDomain) return [];
+				
+				return browser.cookies.getAll({
+					...details,
+					firstPartyDomain,
+				});
+			}
+		}
+
 		return browser.cookies.getAll(details);
 	}
 

@@ -29,6 +29,68 @@ describe('Connector_Browser', function() {
 	var tab = new Tab();
 
 	describe('#getAllCookies()', function() {
+		it('uses only the Firefox FPI cookie jar associated with the tab', async function() {
+			let result = await background(async function() {
+				let isFirefox = Zotero.isFirefox;
+				Zotero.isFirefox = true;
+				sinon.stub(browser.tabs, 'get').resolves({
+					id: 123,
+					url: 'https://reader.example.com/article',
+					cookieStoreId: 'firefox-container-1',
+				});
+				sinon.stub(browser.cookies, 'getAll');
+				browser.cookies.getAll.onFirstCall().rejects(new Error(
+					"First-Party Isolation is enabled, but the required 'firstPartyDomain' attribute was not set."
+				));
+				browser.cookies.getAll.onSecondCall().resolves([
+					{name: 'correct', firstPartyDomain: 'example.com'},
+					{name: 'unrelated', firstPartyDomain: 'unrelated.example'},
+					{name: 'unpartitioned', firstPartyDomain: ''},
+				]);
+				browser.cookies.getAll.onThirdCall().resolves([
+					{name: 'correct', firstPartyDomain: 'example.com'},
+				]);
+				try {
+					let cookies = await Zotero.Connector_Browser.getAllCookies({
+						url: 'https://attachments.example.net/file.pdf',
+						partitionKey: {},
+					}, {
+						id: 123,
+						url: 'https://reader.example.com/article',
+						cookieStoreId: 'firefox-container-1',
+					});
+					return {
+						cookies,
+						secondCallDetails: browser.cookies.getAll.secondCall.args[0],
+						thirdCallDetails: browser.cookies.getAll.thirdCall.args[0],
+						tabsGetCalled: browser.tabs.get.called,
+					};
+				}
+				finally {
+					browser.tabs.get.restore();
+					browser.cookies.getAll.restore();
+					Zotero.isFirefox = isFirefox;
+				}
+			});
+
+			assert.deepEqual(result.cookies, [
+				{name: 'correct', firstPartyDomain: 'example.com'}
+			]);
+			assert.deepEqual(result.secondCallDetails, {
+				url: 'https://attachments.example.net/file.pdf',
+				partitionKey: {},
+				storeId: 'firefox-container-1',
+				firstPartyDomain: null,
+			});
+			assert.deepEqual(result.thirdCallDetails, {
+				url: 'https://attachments.example.net/file.pdf',
+				partitionKey: {},
+				storeId: 'firefox-container-1',
+				firstPartyDomain: 'example.com',
+			});
+			assert.isFalse(result.tabsGetCalled);
+		});
+
 		it('uses the Safari cookie store associated with the tab', async function() {
 			let details = await background(async function() {
 				let isSafari = Zotero.isSafari;
@@ -39,7 +101,7 @@ describe('Connector_Browser', function() {
 				]);
 				sinon.stub(browser.cookies, 'getAll').resolves([]);
 				try {
-					await Zotero.Connector_Browser.getAllCookies({url: 'https://example.com/'}, 123);
+					await Zotero.Connector_Browser.getAllCookies({url: 'https://example.com/'}, { id: 123 });
 					return browser.cookies.getAll.firstCall.args[0];
 				}
 				finally {
@@ -51,34 +113,6 @@ describe('Connector_Browser', function() {
 
 			assert.deepEqual(details, {
 				url: 'https://example.com/',
-				storeId: 'persistent-2'
-			});
-		});
-
-		it('uses the active tab to resolve the Safari cookie store when no tab is provided', async function() {
-			let details = await background(async function() {
-				let isSafari = Zotero.isSafari;
-				Zotero.isSafari = true;
-				sinon.stub(browser.tabs, 'query').resolves([{id: 123}]);
-				sinon.stub(browser.cookies, 'getAllCookieStores').resolves([
-					{id: 'persistent-1', tabIds: []},
-					{id: 'persistent-2', tabIds: [123]}
-				]);
-				sinon.stub(browser.cookies, 'getAll').resolves([]);
-				try {
-					await Zotero.Connector_Browser.getAllCookies({name: 'target'});
-					return browser.cookies.getAll.firstCall.args[0];
-				}
-				finally {
-					browser.tabs.query.restore();
-					browser.cookies.getAllCookieStores.restore();
-					browser.cookies.getAll.restore();
-					Zotero.isSafari = isSafari;
-				}
-			});
-
-			assert.deepEqual(details, {
-				name: 'target',
 				storeId: 'persistent-2'
 			});
 		});

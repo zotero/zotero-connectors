@@ -35,7 +35,7 @@ describe("ItemSaver Background", function() {
 				mimeType: 'application/pdf',
 				referrer: 'https://example.com'
 			};
-			mockTab = { id: 123 };
+			mockTab = { id: 123, url: 'https://example.com/article' };
 
 			// Set up default stubs
 			await background(function() {

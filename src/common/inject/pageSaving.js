@@ -410,23 +410,29 @@ let PageSaving = {
 
 			Zotero.Messaging.sendMessage("progressWindow.itemProgress", snapshotItem);
 
-			const snapshotContent = await Zotero.SingleFile.retrievePageData();
+			try {
+				const snapshotContent = await Zotero.SingleFile.retrievePageData();
 
-			if (toServer) {
-				snapshotItem.data = snapshotContent;
-				await Zotero.ItemSaver.saveAttachmentToServer(snapshotItem);
-			}
-			else {
-				data.snapshotContent = snapshotContent;
-				await Zotero.Connector.saveSingleFile({
-						method: "saveSingleFile",
-						headers: {"Content-Type": "application/json"}
-					},
-					data
-				);
-			}
+				if (toServer) {
+					snapshotItem.data = snapshotContent;
+					await Zotero.ItemSaver.saveAttachmentToServer(snapshotItem);
+				}
+				else {
+					data.snapshotContent = snapshotContent;
+					await Zotero.Connector.saveSingleFile({
+							method: "saveSingleFile",
+							headers: {"Content-Type": "application/json"}
+						},
+						data
+					);
+				}
 
-			Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...snapshotItem, progress: 100 });
+				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...snapshotItem, progress: 100 });
+			}
+			catch (e) {
+				Zotero.logError(e);
+				Zotero.Messaging.sendMessage("progressWindow.itemProgress", { ...snapshotItem, progress: false });
+			}
 		}
 	},
 

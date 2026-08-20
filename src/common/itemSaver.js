@@ -470,24 +470,24 @@ ItemSaver.prototype = {
 
 			attachment.parentKey = itemKey;
 
-			switch (attachment.mimeType.toLowerCase()) {
-			case "application/pdf":
-				attachment.filename = baseName+".pdf";
-				break;
-			case "text/html":
-			case "application/xhtml+xml":
-				attachment.filename = baseName+".html";
-				attachment.data = await Zotero.SingleFile.retrievePageData();
-				break;
-			default:
-				attachment.filename = baseName;
-			}
-
-			// Don't download attachment if snapshot is specifically set to false
-			attachment.linkMode = attachment.snapshot === false ? "linked_url" : "imported_url";
-
 			promises.push((async () => {
 				try {
+					switch (attachment.mimeType.toLowerCase()) {
+					case "application/pdf":
+						attachment.filename = baseName+".pdf";
+						break;
+					case "text/html":
+					case "application/xhtml+xml":
+						attachment.filename = baseName+".html";
+						attachment.data = await Zotero.SingleFile.retrievePageData();
+						break;
+					default:
+						attachment.filename = baseName;
+					}
+
+					// Don't download attachment if snapshot is specifically set to false
+					attachment.linkMode = attachment.snapshot === false ? "linked_url" : "imported_url";
+
 					await ItemSaver.fetchAttachmentSafari(attachment);
 					await Zotero.ItemSaver.saveAttachmentToServer(attachment);
 					attachmentCallback(attachment, 100);

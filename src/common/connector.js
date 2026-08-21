@@ -105,6 +105,7 @@ Zotero.Connector = new function() {
 			'googleDocsAddAnnotationEnabled',
 			'googleDocsCitationExplorerEnabled',
 			'supportsTagsAutocomplete',
+			'supportsMetadataUpdates',
 			'canUserAddNote'
 		];
 		for (const key of PREF_KEYS) {

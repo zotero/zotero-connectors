@@ -95,23 +95,23 @@ Zotero.Messaging = new function() {
 	};
 	
 	/**
-	 * Sends a message to a tab
+	 * Resolves a tab object from a tab object, a tab ID, or nothing, in which case the active tab
+	 * is used
 	 */
-	this.sendMessage = async function(messageName, args, tab=null, frameId=0) {
-		var response;
-		// Get current tab if not provided
+	async function _getTab(tab) {
 		if (!tab) {
 			tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
 		}
 		if (typeof tab === 'number') {
 			tab = await browser.tabs.get(tab);
 		}
-		let options = {};
-		if (typeof frameId == 'number') options = {frameId};
-
-		try {
-			response = await browser.tabs.sendMessage(tab.id, [messageName, args], options);
-		} catch (e) {}
+		return tab;
+	}
+	
+	/**
+	 * Rethrows an error serialized by a message listener, or returns the response
+	 */
+	function _unwrapResponse(response) {
 		if (response && response[0] == 'error') {
 			response[1] = JSON.parse(response[1]);
 			let e = new Error(response[1].message);
@@ -122,31 +122,50 @@ Zotero.Messaging = new function() {
 	}
 	
 	/**
+	 * Sends a message to every frame of a tab
+	 */
+	async function _broadcastToTab(messageName, args, tab) {
+		let response;
+		try {
+			response = await browser.tabs.sendMessage(tab.id, [messageName, args]);
+		}
+		catch (e) {}
+		return _unwrapResponse(response);
+	}
+	
+	/**
+	 * Sends a message to a tab
+	 */
+	this.sendMessage = async function(messageName, args, tab=null, frameId=0) {
+		var response;
+		tab = await _getTab(tab);
+		let options = {};
+		if (typeof frameId == 'number') options = {frameId};
+
+		try {
+			response = await browser.tabs.sendMessage(tab.id, [messageName, args], options);
+		} catch (e) {}
+		return _unwrapResponse(response);
+	}
+	
+	/**
+	 * Sends a message to the injected scripts in a tab, in every frame
+	 */
+	this.sendToContentScripts = async function(messageName, args, tab=null) {
+		tab = await _getTab(tab);
+		return _broadcastToTab(messageName, args, tab);
+	}
+	
+	/**
 	 * Sends a message only to Zotero extension-origin frames in a tab.
 	 */
 	this.sendToZoteroFrames = async function(messageName, args, tab=null) {
-		if (!tab) {
-			tab = (await browser.tabs.query({active: true, lastFocusedWindow: true}))[0]
-		}
-		if (typeof tab === 'number') {
-			tab = await browser.tabs.get(tab);
-		}
+		tab = await _getTab(tab);
 
 		if (!Zotero.isSafari) {
-			let response;
-			try {
-				// Chromium delivers messages to extension-origin frames only when broadcasting, and
-				// fails if a specific frame is targeted.
-				response = await browser.tabs.sendMessage(tab.id, [messageName, args]);
-			}
-			catch (e) {}
-			if (response && response[0] == 'error') {
-				response[1] = JSON.parse(response[1]);
-				let e = new Error(response[1].message);
-				for (let key in response[1]) e[key] = response[1][key];
-				throw e;
-			}
-			return response;
+			// Chromium delivers messages to extension-origin frames only when broadcasting, and
+			// fails if a specific frame is targeted.
+			return _broadcastToTab(messageName, args, tab);
 		}
 
 		let response;
@@ -161,13 +180,7 @@ Zotero.Messaging = new function() {
 			);
 		}
 		catch (e) {}
-		if (response && response[0] == 'error') {
-			response[1] = JSON.parse(response[1]);
-			let e = new Error(response[1].message);
-			for (let key in response[1]) e[key] = response[1][key];
-			throw e;
-		}
-		return response;
+		return _unwrapResponse(response);
 	}
 	
 	/**

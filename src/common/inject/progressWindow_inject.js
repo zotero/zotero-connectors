@@ -68,7 +68,7 @@ if (isTopWindow) {
 	var scrollY;
 	var zoteroFrame;
 	
-	async function sendMessage(name, data = {}) {
+	async function sendMessageToFrame(name, data = {}) {
 		return Zotero.Messaging.sendToZoteroFrames(name, data);
 	}
 
@@ -80,7 +80,7 @@ if (isTopWindow) {
 	// to the iframe once the component is ready
 	function addEvent(name, data) {
 		frameReadyDeferred.promise.then(function() {
-			sendMessage(`progressWindowIframe.${name}`, data);
+			sendMessageToFrame(`progressWindowIframe.${name}`, data);
 		});
 	}
 	
@@ -308,7 +308,9 @@ if (isTopWindow) {
 			updatingSession = true;
 			
 			try {
-				await sendMessage(
+				// Handled by the injected script in the frame that's saving, which may be a
+				// child frame
+				await Zotero.Messaging.sendToContentScripts(
 					"updateSession",
 					{
 						target: data.target.id,

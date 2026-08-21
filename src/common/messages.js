@@ -256,6 +256,13 @@ var MESSAGES = {
 				}
 			}
 		},
+		sendToContentScripts: {
+			background: {
+				postReceive: async function(args, tab) {
+					return [args[0], args[1], tab];
+				}
+			}
+		},
 		receiveChunk: true
 	},
 	API: {

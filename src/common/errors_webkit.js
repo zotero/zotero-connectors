@@ -75,23 +75,14 @@ Zotero.Errors = new function() {
 	 * Get versions, platform, etc.
 	 */
 	this.getSystemInfo = async function () {
-		var info;
-		if (Zotero.isSafari && Zotero.isBackground) {
-			info = {
-				connector: "true",
-				version: Zotero.version,
-				platform: "Safari App Extension",
-			};
-		} else {
-			info = {
-				connector: "true",
-				version: Zotero.version,
-				platform: navigator.platform,
-				locale: navigator.language,
-				userAgent: navigator.userAgent,
-				isManifestV3: Zotero.isManifestV3
-			};
-		}
+		var info = {
+			connector: "true",
+			version: Zotero.version,
+			platform: navigator.platform,
+			locale: navigator.language,
+			userAgent: navigator.userAgent,
+			isManifestV3: Zotero.isManifestV3
+		};
 		
 		info.appName = Zotero.appName;
 		info.zoteroAvailable = !!(await Zotero.Connector.checkIsOnline());

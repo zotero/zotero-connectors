@@ -626,6 +626,7 @@ let PageSaving = {
 		
 		// In some cases, we just reopen the popup instead of saving again
 		if (this._shouldReopenProgressWindow(translatorID, options)) {
+			Zotero.debug(`PageSaving.onSaveAsWebpage: Reopening popup`);
 			return Zotero.Messaging.sendMessage("progressWindow.show", [this.sessionDetails.id]);
 		}
 		

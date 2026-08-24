@@ -309,8 +309,8 @@ if (isTopWindow) {
 			
 			try {
 				// Handled by the injected script in the frame that's saving, which may be a
-				// child frame
-				await Zotero.Messaging.sendToContentScripts(
+				// child frame, so broadcast to every frame
+				await Zotero.Messaging.sendMessage(
 					"updateSession",
 					{
 						target: data.target.id,
@@ -318,7 +318,9 @@ if (isTopWindow) {
 						note: data.note.replace(/\n/g, "<br>"), // replace newlines with <br> for note-editor
 						resaveAttachments: !lastSuccessfulTarget.filesEditable && data.target.filesEditable,
 						removeAttachments: lastSuccessfulTarget.filesEditable && !data.target.filesEditable
-					}
+					},
+					null,
+					null // Null frameId - broadcast
 				);
 			}
 			// Collapse popup on error

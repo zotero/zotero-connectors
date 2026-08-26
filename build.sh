@@ -123,7 +123,6 @@ if [[ ! -z $DEBUG ]]; then
 		"$NODE_MODULES_DIR/sinon/pkg/sinon.js")
 fi
 
-
 # Remove log file
 rm -f "$LOG"
 
@@ -235,11 +234,11 @@ function copyResources {
 		rm -r "$browser_builddir/utilities/$i"
 	done
 	
-	# Copy SingleFile submodule code
-	mkdir -p "$browser_builddir/lib/SingleFile/lib"
-	cp -r "$LIBDIR/SingleFile-Lite/lib/single-file-bootstrap.js" \
-	  "$LIBDIR/SingleFile-Lite/lib/single-file-hooks-frames.js" \
-	  "$LIBDIR/SingleFile-Lite/lib/single-file.js" \
+	# Copy the prebuilt SingleFile Core bundles. Use scripts/update-single-file to update them.
+	mkdir -p "$browser_builddir/lib/SingleFile"
+	cp "$LIBDIR/SingleFile/single-file-bootstrap.js" \
+	  "$LIBDIR/SingleFile/single-file-hooks-frames.js" \
+	  "$LIBDIR/SingleFile/single-file.js" \
 		"$browser_builddir/lib/SingleFile"
 	# Copy SingleFile config object from client code
 	cp "$SRCDIR/zotero/chrome/content/zotero/xpcom/singlefile.js" "$browser_builddir/singlefile-config.js"

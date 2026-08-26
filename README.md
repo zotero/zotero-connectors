@@ -15,6 +15,16 @@ The connectors are built in `build/`.
 The build needs only the top-level submodules, so `git submodule update --init`
 (without `--recursive`) is enough.
 
+### Updating SingleFile Core
+
+The generated SingleFile Core bundles in `lib/SingleFile` are committed and copied into normal builds without rebuilding them. To update and regenerate them, run:
+
+```
+npm run update-single-file -- <version>
+```
+
+Omit `<version>` to use the latest published version. Normal builds copy the committed bundles without rebuilding them.
+
 ## Running from the build directory
 
 ### Chrome

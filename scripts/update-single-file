@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION="${1:-latest}"
+
+if [[ $# -gt 1 ]]; then
+	echo "Usage: $0 [single-file-core-version]" >&2
+	exit 1
+fi
+
+cd "$ROOT_DIR"
+
+echo "Updating single-file-core to $VERSION..."
+npm install --save-dev --save-exact "single-file-core@$VERSION"
+
+RESOLVED_VERSION="$(node -p 'require("./node_modules/single-file-core/package.json").version')"
+OUTPUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/zotero-single-file.XXXXXX")"
+trap 'rm -rf "$OUTPUT_DIR"' EXIT
+
+SINGLE_FILE_OUTPUT_DIR="$OUTPUT_DIR" npx --no-install rollup \
+	--config scripts/rollup.single-file.mjs
+cp node_modules/single-file-core/LICENSE "$OUTPUT_DIR/LICENSE"
+
+rm -rf lib/SingleFile
+mv "$OUTPUT_DIR" lib/SingleFile
+trap - EXIT
+
+echo "Updated SingleFile Core bundles to $RESOLVED_VERSION."

@@ -1,8 +1,6 @@
 [codespell]
 # Ref: https://github.com/codespell-project/codespell#using-a-config-file
-# The action's --skip argument overrides this setting, and the action always provides
-# a default --skip .git, so we must configure skips in codespell.yml.
-skip = ./.git,single-file*.js
+skip = .git*,*.svg,package-lock.json,*.css,.codespellrc,single-file*.js
 check-hidden = true
 # ignore-regex = 
 ignore-words-list = doubleclick,splitted

@@ -352,6 +352,7 @@ Zotero.Prefs = new function() {
 		"firstUse": true,
 		"firstSaveToServer": true,
 		"reportTranslationFailure": true,
+		"singleFileConfig": {},
 		"translatorMetadata": [],
 		
 		"proxies.transparent": true,

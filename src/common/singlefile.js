@@ -94,7 +94,8 @@ Zotero.SingleFile = {
 
 			Zotero.debug("SingleFile: Retrieving page data");
 			if (Zotero.Inject.notification) Zotero.Inject.notification.dismiss()
-			let pageData = await singlefile.getPageData(Zotero.SingleFile.CONFIG, {
+			const config = await this._getConfig();
+			let pageData = await singlefile.getPageData(config, {
 				fetch: (...args) => Zotero.SingleFile.singleFileFetch(...args)
 			});
 			Zotero.debug("SingleFile: Done retrieving page data");
@@ -106,7 +107,25 @@ Zotero.SingleFile = {
 			throw e;
 		}
 	},
-	
+
+	_getConfig: async function() {
+		let singleFileConfig;
+		try {
+			singleFileConfig = await Zotero.Prefs.getAsync('singleFileConfig');
+		}
+		catch (e) {
+			Zotero.debug(`SingleFile: Could not read singleFileConfig pref: ${e}`, 2);
+		}
+		if (!singleFileConfig || typeof singleFileConfig !== 'object' || Array.isArray(singleFileConfig)) {
+			if (singleFileConfig !== undefined) {
+				Zotero.debug('SingleFile: Ignoring invalid singleFileConfig pref; expected an object', 2);
+			}
+			singleFileConfig = {};
+		}
+		// Zotero.SingleFile.CONFIG is generated during build from prefs set in zotero-client repo
+		return Object.assign({}, Zotero.SingleFile.CONFIG, singleFileConfig);
+	},
+
 	// This file must be injected in the non-extension space for deferred image loading to work
 	_injectSingleFileHooks: function() {
 		const scriptElement = document.createElement("script");

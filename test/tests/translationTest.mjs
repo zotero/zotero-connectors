@@ -58,6 +58,37 @@ describe("Translation", function() {
 		afterEach(async function () {
 			await tab.run(() => Zotero.Inject.sessionDetails = {});
 		});
+
+		it('sanitizes invalid head children before offscreen translation', async function () {
+			let result = await tab.run(() => {
+				let iframe = document.createElement('iframe');
+				let meta = document.createElement('meta');
+				meta.name = 'citation_test';
+				meta.content = 'test';
+				document.head.append(iframe, meta);
+
+				try {
+					let html;
+					Zotero.VirtualOffscreenTranslate.prototype.setDocument.call({
+						sendMessage(_message, payload) {
+							html = payload[0];
+						}
+					}, document);
+					let parsedDoc = new DOMParser().parseFromString(html, 'text/html');
+					return {
+						hasIframe: !!parsedDoc.querySelector('iframe'),
+						metaContent: parsedDoc.querySelector('head meta[name="citation_test"]')?.content,
+					};
+				}
+				finally {
+					iframe.remove();
+					meta.remove();
+				}
+			});
+
+			assert.isFalse(result.hasIframe);
+			assert.equal(result.metaContent, 'test');
+		});
 		
 		describe("Detection", function() {
 			it('detects expected translators', async function () {

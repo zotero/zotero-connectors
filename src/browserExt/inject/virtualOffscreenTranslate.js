@@ -23,6 +23,23 @@
 	***** END LICENSE BLOCK *****
 */
 
+// Head elements retained for offscreen translation. <noscript> is intentionally omitted
+// because offscreenTranslate strips it before parsing.
+const OFFSCREEN_HEAD_ELEMENTS = new Set([
+	'base',
+	'link',
+	'meta',
+	'title',
+	'style',
+	'script',
+	'template',
+]);
+
+function isInvalidHeadChild(node) {
+	return (node.nodeType == Node.ELEMENT_NODE && !OFFSCREEN_HEAD_ELEMENTS.has(node.localName))
+		|| (node.nodeType == Node.TEXT_NODE && node.nodeValue.trim() != '');
+}
+
 // A virtual translate that offloads translating to the offscreen page
 Zotero.VirtualOffscreenTranslate = class {
 	translateDoc = null;
@@ -102,7 +119,25 @@ Zotero.VirtualOffscreenTranslate = class {
 		catch (e) {
 			// SecurityError in sandboxed frames lacking 'allow-same-origin'
 		}
-		return this.sendMessage('Translate.setDocument', [doc.documentElement.outerHTML, doc.location.href, cookie]);
+
+		let html = doc.documentElement.outerHTML;
+		let head = doc.head;
+		if (head && [...head.childNodes].some(isInvalidHeadChild)) {
+			head = head.cloneNode(true);
+			for (const node of [...head.childNodes]) {
+				if (isInvalidHeadChild(node)) node.remove();
+			}
+
+			// A shallow document-element clone serializes as just its opening and closing tags.
+			// Insert the sanitized head and original body between them without cloning the body.
+			let rootHTML = doc.documentElement.cloneNode(false).outerHTML;
+			let closingTag = `</${doc.documentElement.localName}>`;
+			html = rootHTML.slice(0, -closingTag.length)
+				+ head.outerHTML
+				+ doc.body.outerHTML
+				+ closingTag;
+		}
+		return this.sendMessage('Translate.setDocument', [html, doc.location.href, cookie]);
 	}
 	
 	async setTranslator(translators) {

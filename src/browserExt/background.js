@@ -1139,32 +1139,39 @@ Zotero.Connector_Browser = new function() {
 		return true;
 	}
 
-	async function _browserAction(tab) {
+	async function _browserAction(tab, options={}) {
 		const shouldContinue = await Zotero.HostPermissions.checkChromiumActionPermissions(tab);
 		if (!shouldContinue) {
-			return;
+			return false;
 		}
 		if (!await _ensureScriptsInjected(tab)) {
-			return;
+			return false;
 		}
 
 		let tabInfo = Zotero.Connector_Browser.getTabInfo(tab.id);
 		if (_isBetaBuildBeyondExpiration) {
-			Zotero.Messaging.sendMessage('expiredBetaBuild')
+			return Zotero.Messaging.sendMessage('expiredBetaBuild')
 		}
 		else if (Zotero.Prefs.get('firstUse')) {
-			Zotero.Messaging.sendMessage("firstUse", null, tab)
+			return Zotero.Messaging.sendMessage("firstUse", null, tab)
 			.then(function () {
 				Zotero.Prefs.set('firstUse', false);
 				Zotero.Connector_Browser._updateExtensionUI(tab);
 			});
 		}
 		else if(tabInfo.translators && tabInfo.translators.length) {
-			Zotero.Connector_Browser.saveWithTranslator(tab, 0, {fallbackOnFailure: true});
+			return Zotero.Connector_Browser.saveWithTranslator(
+				tab,
+				0,
+				{
+					fallbackOnFailure: true,
+					propagateErrors: !!options.propagateErrors
+				}
+			);
 		}
 		else {
 			if (tabInfo.isPDF) {
-				Zotero.Connector_Browser.saveAsWebpage(
+				return Zotero.Connector_Browser.saveAsWebpage(
 					tab,
 					tabInfo.frameId,
 					{
@@ -1174,7 +1181,7 @@ Zotero.Connector_Browser = new function() {
 			} else {
 				let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.prefs.automaticSnapshots :
 					Zotero.Prefs.get('automaticSnapshots');
-				Zotero.Connector_Browser.saveAsWebpage(tab, 0, { snapshot: withSnapshot });
+				return Zotero.Connector_Browser.saveAsWebpage(tab, 0, { snapshot: withSnapshot });
 			}
 		}
 	}
@@ -1269,6 +1276,86 @@ Zotero.Connector_Browser = new function() {
 			return fn.apply(this, arguments);
 		}
 	}
+
+	const EXTERNAL_API_VERSION = 1;
+
+	function _externalTabInfo(tabId) {
+		let tabInfo = Zotero.Connector_Browser.getTabInfo(tabId);
+		let translator = tabInfo.translators && tabInfo.translators[0];
+		return {
+			ok: true,
+			state: tabInfo.translators === null && !tabInfo.isPDF ? 'detecting' : 'ready',
+			isPDF: !!tabInfo.isPDF,
+			translator: translator ? {
+				itemType: translator.itemType,
+				label: translator.label
+			} : undefined
+		};
+	}
+
+	async function _handleExternalMessage(request, sender) {
+		if (!request || typeof request !== 'object' || !request.action) return;
+		// Web pages have no sender.id, and an extension has to be listed in the
+		// externalAPI.allowedExtensions preference, which is empty by default. The API
+		// is therefore off until the user opts a specific extension into it.
+		let allowedExtensions = Zotero.Prefs.get('externalAPI.allowedExtensions');
+		if (!sender.id || !Array.isArray(allowedExtensions) || !allowedExtensions.includes(sender.id)) {
+			return {
+				ok: false,
+				status: 'unauthorized',
+				error: 'This caller is not listed in the externalAPI.allowedExtensions preference.'
+			};
+		}
+		if (request.version !== EXTERNAL_API_VERSION) {
+			return {ok: false, status: 'unsupported-version', error: 'Unsupported external API version.'};
+		}
+		if (!Number.isInteger(request.tabId) || request.tabId <= 0) {
+			return {ok: false, status: 'invalid-request', error: 'tabId must be a positive integer.'};
+		}
+
+		try {
+			let tab = await browser.tabs.get(request.tabId);
+			if (request.action === 'getTabInfo') {
+				return _externalTabInfo(tab.id);
+			}
+			if (request.action === 'saveTab') {
+				if (Zotero.Prefs.get('firstUse')) {
+					return {
+						ok: false,
+						status: 'needs-interaction',
+						error: 'Complete Zotero Connector first-use setup before saving externally.'
+					};
+				}
+				let result = await _browserAction(tab, {propagateErrors: true});
+				if (result === false) {
+					return {ok: false, status: 'cancelled', error: 'The Zotero save was cancelled.'};
+				}
+				return {ok: true, status: 'saved'};
+			}
+			return {ok: false, status: 'unknown-action', error: 'Unknown external API action.'};
+		}
+		catch (e) {
+			return {
+				ok: false,
+				status: 'error',
+				error: e && e.message ? e.message : String(e)
+			};
+		}
+	}
+
+	browser.runtime.onMessageExternal.addListener(function(request, sender, sendResponse) {
+		Zotero.initDeferred.promise
+			.then(() => _handleExternalMessage(request, sender))
+			.then(sendResponse)
+			.catch(e => sendResponse({
+				ok: false,
+				status: 'error',
+				error: e && e.message ? e.message : String(e)
+			}));
+		// Chrome versions without Promise-returning message listeners require the
+		// callback form and a literal true to keep the response channel alive.
+		return true;
+	});
 	
 	async function onNavigation(details, historyChange=false) {
 		// Ignore developer tools, item selector

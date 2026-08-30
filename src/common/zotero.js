@@ -349,6 +349,7 @@ Zotero.Prefs = new function() {
 		"interceptKnownFileTypes": true,
 		"allowedCSLExtensionHosts": ["^https://raw\\.githubusercontent\\.com/", "^https://gitee\\.com/.+/raw/"],
 		"allowedInterceptHosts": [],
+		"externalAPI.allowedExtensions": [],
 		"firstUse": true,
 		"firstSaveToServer": true,
 		"reportTranslationFailure": true,

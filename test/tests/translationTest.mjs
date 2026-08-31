@@ -60,20 +60,21 @@ describe("Translation", function() {
 		});
 
 		it('sanitizes invalid head children before offscreen translation', async function () {
-			let result = await tab.run(() => {
+			let result = await tab.run(async () => {
 				let iframe = document.createElement('iframe');
 				let meta = document.createElement('meta');
 				meta.name = 'citation_test';
 				meta.content = 'test';
 				document.head.append(iframe, meta);
 
+				let originalDetect = Zotero.TranslateHostFrameManager.detect;
 				try {
 					let html;
-					Zotero.VirtualOffscreenTranslate.prototype.setDocument.call({
-						sendMessage(_message, payload) {
-							html = payload[0];
-						}
-					}, document);
+					Zotero.TranslateHostFrameManager.detect = async ({ document }) => {
+						html = document.html;
+						return { translators: [], observers: [] };
+					};
+					await Zotero.RemoteTranslate.detect({ document });
 					let parsedDoc = new DOMParser().parseFromString(html, 'text/html');
 					return {
 						hasIframe: !!parsedDoc.querySelector('iframe'),
@@ -81,6 +82,7 @@ describe("Translation", function() {
 					};
 				}
 				finally {
+					Zotero.TranslateHostFrameManager.detect = originalDetect;
 					iframe.remove();
 					meta.remove();
 				}
@@ -108,6 +110,123 @@ describe("Translation", function() {
 					await background(() => {
 						Zotero.Connector_Browser.onTranslators.restore();
 					});
+				}
+			});
+
+			it('makes translator HTTP APIs explicitly unavailable during detection', async function () {
+				const translatorID = '00000000-0000-0000-0000-000000000001';
+				const metadata = {
+					translatorID,
+					translatorType: 4,
+					label: 'Detect HTTP Test',
+					creator: 'Zotero',
+					target: '',
+					priority: 1,
+					lastUpdated: '2026-01-01 00:00:00',
+					browserSupport: 'gcsv',
+					inRepository: false
+				};
+				const code = `${JSON.stringify(metadata)}\n`
+					+ `function detectWeb(doc, url) {\n`
+					+ `  let calls = [\n`
+					+ `    () => request('https://example.com/'),\n`
+					+ `    () => ZU.request('https://example.com/'),\n`
+					+ `    () => ZU.doGet('https://example.com/', () => {}),\n`
+					+ `    () => globalThis.Zotero.HTTP.request('GET', 'https://example.com/'),\n`
+					+ `    () => globalThis.Zotero.COHTTP.request('GET', 'https://example.com/')\n`
+					+ `  ];\n`
+					+ `  for (let call of calls) {\n`
+					+ `    try { call(); return false; }\n`
+					+ `    catch (e) { if (!e.message.includes('unavailable during translator detection')) return false; }\n`
+					+ `  }\n`
+					+ `  return 'journalArticle';\n`
+					+ `}\nfunction doWeb() {}`;
+				try {
+					await background(async ({ metadata, code }) => {
+						Zotero.Translators._loadTranslator(new Zotero.Translator(metadata));
+						await Zotero.Prefs.set(
+							Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + metadata.translatorID,
+							code
+						);
+					}, { metadata, code });
+					let detected = await tab.run(async translatorID => {
+						let translator = await Zotero.Translators.get(translatorID);
+						let result = await Zotero.RemoteTranslate.detect({
+							document,
+							translators: [translator]
+						});
+						return result.translators.map(translator => translator.translatorID);
+					}, translatorID);
+					assert.deepEqual(detected, [translatorID]);
+				}
+				finally {
+					await background(async translatorID => {
+						Zotero.Translators._removeTranslator(translatorID);
+						await Zotero.Prefs.clear(
+							Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + translatorID
+						);
+					}, translatorID);
+				}
+			});
+
+			it('preserves a detected translator proxy through translation', async function () {
+				const translatorID = '00000000-0000-0000-0000-000000000002';
+				const metadata = {
+					translatorID,
+					translatorType: 4,
+					label: 'Proxy Preservation Test',
+					creator: 'Zotero',
+					target: '',
+					priority: 1,
+					lastUpdated: '2026-01-01 00:00:00',
+					browserSupport: 'gcsv',
+					inRepository: false
+				};
+				const code = `${JSON.stringify(metadata)}\n`
+					+ `function detectWeb() { return 'journalArticle'; }\n`
+					+ `function doWeb() {\n`
+					+ `  let item = new Zotero.Item('journalArticle');\n`
+					+ `  item.title = 'Proxy Preservation Test';\n`
+					+ `  item.complete();\n`
+					+ `}`;
+				try {
+					await background(async ({ metadata, code }) => {
+						Zotero.Translators._loadTranslator(new Zotero.Translator(metadata));
+						await Zotero.Prefs.set(
+							Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + metadata.translatorID,
+							code
+						);
+					}, { metadata, code });
+					let result = await tab.run(async translatorID => {
+						let translator = await Zotero.Translators.get(translatorID);
+						translator.proxy = new Zotero.Proxy({
+							toProperScheme: '%h.proxy.example.org/%p',
+							toProxyScheme: 'https://login.proxy.example.org/login?qurl=%u',
+							hosts: ['example.org']
+						});
+						let detectResult = await Zotero.RemoteTranslate.detect({
+							document,
+							translators: [translator]
+						});
+						let translateResult = await Zotero.RemoteTranslate.translate({
+							document,
+							translators: detectResult.translators
+						});
+						return {
+							detectProxy: detectResult.translators[0].proxy.toJSON(),
+							translateProxy: translateResult.proxy.toJSON()
+						};
+					}, translatorID);
+					assert.equal(result.detectProxy.scheme, '%h.proxy.example.org/%p');
+					assert.deepEqual(result.translateProxy, result.detectProxy);
+				}
+				finally {
+					await background(async translatorID => {
+						Zotero.Translators._removeTranslator(translatorID);
+						await Zotero.Prefs.clear(
+							Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + translatorID
+						);
+					}, translatorID);
 				}
 			});
 		});
@@ -267,7 +386,7 @@ describe("Translation", function() {
 					
 					try {
 						await offscreen(() => {
-							sinon.stub(Zotero.Translate.Web.prototype, 'translate').throws(new Error('Test error'));
+							sinon.stub(frameManager, 'translate').rejects(new Error('Test error'));
 						})
 					
 						let result = await background(async function(tabId) {
@@ -285,7 +404,7 @@ describe("Translation", function() {
 					}
 					finally {
 						await offscreen(() => {
-							Zotero.Translate.Web.prototype.translate.restore();
+							frameManager.translate.restore();
 						});
 					}
 				});

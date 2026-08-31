@@ -605,6 +605,9 @@ let PageSaving = {
 			else {
 				Zotero.Messaging.sendMessage("progressWindow.done", [false]);
 			}
+			if (options.propagateErrors) {
+				throw e;
+			}
 		}
 	},
 

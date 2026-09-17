@@ -183,7 +183,7 @@ Zotero.HostPermissions = new function() {
 			message += Zotero.getString("permissions_siteAccess_message_safari", connectorName);
 		}
 
-		// Allow permanently dismissing a prompt that recommends
+		// Allow permanently suppressing a prompt that recommends
 		// allowing Connector to run on all hosts
 		const recommendationOnly = !missingDomains.length;
 		let response = await Zotero.Messaging.sendMessage('confirm', {

@@ -139,7 +139,10 @@ Zotero.HostPermissions = new function() {
 		const results = await Promise.all(permissionChecks);
 		const missingDomains = domains.filter((domain, index) => !results[index]);
 		const missingAllHosts = recommendAllHosts && !results[results.length - 1];
-		if (!missingDomains.length && !missingAllHosts) return false;
+		if (!missingDomains.length) {
+			if (!missingAllHosts) return false;
+			if (Zotero.Prefs.get('suppressAllHostsRecommendation')) return false;
+		}
 
 		// Explanations of the missing access come first. Domains that Safari's own dialog is about
 		// to cover get a pointer to that dialog; everything else gets Safari Settings
@@ -180,11 +183,21 @@ Zotero.HostPermissions = new function() {
 			message += Zotero.getString("permissions_siteAccess_message_safari", connectorName);
 		}
 
-		await Zotero.Messaging.sendMessage('confirm', {
-			title: Zotero.getString("permissions_siteAccess_title"),
+		// Allow permanently suppressing a prompt that recommends
+		// allowing Connector to run on all hosts
+		const recommendationOnly = !missingDomains.length;
+		let response = await Zotero.Messaging.sendMessage('confirm', {
+			title: Zotero.getString(recommendationOnly
+				? "permissions_siteAccess_recommendation_title"
+				: "permissions_siteAccess_title"),
 			button2Text: "",
-			message
+			message,
+			checkbox: recommendationOnly,
+			checkboxText: Zotero.getString("general_dontShowAgain")
 		}, tab);
+		if (recommendationOnly && response && response.checkboxChecked) {
+			Zotero.Prefs.set('suppressAllHostsRecommendation', true);
+		}
 		return true;
 	}
 

@@ -351,6 +351,7 @@ Zotero.Prefs = new function() {
 		"allowedInterceptHosts": [],
 		"firstUse": true,
 		"firstSaveToServer": true,
+		"suppressAllHostsRecommendation": false,
 		"reportTranslationFailure": true,
 		"singleFileConfig": {},
 		"translatorMetadata": [],

@@ -130,6 +130,10 @@ Zotero.HostPermissions = new function() {
 	}
 
 	async function showPrompt({domains=[], recommendAllHosts=false, nativePromptToFollow=false}={}, tab) {
+		// Skip the all-websites recommendation if the user has dismissed it
+		if (recommendAllHosts && Zotero.Prefs.get('suppressAllHostsRecommendation')) {
+			recommendAllHosts = false;
+		}
 		// Resolve all requested permissions first so the user sees one combined prompt containing only
 		// the access that is actually missing.
 		const permissionChecks = domains.map(domain => hasPermission(domain));
@@ -180,11 +184,23 @@ Zotero.HostPermissions = new function() {
 			message += Zotero.getString("permissions_siteAccess_message_safari", connectorName);
 		}
 
-		await Zotero.Messaging.sendMessage('confirm', {
-			title: Zotero.getString("permissions_siteAccess_title"),
+		// Only a prompt that is purely a recommendation can be dismissed. One that also covers
+		// required access reappears until that access is granted.
+		let recommendationOnly = !missingDomains.length && missingAllHosts;
+		let response = await Zotero.Messaging.sendMessage('confirm', {
+			title: Zotero.getString(recommendationOnly
+				? "permissions_siteAccess_recommendation_title"
+				: "permissions_siteAccess_title"),
 			button2Text: "",
-			message
+			message,
+			checkbox: recommendationOnly,
+			checkboxText: recommendationOnly
+				? Zotero.getString("general_dontShowAgain")
+				: ""
 		}, tab);
+		if (recommendationOnly && response && response.checkboxChecked) {
+			Zotero.Prefs.set('suppressAllHostsRecommendation', true);
+		}
 		return true;
 	}
 

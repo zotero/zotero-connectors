@@ -35,6 +35,9 @@
 	"general_dontWarnAgain": {
 		"message": "Don't Warn Again"
 	},
+	"general_dontShowAgain": {
+		"message": "Don’t Show Again"
+	},
 	"general_ok": {
 		"message": "OK"
 	},
@@ -675,6 +678,9 @@
 	
 	"permissions_siteAccess_title": {
 		"message": "Site Access Permissions Required"
+	},
+	"permissions_siteAccess_recommendation_title": {
+		"message": "Site Access Permissions Recommended"
 	},
 	"permissions_siteAccess_openPreferences": {
 		"message": "Open Extension Preferences"

@@ -130,10 +130,6 @@ Zotero.HostPermissions = new function() {
 	}
 
 	async function showPrompt({domains=[], recommendAllHosts=false, nativePromptToFollow=false}={}, tab) {
-		// Skip the all-websites recommendation if the user has dismissed it
-		if (recommendAllHosts && Zotero.Prefs.get('suppressAllHostsRecommendation')) {
-			recommendAllHosts = false;
-		}
 		// Resolve all requested permissions first so the user sees one combined prompt containing only
 		// the access that is actually missing.
 		const permissionChecks = domains.map(domain => hasPermission(domain));
@@ -143,7 +139,10 @@ Zotero.HostPermissions = new function() {
 		const results = await Promise.all(permissionChecks);
 		const missingDomains = domains.filter((domain, index) => !results[index]);
 		const missingAllHosts = recommendAllHosts && !results[results.length - 1];
-		if (!missingDomains.length && !missingAllHosts) return false;
+		if (!missingDomains.length) {
+			if (!missingAllHosts) return false;
+			if (Zotero.Prefs.get('suppressAllHostsRecommendation')) return false;
+		}
 
 		// Explanations of the missing access come first. Domains that Safari's own dialog is about
 		// to cover get a pointer to that dialog; everything else gets Safari Settings
@@ -184,9 +183,9 @@ Zotero.HostPermissions = new function() {
 			message += Zotero.getString("permissions_siteAccess_message_safari", connectorName);
 		}
 
-		// Allow dismissing a prompt that recommends allowing Connector to run on
-		// all hosts
-		let recommendationOnly = !missingDomains.length;
+		// Allow permanently dismissing a prompt that recommends
+		// allowing Connector to run on all hosts
+		const recommendationOnly = !missingDomains.length;
 		let response = await Zotero.Messaging.sendMessage('confirm', {
 			title: Zotero.getString(recommendationOnly
 				? "permissions_siteAccess_recommendation_title"

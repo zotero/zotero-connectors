@@ -184,9 +184,9 @@ Zotero.HostPermissions = new function() {
 			message += Zotero.getString("permissions_siteAccess_message_safari", connectorName);
 		}
 
-		// Only a prompt that is purely a recommendation can be dismissed. One that also covers
-		// required access reappears until that access is granted.
-		let recommendationOnly = !missingDomains.length && missingAllHosts;
+		// Allow dismissing a prompt that recommends allowing Connector to run on
+		// all hosts
+		let recommendationOnly = !missingDomains.length;
 		let response = await Zotero.Messaging.sendMessage('confirm', {
 			title: Zotero.getString(recommendationOnly
 				? "permissions_siteAccess_recommendation_title"
@@ -194,9 +194,7 @@ Zotero.HostPermissions = new function() {
 			button2Text: "",
 			message,
 			checkbox: recommendationOnly,
-			checkboxText: recommendationOnly
-				? Zotero.getString("general_dontShowAgain")
-				: ""
+			checkboxText: Zotero.getString("general_dontShowAgain")
 		}, tab);
 		if (recommendationOnly && response && response.checkboxChecked) {
 			Zotero.Prefs.set('suppressAllHostsRecommendation', true);

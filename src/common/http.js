@@ -220,7 +220,7 @@ Zotero.HTTP = new function() {
 			let replaceHeaders = HEADERS_SPECIAL_HANDLING.filter(header => !!options.headers[header])
 				.map(header => {
 					const val = { name: header, value: options.headers[header] }
-					delete options.headers['User-Agent'];
+					delete options.headers[header];
 					return val;
 				});
 			if (replaceHeaders.length) {

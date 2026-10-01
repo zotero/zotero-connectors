@@ -46,24 +46,25 @@ Zotero.BrowserAttachmentMonitor = {
 		});
 		this._addAttachmentDetectionListener(ruleId, tabId, resolveSucceeded);
 
-		// Setup message listener for success notification
-		let hasRedirected = false
+		// Setup message listener for monitor page load notifications.
+		// NOTE: The monitor page is web-accessible and may be embedded by a page
+		// in the monitored tab, so messages from it must never carry data we act upon.
+		// The attachment URL is resolved exclusively by _addAttachmentDetectionListener.
+		let hasRedirected = false;
 		const messageListener = (message, sender) => {
-			if (sender.tab.id === tabId && message.type === 'attachment-monitor-loaded') {
-				if (!message.success) {
-					if (!hasRedirected) {
-						browser.tabs.sendMessage(tabId, { type: 'redirect-attachment-monitor', url } );
-						hasRedirected = true;
-					}
-					else {
-						rejectFailed(new Error('Redirected back to browserAttachmentMonitor.html with no `success` hash param'));
-					}
-				}
-				else {
-					Zotero.debug(`BrowserAttachmentMonitor: Attachment successfully loaded for tab: ${tabId}`);
-					resolveSucceeded(message.success);
-					this._cleanup(ruleId, messageListener, tabRemovedListener);
-				}
+			if (message?.type !== 'attachment-monitor-loaded'
+					|| sender.tab?.id !== tabId
+					|| !this._isMonitorPageSender(sender)) {
+				return;
+			}
+			// Redirected back into browserAttachmentMonitor as a way to block attachment download
+			if (message.success) return;
+			if (!hasRedirected) {
+				browser.tabs.sendMessage(tabId, { type: 'redirect-attachment-monitor', url } );
+				hasRedirected = true;
+			}
+			else {
+				rejectFailed(new Error('Redirected back to browserAttachmentMonitor.html with no `success` hash param'));
 			}
 		};
 
@@ -122,6 +123,12 @@ Zotero.BrowserAttachmentMonitor = {
 				});
 			}
 		}
+	},
+
+	_isMonitorPageSender: function(sender) {
+		if (sender.id && sender.id !== browser.runtime.id) return false;
+		const monitorUrl = Zotero.getExtensionURL("browserAttachmentMonitor/browserAttachmentMonitor.html");
+		return typeof sender.url === 'string' && sender.url.split('#')[0] === monitorUrl;
 	},
 
 	_isAttachmentResponse: function(details) {

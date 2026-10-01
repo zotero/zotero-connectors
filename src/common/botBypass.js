@@ -69,7 +69,7 @@ Zotero.BotBypass.isUrlWhitelisted = function(url) {
 	let proxies = Object.entries(Zotero.Proxies.getPotentialProxies(url));
 	for (let [url, _] of proxies) {
 		const hostname = new URL(url).hostname;
-		if (BOT_BYPASS_WHITELISTED_DOMAINS.some(domain => hostname.endsWith(domain))) {
+		if (BOT_BYPASS_WHITELISTED_DOMAINS.some(domain => hostname === domain || hostname.endsWith('.' + domain))) {
 			return true;
 		}
 	}
@@ -104,9 +104,11 @@ Zotero.BotBypass.passJSDetectionViaHiddenIframe = async function(url, tab) {
 		// onMessage listeners such that they call sendResponse(undefined) for messages
 		// they don't handle, stealing responses from other listeners. This will be safe
 		// to change once Chromium fully supports native browser.* APIs.
-		messageListener = (message) => {
-			if (message.type === 'attachment-monitor-loaded' 
-				&& !message.success) {
+		messageListener = (message, sender) => {
+			if (message?.type === 'attachment-monitor-loaded'
+				&& !message.success
+				&& sender.tab?.id === tab.id
+				&& Zotero.BrowserAttachmentMonitor._isMonitorPageSender(sender)) {
 				Zotero.debug(`Iframe loaded for ${url}`);
 				browser.runtime.onMessage.removeListener(messageListener);
 				// Wait for 5s. Any longer means we've probably hit a Captcha page

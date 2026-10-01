@@ -5,8 +5,7 @@ browser.runtime.onMessage.addListener(async (message) => {
 });
 
 window.addEventListener('load', async () => {
-	const match = /success=(.*)/.exec(window.location.hash);
-	const success = match ? match[1] : false;
+	const success = window.location.hash === '#success';
 	try {
 		await browser.runtime.sendMessage({
 			type: 'attachment-monitor-loaded',

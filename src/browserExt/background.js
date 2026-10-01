@@ -49,7 +49,14 @@ Zotero.Connector_Browser = new function() {
 	// Parallel async functions may call this, so we use a counter to make sure
 	// one keep-alive function finishing does not kill the service worker for other
 	// still-running functions
-	this.setKeepServiceWorkerAlive = (val) => this._keepServiceWorkerAlive += val ? 1 : -1;
+	this.setKeepServiceWorkerAlive = (val) => {
+		this._keepServiceWorkerAlive += val ? 1 : -1;
+		if (this._keepServiceWorkerAlive < 0 && !this._keepServiceWorkerAliveNegativeLogged) {
+			this._keepServiceWorkerAliveNegativeLogged = true;
+			Zotero.logError(new Error(`Keep-alive counter is negative (${this._keepServiceWorkerAlive}). `
+				+ `setKeepServiceWorkerAlive(false) called more times than setKeepServiceWorkerAlive(true)`));
+		}
+	};
 	
 	this.init = async function() {
 		if (Zotero.isManifestV3) {

@@ -26,15 +26,29 @@
 //Based on
 //https://stackoverflow.com/questions/66618136/persistent-service-worker-in-chrome-extension/66618269#66618269
 
-const LET_DIE_AFTER = 10*60e3; // 1 hour
+const LET_DIE_AFTER = 60*60e3; // 1 hour
 
-const startedOn = Date.now();
-let interval;
+// Time since the keep-alive counter became non-zero
+let startedOn = null;
+let loggedLetDie = false;
 
 function keepAlive() {
-	if (startedOn + LET_DIE_AFTER < Date.now() && !Zotero.Connector_Browser.shouldKeepServiceWorkerAlive()) {
-		clearInterval(interval);
+	let counter = Zotero.Connector_Browser.shouldKeepServiceWorkerAlive();
+	if (!counter) {
+		startedOn = null;
+		loggedLetDie = false;
+		return;
+	}
+	startedOn ??= Date.now();
+	if (startedOn + LET_DIE_AFTER < Date.now()) {
+		if (!loggedLetDie) {
+			loggedLetDie = true;
+			// Likely a setKeepServiceWorkerAlive(true) call without a matching (false)
+			Zotero.logError(new Error(`Service worker kept alive for over 1 hour (counter: ${counter}). `
+				+ `Letting it die`));
+		}
+		return;
 	}
 	chrome.runtime.getPlatformInfo();
 }
-interval = setInterval(keepAlive, 20e3);
+setInterval(keepAlive, 20e3);

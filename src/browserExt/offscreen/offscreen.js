@@ -24,42 +24,39 @@
 */
 
 /*
- * Entrypoint for offscreen page. Evals are disallowed here and we run them in a sandbox iframe instead.
- * 
+ * Entrypoint for the MV3 offscreen page. MV3 service worker has no DOM, and we want to spawn
+ * sandbox frames for each translate operation, which this does that.
+ *
  * This script orchestrates establishing a message channel for message passing between the background
- * page and the offscreen translate sandbox page. Also handles possible situations where the background
- * service worker gets killed, but the offscreen page stays alive.
- * 
- * Content scripts then communicate with translate sandbox
- * by message passing via background page.
+ * service worker and the offscreen translate host page. Also handles possible situations
+ * where the background service worker gets killed, but the offscreen page stays alive.
  */
-
-let offscreenSandboxReadyPromise = new Promise((resolve) => {
-	self.onmessage = async (e) => {
-		if (e.data === 'offscreen-sandbox-ready') {
-			self.onmessage = null;
-			resolve();
-		}
-	}
-});
+let managerMessaging;
+const frameManager = Zotero.TranslateHostFrameManager;
 
 async function init() {
-	console.log('Offscreen: awaiting offscreen sandbox to be ready')
-	await offscreenSandboxReadyPromise;
-	
+	console.log('Offscreen: initializing translate host frame manager messaging');
 	let messageChannel = new MessageChannel();
-	const iframe = document.querySelector('iframe');
-	iframe.contentWindow.postMessage('offscreen-port', "*", [messageChannel.port1]);
+	let options = {
+		functionOverrides: FRAME_MANAGER_FUNCTIONS,
+		handlerFunctionOverrides: FRAME_MANAGER_MESSAGE_FUNCTIONS,
+		overrideTarget: Zotero,
+		sendMessage: (...args) => messageChannel.port1.postMessage(args),
+		addMessageListener: fn => {
+			messageChannel.port1.onmessage = (event) => fn(event.data);
+		}
+	};
+	if (managerMessaging) {
+		managerMessaging.reinit(options);
+	}
+	else {
+		managerMessaging = new Zotero.MessagingGeneric(options);
+	}
 
-	console.log('Offscreen: awaiting offscreen sandbox to prepare for service worker connection')
-	await new Promise((resolve) => {
-		messageChannel.port2.onmessage = resolve;
-	});
-	messageChannel.port2.onmessage = null;
-	
 	const backgroundServiceWorker = await navigator.serviceWorker.ready;
 	backgroundServiceWorker.active.postMessage('offscreen-port', [messageChannel.port2]);
-	console.log('Offscreen: messaging ports posted');
+	console.log('Offscreen: messaging port posted');
+	await managerMessaging.sendMessage('TranslateHostFrameManager.initialized');
 }
 
 document.addEventListener('DOMContentLoaded', () => init());

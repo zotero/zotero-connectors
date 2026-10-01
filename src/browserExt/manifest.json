@@ -59,7 +59,7 @@
 		"translateWeb.js",
 		"itemSaver.js"
 	],
-	"content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+	"content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'; frame-src 'self'",
 	"homepage_url": "https://www.zotero.org/",
 	"icons": {
 		"16": "Icon-16.png",

@@ -24,13 +24,19 @@
 */
 
 /**
- * Creates a new frame managed by Zotero.
+ * Creates a new frame managed by Zotero. Frames can optionally establish promise-based messaging
+ * over a MessageChannel.
  */
 Zotero.Frame = class ZoteroFrame {
-	constructor(attributes = {}, style = {}) {
+	/**
+	 * @param attributes {Object} Frame attributes.
+	 * @param style {Object} CSSStyleDeclaration-type styles for the frame.
+	 * @param messagingOptions {Object} If provided, sets up frame messaging. See messagingGeneric.js.
+	 */
+	constructor(attributes = {}, style = {}, messagingOptions) {
 		if (!attributes.src) throw new Error('Attempted to construct a Zotero frame with no src attribute');
-		this.nonce = Zotero.Utilities.randomString(64);
-		this._initializedPromise = this._init(attributes, style);
+		this.nonce = Zotero.Utilities.randomString(16);
+		this._initializedPromise = this._init(attributes, style, messagingOptions);
 		this.initializedPromise = this._initializedPromise;
 	}
 
@@ -46,15 +52,19 @@ Zotero.Frame = class ZoteroFrame {
 		return this._frame?.src;
 	}
 
+	/**
+	 * @returns {Promise} Resolves when the frame and any configured messaging are initialized.
+	 */
 	async init() {
 		return this._initializedPromise;
 	}
 
-	async _init(attributes = {}, style = {}) {
+	async _init(attributes = {}, style = {}, messagingOptions) {
 		attributes = Object.assign({
 			id: Zotero.Utilities.randomString(),
 			frameborder: '0'
 		}, attributes);
+		// Used to authenticate both Safari content-frame messaging and MessageChannel setup.
 		attributes.src = this._addNonceToURL(attributes.src);
 
 		// Making the frame less visible to website code via a closed shadow DOM
@@ -65,12 +75,18 @@ Zotero.Frame = class ZoteroFrame {
 		this._frame = document.createElement('iframe');
 		root.appendChild(this._frame);
 		this._setFrameAttributes(attributes, style);
-		Zotero.Messaging.registerFrame?.(this);
+		// Frame registration is only required for Safari as a workaround for messaging API issues.
+		// But it's not required for frames loaded by offscreen where Messaging is not available
+		Zotero.Messaging?.registerFrame?.(this);
 		await new Promise((resolve, reject) => {
 			this._frame.onload = resolve;
 			this._frame.onerror = reject;
 			(document.body || document.documentElement)?.appendChild(this.parentDiv);
 		});
+
+		if (messagingOptions) {
+			await this._initMessaging(messagingOptions);
+		}
 	}
 
 	_addNonceToURL(src) {
@@ -93,7 +109,30 @@ Zotero.Frame = class ZoteroFrame {
 	}
 
 	remove() {
-		Zotero.Messaging.unregisterFrame?.(this);
+		// See the optional Zotero.Messaging explanation in _init().
+		Zotero.Messaging?.unregisterFrame?.(this);
 		this.parentDiv?.parentNode?.removeChild(this.parentDiv);
+	}
+
+	async _initMessaging(messagingOptions) {
+		if (!messagingOptions.sendMessage) {
+			const mc = new MessageChannel();
+			this._frame.contentWindow.postMessage('zoteroChannel', '*', [mc.port2]);
+			let response = await new Promise(cb => { mc.port1.onmessage = cb; });
+			mc.port1.onmessage = null;
+			if (response.data !== this.nonce) {
+				throw new Error('Zotero.Frame: Invalid messaging nonce');
+			}
+			// Established an authenticated two-way messaging channel at this point
+			messagingOptions.sendMessage = (...args) => {
+				mc.port1.postMessage(args);
+			};
+			messagingOptions.addMessageListener = (fn) => {
+				mc.port1.onmessage = (e) => fn(e.data);
+			};
+		}
+		this._messaging = new Zotero.MessagingGeneric(messagingOptions);
+		this.addMessageListener = this._messaging.addMessageListener.bind(this._messaging);
+		this.sendMessage = this._messaging.sendMessage.bind(this._messaging);
 	}
 };

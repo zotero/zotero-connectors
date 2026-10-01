@@ -26,10 +26,26 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
+	<meta http-equiv="Content-Security-Policy"
+		content="default-src 'none'; script-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'none';">
 	<title>Zotero - Offscreen Utility Page</title>
 </head>
 <body>
+<script src="../browser-polyfill.js"></script>
+<script src="../zotero_config.js"></script>
+<script src="../zotero.js"></script>
+<script src="../translate/promise.js"></script>
+<script src="../utilities/utilities.js"></script>
+<script src="../proxy.js"></script>
+<script src="../translate/translator.js"></script>
+<script src="../http.js"></script>
+<script src="../messagingGeneric.js"></script>
+<script src="../zoteroFrame.js"></script>
+<script src="../translateHost/translateHostFunctionOverrides.js"></script>
+<script src="../translateHost/translateHostFrameManager.js"></script>
+<!--BEGIN DEBUG-->
+<script src="../lib/sinon.js"></script>
+<!--END DEBUG-->
 <script src="./offscreen.js"></script>
-<iframe src="./offscreenSandbox.html"></iframe>
 </body>
 </html>

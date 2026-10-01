@@ -54,37 +54,30 @@ function determineAttachmentType(attachment) {
 let PageSaving = {
 	sessionDetails: {},
 	translators: [],
-	
-	/**
-	 * @param itemType
-	 * @returns {Promise<Zotero.Translate.Web>}
-	 * @private
-	 */
-	async _initTranslate(itemType=null) {
-		let translate;
-		if (Zotero.isManifestV3) {
+	_detectionObservers: [],
+
+	_setDetectionObservers(observerConfigs) {
+		let onMutation = () => {
+			this._disconnectDetectionObservers();
+			this.onPageLoad(true);
+		};
+		for (let { selector, options } of observerConfigs) {
 			try {
-				translate = await Zotero.VirtualOffscreenTranslate.create();
-			} catch (e) {
-				Zotero.logError(new Error(`Inject: Initializing translate failed at ${document.location.href}`));
+				let node = selector === null ? document : document.querySelector(selector);
+				if (!node) continue;
+				let observer = new MutationObserver(onMutation);
+				observer.observe(node, options);
+				this._detectionObservers.push(observer);
+			}
+			catch (e) {
 				Zotero.logError(e);
-				throw e;
 			}
 		}
-		else {
-			translate = new Zotero.Translate.Web();
-		}
-		translate.setHandler('pageModified', () => {
-			Zotero.Messaging.sendMessage("pageModified", true);
-		});
-		// Async in MV3
-		if (Zotero.isManifestV3) {
-			await translate.setDocument(document, itemType === 'multiple');
-		}
-		else {
-			translate.setDocument(document);
-		}
-		return translate;
+	},
+
+	_disconnectDetectionObservers() {
+		for (let observer of this._detectionObservers) observer.disconnect();
+		this._detectionObservers = [];
 	},
 
 	/**
@@ -110,9 +103,10 @@ let PageSaving = {
 				}
 			}
 
-			let translate = await this._initTranslate();
-			let translators = await Zotero.TranslateWeb.detect({ translate });
+			this._disconnectDetectionObservers();
+			let { translators, observers } = await Zotero.RemoteTranslate.detect({ document });
 			this.translators = translators;
+			this._setDetectionObservers(observers);
 			Zotero.Connector_Browser.onTranslators(translators, instanceID, document.contentType);
 		} catch (e) {
 			Zotero.logError(e);
@@ -274,10 +268,15 @@ let PageSaving = {
 			}
 		}
 
-		let translate = await this._initTranslate(translators[0].itemType);
-		let options = { translate, translators: translators.slice(), onSelect, onItemSaving, onTranslatorFallback };
+		let options = {
+			document,
+			translators: translators.slice(),
+			onSelect,
+			onItemSaving,
+			onTranslatorFallback
+		};
 		try {
-			var { items, proxy } = await Zotero.TranslateWeb.translate(options);
+			var { items, proxy } = await Zotero.RemoteTranslate.translate(options);
 		} catch (e) {
 			if (translators[0].itemType != 'multiple' && fallbackOnFailure) {
 				Zotero.Messaging.sendMessage("progressWindow.error", ['fallback', this.translators.at(-1).label, Zotero.getString('progressWindow_saveAsWebpage')]);
@@ -285,10 +284,6 @@ let PageSaving = {
 				return this.saveAsWebpage({ snapshot: true });
 			}
 			throw e;
-		}
-		if (Zotero.isManifestV3) {
-			proxy = await translate.getProxy();
-			if (proxy) proxy = new Zotero.Proxy(proxy);
 		}
 		items = this._processNote(items);
 		this.sessionDetails.items = items;

@@ -36,12 +36,13 @@ Zotero.Messaging.addMessageListener('translatorTester_dummyTranslate', async (da
 
 	let detectedItemType = detectedTranslators[0].itemType;
 
-	let translate = await Zotero.PageSaving._initTranslate(detectedItemType);
-	translate.setHandler('debug', makeHandler('debug'));
-	translate.setHandler('error', makeHandler('error'));
-	translate.setHandler('select', makeHandler('select'));
-
-	let { items } = await Zotero.TranslateWeb.translate({ translate, translators: [translator] });
+	let { items } = await Zotero.RemoteTranslate.translate({
+		document,
+		translators: [translator],
+		onDebug: makeHandler('debug'),
+		onError: makeHandler('error'),
+		onSelect: makeHandler('select')
+	});
 	return { detectedItemType, items };
 });
 
@@ -68,11 +69,10 @@ async function detect(translator) {
 		let resolved = false;
 		let resolveIfDetected = async () => {
 			if (resolved) return false;
-			let options = {
-				translate: await Zotero.PageSaving._initTranslate(),
-				translators: [translator],
-			};
-			let detectedTranslators = await Zotero.TranslateWeb.detect(options);
+			let { translators: detectedTranslators } = await Zotero.RemoteTranslate.detect({
+				document,
+				translators: [translator]
+			});
 			if (detectedTranslators.length) {
 				resolved = true;
 				resolve(detectedTranslators);

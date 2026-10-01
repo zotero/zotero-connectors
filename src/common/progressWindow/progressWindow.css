@@ -14,13 +14,14 @@ button:active {
 .ProgressWindow-box {
 	width: 300px;
 	max-width: 92%;
-	border-color: #adadad #9a9a9a #ababab;
+	border-color: #d0d7de;
+	border-radius: 6px;
 	border-width: 1px;
 	border-style: solid;
-	background-color: #ededed;
+	background-color: #ffffff;
 	box-shadow: rgba(0, 0, 0, 0.25) 0px 5px 20px -2px;
-	margin-left: 4px;
-	padding: 6px 10px 6px;
+	margin: auto;
+	padding: 10px;
 	min-height: 40px;
 	overflow: hidden;
 }
@@ -52,6 +53,8 @@ button:active {
 	flex-grow: 1;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	border-radius: 3px;
+	background: #ffffff8a;
 }
 
 .ProgressWindow-targetIcon {
@@ -71,7 +74,7 @@ button:active {
 	background: url('disclosure-closed.svg') no-repeat center/40% transparent;
 	width: 26px;
 	font-size: 20px;
-	height: 20px;
+	height: 22px;
 	line-height: 17px;
 	cursor: default;
 	user-select: none

@@ -191,6 +191,8 @@ Zotero.WebRequestIntercept = {
 			condition: {
 				resourceTypes: ['xmlhttprequest'],
 				initiatorDomains: [new URL(browser.runtime.getURL('')).hostname],
+				// Don't send modified headers (e.g. cookies) to other domains on redirect
+				urlFilter: `||${new URL(url).hostname}^`,
 			}
 		}];
 		// Keep the service worker alive while the rule is active

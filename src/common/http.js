@@ -261,7 +261,7 @@ Zotero.HTTP = new function() {
 				Zotero.debug(`HTTP ${xmlhttp.status} ${xmlhttp.responseURL} response`);
 			}
 			
-			let invalidDefaultStatus = options.successCodes === null &&
+			let invalidDefaultStatus = options.successCodes == null &&
 				(xmlhttp.status < 200 || xmlhttp.status >= 300);
 			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(xmlhttp.status);
 			if (invalidDefaultStatus || invalidStatus) {
@@ -446,7 +446,8 @@ Zotero.HTTP = new function() {
 				getResponseHeader: name => responseHeaders[name.toLowerCase()]
 			};
 
-			let invalidDefaultStatus = options.successCodes === null &&
+			// null or undefined => default (2xx); false => allow all
+			let invalidDefaultStatus = options.successCodes == null &&
 				(response.status < 200 || response.status >= 300);
 			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(response.status);
 			if (invalidDefaultStatus || invalidStatus) {

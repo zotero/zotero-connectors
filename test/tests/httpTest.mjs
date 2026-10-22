@@ -165,6 +165,30 @@ describe("HTTP", function() {
 			});
 		});
 
+		describe('With { successCodes: undefined }', function() {
+			it('Throws when the target responds with a non-2xx status code', async function() {
+				const url = "https://zotero-static.s3.amazonaws.com/test.html";
+				let response = await background(async(url) => {
+					sinon.stub(globalThis, 'fetch').resolves({
+						status: 404,
+						statusText: "Not Found",
+						text: async () => "Not Found",
+						url: url,
+						headers: new Headers()
+					});
+					try {
+						await Zotero.HTTP.request("GET", url, { successCodes: undefined });
+						return "did not throw";
+					} catch (e) {
+						return [e.message, e.status];
+					} finally {
+						globalThis.fetch.restore();
+					}
+				}, url);
+				assert.deepEqual(response, [`HTTP request to ${url} rejected with status 404`, 404]);
+			});
+		});
+
 		describe('With { successCodes: false }', function() {
 			it('Does not throw when the target responds with a non-2xx or non-3xx status code', async function() {
 				const url = "https://zotero-static.s3.amazonaws.com/test.html";

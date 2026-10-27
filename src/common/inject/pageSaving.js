@@ -449,17 +449,27 @@ let PageSaving = {
 			title = new URL(document.location.href).pathname.split('/').pop();
 		}
 		let itemType = "webpage";
+		// Match the Zotero client's attachment icons
+		let icon = "document";
 		if (document.contentType === 'application/pdf') {
 			itemType = "pdf"
+			icon = "attachment-pdf";
 		}
 		else if (document.contentType === 'application/epub+zip') {
 			itemType = "epub";
+			icon = "attachment-epub";
+		}
+		else if (document.contentType.startsWith('image/')) {
+			icon = "attachment-image";
+		}
+		else if (document.contentType.startsWith('video/')) {
+			icon = "attachment-video";
 		}
 
 		let progressItem = {
 			sessionID,
 			id: 1,
-			iconSrc: Zotero.ItemTypes.getImageSrc(`attachment-${itemType}`),
+			iconSrc: Zotero.ItemTypes.getImageSrc(icon),
 			title,
 			progress: 0,
 			// TODO passed to ProgressWindow for accessibility messages. Needs to be updated there

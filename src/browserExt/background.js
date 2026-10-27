@@ -861,12 +861,12 @@ Zotero.Connector_Browser = new function() {
 		Zotero.Connector.checkIsOnline().then(function(isOnline) {
 			var icon, title;
 			if (isOnline) {
-				icon = "images/zotero-new-z-16px.png";
+				icon = getHiDPIImagePaths("images/toolbar/z.png");
 				title = Zotero.getString('browserAction_status_online', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			else if (isOnline === null) {
 				// Zotero's status is unknown without localhost access, so don't claim it's offline
-				icon = "images/zotero-new-z-16px.png";
+				icon = getHiDPIImagePaths("images/toolbar/z.png");
 				title = Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			else {
@@ -898,6 +898,7 @@ Zotero.Connector_Browser = new function() {
 		browser.action.enable(tabID);
 	}
 	
+	// Toolbar icon naming scheme is described above makeToolbarIcons in build.sh
 	function getHiDPIImagePaths(imageSrc) {
 		return {
 			32: imageSrc,
@@ -1063,10 +1064,9 @@ Zotero.Connector_Browser = new function() {
 	
 
 	function _showMessageButton(tab) {
-		var icon = `zotero-z-32px-offline.png`;
 		browser.action.setIcon({
 			tabId: tab.id,
-			path: `images/${icon}`
+			path: getHiDPIImagePaths("images/toolbar/z.png")
 		});
 		browser.action.setTitle({
 			tabId: tab.id,

@@ -111,7 +111,7 @@ EXTENSION_SKIN_DIR="$SRCDIR/zotero/chrome/skin/default/zotero"
 ITEM_IMAGES="$EXTENSION_SKIN_DIR/item-type/16/light/*2x.svg"
 COLLECTION_IMAGES="$EXTENSION_SKIN_DIR/collection-tree/16/light/collection.svg \
 		$EXTENSION_SKIN_DIR/collection-tree/16/light/library.svg"
-TOOLBAR_IMAGES=`ls $CWD/icons/badged/* | grep -v '@2x' | grep -v 'dark.svg'`
+TOOLBAR_IMAGES="$CWD/icons/z.svg `ls $CWD/icons/badged/* | grep -v '@2x' | grep -v 'dark.svg'`"
 NO_PROGRESS_WINDOW_TOOLBAR_IMAGES="$EXTENSION_SKIN_DIR/16/universal/cross.svg \
 	$EXTENSION_SKIN_DIR/16/universal/tick.svg \
 	$EXTENSION_SKIN_DIR/16/light/loading.svg"
@@ -258,46 +258,49 @@ function copyResources {
 	fi
 }
 
+# Browser action (toolbar) icons must be raster images, so render them from SVG.
+# Naming scheme, for each icon NAME:
+#   images/toolbar/NAME@16.png - 16px
+#   images/toolbar/NAME.png    - 32px
+#   images/toolbar/NAME@48.png - 48px
+# Code refers to an icon by its unsuffixed 32px path (e.g. what
+# Zotero.ItemTypes.getImageSrc() returns in the background page), and
+# getHiDPIImagePaths() in background.js derives the @16/@48 paths from it.
 function makeToolbarIcons {
-	browser="$1"
-	icon_dir="$BUILD_DIR/$browser/images/toolbar"
+	local icon_dir="$1/images/toolbar"
 	mkdir -p "$icon_dir"
 	
-	# Check for rsvg-convert
-	if ! command -v rsvg-convert --version &> /dev/null ; then
+	if ! command -v rsvg-convert &> /dev/null; then
 		echo ""
 		echo "rsvg-convert is not available"
 		usage
 	fi
 	
-	set -e
-	for f in $COLLECTION_IMAGES $TOOLBAR_IMAGES $NO_PROGRESS_WINDOW_TOOLBAR_IMAGES
-	do
-		# Check if @2x version exists for higher resolution icons
-		f_2x="${f/.svg/@2x.svg}"
+	local style_file=`mktemp`
+	for f in $COLLECTION_IMAGES $TOOLBAR_IMAGES $NO_PROGRESS_WINDOW_TOOLBAR_IMAGES; do
+		# Use the @2x version, if there is one, for the larger sizes
+		local f_2x="${f/.svg/@2x.svg}"
 		if [ ! -f "$f_2x" ]; then
 			f_2x="$f"
 		fi
 		
-		# Apply specific fill colors for tick and cross icons
-		basename_no_ext=`basename $f .svg`
-		style_opt=""
-		if [ "$basename_no_ext" == "tick" ]; then
-			echo "Applying fill color for tick icon"
-			echo 'path { fill: #39bf68; }' > /tmp/rsvg-style.css
-			style_opt="-s /tmp/rsvg-style.css"
-		elif [ "$basename_no_ext" == "cross" ]; then
-			echo 'path { fill: #db2c3a; }' > /tmp/rsvg-style.css
-			style_opt="-s /tmp/rsvg-style.css"
+		# The universal tick and cross icons use context-fill, so give them a color
+		local name=`basename "$f" .svg`
+		local style_opt=""
+		if [ "$name" == "tick" ]; then
+			echo 'path { fill: #39bf68; }' > "$style_file"
+			style_opt="-s $style_file"
+		elif [ "$name" == "cross" ]; then
+			echo 'path { fill: #db2c3a; }' > "$style_file"
+			style_opt="-s $style_file"
 		fi
 		
-		rsvg-convert "$f_2x" -w 32 -h 32 $style_opt -o "$icon_dir/$basename_no_ext.png"
-		if [ "$browser" == "browserExt" ]; then
-			rsvg-convert $f -w 16 -h 16 $style_opt -o "$icon_dir/$basename_no_ext@16.png"
-			rsvg-convert "$f_2x" -w 48 -h 48 $style_opt -o "$icon_dir/$basename_no_ext@48.png"
-		fi
+		rsvg-convert "$f" -w 16 -h 16 $style_opt -o "$icon_dir/$name@16.png" \
+			&& rsvg-convert "$f_2x" -w 32 -h 32 $style_opt -o "$icon_dir/$name.png" \
+			&& rsvg-convert "$f_2x" -w 48 -h 48 $style_opt -o "$icon_dir/$name@48.png" \
+			|| { rm -f "$style_file"; echo "Failed to render toolbar icon $f"; exit 1; }
 	done
-	set +e
+	rm -f "$style_file"
 }
 
 if [[ $BUILD_BROWSER_EXT == 1 ]]; then
@@ -307,7 +310,7 @@ if [[ $BUILD_BROWSER_EXT == 1 ]]; then
 	cp -r $ITEM_IMAGES $COLLECTION_IMAGES $CONNECTOR_COMMON_IMAGES $IMAGES "$BUILD_DIR/browserExt/images"
 	cp "$CWD/icons/Icon-16.png" "$CWD/icons/Icon-32.png" "$CWD/icons/Icon-64.png" "$CWD/icons/Icon-128.png" "$BUILD_DIR/browserExt"
 	
-	makeToolbarIcons 'browserExt'
+	makeToolbarIcons "$BUILD_DIR/browserExt"
 	copyResources 'browserExt'
 fi
 

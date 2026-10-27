@@ -966,7 +966,7 @@ Zotero.UI.ProgressWindow = class ProgressWindow extends React.PureComponent {
 			{},
 			{},
 			item.failed && {
-				backgroundImage: `url('${Zotero.UI.style.imageBase}cross.png')`,
+				backgroundImage: `url('${Zotero.UI.style.imageBase}toolbar/cross.png')`,
 				backgroundPosition: ""
 			},
 			// Use circular indicator for partial progress

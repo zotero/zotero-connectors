@@ -23,6 +23,7 @@
 	***** END LICENSE BLOCK *****
 */
 
+import http from 'node:http';
 import {
 	Tab,
 	background,
@@ -160,6 +161,70 @@ describe("Translation", function() {
 					assert.deepEqual(detected, [translatorID]);
 				}
 				finally {
+					await background(async translatorID => {
+						Zotero.Translators._removeTranslator(translatorID);
+						await Zotero.Prefs.clear(
+							Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + translatorID
+						);
+					}, translatorID);
+				}
+			});
+
+			it('blocks direct fetch() during detection', async function () {
+				let requests = 0;
+				const server = http.createServer((req, res) => {
+					requests++;
+					res.writeHead(200, { 'Access-Control-Allow-Origin': '*' });
+					res.end('ok');
+				});
+				await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+				const url = `http://127.0.0.1:${server.address().port}/`;
+
+				const translatorID = '00000000-0000-0000-0000-000000000003';
+				const metadata = {
+					translatorID,
+					translatorType: 4,
+					label: 'Detect fetch Test',
+					creator: 'Zotero',
+					target: '',
+					priority: 1,
+					lastUpdated: '2026-01-01 00:00:00',
+					browserSupport: 'gcsv',
+					inRepository: false
+				};
+				// Detection succeeds only if fetch() rejects. Awaiting it keeps the frame alive until
+				// the request settles, so frame teardown cannot be what stops the request.
+				const code = `${JSON.stringify(metadata)}\n`
+					+ `async function detectWeb() {\n`
+					+ `  try { await globalThis.fetch(${JSON.stringify(url)}); return false; }\n`
+					+ `  catch (e) { return 'journalArticle'; }\n`
+					+ `}\nfunction doWeb() {}`;
+				try {
+					// Control: the browser can reach the server outside the translate host.
+					await background(url => fetch(url, { mode: 'no-cors' }), url);
+					assert.equal(requests, 1);
+					requests = 0;
+
+					await background(async ({ metadata, code }) => {
+						Zotero.Translators._loadTranslator(new Zotero.Translator(metadata));
+						await Zotero.Prefs.set(
+							Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + metadata.translatorID,
+							code
+						);
+					}, { metadata, code });
+					let detected = await tab.run(async translatorID => {
+						let translator = await Zotero.Translators.get(translatorID);
+						let result = await Zotero.RemoteTranslate.detect({
+							document,
+							translators: [translator]
+						});
+						return result.translators.map(translator => translator.translatorID);
+					}, translatorID);
+					assert.deepEqual(detected, [translatorID]);
+					assert.equal(requests, 0);
+				}
+				finally {
+					server.close();
 					await background(async translatorID => {
 						Zotero.Translators._removeTranslator(translatorID);
 						await Zotero.Prefs.clear(

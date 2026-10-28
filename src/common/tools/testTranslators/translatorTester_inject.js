@@ -38,7 +38,8 @@ Zotero.Messaging.addMessageListener('translatorTester_dummyTranslate', async (da
 
 	let { items } = await Zotero.RemoteTranslate.translate({
 		document,
-		translators: [translator],
+		// The detected translator carries the itemType used to sync live checkbox state for multiples
+		translators: [detectedTranslators[0]],
 		onDebug: makeHandler('debug'),
 		onError: makeHandler('error'),
 		onSelect: makeHandler('select')

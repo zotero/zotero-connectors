@@ -62,6 +62,9 @@ Zotero.RemoteTranslate = new function() {
 		onTranslatorFallback
 	} = {}) {
 		let operationID = Zotero.Utilities.randomString();
+		let firstTranslator = Array.isArray(translators) ? translators[0] : translators;
+		// Only multiple-item translators need live checkbox state, so avoid touching the page DOM otherwise
+		let updateLiveElements = firstTranslator?.itemType == 'multiple';
 		handlers.set(operationID, {
 			onSelect,
 			onItemSaving,
@@ -72,7 +75,7 @@ Zotero.RemoteTranslate = new function() {
 		try {
 			let result = await Zotero.TranslateHostFrameManager.translate({
 				operationID,
-				document: serializeDocument(document, true),
+				document: serializeDocument(document, true, updateLiveElements),
 				translators: serializeAvailableTranslators(translators),
 				handlers: {
 					select: !!onSelect,
@@ -105,14 +108,16 @@ Zotero.RemoteTranslate = new function() {
 		};
 	}
 
-	function serializeDocument(document, includeCookie) {
-		let cookie = '';
-		if (includeCookie) {
+	function serializeDocument(document, includeCookie, updateLiveElements = false) {
+		if (updateLiveElements) {
 			// HTML serialization does not otherwise reflect the live checked state.
 			for (let checkbox of document.querySelectorAll('input[type=checkbox]')) {
 				if (checkbox.checked) checkbox.setAttribute('checked', '');
 				else checkbox.removeAttribute('checked');
 			}
+		}
+		let cookie = '';
+		if (includeCookie) {
 			try {
 				cookie = document.cookie;
 			}

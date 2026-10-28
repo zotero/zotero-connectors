@@ -35,7 +35,7 @@ Zotero.Frame = class ZoteroFrame {
 	 */
 	constructor(attributes = {}, style = {}, messagingOptions) {
 		if (!attributes.src) throw new Error('Attempted to construct a Zotero frame with no src attribute');
-		this.nonce = Zotero.Utilities.randomString(16);
+		this.nonce = Zotero.Utilities.randomString(64);
 		this._initializedPromise = this._init(attributes, style, messagingOptions);
 		this.initializedPromise = this._initializedPromise;
 	}

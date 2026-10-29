@@ -123,7 +123,86 @@ describe("ItemSaver", function() {
 		});
 	});
 
+	describe('_saveToZotero', function() {
+		it('drops attachments without URLs and titles attachments without a mimeType', async function() {
+			let { payload, attachments } = await tab.run(async function () {
+				let payload;
+				try {
+					sinon.stub(Zotero.Connector, 'getPref').resolves(true);
+					sinon.stub(Zotero.Connector, 'callMethod').callsFake(async (method, data) => {
+						if (method === 'saveItems') payload = data;
+						return { filesEditable: false };
+					});
+					sinon.stub(Zotero.Messaging, 'sendMessage');
+
+					let item = {
+						itemType: 'journalArticle',
+						title: 'Item',
+						attachments: [
+							{ url: 'https://example.com/file' },
+							{ title: 'No URL PDF', mimeType: 'application/pdf' },
+							{ title: 'No URL Link', snapshot: false },
+							{ title: 'Link', url: 'https://example.com/link', snapshot: false },
+						],
+					};
+					let itemSaver = new Zotero.ItemSaver({ sessionID: 'test-session' });
+					await itemSaver._saveToZotero([item], () => 0);
+
+					return { payload, attachments: item.attachments };
+				}
+				finally {
+					Zotero.Connector.getPref.restore();
+					Zotero.Connector.callMethod.restore();
+					Zotero.Messaging.sendMessage.restore();
+				}
+			});
+
+			assert.deepEqual(attachments.map(a => a.title), ['Attachment', 'Link']);
+			assert.deepEqual(payload.items[0].attachments.map(a => a.title), ['Link']);
+		});
+	});
+
 	describe('_saveToServer', function() {
+		it('drops attachments without URLs and saves attachments without a mimeType', async function() {
+			let { saved, failed } = await tab.run(async function () {
+				let saved = [], failed = [];
+				try {
+					sinon.stub(Zotero.Prefs, 'getAsync').callsFake(async pref => {
+						if (pref === 'automaticTags') return true;
+						return { downloadAssociatedFiles: true, automaticSnapshots: true };
+					});
+					sinon.stub(Zotero.API, 'createItem').resolves(JSON.stringify({ success: ['ABCD1234'] }));
+					sinon.stub(Zotero.ItemSaver, 'saveAttachmentToServer').callsFake(async attachment => {
+						saved.push(attachment);
+					});
+
+					let item = {
+						itemType: 'journalArticle',
+						title: 'Item',
+						attachments: [
+							{ title: 'No mimeType', url: 'https://example.com/file' },
+							{ title: 'No URL PDF', mimeType: 'application/pdf' },
+						],
+					};
+					let itemSaver = new Zotero.ItemSaver({ sessionID: 'test-session' });
+					await itemSaver._saveToServer([item], (attachment, progress) => {
+						if (progress === false) failed.push(attachment.title);
+					});
+
+					return { saved, failed };
+				}
+				finally {
+					Zotero.Prefs.getAsync.restore();
+					Zotero.API.createItem.restore();
+					Zotero.ItemSaver.saveAttachmentToServer.restore();
+				}
+			});
+
+			assert.deepEqual(failed, []);
+			assert.deepEqual(saved.map(a => a.title), ['No mimeType']);
+			assert.equal(saved[0].parentKey, 'ABCD1234');
+		});
+
 		async function saveWithAutomaticTags(automaticTags) {
 			return tab.run(async function (automaticTags) {
 				let submittedItems;

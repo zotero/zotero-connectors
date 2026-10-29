@@ -134,7 +134,10 @@ ItemSaver.prototype = {
 			
 			// Prepare attachments for saving
 			item.attachments = item.attachments.filter((attachment) => {
-				if (!attachment.title) attachment.title = attachment.mimeType + ' Attachment';
+				// Some translators (e.g. COinS) produce attachments without URLs
+				if (!attachment.url) return false;
+				attachment.mimeType = attachment.mimeType || '';
+				if (!attachment.title) attachment.title = attachment.mimeType ? attachment.mimeType + ' Attachment' : 'Attachment';
 				attachment.id = attachment.id || Zotero.Utilities.randomString(8);
 				attachment.parentItem = item.id;
 				this._setAttachmentReferer(attachment);
@@ -387,6 +390,8 @@ ItemSaver.prototype = {
 				item.url = this._proxy.toProper(item.url);
 			}
 			itemIndices[i] = newItems.length;
+			// Some translators (e.g. COinS) produce attachments without URLs
+			item.attachments = item.attachments.filter(attachment => attachment.url);
 			let apiItem = Zotero.Utilities.deepCopy(item);
 			if (!automaticTags && Array.isArray(apiItem.tags)) {
 				apiItem.tags = apiItem.tags.filter(tag => typeof tag !== 'object' || tag.type !== 1);
@@ -394,6 +399,7 @@ ItemSaver.prototype = {
 			newItems = newItems.concat(Zotero.Utilities.Item.itemToAPIJSON(apiItem));
 			for (let attachment of item.attachments) {
 				attachment.id = Zotero.Utilities.randomString();
+				attachment.mimeType = attachment.mimeType || '';
 			}
 		}
 		

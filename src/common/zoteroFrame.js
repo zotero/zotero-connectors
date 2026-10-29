@@ -112,11 +112,18 @@ Zotero.Frame = class ZoteroFrame {
 		// See the optional Zotero.Messaging explanation in _init().
 		Zotero.Messaging?.unregisterFrame?.(this);
 		this.parentDiv?.parentNode?.removeChild(this.parentDiv);
+		// Firefox keeps an entangled port with a listener alive after its frame is removed,
+		// along with everything its messaging closures reference, leaking memory
+		if (this._port) {
+			this._port.onmessage = null;
+			this._port.close();
+		}
 	}
 
 	async _initMessaging(messagingOptions) {
 		if (!messagingOptions.sendMessage) {
 			const mc = new MessageChannel();
+			this._port = mc.port1;
 			this._frame.contentWindow.postMessage('zoteroChannel', '*', [mc.port2]);
 			let response = await new Promise(cb => { mc.port1.onmessage = cb; });
 			mc.port1.onmessage = null;

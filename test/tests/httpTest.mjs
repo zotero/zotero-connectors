@@ -259,6 +259,18 @@ describe("HTTP", function() {
 				assert.include(xhr, 'responseText');
 				assert.include(xhr, 'status');
 			});
+
+			it('responds with a parsed document for responseType: document', async function () {
+				let result = await tab.run(async function (url) {
+					let xhr = await Zotero.COHTTP.request('GET', url, { responseType: 'document' });
+					return {
+						isDocument: xhr.response instanceof Document,
+						text: xhr.response.querySelector?.('div')?.textContent
+					};
+				}, url + '?cohttp-doc');
+				assert.isTrue(result.isDocument);
+				assert.include(result.text, 'Rosenzweig');
+			});
 		});
 	});
 

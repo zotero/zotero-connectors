@@ -330,6 +330,12 @@ MESSAGES.COHTTP = {
 				if (result.response instanceof ArrayBuffer) {
 					result.response = packArrayBuffer(xhr.response);
 				}
+				// MV2 background XHR returns a Document, which cannot be sent via messaging,
+				// so send it as a string and parse it again in inject postReceive.
+				// MV3 fetch already returns text for document requests
+				else if (xhr.responseType == 'document' && xhr.response && typeof xhr.response != 'string') {
+					result.response = new XMLSerializer().serializeToString(xhr.response);
+				}
 				return result;
 			},
 		},
@@ -350,6 +356,17 @@ MESSAGES.COHTTP = {
 					xhr.response = await unpackArrayBuffer(xhr.response);
 				} else {
 					xhr.responseText = xhr.response;
+				}
+				// Zotero.HTTP.request() requests text and parses it itself, so this only
+				// applies to direct Zotero.COHTTP.request() calls with responseType: 'document'
+				if (xhr.responseType == 'document') {
+					let contentType = xhr.getResponseHeader("Content-Type");
+					let doc = new DOMParser().parseFromString(xhr.responseText, Zotero.HTTP.determineDOMParserContentType(contentType));
+					xhr = new Proxy(xhr, {
+						get: function (target, name) {
+							return name == 'response' ? doc : target[name];
+						}
+					});
 				}
 				return xhr;
 			}

@@ -55,7 +55,7 @@ Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
 		// Address pages like github gists where we are prevented from injecting the progress window due to
 		// the restrictive CSP.
 		const csp = details.responseHeadersObject['content-security-policy'];
-		isCSPProtected = csp && csp.includes("sandbox") && !csp.includes("allow-scripts");
+		isCSPProtected = isCSPSandboxedWithoutScripts(csp);
 	}
 	
 	if (!isPDF && !isCSPProtected) return;
@@ -70,6 +70,27 @@ Zotero.WebRequestIntercept.addListener('headersReceived', function(details) {
 		Zotero.Connector_Browser._updateExtensionUI(tab);
 	}, 100);
 });
+
+/**
+ * Whether a Content-Security-Policy header value contains a `sandbox` directive that
+ * doesn't allow scripts. Only directive names are matched, so e.g. host sources like
+ * `www.sandbox.paypal.com` don't count.
+ *
+ * @param {String} [csp] - Header value; may contain multiple comma-separated policies
+ * @returns {Boolean}
+ */
+function isCSPSandboxedWithoutScripts(csp) {
+	if (!csp) return false;
+	for (let policy of csp.split(',')) {
+		for (let directive of policy.split(';')) {
+			let [name, ...values] = directive.trim().toLowerCase().split(/\s+/);
+			if (name === 'sandbox' && !values.includes('allow-scripts')) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
 
 Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 	let url = tab.url;
@@ -93,11 +114,11 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 		data.title = url;
 	}
 	try {
-		browser.browserAction.setIcon({
+		browser.action.setIcon({
 			tabId:tab.id,
 			path: 'images/toolbar/loading.png'
 		});
-		browser.browserAction.setTitle({
+		browser.action.setTitle({
 			tabId:tab.id,
 			title: Zotero.getString('browserAction_saving')
 		});
@@ -113,11 +134,11 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 			await Zotero.ItemSaver.saveAttachmentToServer(data, tab);
 		}
 		
-		browser.browserAction.setIcon({
+		browser.action.setIcon({
 			tabId: tab.id,
 			path: 'images/toolbar/tick.png'
 		});
-		browser.browserAction.setTitle({
+		browser.action.setTitle({
 			tabId:tab.id,
 			title: Zotero.getString('browserAction_saved')
 		});
@@ -128,12 +149,12 @@ Zotero.Utilities.saveWithoutProgressWindow = async function (tab, frameId) {
 			Zotero.logError(e);
 		}
 		
-		browser.browserAction.setIcon({
+		browser.action.setIcon({
 			tabId: tab.id,
 			path: "images/toolbar/cross.png"
 		});
 		
-		browser.browserAction.setTitle({
+		browser.action.setTitle({
 			tabId: tab.id,
 			title: Zotero.getString('browserAction_saveFailed', ZOTERO_CONFIG.CLIENT_NAME)
 		});

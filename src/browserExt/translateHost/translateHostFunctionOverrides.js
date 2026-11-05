@@ -41,9 +41,22 @@ const requestOverride = {
 	handler: {
 		// avoid trying to post responseXML
 		preSend: async function(xhr) {
+			// Documents can't be posted to the host frame, so send text and let postReceive
+			// parse it again
+			let response = xhr.response;
+			if (typeof Document != 'undefined' && response instanceof Document) {
+				try {
+					// Original text from COHTTP.request, which returns a parsed Document
+					response = xhr.responseText;
+				}
+				catch (e) {
+					// XHR with responseType 'document' (MV2 background) has no responseText
+					response = new XMLSerializer().serializeToString(response);
+				}
+			}
 			return {
-				response: xhr.response,
-				responseText: xhr.response,
+				response,
+				responseText: response,
 				responseURL: xhr.responseURL,
 				responseType: xhr.responseType,
 				status: xhr.status,

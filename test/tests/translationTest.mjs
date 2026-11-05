@@ -550,6 +550,106 @@ describe("Translation", function() {
 		
 	});
 
+	describe("Translator requests", function() {
+		const translatorID = '00000000-0000-0000-0000-000000000004';
+		var tab = new Tab();
+		var pageServer, otherServer, pageOrigin, otherOrigin;
+
+		function listen(server) {
+			return new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+		}
+
+		// Responds with a page whose meta tags tell the test translator which URLs to request
+		function handleRequest(req, res) {
+			let { pathname } = new URL(req.url, 'http://localhost');
+			if (pathname.startsWith('/target/')) {
+				res.writeHead(200, { 'Content-Type': 'text/html' });
+				res.end('<html><head><title>Target</title></head><body></body></html>');
+				return;
+			}
+			let meta = Object.entries({
+				same: `${pageOrigin}/target/same`,
+				cross: `${otherOrigin}/target/cross`
+			}).map(([name, url]) => `<meta name="${name}" content="${url}">`).join('');
+			res.writeHead(200, { 'Content-Type': 'text/html' });
+			res.end(`<html><head><title>Article</title>${meta}</head><body></body></html>`);
+		}
+
+		before(async function () {
+			pageServer = http.createServer(handleRequest);
+			otherServer = http.createServer(handleRequest);
+			await Promise.all([listen(pageServer), listen(otherServer)]);
+			pageOrigin = `http://127.0.0.1:${pageServer.address().port}`;
+			otherOrigin = `http://127.0.0.1:${otherServer.address().port}`;
+
+			const metadata = {
+				translatorID,
+				translatorType: 4,
+				label: 'Translator Requests Test',
+				creator: 'Zotero',
+				target: '',
+				priority: 1,
+				lastUpdated: '2026-01-01 00:00:00',
+				browserSupport: 'gcsv',
+				inRepository: false
+			};
+			const code = `${JSON.stringify(metadata)}\n`
+				+ `function detectWeb() { return 'journalArticle'; }\n`
+				+ `async function doWeb(doc) {\n`
+				+ `  let titles = [];\n`
+				+ `  for (let name of ['same', 'cross']) {\n`
+				+ `    let url = doc.querySelector('meta[name="' + name + '"]').content;\n`
+				+ `    await ZU.processDocuments(url + '/processDocuments', doc => titles.push(doc.title));\n`
+				+ `    titles.push((await ZU.requestDocument(url + '/requestDocument')).title);\n`
+				+ `  }\n`
+				+ `  let item = new Zotero.Item('journalArticle');\n`
+				+ `  item.title = titles.join(', ');\n`
+				+ `  item.complete();\n`
+				+ `}`;
+			await background(async ({ metadata, code }) => {
+				Zotero.Translators._loadTranslator(new Zotero.Translator(metadata));
+				await Zotero.Prefs.set(
+					Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + metadata.translatorID,
+					code
+				);
+			}, { metadata, code });
+		});
+
+		after(async function () {
+			await tab.close();
+			pageServer.close();
+			otherServer.close();
+			await background(async translatorID => {
+				Zotero.Translators._removeTranslator(translatorID);
+				await Zotero.Prefs.clear(
+					Zotero.Translators.PREFS_TRANSLATOR_CODE_PREFIX + translatorID
+				);
+			}, translatorID);
+		});
+
+		async function translate(pageURL) {
+			if (tab.page) {
+				await tab.navigate(pageURL);
+			}
+			else {
+				await tab.init(pageURL);
+			}
+			return tab.run(async (translatorID) => {
+				let translator = await Zotero.Translators.get(translatorID);
+				let { items } = await Zotero.RemoteTranslate.translate({
+					document,
+					translators: [translator]
+				});
+				return items;
+			}, translatorID);
+		}
+
+		it('returns documents from ZU.processDocuments and ZU.requestDocument', async function () {
+			let items = await translate(`${pageOrigin}/article.html`);
+			assert.equal(items[0].title, 'Target, Target, Target, Target');
+		});
+	});
+
 	describe("In a child frame", function() {
 		describe('Detection', function() {
 			it('Sets the frame with higher priority translator as the translation target', async function() {

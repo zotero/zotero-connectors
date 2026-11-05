@@ -128,6 +128,8 @@ Zotero.TranslateHost = {
 	},
 
 	async translate() {
+		// Requests are made on behalf of the translated page, not this extension page
+		Zotero.HTTP.getReferrerSourceURL = () => this.initOptions.document.url;
 		let document = this._createDocument(this.initOptions.document, false);
 		let translators = this.initOptions.translators
 			? await this.unserializeTranslators(this.initOptions.translators)

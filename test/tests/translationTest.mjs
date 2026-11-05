@@ -554,6 +554,7 @@ describe("Translation", function() {
 		const translatorID = '00000000-0000-0000-0000-000000000004';
 		var tab = new Tab();
 		var pageServer, otherServer, pageOrigin, otherOrigin;
+		var referrers = {};
 
 		function listen(server) {
 			return new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -563,6 +564,7 @@ describe("Translation", function() {
 		function handleRequest(req, res) {
 			let { pathname } = new URL(req.url, 'http://localhost');
 			if (pathname.startsWith('/target/')) {
+				referrers[pathname] = req.headers.referer || '';
 				res.writeHead(200, { 'Content-Type': 'text/html' });
 				res.end('<html><head><title>Target</title></head><body></body></html>');
 				return;
@@ -627,6 +629,10 @@ describe("Translation", function() {
 			}, translatorID);
 		});
 
+		beforeEach(function () {
+			referrers = {};
+		});
+
 		async function translate(pageURL) {
 			if (tab.page) {
 				await tab.navigate(pageURL);
@@ -647,6 +653,18 @@ describe("Translation", function() {
 		it('returns documents from ZU.processDocuments and ZU.requestDocument', async function () {
 			let items = await translate(`${pageOrigin}/article.html`);
 			assert.equal(items[0].title, 'Target, Target, Target, Target');
+		});
+
+		it('sends the page as the referrer', async function () {
+			let pageURL = `${pageOrigin}/article.html`;
+			await translate(pageURL);
+			// strict-origin-when-cross-origin
+			assert.deepEqual(referrers, {
+				'/target/same/processDocuments': pageURL,
+				'/target/same/requestDocument': pageURL,
+				'/target/cross/processDocuments': `${pageOrigin}/`,
+				'/target/cross/requestDocument': `${pageOrigin}/`
+			});
 		});
 	});
 

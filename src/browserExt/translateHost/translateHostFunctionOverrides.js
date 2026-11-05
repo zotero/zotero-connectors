@@ -91,6 +91,20 @@ const requestOverride = {
 	}
 }
 
+// Translate host requests are made by the frame manager, so add the referrer that the
+// translated page would send
+const hostRequestOverride = {
+	...requestOverride,
+	local: {
+		...requestOverride.local,
+		preSend: async function([method, url, options = {}]) {
+			options = { ...options, headers: { ...options.headers } };
+			Zotero.HTTP.addDefaultReferrer(url, options);
+			return [method, url, options];
+		}
+	}
+};
+
 const translatorFunctions = {
 	'Translators.get': {
 		handler: {
@@ -181,7 +195,7 @@ const HOST_FUNCTIONS = {
 		'Debug.log': true,
 		'debug': true,
 		'Errors.log': true,
-		'COHTTP.request': requestOverride,
-		'HTTP.request': requestOverride,
+		'COHTTP.request': hostRequestOverride,
+		'HTTP.request': hostRequestOverride,
 	}
 };

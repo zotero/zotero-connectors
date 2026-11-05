@@ -70,11 +70,22 @@ Zotero.HTTP.addDefaultReferrer = function(url, options) {
 	}
 }
 
+/**
+ * URL of the page that requests are made on behalf of, for computing the default referrer.
+ * Overridden in the translate host, which runs in an extension page but makes requests on
+ * behalf of the translated page.
+ *
+ * @returns {String}
+ */
+Zotero.HTTP.getReferrerSourceURL = function () {
+	return document.location.href;
+}
+
 Zotero.HTTP.getDefaultReferrer = function(url) {
 	let sourceURL;
 	let targetURL;
 	try {
-		sourceURL = new URL(document.location.href);
+		sourceURL = new URL(Zotero.HTTP.getReferrerSourceURL());
 		// Use the current document URL as the base so relative request URLs are
 		// resolved the same way they would be from the page.
 		targetURL = new URL(url, sourceURL.href);
